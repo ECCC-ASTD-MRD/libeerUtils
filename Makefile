@@ -6,14 +6,15 @@ AR          = ar rv
 LD          = ld -shared -x
 
 INSTALL_DIR = /users/dor/afse/eer
+TCL_DIR     = /data/cmoe/afsr005/Archive/tcl8.4.13
 LIBS        = 
-INCLUDES    = -I./ -I${ARMNLIB}/include -I${ARMNLIB}/include/${ARCH}
+INCLUDES    = -I./ -I${ARMNLIB}/include -I${ARMNLIB}/include/${ARCH} -I$(TCL_DIR)/generic
 
 CCOPTIONS   = -O2 -funroll-all-loops -finline-functions -fPIC -c99
 CDEBUGFLAGS =
 CFLAGS      = $(CDEBUGFLAGS) $(CCOPTIONS) $(INCLUDES) $(PROTO) $(DEFINES)
 
-OBJ_C = eerUtils.o Vector.o Astro.o
+OBJ_C = eerUtils.o tclUtils.o Vector.o Astro.o
 
 all: obj lib
 
