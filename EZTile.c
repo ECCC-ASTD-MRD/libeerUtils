@@ -159,7 +159,7 @@ int cs_fstluk(float *Data,int Idx,int *NI,int *NJ,int *NK) {
    int err;
 
    pthread_mutex_lock(&RPNFieldMutex);
-   err=cs_fstluk(Data,Idx,NI,NJ,NK);
+   err=c_fstluk(Data,Idx,NI,NJ,NK);
    pthread_mutex_unlock(&RPNFieldMutex);
 
    return(err);

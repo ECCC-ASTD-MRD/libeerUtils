@@ -18,15 +18,19 @@ CDEBUGFLAGS =
 DEFINES     = -DVERSION=$(VERSION)
 CFLAGS      = $(CDEBUGFLAGS) $(CCOPTIONS) $(INCLUDES) $(DEFINES)
 
-OBJ_C = eerUtils.o tclUtils.o Vector.o Astro.o EZTile.o EZVrInt.o
+OBJ_C = $(subst .c,.o,$(wildcard *.c))
+OBJ_F = $(subst .f,.o,$(wildcard *.f))
+
+%.o:%.f
+	r.compile -src $<
 
 all: obj lib exec
 
-obj: $(OBJ_C)
+obj: $(OBJ_C) $(OBJ_F)
 
 lib:
 	mkdir -p ./lib
-	$(AR) lib/libeerUtils-$(VERSION).a $(OBJ_C)
+	$(AR) lib/libeerUtils-$(VERSION).a $(OBJ_C) $(OBJ_F)
 
 exec:
 	mkdir -p ./bin
