@@ -5,7 +5,7 @@
  * Dorval, Quebec
  *
  * Projet       : Lecture et traitements de divers fichiers de donnees
- * Fichier      : Utils.h
+ * Fichier      : eerUtils.h
  * Creation     : Avril 2006 - J.P. Gauthier
  *
  * Description  : Fonctions generales d'utilites courantes.
@@ -182,5 +182,33 @@ void   System_StampEncode(int *Stamp,int YYYY,int MM,int DD,int H,int M,int S);
 
 void Astro_SunPos(time_t Sec,double *Lat,double *Lon);
 void Astro_MoonPos(time_t ssue,float *lat,float *lon);
+
+extern int c_fnom();
+extern int c_fclos();
+extern int c_fstouv();
+extern int c_fstfrm();
+extern int c_fstecr();
+extern int c_fstinf();
+extern int c_fstprm();
+extern int c_fstluk();
+extern int c_fstinl();
+extern int c_fstopc();
+
+extern int c_ezqkdef();
+extern int c_ezgdef_fmem();
+extern int c_ezdefset();
+extern int c_gdxysval();
+extern int c_gdxywdval();
+extern int c_gdxyfll();
+extern int c_gdllfxy();
+extern int c_gdrls();
+extern int c_ezsint();
+extern int c_ezuvint();
+extern int c_ezsetval();
+extern int c_ezsetopt();
+extern int c_gdll();
+extern int c_gdllsval();
+extern int c_gdllwdval();
+extern int c_gdllvval();
 
 #endif

@@ -98,32 +98,4 @@ int cs_fstprm(int Unit,int *DateO,int *Deet,int *NPas,int *NI,int *NJ,int *NK,in
 int cs_fstluk(float *Data,int Idx,int *NI,int *NJ,int *NK);
 int cs_fstecr(float *Data,int NPak,int Unit, int DateO,int Deet,int NPas,int NI,int NJ,int NK,int IP1,int IP2,int IP3,char* TypVar,char *NomVar,char *Etiket,char *GrTyp,int IG1,int IG2,int IG3,int IG4,int DaTyp,int Over);
 
-extern int c_fnom();
-extern int c_fclos();
-extern int c_fstouv();
-extern int c_fstfrm();
-extern int c_fstecr();
-extern int c_fstinf();
-extern int c_fstprm();
-extern int c_fstluk();
-extern int c_fstinl();
-extern int c_fstopc();
-
-extern int c_ezqkdef();
-extern int c_ezgdef_fmem();
-extern int c_ezdefset();
-extern int c_gdxysval();
-extern int c_gdxywdval();
-extern int c_gdxyfll();
-extern int c_gdllfxy();
-extern int c_gdrls();
-extern int c_ezsint();
-extern int c_ezuvint();
-extern int c_ezsetval();
-extern int c_ezsetopt();
-extern int c_gdll();
-extern int c_gdllsval();
-extern int c_gdllwdval();
-extern int c_gdllvval();
-
 #endif

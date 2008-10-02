@@ -18,7 +18,7 @@ CDEBUGFLAGS =
 DEFINES     = -DVERSION=$(VERSION)
 CFLAGS      = $(CDEBUGFLAGS) $(CCOPTIONS) $(INCLUDES) $(DEFINES)
 
-OBJ_C = eerUtils.o tclUtils.o Vector.o Astro.o EZTile.o
+OBJ_C = eerUtils.o tclUtils.o Vector.o Astro.o EZTile.o EZVrInt.o
 
 all: obj lib exec
 
@@ -31,6 +31,7 @@ lib:
 exec:
 	mkdir -p ./bin
 	$(CC) Utilities/EZTiler.c -o bin/EZTiler-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) -lm -lpthread -Wl,-rpath,$(SPI_DIR)/Shared/$(ARCH)
+#	$(CC) Utilities/EZVrInter.c -o bin/EZVrInter-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) -lm -lpthread -Wl,-rpath,$(SPI_DIR)/Shared/$(ARCH)
 
 install: all
 	mkdir -p $(INSTALL_DIR)/lib/$(ARCH)

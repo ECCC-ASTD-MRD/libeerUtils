@@ -5,7 +5,7 @@
  * Dorval, Quebec
  *
  * Projet       : Lecture et traitements de divers fichiers de donnees
- * Fichier      : Utils.c
+ * Fichier      : eerUtils.c
  * Creation     : Avril 2006 - J.P. Gauthier
  *
  * Description  : Fonctions generales d'utilites courantes.
