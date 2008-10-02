@@ -128,6 +128,30 @@
 #define CLAMPLAT(LAT)        (LAT=LAT>90.0?90.0:(LAT<-90.0?-90.0:LAT))
 #define CLAMPLON(LON)        (LON=LON>180?LON-360:(LON<-180?LON+360:LON))
 
+/*Standard struct to read an RPN Field*/
+typedef struct TRPNHeader {
+   int  FID;               /*Fichier dont provient le champs*/
+   int  KEY;               /*Cle du champs*/
+   int  DATEO;             /*Date d'origine du champs*/
+   int  DATEV;             /*Date de validitee du champs*/
+   int  DEET;
+   int  NPAS;
+   int  NBITS;
+   int  DATYP;             /*Type de donnees*/
+   int  IP1,IP2,IP3;       /*Specificateur du champs*/
+   int  NI,NJ,NK;          /*Dimensions*/
+   char TYPVAR[3];         /*Type de variable*/
+   char NOMVAR[5];         /*Nom de la variable*/
+   char ETIKET[13];        /*Etiquette du champs*/
+   char GRTYP[2];          /*Type de grilles*/
+   int  IG1,IG2,IG3,IG4;   /*Descripteur de grille*/
+   int  SWA;
+   int  LNG;
+   int  DLTF;
+   int  UBC;
+   int  EX1,EX2,EX3;
+}  TRPNHeader;
+
 int   QSort_Double(const void *A,const void *B);
 int   QSort_Int(const void *A,const void *B);
 
