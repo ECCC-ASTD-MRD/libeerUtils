@@ -11,18 +11,18 @@ EER_DIR     = /users/dor/afse/eer
 SPI_DIR     = /users/dor/afse/eer/eer_SPI-7.2.4a
 
 LIBS        = -L$(SPI_DIR)/Shared/$(ARCH) -lrmn
-INCLUDES    = -I./ -I${ARMNLIB}/include -I${ARMNLIB}/include/${ARCH} -I$(TCL_DIR)/generic
+INCLUDES    = -I./src -I${ARMNLIB}/include -I${ARMNLIB}/include/${ARCH} -I$(TCL_DIR)/generic
 
 CCOPTIONS   = -O2 -funroll-all-loops -finline-functions -fPIC -c99
 CDEBUGFLAGS =
 DEFINES     = -DVERSION=$(VERSION)
 CFLAGS      = $(CDEBUGFLAGS) $(CCOPTIONS) $(INCLUDES) $(DEFINES)
 
-OBJ_C = $(subst .c,.o,$(wildcard *.c))
-OBJ_F = $(subst .f,.o,$(wildcard *.f))
+OBJ_C = $(subst .c,.o,$(wildcard src/*.c))
+OBJ_F = $(subst .f,.o,$(wildcard src/*.f))
 
 %.o:%.f
-	r.compile -src $<
+	r.compile -src $< -optf="-o $@"
 
 all: obj lib exec
 
@@ -42,7 +42,7 @@ install: all
 	mkdir -p $(INSTALL_DIR)/include
 	cp ./lib/* $(INSTALL_DIR)/lib/$(ARCH)
 	cp ./bin/* $(INSTALL_DIR)/bin/$(ARCH)
-	cp .h $(INSTALL_DIR)/include
+	cp ./src/*.h $(INSTALL_DIR)/include
 
 clean:
 	rm -f *.o *~
