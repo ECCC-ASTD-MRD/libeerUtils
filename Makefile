@@ -45,7 +45,7 @@ install: all
 	cp ./src/*.h $(INSTALL_DIR)/include
 
 clean:
-	rm -f *.o *~
+	rm -f src/*.o src/*~
 
 clear:	clean
 	rm -fr bin lib
