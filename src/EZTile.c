@@ -88,18 +88,15 @@ int cs_fnomid() {
 int cs_fstouv(char *Path,char *Mode) {
 
    int err=-1,id=-1;
-   char *path,mode[32];
+   char mode[32];
 
    if (Path) {
       id=cs_fnomid();
       pthread_mutex_lock(&RPNFileMutex);
-      if (Path[strlen(Path)-1]==':') {
-         /*In remote mode, the nice fnom changes the content of the variable, so we have to make a copy*/
-         path=strdup(Path);
+      if (index(Path,':') && Path[0]!=':') {
          strcpy(mode,Mode);
          strcat(mode,"+REMOTE");
-         err=c_fnom(&id,path,mode,0);
-         free(path);
+         err=c_fnom(&id,Path,mode,0);
       } else {
          err=c_fnom(&id,Path,Mode,0);
       }
