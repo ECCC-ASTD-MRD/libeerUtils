@@ -723,8 +723,8 @@ TGrid* EZGrid_Get(TGrid *Grid) {
    pthread_mutex_lock(&RPNFieldMutex);
    key=c_fstinf(Grid->H.FID,&Grid->H.NI,&h.NJ,&h.NK,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"",">>");
    key=c_fstinf(Grid->H.FID,&h.NI,&Grid->H.NJ,&h.NK,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"","^^");
-   if (key<0) {
-      fprintf(stderr,"(WARNING) EZGrid_Get: Could not find master grid descriptor\n");
+   if (key<0 && (Grid->H.GRTYP[0]=='#' || Grid->H.GRTYP[0]=='Z')) {
+      fprintf(stderr,"(WARNING) EZGrid_Get: Could not find master grid descriptor (>>,^^)\n");
       pthread_mutex_unlock(&RPNFieldMutex);
       return(NULL);
    }
