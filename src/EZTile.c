@@ -234,7 +234,7 @@ static inline float *EZGrid_TileGetData(TGrid *Grid,TGridTile *Tile) {
    }
 
    if (!(Tile->Data=(float*)malloc(Tile->NI*Tile->NJ*Grid->H.NK*sizeof(float)))) {
-      fprintf(stderr,"EZGrid_TileGetData: Unable to allocate memory for tile data\n");
+      fprintf(stderr,"(ERROR) EZGrid_TileGetData: Unable to allocate memory for tile data\n");
       return(NULL);
    }
 
@@ -242,7 +242,7 @@ static inline float *EZGrid_TileGetData(TGrid *Grid,TGridTile *Tile) {
    for(k=0;k<Grid->H.NK;k++) {
       key=c_fstinf(Grid->H.FID,&ni,&nj,&nk,Grid->H.DATEV,Grid->H.ETIKET,Grid->Levels[k],Grid->H.IP2,Tile->NO,Grid->H.TYPVAR,Grid->H.NOMVAR);
       if (key<0) {
-         fprintf(stderr,"EZGrid_TileGetData: Could not find tile data at level %i\n",Grid->Levels[k]);
+         fprintf(stderr,"(WARNING) EZGrid_TileGetData: Could not find tile data at level %i\n",Grid->Levels[k]);
       } else {
          c_fstluk(&Tile->Data[k*Tile->NI*Tile->NJ],key,&ni,&nj,&nk);
       }
@@ -280,7 +280,7 @@ static inline TGridTile* EZGrid_TileFind(TGrid *Grid,int i,int j) {
    /*Check for tile data*/
    if (!tile->Data) {
       if (!EZGrid_TileGetData(Grid,tile)) {
-         fprintf(stderr,"EZGrid_TileFind: Unable to get tile data\n");
+         fprintf(stderr,"(ERROR) EZGrid_TileFind: Unable to get tile data\n");
          return(NULL);
       }
    }
@@ -313,13 +313,13 @@ float* EZGrid_TileBurn(TGrid *Grid,TGridTile *Tile,int K) {
    }
 
    if (!Tile || !Tile->Data) {
-      fprintf(stderr,"EZGrid_TileBurn: Invalid tile\n");
+      fprintf(stderr,"(ERROR) EZGrid_TileBurn: Invalid tile\n");
       return(NULL);
    }
 
    if (!Grid->Data) {
       if (!(Grid->Data=(float*)malloc(Grid->H.NI*Grid->H.NJ*sizeof(float)))) {
-         fprintf(stderr,"EZGrid_TileBurn: Unable to allocate memory for grid data\n");
+         fprintf(stderr,"(ERROR) EZGrid_TileBurn: Unable to allocate memory for grid data\n");
          return(NULL);
       }
    }
@@ -523,7 +523,7 @@ int EZGrid_CopyDesc(int FIdTo,TGrid *Grid) {
    pthread_mutex_lock(&RPNFieldMutex);
    key=c_fstinf(Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"",">>");
    if (key<0) {
-      fprintf(stderr,"EZGrid_CopyDesc: Could not find master grid descriptor >>\n");
+      fprintf(stderr,"(WARNING) EZGrid_CopyDesc: Could not find master grid descriptor >>\n");
       pthread_mutex_unlock(&RPNFieldMutex);
       return(0);
    }
@@ -540,9 +540,9 @@ int EZGrid_CopyDesc(int FIdTo,TGrid *Grid) {
    key=c_fstecr(data,NULL,-32,FIdTo,h.DATEO,h.DEET,h.NPAS,h.NI,h.NJ,h.NK,h.IP1,
       h.IP2,h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,h.DATYP,1);
 
-  key=c_fstinf(Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"","^^");
+   key=c_fstinf(Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"","^^");
    if (key<0) {
-      fprintf(stderr,"EZGrid_CopyDesc: Could not find master grid descriptor ^^\n");
+      fprintf(stderr,"(ERROR) EZGrid_CopyDesc: Could not find master grid descriptor ^^\n");
       pthread_mutex_unlock(&RPNFieldMutex);
       return(0);
    }
@@ -596,7 +596,7 @@ int EZGrid_Tile(int FIdTo,int NI, int NJ,int FId,char* Var,char* TypVar,char* Et
    cs_fstinl(FId,&ni,&nj,&nk,DateV,Etiket,IP1,IP2,-1,TypVar,Var,idlst,&nid,TILEMAX);
 
    if (nid<=0) {
-      fprintf(stderr,"EZGrid_Read: Specified fields do not exist\n");
+      fprintf(stderr,"(ERROR) EZGrid_Read: Specified fields do not exist\n");
       return(0);
    }
    tile=(float*)malloc(NI*NJ*sizeof(float));
@@ -679,7 +679,7 @@ int EZGrid_UnTile(int FIdTo,int FId,char* Var,char* TypVar,char* Etiket,int Date
    cs_fstinl(FId,&ni,&nj,&nk,DateV,Etiket,IP1,IP2,1,TypVar,Var,idlst,&nid,TILEMAX);
 
    if (nid<=0) {
-      fprintf(stderr,"EZGrid_Read: Specified fields do not exist\n");
+      fprintf(stderr,"(ERROR) EZGrid_Read: Specified fields do not exist\n");
       return(0);
    }
 
@@ -724,7 +724,7 @@ TGrid* EZGrid_Get(TGrid *Grid) {
    key=c_fstinf(Grid->H.FID,&Grid->H.NI,&h.NJ,&h.NK,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"",">>");
    key=c_fstinf(Grid->H.FID,&h.NI,&Grid->H.NJ,&h.NK,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"","^^");
    if (key<0) {
-      fprintf(stderr,"EZGrid_Get: Could not find master grid descriptor\n");
+      fprintf(stderr,"(WARNING) EZGrid_Get: Could not find master grid descriptor\n");
       pthread_mutex_unlock(&RPNFieldMutex);
       return(NULL);
    }
@@ -776,7 +776,7 @@ TGrid* EZGrid_Get(TGrid *Grid) {
             h.GRTYP,&h.IG1,&h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,
             &h.UBC,&h.EX1,&h.EX2,&h.EX3);
       if (key<0) {
-         fprintf(stderr,"EZGrid_Get: Missing subgrid number %i\n",n);
+         fprintf(stderr,"(ERROR) EZGrid_Get: Missing subgrid number %i\n",n);
          pthread_mutex_unlock(&RPNFieldMutex);
          return(NULL);
       }
@@ -923,7 +923,7 @@ TGrid *EZGrid_Read(int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1
    key=cs_fstinf(FId,&ni,&nj,&nk,DateV,Etiket,IP1,IP2,-1,TypVar,Var);
 
    if (key<0) {
-      fprintf(stderr,"EZGrid_Read: Specified field does not exist\n");
+      fprintf(stderr,"(ERROR) EZGrid_Read: Specified field does not exist\n");
       return(NULL);
    }
    return(EZGrid_ReadIdx(FId,key,Incr));
@@ -1002,7 +1002,7 @@ TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr) {
       }
    } else {
       if (!EZGrid_Get(new)) {
-         fprintf(stderr,"EZGrid_Read: Could not create master grid\n");
+         fprintf(stderr,"(ERROR) EZGrid_Read: Could not create master grid\n");
          free(new);
          return(NULL);
       } else {
@@ -1043,14 +1043,14 @@ int EZGrid_Load(TGrid *Grid,int I0,int J0,int K0,int I1,int J1,int K1) {
    int i,j,k;
 
    if (!Grid) {
-      fprintf(stderr,"EZGrid_Load: Invalid grid\n");
+      fprintf(stderr,"(ERROR) EZGrid_Load: Invalid grid\n");
       return(0);
    }
 
    /*Check inclusion in master grid limits*/
    if (I0<0 || J0<0 || K0<0 || I0>=Grid->H.NI || J0>=Grid->H.NJ || K0>=Grid->H.NK ||
        I1<0 || J1<0 || K1<0 || I1>=Grid->H.NI || J1>=Grid->H.NJ || K1>=Grid->H.NK) {
-      fprintf(stderr,"EZGrid_Load: Coordinates out of range\n");
+      fprintf(stderr,"(WARNING) EZGrid_Load: Coordinates out of range\n");
       return(0);
    }
 
@@ -1177,7 +1177,7 @@ int EZGrid_GetLevels(TGrid *Grid,float *Levels,int *Type) {
    char format;
 
    if (!Grid) {
-      fprintf(stderr,"EZGrid_Load: Invalid grid\n");
+      fprintf(stderr,"(ERROR) EZGrid_Load: Invalid grid\n");
       return(0);
    }
 
@@ -1220,7 +1220,7 @@ int EZGrid_LLGetValue(TGrid *Grid,float Lat,float Lon,int K0,int K1,float *Value
    int        ik,k,n,in[4],jn[4];
 
    if (!Grid) {
-      fprintf(stderr,"EZGrid_LLGetValue: Invalid grid\n");
+      fprintf(stderr,"(ERROR) EZGrid_LLGetValue: Invalid grid\n");
       return(0);
    }
 
@@ -1231,7 +1231,7 @@ int EZGrid_LLGetValue(TGrid *Grid,float Lat,float Lon,int K0,int K1,float *Value
 
    /*Check inclusion in master grid limits*/
    if (ii<0 || jj<0 || K0<0 || K1<0 || ii>=Grid->H.NI || jj>=Grid->H.NJ || K0>=Grid->H.NK || K1>=Grid->H.NK) {
-      fprintf(stderr,"EZGrid_LLGetValue: Coordinates out of range\n");
+      fprintf(stderr,"(WARNING) EZGrid_LLGetValue: Coordinates out of range\n");
       return(0);
    }
 
@@ -1274,7 +1274,7 @@ int EZGrid_LLGetUVValue(TGrid *GridU,TGrid *GridV,float Lat,float Lon,int K0,int
    int        ik,k,n,in[4],jn[4];
 
    if (!GridU || !GridV) {
-      fprintf(stderr,"EZGrid_LLGetWindValue: Invalid grid\n");
+      fprintf(stderr,"(ERROR) EZGrid_LLGetWindValue: Invalid grid\n");
       return(0);
    }
 
@@ -1285,7 +1285,7 @@ int EZGrid_LLGetUVValue(TGrid *GridU,TGrid *GridV,float Lat,float Lon,int K0,int
 
    /*Check inclusion in master grid limits*/
    if (ii<0 || jj<0 || K0<0 || K1<0 || ii>=GridU->H.NI || jj>=GridU->H.NJ || K0>=GridU->H.NK || K1>=GridU->H.NK) {
-      fprintf(stderr,"EZGrid_LLGetValue: Coordinates out of range\n");
+      fprintf(stderr,"(WARNING) EZGrid_LLGetValue: Coordinates out of range\n");
       return(0);
    }
 
@@ -1356,13 +1356,13 @@ int EZGrid_IJGetValue(TGrid *Grid,int I,int J,int K,float *Value) {
    TGridTile *tile;
 
    if (!Grid) {
-      fprintf(stderr,"EZGrid_IJGetValue: Invalid grid\n");
+      fprintf(stderr,"(ERROR) EZGrid_IJGetValue: Invalid grid\n");
       return(0);
    }
 
    /*Check inclusion in master grid limits*/
    if (I<0 || J<0 || K<0 || I>=Grid->H.NI || J>=Grid->H.NJ || K>=Grid->H.NK) {
-      fprintf(stderr,"EZGrid_IJGetValue: Coordinates out of range\n");
+      fprintf(stderr,"(WARNING) EZGrid_IJGetValue: Coordinates out of range\n");
       return(0);
    }
 
@@ -1409,14 +1409,14 @@ int EZGrid_IJGetValues(TGrid *Grid,int I0,int J0,int K0,int I1,int J1,int K1,flo
    int        i,j,k;
 
    if (!Grid) {
-      fprintf(stderr,"EZGrid_IJGetValues: Invalid grid\n");
+      fprintf(stderr,"(ERROR) EZGrid_IJGetValues: Invalid grid\n");
       return(0);
    }
 
    /*Check inclusion in master grid limits*/
    if (I0<0 || J0<0 || K0<0 || I0>=Grid->H.NI || J0>=Grid->H.NJ || K0>=Grid->H.NK ||
        I1<0 || J1<0 || K1<0 || I1>=Grid->H.NI || J1>=Grid->H.NJ || K1>=Grid->H.NK) {
-      fprintf(stderr,"EZGrid_IJGetValues: Coordinates out of range\n");
+      fprintf(stderr,"(WARNING) EZGrid_IJGetValues: Coordinates out of range\n");
       return(0);
    }
 
