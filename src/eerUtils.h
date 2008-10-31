@@ -139,7 +139,7 @@ typedef struct TRPNHeader {
    int  NBITS;
    int  DATYP;             /*Type de donnees*/
    int  IP1,IP2,IP3;       /*Specificateur du champs*/
-   int  NI,NJ,NK;          /*Dimensions*/
+   int  NI,NJ,NK,NIJ;      /*Dimensions*/
    char TYPVAR[3];         /*Type de variable*/
    char NOMVAR[5];         /*Nom de la variable*/
    char ETIKET[13];        /*Etiquette du champs*/

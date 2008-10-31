@@ -217,6 +217,7 @@ static inline TGridTile* EZGrid_TileGet(TGrid *Grid,int I,int J) {
  * Parametres :
  *   <Grid>      : Grille maitre
  *   <Tile>      : Tuile pour laquelle lire les donnees
+ *   <K>         : Niveau (-1=tous)
  *
  * Retour:
  *  <float*>     : Pointeur sur les donnees lues (ou NULL si erreur)
@@ -224,7 +225,8 @@ static inline TGridTile* EZGrid_TileGet(TGrid *Grid,int I,int J) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-static inline float *EZGrid_TileGetData(TGrid *Grid,TGridTile *Tile) {
+
+static inline float *EZGrid_TileGetData(TGrid *Grid,TGridTile *Tile,int K) {
 
    int    key;
    int    ni,nj,nk,k;
@@ -233,19 +235,24 @@ static inline float *EZGrid_TileGetData(TGrid *Grid,TGridTile *Tile) {
       return(NULL);
    }
 
-   if (!(Tile->Data=(float*)malloc(Tile->NI*Tile->NJ*Grid->H.NK*sizeof(float)))) {
-      fprintf(stderr,"(ERROR) EZGrid_TileGetData: Unable to allocate memory for tile data\n");
-      return(NULL);
+   /*Allocate Tile data if not already done*/
+   if (!Tile->Data) {
+      if (!(Tile->Data=(float*)malloc(Tile->NIJ*Grid->H.NK*sizeof(float)))) {
+         fprintf(stderr,"(ERROR) EZGrid_TileGetData: Unable to allocate memory for tile data\n");
+         return(NULL);
+      }
+      /*Set first value of each level to NaN as a flag for data already loaded at this level*/
+      for(k=0;k<Grid->H.NK;k++) {
+         Tile->Data[k*Tile->NIJ]=nanf("NaN");
+      }
    }
 
    pthread_mutex_lock(&RPNFieldMutex);
-   for(k=0;k<Grid->H.NK;k++) {
-      key=c_fstinf(Grid->H.FID,&ni,&nj,&nk,Grid->H.DATEV,Grid->H.ETIKET,Grid->Levels[k],Grid->H.IP2,Tile->NO,Grid->H.TYPVAR,Grid->H.NOMVAR);
-      if (key<0) {
-         fprintf(stderr,"(WARNING) EZGrid_TileGetData: Could not find tile data at level %i\n",Grid->Levels[k]);
-      } else {
-         c_fstluk(&Tile->Data[k*Tile->NI*Tile->NJ],key,&ni,&nj,&nk);
-      }
+   key=c_fstinf(Grid->H.FID,&ni,&nj,&nk,Grid->H.DATEV,Grid->H.ETIKET,Grid->Levels[K],Grid->H.IP2,Tile->NO,Grid->H.TYPVAR,Grid->H.NOMVAR);
+   if (key<0) {
+      fprintf(stderr,"(WARNING) EZGrid_TileGetData: Could not find tile data at level %i\n",Grid->Levels[K]);
+   } else {
+      c_fstluk(&Tile->Data[K*Tile->NIJ],key,&ni,&nj,&nk);
    }
    pthread_mutex_unlock(&RPNFieldMutex);
    return(Tile->Data);
@@ -261,6 +268,7 @@ static inline float *EZGrid_TileGetData(TGrid *Grid,TGridTile *Tile) {
  *   <Grid>      : Grille maitre
  *   <I>         : Coordonnee du point de grille en I
  *   <J>         : Coordonnee du point de grille en J
+ *   <K>         : Coordonnee du point de grille en K
  *
  * Retour:
  *  <tile*>      : Pointeur sur la tuile (ou NULL si erreur)
@@ -268,18 +276,18 @@ static inline float *EZGrid_TileGetData(TGrid *Grid,TGridTile *Tile) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-static inline TGridTile* EZGrid_TileFind(TGrid *Grid,int i,int j) {
+static inline TGridTile* EZGrid_TileFind(TGrid *Grid,int I,int J,int K) {
 
    TGridTile *tile;
 
    /*Figure out the right tile*/
-   if (!(tile=EZGrid_TileGet(Grid,i,j))) {
+   if (!(tile=EZGrid_TileGet(Grid,I,J))) {
       return(NULL);
    }
 
    /*Check for tile data*/
-   if (!tile->Data) {
-      if (!EZGrid_TileGetData(Grid,tile)) {
+   if (!EZGrid_IsLoaded(tile,K)) {
+      if (!EZGrid_TileGetData(Grid,tile,K)) {
          fprintf(stderr,"(ERROR) EZGrid_TileFind: Unable to get tile data\n");
          return(NULL);
       }
@@ -324,7 +332,7 @@ float* EZGrid_TileBurn(TGrid *Grid,TGridTile *Tile,int K) {
       }
    }
 
-   k=K*(Tile->NI*Tile->NJ);
+   k=K*(Tile->NIJ);
    for(j=0;j<Tile->NJ;j++) {
       memcpy(&Grid->Data[(Tile->J+j)*Grid->H.NI+Tile->I],&Tile->Data[k+j*Tile->NI],Tile->NI*sizeof(float));
    }
@@ -355,7 +363,7 @@ float* EZGrid_TileBurnAll(TGrid *Grid,int K) {
 
    for(t=0;t<Grid->NbTiles;t++) {
       if (!Grid->Tiles[t].Data) {
-         EZGrid_TileGetData(Grid,&Grid->Tiles[t]);
+         EZGrid_TileGetData(Grid,&Grid->Tiles[t],K);
       }
       if (!EZGrid_TileBurn(Grid,&Grid->Tiles[t],K)) {
          return(NULL);
@@ -767,6 +775,7 @@ TGrid* EZGrid_Get(TGrid *Grid) {
    Grid->NTI=Grid->NTJ=0;
    Grid->IP1=Grid->H.IG1;
    Grid->IP2=Grid->H.IG2;
+   Grid->H.NIJ=Grid->H.NI*Grid->H.NJ;
    i=j=-1;
 
    /*Parse the tiles to get the tile limits and structure*/
@@ -791,6 +800,7 @@ TGrid* EZGrid_Get(TGrid *Grid) {
       Grid->Tiles[k].NO=h.IP3;
       Grid->Tiles[k].NI=h.NI;
       Grid->Tiles[k].NJ=h.NJ;
+      Grid->Tiles[k].NIJ=h.NI*h.NJ;
       Grid->Tiles[k].Data=NULL;
       Grid->Tiles[k].KBurn=-1;
 
@@ -1059,7 +1069,7 @@ int EZGrid_Load(TGrid *Grid,int I0,int J0,int K0,int I1,int J1,int K1) {
       for(j=J0;j<=J1;j++) {
          for(i=I0;i<=I1;i++) {
             /*Figure out the right tile*/
-            if (!(tile=EZGrid_TileFind(Grid,i,j))) {
+            if (!(tile=EZGrid_TileFind(Grid,i,j,k))) {
                return(0);
             }
          }
@@ -1177,7 +1187,7 @@ int EZGrid_GetLevels(TGrid *Grid,float *Levels,int *Type) {
    char format;
 
    if (!Grid) {
-      fprintf(stderr,"(ERROR) EZGrid_Load: Invalid grid\n");
+      fprintf(stderr,"(ERROR) EZGrid_GetLevels Invalid grid\n");
       return(0);
    }
 
@@ -1242,8 +1252,10 @@ int EZGrid_LLGetValue(TGrid *Grid,float Lat,float Lon,int K0,int K1,float *Value
 
    n=4;
    while(n--) {
-      if (!(tile[n]=EZGrid_TileFind(Grid,in[n],jn[n]))) {
-         return(0);
+      for(k=K0;k<=K1;k++) {
+         if (!(tile[n]=EZGrid_TileFind(Grid,in[n],jn[n],k))) {
+            return(0);
+         }
       }
    }
 
@@ -1296,11 +1308,13 @@ int EZGrid_LLGetUVValue(TGrid *GridU,TGrid *GridV,float Lat,float Lon,int K0,int
 
    n=4;
    while(n--) {
-      if (!(tile[0][n]=EZGrid_TileFind(GridU,in[n],jn[n]))) {
-         return(0);
-      }
-      if (!(tile[1][n]=EZGrid_TileFind(GridV,in[n],jn[n]))) {
-         return(0);
+      for(k=K0;k<=K1;k++) {
+         if (!(tile[0][n]=EZGrid_TileFind(GridU,in[n],jn[n],k))) {
+            return(0);
+         }
+         if (!(tile[1][n]=EZGrid_TileFind(GridV,in[n],jn[n],k))) {
+            return(0);
+         }
       }
    }
 
@@ -1366,12 +1380,12 @@ int EZGrid_IJGetValue(TGrid *Grid,int I,int J,int K,float *Value) {
       return(0);
    }
 
-   if (!(tile=EZGrid_TileFind(Grid,I,J))) {
+   if (!(tile=EZGrid_TileFind(Grid,I,J,K))) {
       return(0);
    }
 
    /*Get the value*/
-   *Value=tile->Data[(tile->NI*tile->NJ*K)+(J-tile->J)*tile->NI+(I-tile->I)];
+   *Value=tile->Data[(tile->NIJ*K)+(J-tile->J)*tile->NI+(I-tile->I)];
    return(1);
 }
 
@@ -1424,12 +1438,12 @@ int EZGrid_IJGetValues(TGrid *Grid,int I0,int J0,int K0,int I1,int J1,int K1,flo
    for(k=K0;k<=K1;k++) {
       for(j=J0;j<=J1;j++) {
          for(i=I0;i<=I1;i++) {
-            if (!(tile=EZGrid_TileFind(Grid,i,j))) {
+            if (!(tile=EZGrid_TileFind(Grid,i,j,k))) {
                return(0);
             }
 
             /*Get the value*/
-            Value[n++]=tile->Data[(tile->NI*tile->NJ*k)+(j-tile->J)*tile->NI+(i-tile->I)];
+            Value[n++]=tile->Data[(tile->NIJ*k)+(j-tile->J)*tile->NI+(i-tile->I)];
          }
       }
    }

@@ -38,12 +38,14 @@
 #define GRIDCACHEMAX 4096
 #define TILEMAX      1024
 
+#define EZGrid_IsLoaded(TILE,K) (TILE->Data && !isnan(TILE->Data[K*TILE->NI*TILE->NJ]))
+
 typedef struct {
    int    GID;                      /*EZSCINT Tile grid id (for interpolation)*/
    int    I,J;                      /*Tile starting point within master grid*/
    int    NO;                       /*Tile number*/
    int    KBurn;                    /*Index estampille*/
-   int    NI,NJ;                    /*Tile dimensions*/
+   int    NI,NJ,NIJ;                /*Tile dimensions*/
    float *Data;                     /*Data pointer*/
 } TGridTile;
 
