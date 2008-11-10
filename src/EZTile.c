@@ -1383,6 +1383,30 @@ int EZGrid_LLGetValue(TGrid *Grid,float Lat,float Lon,int K0,int K1,float *Value
    return(EZGrid_IJGetValue(Grid,i-1.0,j-1.0,K0,K1,Value));
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <EZGrid_LLGetUVValue>
+ * Creation : Janvier 2008 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Obtenir les valeur des vents a une lat-lon pour un range de niveaux
+ *
+ * Parametres :
+ *   <GridU>      : Grille de la composante U
+ *   <GridV>      : Grille de la composante V
+ *   <Lat>        : Latitude
+ *   <Lon>        : Longitude
+ *   <K0>         : Index du niveau 0
+ *   <K1>         : Index du niveau K
+ *   <Value>      : Valeur a la latlon du profile
+ *
+ * Retour:
+ *   <int>       : Code d'erreur (0=erreur, 1=ok)
+ *
+ * Remarques :
+ *
+ *   - On effectue une interpolation lineaire
+ *   - Cette fonction permet de recuperer un profile
+ *----------------------------------------------------------------------------
+*/
 wordint f77name(ezgrid_llgetuvvalue)(wordint *gdidu,wordint *gdidv,ftnfloat *lat,ftnfloat *lon,wordint *k0,wordint *k1,ftnfloat *uu,ftnfloat *vv) {
    return(EZGrid_LLGetUVValue(GridCache[*gdidu],GridCache[*gdidv],*lat,*lon,*k0,*k1,uu,vv));
 }
@@ -1402,6 +1426,29 @@ int EZGrid_LLGetUVValue(TGrid *GridU,TGrid *GridV,float Lat,float Lon,int K0,int
    return(EZGrid_IJGetUVValue(GridU,GridV,i-1.0,j-1.0,K0,K1,UU,VV));
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <EZGrid_IJGetValue>
+ * Creation : Janvier 2008 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Obtenir les valeur a une coordonnee IJ en point de grille pour un range de niveaux
+ *
+ * Parametres :
+ *   <Grid>       : Grille
+ *   <I>          : Coordonnee en X
+ *   <J>          : Coordonnee en Y
+ *   <K0>         : Index du niveau 0
+ *   <K1>         : Index du niveau K
+ *   <Value>      : Valeur a la position
+ *
+ * Retour:
+ *   <int>       : Code d'erreur (0=erreur, 1=ok)
+ *
+ * Remarques :
+ *
+ *   - On effectue une interpolation lineaire
+ *   - Cette fonction permet de recuperer un profile
+ *----------------------------------------------------------------------------
+*/
 wordint f77name(ezgrid_ijgetvalue)(wordint *gdid,ftnfloat *i,ftnfloat *j,wordint *k0,wordint *k1,ftnfloat *val) {
    return(EZGrid_IJGetValue(GridCache[*gdid],*i,*j,*k0,*k1,val));
 }
@@ -1458,6 +1505,31 @@ int EZGrid_IJGetValue(TGrid *Grid,float I,float J,int K0,int K1,float *Value) {
    return(1);
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <EZGrid_IJGetUVValue>
+ * Creation : Janvier 2008 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Obtenir les valeur des vents a une coordonnee IJ en point de
+ *            grille pour un range de niveaux
+ *
+ * Parametres :
+ *   <GridU>      : Grille de la composante U
+ *   <GridV>      : Grille de la composante V
+ *   <I>          : Coordonnee en X
+ *   <J>          : Coordonnee en Y
+ *   <K0>         : Index du niveau 0
+ *   <K1>         : Index du niveau K
+ *   <Value>      : Valeur a la position
+ *
+ * Retour:
+ *   <int>       : Code d'erreur (0=erreur, 1=ok)
+ *
+ * Remarques :
+ *
+ *   - On effectue une interpolation lineaire
+ *   - Cette fonction permet de recuperer un profile
+ *----------------------------------------------------------------------------
+*/
 wordint f77name(ezgrid_ijgetuvvalue)(wordint *gdidu,wordint *gdidv,ftnfloat *i,ftnfloat *j,wordint *k0,wordint *k1,ftnfloat *uu,ftnfloat *vv) {
    return(EZGrid_IJGetUVValue(GridCache[*gdidu],GridCache[*gdidv],*i,*j,*k0,*k1,uu,vv));
 }
@@ -1536,7 +1608,8 @@ int EZGrid_IJGetUVValue(TGrid *GridU,TGrid *GridV,float I,float J,int K0,int K1,
  *   <Grid>       : Grille
  *   <I>          : Coordonnee en I
  *   <J>          : Coordonnee en J
- *   <K>          : Coordonnee en K
+ *   <K0>         : Index du niveau 0
+ *   <K1>         : Index du niveau K
  *   <Val>        : Valeur au point de grille
  *
  * Retour:
@@ -1584,6 +1657,27 @@ int EZGrid_GetValue(TGrid *Grid,int I,int J,int K0,int K1,float *Value) {
    return(1);
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <EZGrid_GetValues>
+ * Creation : Janvier 2008 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Obtenir les valeurs a plusieurs points de grilles
+ *
+ * Parametres :
+ *   <Grid>       : Grille
+ *   <I>          : Coordonnees en I
+ *   <J>          : Coordonnees en J
+ *   <K>          : Coordonnees en K
+ *   <Val>        : Valeurs au points de grilles
+ *
+ * Retour:
+ *   <int>       : Code d'erreur (0=erreur, 1=ok)
+ *
+ * Remarques :
+ *
+ *   - On effectue aucune interpolation
+ *----------------------------------------------------------------------------
+*/
 wordint f77name(ezgrid_getvalues)(wordint *gdid,wordint *nb,ftnfloat *i,ftnfloat *j,ftnfloat *k,ftnfloat *val) {
    return(EZGrid_GetValues(GridCache[*gdid],*nb,i,j,k,val));
 }
