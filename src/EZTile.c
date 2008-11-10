@@ -1197,11 +1197,11 @@ int EZGrid_Load(TGrid *Grid,int I0,int J0,int K0,int I1,int J1,int K1) {
  *     que les donnees y sont en utilisant la fonction EZGrid_Load
  *----------------------------------------------------------------------------
 */
-wordint f77name(ezgrid_timeinterp)(wordint *gdid0,wordint *gdid1,wordint *date) {
-   return(EZGrid_CacheIdx(EZGrid_TimeInterp(GridCache[*gdid0],GridCache[*gdid1],*date)));
+wordint f77name(ezgrid_interptime)(wordint *gdid0,wordint *gdid1,wordint *date) {
+   return(EZGrid_CacheIdx(EZGrid_InterpTime(GridCache[*gdid0],GridCache[*gdid1],*date)));
 }
 
-TGrid *EZGrid_TimeInterp(TGrid *Grid0,TGrid *Grid1,int Date) {
+TGrid *EZGrid_InterpTime(TGrid *Grid0,TGrid *Grid1,int Date) {
 
    TGrid *new;
    double delay,dt;
@@ -1248,11 +1248,11 @@ void EZGrid_Factor(TGrid *Grid,float Factor) {
    Grid->Factor=Factor;
 }
 
-wordint f77name(ezgrid_interpbetween)(wordint *gdid0,wordint *gdid1,ftnfloat *f0,ftnfloat *f1) {
-   return(EZGrid_CacheIdx(EZGrid_InterpBetween(GridCache[*gdid0],GridCache[*gdid1],*f0,*f1)));
+wordint f77name(ezgrid_interp)(wordint *gdid0,wordint *gdid1,ftnfloat *f0,ftnfloat *f1) {
+   return(EZGrid_CacheIdx(EZGrid_Interp(GridCache[*gdid0],GridCache[*gdid1],*f0,*f1)));
 }
 
-TGrid *EZGrid_InterpBetween(TGrid *Grid0,TGrid *Grid1,float Factor0,float Factor1) {
+TGrid *EZGrid_Interp(TGrid *Grid0,TGrid *Grid1,float Factor0,float Factor1) {
 
    TGrid *new;
    int    i;
@@ -1369,7 +1369,7 @@ wordint f77name(ezgrid_llgetvalue)(wordint *gdid,ftnfloat *lat,ftnfloat *lon,wor
 }
 int EZGrid_LLGetValue(TGrid *Grid,float Lat,float Lon,int K0,int K1,float *Value) {
 
-   float      i,j;
+   float i,j;
 
    if (!Grid) {
       fprintf(stderr,"(ERROR) EZGrid_LLGetValue: Invalid grid\n");
@@ -1388,7 +1388,7 @@ wordint f77name(ezgrid_llgetuvvalue)(wordint *gdidu,wordint *gdidv,ftnfloat *lat
 }
 int EZGrid_LLGetUVValue(TGrid *GridU,TGrid *GridV,float Lat,float Lon,int K0,int K1,float *UU,float *VV) {
 
-   float      i,j;
+   float i,j;
 
    if (!GridU || !GridV) {
       fprintf(stderr,"(ERROR) EZGrid_LLGetUVValue: Invalid grid\n");

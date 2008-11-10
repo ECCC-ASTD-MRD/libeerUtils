@@ -95,8 +95,8 @@ int    EZGrid_LLGetUVValue(TGrid *GridU,TGrid *GridV,float Lat,float Lon,int K0,
 int    EZGrid_Tile(int FIdTo,int NI, int NJ,int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2);
 int    EZGrid_UnTile(int FIdTo,int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2);
 
-TGrid *EZGrid_TimeInterp(TGrid *Grid0,TGrid *Grid1,int Date);
-TGrid *EZGrid_InterpBetween(TGrid *Grid0,TGrid *Grid1,float Factor0,float Factor1);
+TGrid *EZGrid_InterpTime(TGrid *Grid0,TGrid *Grid1,int Date);
+TGrid *EZGrid_Interp(TGrid *Grid0,TGrid *Grid1,float Factor0,float Factor1);
 
 float* EZGrid_TileBurn(TGrid *Grid,TGridTile *Tile,int K);
 float* EZGrid_TileBurnAll(TGrid *Grid,int K);
