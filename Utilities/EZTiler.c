@@ -58,7 +58,7 @@ int main (int argc, char **argv) {
    fprintf(stderr,"   Value is %f\n",val);
    EZGrid_GetValue(fld0,195,195,0,0,&val);
    fprintf(stderr,"   Value is %f\n",val);
-   EZGrid_GirdGetValue(fld0,600,500,0,0,&val);
+   EZGrid_GetValue(fld0,600,500,0,0,&val);
    fprintf(stderr,"   Value is %f\n",val);
 
    /*Get a profile*/
@@ -118,7 +118,7 @@ int main (int argc, char **argv) {
 
    EZGrid_Load(fld0,300,310,0,310,320,10);
    EZGrid_Load(fld1,300,310,0,310,320,10);
-   fldn=EZGrid_TimeInterp(fld0,fld1,344244050);
+   fldn=EZGrid_InterpTime(fld0,fld1,344244050);
    EZGrid_GetValue(fld0,300,300,0,0,&val);
    fprintf(stderr,"(DEBUG)   t0=%f",val);
    EZGrid_GetValue(fld1,300,300,0,0,&val);
