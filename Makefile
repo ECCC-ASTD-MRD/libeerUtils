@@ -1,5 +1,5 @@
 ARCH        = $(shell uname)
-VERSION     = 0.1
+VERSION     = 0.2
 
 CC          = cc
 AR          = ar rv
@@ -12,7 +12,7 @@ EER_DIR     = /users/dor/afse/eer
 LIBS        = -L$(EER_DIR)/lib/$(ARCH) -lrmn
 INCLUDES    = -I./src -I${ARMNLIB}/include -I${ARMNLIB}/include/${ARCH} -I$(TCL_DIR)/generic
 
-CCOPTIONS   = -O2 -funroll-all-loops -finline-functions -fPIC -c99
+CCOPTIONS   = -O2 -finline-functions  -fomit-frame-pointer -funroll-all-loops -fPIC -c99
 CDEBUGFLAGS =
 DEFINES     = -DVERSION=$(VERSION)
 CFLAGS      = $(CDEBUGFLAGS) $(CCOPTIONS) $(INCLUDES) $(DEFINES)

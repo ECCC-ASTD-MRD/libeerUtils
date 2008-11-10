@@ -38,48 +38,65 @@
 #define GRIDCACHEMAX 4096
 #define TILEMAX      1024
 
-#define EZGrid_IsLoaded(TILE,K) (TILE->Data && !isnan(TILE->Data[K*TILE->NI*TILE->NJ]))
+#define EZGrid_IsLoaded(TILE,Z)      (TILE->Data && TILE->Data[(int)Z])
+#define EZGrid_TileValue(TILE,X,Y,Z) (TILE->Data[(int)Z][((int)Y-TILE->J)*TILE->NI+((int)X-TILE->I)])
 
 typedef struct {
-   int    GID;                      /*EZSCINT Tile grid id (for interpolation)*/
-   int    I,J;                      /*Tile starting point within master grid*/
-   int    NO;                       /*Tile number*/
-   int    KBurn;                    /*Index estampille*/
-   int    NI,NJ,NIJ;                /*Tile dimensions*/
-   float *Data;                     /*Data pointer*/
+   int     GID;                      /*EZSCINT Tile grid id (for interpolation)*/
+   int     I,J;                      /*Tile starting point within master grid*/
+   int     NO;                       /*Tile number*/
+   int     KBurn;                    /*Index estampille*/
+   int     NI,NJ,NIJ;                /*Tile dimensions*/
+   float **Data;                     /*Data pointer*/
 } TGridTile;
 
-typedef struct {
-   TRPNHeader    H;                 /*RPN Standard file header*/
-   int           GID;               /*EZSCINT Tile grid id (for interpolation)*/
-   int           IP1,IP2,Master;    /*Grid template identifier*/
-   int           Incr;              /*Increasing sorting*/
-   int          *Levels;            /*List of encoded levels (Ordered bottom-up)*/
-   float        *Data;              /*Data pointer*/
-   unsigned long NTI,NTJ;           /*Number of tiles in I and J*/
+struct TGrid;
 
-   unsigned int  NbTiles;           /*Number of tiles*/
-   TGridTile    *Tiles;             /*Array of tiles*/
+typedef struct TGrid {
+   TRPNHeader    H;                  /*RPN Standard file header*/
+   int           GID;                /*EZSCINT Tile grid id (for interpolation)*/
+   int           IP1,IP2,IP3,Master; /*Grid template identifier*/
+   int           Incr;               /*Increasing sorting*/
+   int           Factor;             /*Increasing sorting*/
+   int          *Levels;             /*List of encoded levels (Ordered bottom-up)*/
+   float        *Data;               /*Data pointer*/
+   unsigned long NTI,NTJ;            /*Number of tiles in I and J*/
+
+   float         FT0,FT1;            /*Time interpolation factor*/
+   struct TGrid *T0,*T1;             /*Time interpolation strat and end grid*/
+
+   unsigned int  NbTiles;            /*Number of tiles*/
+   TGridTile    *Tiles;              /*Array of tiles*/
 } TGrid;
 
 TGrid* EZGrid_CacheFind(TGrid *Grid);
 int    EZGrid_CacheAdd(TGrid *Grid);
 int    EZGrid_CacheDel(TGrid *Grid);
 int    EZGrid_CopyDesc(int FIdTo,TGrid *Grid);
-int    EZGrid_Tile(int FIdTo,int NI, int NJ,int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2);
-int    EZGrid_UnTile(int FIdTo,int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2);
+TGrid *EZGrid_New();
 int    EZGrid_Free(TGrid *Grid);
 TGrid* EZGrid_Get(TGrid *Grid);
 TGrid* EZGrid_Read(int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2,int Incr);
 TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr);
 int    EZGrid_Load(TGrid *Grid,int I0,int J0,int K0,int I1,int J1,int K1);
-int    EZGrid_IJGetValue(TGrid *Grid,int I,int J,int K,float *Value);
-int    EZGrid_IJGetValues(TGrid *Grid,int I0,int J0,int K0,int I1,int J1,int K1,float *Value);
-int    EZGrid_LLGetValue(TGrid *Grid,float Lat,float Lon,int K0,int K1,float *Value);
-int    EZGrid_LLGetUVValue(TGrid *GridU,TGrid *GridV,float Lat,float Lon,int K0,int K1,float *UU,float *VV);
 int    EZGrid_GetLevelNb(TGrid *Grid);
 int    EZGrid_GetLevels(TGrid *Grid,float *Levels,int *Type);
+
+void   EZGrid_Factor(TGrid *Grid,float Factor);
+int    EZGrid_GetValue(TGrid *Grid,int I,int J,int K0,int K1,float *Value);
+int    EZGrid_GetValues(TGrid *Grid,int Nb,float *I,float *J,float *K,float *Value);
+int    EZGrid_GetRange(TGrid *Grid,int I0,int J0,int K0,int I1,int J1,int K1,float *Value);
+int    EZGrid_IJGetValue(TGrid *Grid,float I,float J,int K0,int K1,float *Value);
+int    EZGrid_IJGetUVValue(TGrid *GridU,TGrid *GridV,float I,float J,int K0,int K1,float *UU,float *VV);
+int    EZGrid_LLGetValue(TGrid *Grid,float Lat,float Lon,int K0,int K1,float *Value);
+int    EZGrid_LLGetUVValue(TGrid *GridU,TGrid *GridV,float Lat,float Lon,int K0,int K1,float *UU,float *VV);
+
+
+int    EZGrid_Tile(int FIdTo,int NI, int NJ,int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2);
+int    EZGrid_UnTile(int FIdTo,int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2);
+
 TGrid *EZGrid_TimeInterp(TGrid *Grid0,TGrid *Grid1,int Date);
+TGrid *EZGrid_InterpBetween(TGrid *Grid0,TGrid *Grid1,float Factor0,float Factor1);
 
 float* EZGrid_TileBurn(TGrid *Grid,TGridTile *Tile,int K);
 float* EZGrid_TileBurnAll(TGrid *Grid,int K);

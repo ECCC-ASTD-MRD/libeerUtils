@@ -52,18 +52,18 @@ int main (int argc, char **argv) {
 
    /*Parse some values*/
    fprintf(stderr,"(DEBUG) Some GZ values at IJ :\n");
-   EZGrid_IJGetValue(fld0,200,200,0,&val);
+   EZGrid_GetValue(fld0,200,200,0,0,&val);
    fprintf(stderr,"   Value is %f\n",val);
-   EZGrid_IJGetValue(fld0,201,200,0,&val);
+   EZGrid_GetValue(fld0,201,200,0,0,&val);
    fprintf(stderr,"   Value is %f\n",val);
-   EZGrid_IJGetValue(fld0,195,195,0,&val);
+   EZGrid_GetValue(fld0,195,195,0,0,&val);
    fprintf(stderr,"   Value is %f\n",val);
-   EZGrid_IJGetValue(fld0,600,500,0,&val);
+   EZGrid_GirdGetValue(fld0,600,500,0,0,&val);
    fprintf(stderr,"   Value is %f\n",val);
 
    /*Get a profile*/
    fprintf(stderr,"(DEBUG) Profile GZ values at IJ:\n   ");
-   EZGrid_IJGetValues(fld0,195,195,0,195,195,57,vals);
+   EZGrid_GetRange(fld0,195,195,0,195,195,57,vals);
    for(j=0;j<=57;j++) {
       printf("%f ",vals[j]);
    }
@@ -83,17 +83,17 @@ int main (int argc, char **argv) {
    fld0=EZGrid_Read(10,"UU","","",-1,-1,-1,1);
    /*Parse some values*/
    fprintf(stderr,"(DEBUG) Some UU values at IJ:\n");
-   EZGrid_IJGetValue(fld0,200,200,0,&val);
+   EZGrid_GetValue(fld0,200,200,0,0,&val);
    fprintf(stderr,"(DEBUG)   Value is %f\n",val);
-   EZGrid_IJGetValue(fld0,201,200,0,&val);
+   EZGrid_GetValue(fld0,201,200,0,0,&val);
    fprintf(stderr,"(DEBUG)   Value is %f\n",val);
-   EZGrid_IJGetValue(fld0,195,195,0,&val);
+   EZGrid_GetValue(fld0,195,195,0,0,&val);
    fprintf(stderr,"(DEBUG)   Value is %f\n",val);
-   EZGrid_IJGetValue(fld0,600,500,0,&val);
+   EZGrid_GetValue(fld0,600,500,0,0,&val);
    fprintf(stderr,"(DEBUG)   Value is %f\n",val);
 
    /*Parse a range of values*/
-   EZGrid_IJGetValues(fld0,195,195,0,200,200,0,vals);
+   EZGrid_GetRange(fld0,195,195,0,200,200,0,vals);
    n=0;
    fprintf(stderr,"(DEBUG) Range of UU values at IJ:\n   ");
    for(j=0;j<=5;j++) {
@@ -119,11 +119,11 @@ int main (int argc, char **argv) {
    EZGrid_Load(fld0,300,310,0,310,320,10);
    EZGrid_Load(fld1,300,310,0,310,320,10);
    fldn=EZGrid_TimeInterp(fld0,fld1,344244050);
-   EZGrid_IJGetValue(fld0,300,300,0,&val);
+   EZGrid_GetValue(fld0,300,300,0,0,&val);
    fprintf(stderr,"(DEBUG)   t0=%f",val);
-   EZGrid_IJGetValue(fld1,300,300,0,&val);
+   EZGrid_GetValue(fld1,300,300,0,0,&val);
    fprintf(stderr,"(DEBUG) t1=%f",val);
-   EZGrid_IJGetValue(fldn,300,300,0,&val);
+   EZGrid_GetValue(fldn,300,300,0,0,&val);
    fprintf(stderr,"(DEBUG) tn=%f\n",val);
 
    EZGrid_Free(fld0);
