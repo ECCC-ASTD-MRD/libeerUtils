@@ -34,12 +34,6 @@
 #include "eerUtils.h"
 #include "rpnmacros.h"
 
-#include <stdio.h>
-#include <string.h>
-#include <strings.h>
-#include <stdlib.h>
-#include <math.h>
-
 int System_IsBigEndian(void) {
    short w=0x4321;
 

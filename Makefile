@@ -1,9 +1,7 @@
 ARCH        = $(shell uname)
 VERSION     = 0.2
 
-CC          = cc
-AR          = ar rv
-LD          = ld -shared -x
+include Makefile.$(ARCH)
 
 INSTALL_DIR = /users/dor/afse/eer
 TCL_DIR     = /data/cmoe/afsr005/Archive/tcl8.4.13
@@ -12,9 +10,7 @@ EER_DIR     = /users/dor/afse/eer
 LIBS        = -L$(EER_DIR)/lib/$(ARCH) -lrmn
 INCLUDES    = -I./src -I${ARMNLIB}/include -I${ARMNLIB}/include/${ARCH} -I$(TCL_DIR)/generic
 
-CCOPTIONS   = -O2 -finline-functions  -fomit-frame-pointer -funroll-all-loops -fPIC -c99
-CDEBUGFLAGS =
-DEFINES     = -DVERSION=$(VERSION)
+DEFINES     = -DVERSION=$(VERSION) -D_$(ARCH)_
 CFLAGS      = $(CDEBUGFLAGS) $(CCOPTIONS) $(INCLUDES) $(DEFINES)
 
 OBJ_C = $(subst .c,.o,$(wildcard src/*.c))
@@ -30,6 +26,7 @@ obj: $(OBJ_C) $(OBJ_F)
 lib:
 	mkdir -p ./lib
 	$(AR) lib/libeerUtils-$(VERSION).a $(OBJ_C) $(OBJ_F)
+	ln -fs libeerUtils-$(VERSION).a lib/libeerUtils.a
 
 exec:
 	mkdir -p ./bin
@@ -39,9 +36,9 @@ exec:
 install: all
 	mkdir -p $(INSTALL_DIR)/lib/$(ARCH)
 	mkdir -p $(INSTALL_DIR)/include
-	cp ./lib/* $(INSTALL_DIR)/lib/$(ARCH)
-	cp ./bin/* $(INSTALL_DIR)/bin/$(ARCH)
-	cp ./src/*.h $(INSTALL_DIR)/include
+	cp -d ./lib/* $(INSTALL_DIR)/lib/$(ARCH)
+	cp -d ./bin/* $(INSTALL_DIR)/bin/$(ARCH)
+	cp -d ./src/*.h $(INSTALL_DIR)/include
 
 clean:
 	rm -f src/*.o src/*~

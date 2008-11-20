@@ -40,6 +40,14 @@
 #define _eerUtils_h
 
 #include <time.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+#include <math.h>
+#include <malloc.h>
+
+#include "rpnmacros.h"
 
 /*System related constants and functions*/
 #define SYS_BIG_ENDIAN     0
@@ -160,6 +168,7 @@ double InterpHermite(double X0,double X1,double X2, double X3,double F,double T,
 
 double HCentile(double *M,int N,int K);
 
+extern char *strdup(const char *str);
 char* strpath(char *Path,char *File);
 char* strcatalloc(char *StrTo,char *StrFrom);
 void  strtrim(char* Str,char Tok);
@@ -182,6 +191,20 @@ void   System_StampEncode(int *Stamp,int YYYY,int MM,int DD,int H,int M,int S);
 
 void Astro_SunPos(time_t Sec,double *Lat,double *Lon);
 void Astro_MoonPos(time_t ssue,float *lat,float *lon);
+
+/*EER external Fortran functions*/
+extern int f77name(r8ipsort)(wordint *ip,double *a,wordint *n);
+extern int f77name(binarysearchfindlevel2)(ftnfloat *hybvl,ftnfloat *hyb,wordint *size,wordint *ikk,wordint *ikn);
+
+/*RPN external C && Fortran functions*/
+extern int f77name(newdate)(wordint *dat1,wordint *dat2,wordint *dat3,wordint *mode);
+extern int f77name(incdatr)(wordint *dat1,wordint *dat2,double *nhours);
+extern int f77name(difdatr)(wordint *dat1,wordint *dat2,double *nhours);
+extern int f77name(convip) (wordint *ip,ftnfloat *p,wordint *kind,wordint *mode,char *string,wordint *flag);
+extern int f77name(sort)   (ftnfloat *work,wordint *n);
+extern int f77name(fd1)    (ftnfloat *gd1,ftnfloat *f,ftnfloat *h);
+extern int f77name(fdm)    (ftnfloat *gdm,ftnfloat *f,ftnfloat *h,wordint *m);
+extern int f77name(int1d1) (ftnfloat *fi,ftnfloat *f,ftnfloat *xi,ftnfloat *x,ftnfloat *fx,ftnfloat *h,wordint *m,wordint *mi,ftnfloat *cmu1,ftnfloat *c1,ftnfloat *clmdam,ftnfloat *cm,ftnfloat *a,ftnfloat *c,ftnfloat *d);
 
 extern int c_fnom();
 extern int c_fclos();

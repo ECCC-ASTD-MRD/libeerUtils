@@ -29,13 +29,10 @@
  *==============================================================================
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <malloc.h>
-#include <math.h>
+#include "EZTile.h"
+
 #include <pthread.h>
 
-#include "EZTile.h"
 #include "rpn_macros_arch.h"
 #include "/usr/local/env/armnlib/include/fnom.h"
 
@@ -189,7 +186,7 @@ int cs_fstecr(float *Data,int NPak,int Unit, int DateO,int Deet,int NPas,int NI,
  * Remarques :
  *----------------------------------------------------------------------------
 */
-static inline TGridTile* EZGrid_TileGet(TGrid *Grid,int I,int J) {
+static inline TGridTile* EZGrid_TileGet(const TGrid* restrict Grid,int I,int J) {
 
    TGridTile    *tile=NULL;
    register int  idx=0;
@@ -228,11 +225,11 @@ static inline TGridTile* EZGrid_TileGet(TGrid *Grid,int I,int J) {
  *        entre deux champs si necessaire
  *----------------------------------------------------------------------------
 */
-static float **EZGrid_TileGetData(TGrid *Grid,TGridTile *Tile,int K) {
+static float **EZGrid_TileGetData(const TGrid* restrict Grid,TGridTile* restrict Tile,int K) {
 
    TGridTile *t0,*t1;
    int        key;
-   int        ni,nj,nk,k,t=0;
+   int        ni,nj,nk,t=0;
 
    if (!EZGrid_IsLoaded(Tile,K)) {
       /*Allocate Tile data if not already done*/
@@ -322,7 +319,7 @@ static float **EZGrid_TileGetData(TGrid *Grid,TGridTile *Tile,int K) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-static inline TGridTile* EZGrid_TileFind(TGrid *Grid,int I,int J,int K) {
+static inline TGridTile* EZGrid_TileFind(const TGrid* restrict Grid,int I,int J,int K) {
 
    TGridTile *tile;
 
@@ -356,7 +353,7 @@ static inline TGridTile* EZGrid_TileFind(TGrid *Grid,int I,int J,int K) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-float* EZGrid_TileBurn(TGrid *Grid,TGridTile *Tile,int K) {
+float* EZGrid_TileBurn(TGrid* restrict Grid,TGridTile* restrict Tile,int K) {
 
    int j;
 
@@ -400,19 +397,24 @@ float* EZGrid_TileBurn(TGrid *Grid,TGridTile *Tile,int K) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-float* EZGrid_TileBurnAll(TGrid *Grid,int K) {
+float* EZGrid_TileBurnAll(TGrid* restrict Grid,int K) {
 
    int t;
 
-   for(t=0;t<Grid->NbTiles;t++) {
-      if (!Grid->Tiles[t].Data) {
-         EZGrid_TileGetData(Grid,&Grid->Tiles[t],K);
+   if (Grid->NbTiles>1) {
+      for(t=0;t<Grid->NbTiles;t++) {
+         if (!Grid->Tiles[t].Data) {
+            EZGrid_TileGetData(Grid,&Grid->Tiles[t],K);
+         }
+         if (!EZGrid_TileBurn(Grid,&Grid->Tiles[t],K)) {
+            return(NULL);
+         }
       }
-      if (!EZGrid_TileBurn(Grid,&Grid->Tiles[t],K)) {
-         return(NULL);
-      }
+      return(Grid->Data);
+   } else {
+      EZGrid_TileGetData(Grid,&Grid->Tiles[0],K);
+      return(Grid->Tiles[0].Data[K]);
    }
-   return(Grid->Data);
 }
 
 /*----------------------------------------------------------------------------
@@ -430,7 +432,7 @@ float* EZGrid_TileBurnAll(TGrid *Grid,int K) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-TGrid* EZGrid_CacheFind(TGrid *Grid) {
+TGrid* EZGrid_CacheFind(TGrid* restrict const Grid) {
 
    register int n;
 
@@ -474,7 +476,7 @@ TGrid* EZGrid_CacheFind(TGrid *Grid) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-int EZGrid_CacheIdx(TGrid *Grid) {
+int EZGrid_CacheIdx(TGrid* restrict const Grid) {
 
    register int n,i=-1;
 
@@ -506,7 +508,7 @@ int EZGrid_CacheIdx(TGrid *Grid) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-int EZGrid_CacheAdd(TGrid *Grid) {
+int EZGrid_CacheAdd(TGrid* restrict const Grid) {
 
    register int n,i=-1;
 
@@ -539,7 +541,7 @@ int EZGrid_CacheAdd(TGrid *Grid) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-int EZGrid_CacheDel(TGrid *Grid) {
+int EZGrid_CacheDel(TGrid* restrict const Grid) {
 
    register int n=-1;
 
@@ -572,7 +574,7 @@ int EZGrid_CacheDel(TGrid *Grid) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-int EZGrid_CopyDesc(int FIdTo,TGrid *Grid) {
+int EZGrid_CopyDesc(int FIdTo,TGrid* restrict const Grid) {
 
    TRPNHeader h;
    char      *data=NULL;
@@ -650,8 +652,7 @@ int EZGrid_CopyDesc(int FIdTo,TGrid *Grid) {
 int EZGrid_Tile(int FIdTo,int NI, int NJ,int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2) {
 
    TGrid *new;
-   int    n,no,i,j,ni,nj,nk,szd=0,pj;
-   int    key;
+   int    key,n,no,i,j,ni,nj,nk,szd=0,pj;
    float *data=NULL,*tile=NULL;
    int    idlst[TILEMAX],nid;
 
@@ -774,7 +775,7 @@ int EZGrid_UnTile(int FIdTo,int FId,char* Var,char* TypVar,char* Etiket,int Date
  *    - La procedure fonctionne aussi pour les champs non tuile. Dans ce cas on a une seule tuile.
  *----------------------------------------------------------------------------
 */
-TGrid* EZGrid_Get(TGrid *Grid) {
+TGrid* EZGrid_Get(TGrid* restrict const Grid) {
 
    TRPNHeader h;
    int        n,r,i,j,k,k2,idump;
@@ -945,7 +946,7 @@ TGrid *EZGrid_New() {
 wordint f77name(ezgrid_free)(wordint *gdid) {
    return(EZGrid_Free(GridCache[*gdid]));
 }
-int EZGrid_Free(TGrid *Grid) {
+int EZGrid_Free(TGrid* restrict const Grid) {
 
    int n,k;
 
@@ -1146,9 +1147,8 @@ TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr) {
 wordint f77name(ezgrid_load)(wordint *gdid,wordint *i0,wordint *j0,wordint *k0,wordint *i1,wordint *j1,wordint *k1) {
    return(EZGrid_Load(GridCache[*gdid],*i0,*j0,*k0,*i1,*j1,*k1));
 }
-int EZGrid_Load(TGrid *Grid,int I0,int J0,int K0,int I1,int J1,int K1) {
+int EZGrid_Load(TGrid* restrict const Grid,int I0,int J0,int K0,int I1,int J1,int K1) {
 
-   TGridTile *tile;
    int i,j,k;
 
    if (!Grid) {
@@ -1168,7 +1168,7 @@ int EZGrid_Load(TGrid *Grid,int I0,int J0,int K0,int I1,int J1,int K1) {
       for(j=J0;j<=J1;j++) {
          for(i=I0;i<=I1;i++) {
             /*Figure out the right tile*/
-            if (!(tile=EZGrid_TileFind(Grid,i,j,k))) {
+            if (!(EZGrid_TileFind(Grid,i,j,k))) {
                return(0);
             }
          }
@@ -1201,7 +1201,7 @@ wordint f77name(ezgrid_interptime)(wordint *gdid0,wordint *gdid1,wordint *date) 
    return(EZGrid_CacheIdx(EZGrid_InterpTime(GridCache[*gdid0],GridCache[*gdid1],*date)));
 }
 
-TGrid *EZGrid_InterpTime(TGrid *Grid0,TGrid *Grid1,int Date) {
+TGrid *EZGrid_InterpTime(TGrid* restrict const Grid0,TGrid* restrict const Grid1,int Date) {
 
    TGrid *new;
    double delay,dt;
@@ -1241,9 +1241,10 @@ TGrid *EZGrid_InterpTime(TGrid *Grid0,TGrid *Grid1,int Date) {
 
 wordint f77name(ezgrid_factor)(wordint *gdid,ftnfloat *f) {
    EZGrid_Factor(GridCache[*gdid],*f);
+   return(1);
 }
 
-void EZGrid_Factor(TGrid *Grid,float Factor) {
+void EZGrid_Factor(TGrid* restrict Grid,const float Factor) {
 
    Grid->Factor=Factor;
 }
@@ -1252,7 +1253,7 @@ wordint f77name(ezgrid_interp)(wordint *gdid0,wordint *gdid1,ftnfloat *f0,ftnflo
    return(EZGrid_CacheIdx(EZGrid_Interp(GridCache[*gdid0],GridCache[*gdid1],*f0,*f1)));
 }
 
-TGrid *EZGrid_Interp(TGrid *Grid0,TGrid *Grid1,float Factor0,float Factor1) {
+TGrid *EZGrid_Interp(TGrid* restrict const Grid0,TGrid* restrict const Grid1,float Factor0,float Factor1) {
 
    TGrid *new;
    int    i;
@@ -1299,7 +1300,7 @@ TGrid *EZGrid_Interp(TGrid *Grid0,TGrid *Grid1,float Factor0,float Factor1) {
 wordint f77name(ezgrid_getlevelnb)(wordint *gdid) {
    return(EZGrid_GetLevelNb(GridCache[*gdid]));
 }
-int EZGrid_GetLevelNb(TGrid *Grid) {
+int EZGrid_GetLevelNb(TGrid* restrict const Grid) {
    return(Grid->H.NK);
 }
 
@@ -1324,7 +1325,7 @@ int EZGrid_GetLevelNb(TGrid *Grid) {
 wordint f77name(ezgrid_getlevels)(wordint *gdid,ftnfloat *levels,wordint *type) {
    return(EZGrid_GetLevels(GridCache[*gdid],levels,type));
 }
-int EZGrid_GetLevels(TGrid *Grid,float *Levels,int *Type) {
+int EZGrid_GetLevels(TGrid* restrict const Grid,float* restrict Levels,int* restrict Type) {
 
    int  k;
    int  mode=-1,flag=0;
@@ -1365,9 +1366,9 @@ int EZGrid_GetLevels(TGrid *Grid,float *Levels,int *Type) {
  *----------------------------------------------------------------------------
 */
 wordint f77name(ezgrid_llgetvalue)(wordint *gdid,ftnfloat *lat,ftnfloat *lon,wordint *k0,wordint *k1,ftnfloat *val) {
-   return(EZGrid_LLGetValue(GridCache[*gdid],*lat,*lon,*k0,*k1,val));
+   return(EZGrid_LLGetValue(GridCache[*gdid],*lat,*lon,*k0-1,*k1-1,val));
 }
-int EZGrid_LLGetValue(TGrid *Grid,float Lat,float Lon,int K0,int K1,float *Value) {
+int EZGrid_LLGetValue(TGrid* restrict const Grid,float Lat,float Lon,int K0,int K1,float* restrict Value) {
 
    float i,j;
 
@@ -1408,9 +1409,9 @@ int EZGrid_LLGetValue(TGrid *Grid,float Lat,float Lon,int K0,int K1,float *Value
  *----------------------------------------------------------------------------
 */
 wordint f77name(ezgrid_llgetuvvalue)(wordint *gdidu,wordint *gdidv,ftnfloat *lat,ftnfloat *lon,wordint *k0,wordint *k1,ftnfloat *uu,ftnfloat *vv) {
-   return(EZGrid_LLGetUVValue(GridCache[*gdidu],GridCache[*gdidv],*lat,*lon,*k0,*k1,uu,vv));
+   return(EZGrid_LLGetUVValue(GridCache[*gdidu],GridCache[*gdidv],*lat,*lon,*k0-1,*k1-1,uu,vv));
 }
-int EZGrid_LLGetUVValue(TGrid *GridU,TGrid *GridV,float Lat,float Lon,int K0,int K1,float *UU,float *VV) {
+int EZGrid_LLGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,float Lat,float Lon,int K0,int K1,float* restrict UU,float* restrict VV) {
 
    float i,j;
 
@@ -1450,9 +1451,9 @@ int EZGrid_LLGetUVValue(TGrid *GridU,TGrid *GridV,float Lat,float Lon,int K0,int
  *----------------------------------------------------------------------------
 */
 wordint f77name(ezgrid_ijgetvalue)(wordint *gdid,ftnfloat *i,ftnfloat *j,wordint *k0,wordint *k1,ftnfloat *val) {
-   return(EZGrid_IJGetValue(GridCache[*gdid],*i,*j,*k0,*k1,val));
+   return(EZGrid_IJGetValue(GridCache[*gdid],*i-1,*j-1,*k0-1,*k1-1,val));
 }
-int EZGrid_IJGetValue(TGrid *Grid,float I,float J,int K0,int K1,float *Value) {
+int EZGrid_IJGetValue(TGrid* restrict const Grid,float I,float J,int K0,int K1,float* restrict Value) {
 
    TGridTile *tile[4];
    int        k,n,ik=0,in[4],jn[4];
@@ -1531,12 +1532,12 @@ int EZGrid_IJGetValue(TGrid *Grid,float I,float J,int K0,int K1,float *Value) {
  *----------------------------------------------------------------------------
 */
 wordint f77name(ezgrid_ijgetuvvalue)(wordint *gdidu,wordint *gdidv,ftnfloat *i,ftnfloat *j,wordint *k0,wordint *k1,ftnfloat *uu,ftnfloat *vv) {
-   return(EZGrid_IJGetUVValue(GridCache[*gdidu],GridCache[*gdidv],*i,*j,*k0,*k1,uu,vv));
+   return(EZGrid_IJGetUVValue(GridCache[*gdidu],GridCache[*gdidv],*i-1,*j-1,*k0-1,*k1-1,uu,vv));
 }
-int EZGrid_IJGetUVValue(TGrid *GridU,TGrid *GridV,float I,float J,int K0,int K1,float *UU,float *VV) {
+int EZGrid_IJGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,float I,float J,int K0,int K1,float *UU,float* restrict VV) {
 
    TGridTile *tile[2][4];
-   float      i,j,d,v;
+   float      d,v;
    int        ik=0,k,n,in[4],jn[4];
 
    if (!GridU || !GridV) {
@@ -1621,9 +1622,9 @@ int EZGrid_IJGetUVValue(TGrid *GridU,TGrid *GridV,float I,float J,int K0,int K1,
  *----------------------------------------------------------------------------
 */
 wordint f77name(ezgrid_getvalue)(wordint *gdid,wordint *i,wordint *j,wordint *k0,wordint *k1,ftnfloat *val) {
-   return(EZGrid_GetValue(GridCache[*gdid],*i,*j,*k0,*k1,val));
+   return(EZGrid_GetValue(GridCache[*gdid],*i-1,*j-1,*k0-1,*k1-1,val));
 }
-int EZGrid_GetValue(TGrid *Grid,int I,int J,int K0,int K1,float *Value) {
+int EZGrid_GetValue(TGrid* restrict const Grid,int I,int J,int K0,int K1,float* restrict Value) {
 
    TGridTile *tile;
    int        k,ik=0;
@@ -1679,29 +1680,38 @@ int EZGrid_GetValue(TGrid *Grid,int I,int J,int K0,int K1,float *Value) {
  *----------------------------------------------------------------------------
 */
 wordint f77name(ezgrid_getvalues)(wordint *gdid,wordint *nb,ftnfloat *i,ftnfloat *j,ftnfloat *k,ftnfloat *val) {
-   return(EZGrid_GetValues(GridCache[*gdid],*nb,i,j,k,val));
+   return(EZGrid_GetValues(GridCache[*gdid],-(*nb),i,j,k,val));
 }
-int EZGrid_GetValues(TGrid *Grid,int Nb,float *I,float *J,float *K,float *Value) {
+int EZGrid_GetValues(TGrid* restrict const Grid,int Nb,float* restrict const I,float* restrict const J,float* restrict const K,float* restrict Value) {
 
    TGridTile *tile;
-   int        n,k;
+   int        n,i,j,k;
 
    if (!Grid) {
       fprintf(stderr,"(ERROR) EZGrid_GetValue: Invalid grid\n");
       return(0);
    }
 
-   for(n=0;n<Nb;n++) {
-      k=Grid->H.NK>1?K[n]:0;
+   for(n=0;n<ABS(Nb);n++) {
+
+      if (Nb<1) {
+         i=I[n]-1;
+         j=J[n]-1;
+         k=Grid->H.NK>1?K[n]-1:1;
+      } else {
+         i=I[n];
+         j=J[n];
+         k=Grid->H.NK>1?K[n]:0;
+      }
 
       /*Check inclusion in master grid limits*/
-      if (I[n]<0 || J[n]<0 || k<0 || I[n]>=Grid->H.NI || J[n]>=Grid->H.NJ || k>=Grid->H.NK) {
+      if (i<0 || j<0 || k<0 || i>=Grid->H.NI || j>=Grid->H.NJ || k>=Grid->H.NK) {
          fprintf(stderr,"(WARNING) EZGrid_GetValue: Coordinates out of range\n");
          return(0);
       }
 
       if (Grid->NbTiles>1) {
-         if (!(tile=EZGrid_TileFind(Grid,I[n],J[n],k))) {
+         if (!(tile=EZGrid_TileFind(Grid,i,j,k))) {
             return(0);
          }
       } else {
@@ -1710,8 +1720,50 @@ int EZGrid_GetValues(TGrid *Grid,int Nb,float *I,float *J,float *K,float *Value)
             EZGrid_TileGetData(Grid,tile,k);
          }
       }
-      Value[n]=EZGrid_TileValue(tile,I[n],J[n],k);
+      Value[n]=EZGrid_TileValue(tile,i,j,k);
    }
+
+   return(1);
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <EZGrid_GetArray>
+ * Creation : Janvier 2008 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Obtenir un pointeru sur les valeurs
+ *
+ * Parametres :
+ *   <Grid>       : Grille
+ *   <K>          : Niveau
+ *   <Value>      : Valeurs
+ *
+ * Retour:
+ *   <int>       : Code d'erreur (0=erreur, 1=ok)
+ *
+ * Remarques :
+ *
+ *   - On effectue aucune interpolation
+ *----------------------------------------------------------------------------
+*/
+int f77name(ezgrid_getarray)(wordint *gdid,wordint *k,ftnfloat *vals) {
+   return(EZGrid_GetArray(GridCache[*gdid],*k-1,vals));
+}
+int EZGrid_GetArray(TGrid* restrict const Grid,int K,float* restrict Value) {
+
+   float *data;
+
+   if (!Grid) {
+      fprintf(stderr,"(ERROR) EZGrid_IJGetValues: Invalid grid\n");
+      return(0);
+   }
+
+   /*Check inclusion in master grid limits*/
+   if (K<0 || K>=Grid->H.NK) {
+      fprintf(stderr,"(WARNING) EZGrid_IJGetValues: Coordinates out of range\n");
+      return(0);
+   }
+   data=EZGrid_TileBurnAll(Grid,K);
+   memcpy(Value,data,Grid->H.NI*Grid->H.NI*sizeof(float));
 
    return(1);
 }
@@ -1741,9 +1793,9 @@ int EZGrid_GetValues(TGrid *Grid,int Nb,float *I,float *J,float *K,float *Value)
  *----------------------------------------------------------------------------
 */
 wordint f77name(ezgrid_getrange)(wordint *gdid,wordint *i0,wordint *j0,wordint *k0,wordint *i1,wordint *j1,wordint *k1,ftnfloat *val) {
-   return(EZGrid_GetRange(GridCache[*gdid],*i0,*j0,*k0,*i1,*j1,*k1,val));
+   return(EZGrid_GetRange(GridCache[*gdid],*i0-1,*j0-1,*k0-1,*i1-1,*j1-1,*k1-1,val));
 }
-int EZGrid_GetRange(TGrid *Grid,int I0,int J0,int K0,int I1,int J1,int K1,float *Value) {
+int EZGrid_GetRange(TGrid* restrict const Grid,int I0,int J0,int K0,int I1,int J1,int K1,float* restrict Value) {
 
    TGridTile *tile;
    int        ik=0;

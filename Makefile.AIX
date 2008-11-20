@@ -1,0 +1,6 @@
+CC          = xlc
+AR          = ar rv
+LD          = ld -shared -x
+
+CCOPTIONS   = -O2 -v -std=c99 -qkeyword=restrict  
+CDEBUGFLAGS =

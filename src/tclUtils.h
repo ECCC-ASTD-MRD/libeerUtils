@@ -33,6 +33,8 @@
 #ifndef _tclUtils_h
 #define _tclUtils_h
 
+#ifndef _AIX_
+
 #include <tcl.h>
 
 int   TclY_Get0IntFromObj(Tcl_Interp *Interp,Tcl_Obj *Obj,int *Var);
@@ -45,5 +47,7 @@ void* TclY_HashPut(Tcl_Interp *Interp,Tcl_HashTable *Table,char *Name,unsigned i
 void* TclY_HashReplace(Tcl_Interp *Interp,Tcl_HashTable *Table,char *Name,void *Data);
 int   TclY_HashSet(Tcl_Interp *Interp,Tcl_HashTable *Table,char *Name,void *Data);
 int   TclY_ListObjFind(Tcl_Interp *Interp,Tcl_Obj *List,Tcl_Obj *Item);
+
+#endif
 
 #endif

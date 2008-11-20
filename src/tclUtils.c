@@ -31,6 +31,8 @@
  *=========================================================
  */
 
+#ifndef _AIX_
+
 #include <malloc.h>
 #include <string.h>
 
@@ -209,3 +211,5 @@ void* TclY_HashDel(Tcl_HashTable *Table,char *Name) {
    }
    return(item);
 }
+
+#endif
