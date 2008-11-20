@@ -68,39 +68,34 @@ typedef struct TGrid {
    TGridTile    *Tiles;              /*Array of tiles*/
 } TGrid;
 
-TGrid* EZGrid_CacheFind(TGrid* restrict const Grid);
-int    EZGrid_CacheAdd(TGrid* restrict const Grid);
-int    EZGrid_CacheDel(TGrid* restrict const Grid);
-int    EZGrid_CacheIdx(TGrid* restrict const Grid);
-
 int    EZGrid_CopyDesc(const int FIdTo,TGrid* restrict const Grid);
 TGrid *EZGrid_New();
 int    EZGrid_Free(TGrid* restrict const Grid);
 TGrid* EZGrid_Get(TGrid* restrict const Grid);
 TGrid* EZGrid_Read(int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2,int Incr);
 TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr);
-int    EZGrid_Load(TGrid* restrict const Grid,int I0,int J0,int K0,int I1,int J1,int K1);
-int    EZGrid_GetLevelNb(TGrid* restrict const Grid);
-int    EZGrid_GetLevels(TGrid* restrict const Grid,float* restrict Levels,int* restrict Type);
+int    EZGrid_Load(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1,int J1,int K1);
+int    EZGrid_GetLevelNb(const TGrid* restrict const Grid);
+int    EZGrid_GetLevels(const TGrid* restrict const Grid,float* restrict Levels,int* restrict Type);
 
 void   EZGrid_Factor(TGrid* restrict Grid,float Factor);
-int    EZGrid_GetValue(TGrid* restrict const Grid,int I,int J,int K0,int K1,float* restrict Value);
-int    EZGrid_GetValues(TGrid* restrict const Grid,int Nb,float* restrict const I,float* restrict const J,float* restrict const K,float* restrict Value);
+int    EZGrid_GetValue(const TGrid* restrict const Grid,int I,int J,int K0,int K1,float* restrict Value);
+int    EZGrid_GetValues(const TGrid* restrict const Grid,int Nb,float* restrict const I,float* restrict const J,float* restrict const K,float* restrict Value);
 int    EZGrid_IJGetValue(TGrid* restrict const Grid,float I,float J,int K0,int K1,float* restrict Value);
 int    EZGrid_IJGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,float I,float J,int K0,int K1,float *UU,float* restrict VV);
 int    EZGrid_LLGetValue(TGrid* restrict const Grid,float Lat,float Lon,int K0,int K1,float* restrict Value);
 int    EZGrid_LLGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,float Lat,float Lon,int K0,int K1,float* restrict UU,float* restrict VV);
 int    EZGrid_GetArray(TGrid* restrict const Grid,int K,float* restrict Value);
-int    EZGrid_GetRange(TGrid* restrict const Grid,int I0,int J0,int K0,int I1,int J1,int K1,float* restrict Value);
+int    EZGrid_GetRange(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1,int J1,int K1,float* restrict Value);
 
 int    EZGrid_Tile(int FIdTo,int NI, int NJ,int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2);
 int    EZGrid_UnTile(int FIdTo,int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2);
 
-TGrid *EZGrid_InterpTime(TGrid* restrict const Grid0,TGrid* restrict const Grid1,int Date);
-TGrid *EZGrid_Interp(TGrid* restrict const Grid0,TGrid* restrict const Grid1,const float Factor0,const float Factor1);
+TGrid *EZGrid_InterpTime(const TGrid* restrict const Grid0,const TGrid* restrict const Grid1,int Date);
+TGrid *EZGrid_Interp(TGrid* restrict const Grid0,TGrid* restrict const Grid1,float Factor0,float Factor1);
 
-float* EZGrid_TileBurn(TGrid* restrict Grid,TGridTile* restrict Tile,const int K);
-float* EZGrid_TileBurnAll(TGrid* restrict Grid,const int K);
+float* EZGrid_TileBurn(TGrid* restrict const Grid,TGridTile* restrict const Tile,int K);
+float* EZGrid_TileBurnAll(TGrid* restrict const Grid,int K);
 
 void EZLock_RPNFile();
 void EZUnLock_RPNFile();
