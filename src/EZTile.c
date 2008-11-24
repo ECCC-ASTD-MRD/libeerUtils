@@ -73,7 +73,7 @@ int cs_fnomid() {
       /*Patch pour rmn008 (Unit 6 = bad)*/
       if (FGFDT[id].iun==0) {
          id++;
-         if (id==6) id=32767;
+         if (id==6) id=999;
          break;
       }
    }

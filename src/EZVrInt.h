@@ -45,7 +45,6 @@
 #define _EZVrInt_h
 
 #include "eerUtils.h"
-#include "rpnmacros.h"
 
 /* Interpolation */
 #define NEAREST_NEIGHBOUR 0x001
