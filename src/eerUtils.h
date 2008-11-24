@@ -205,6 +205,12 @@ extern int f77name(sort)   (ftnfloat *work,wordint *n);
 extern int f77name(fd1)    (ftnfloat *gd1,ftnfloat *f,ftnfloat *h);
 extern int f77name(fdm)    (ftnfloat *gdm,ftnfloat *f,ftnfloat *h,wordint *m);
 extern int f77name(int1d1) (ftnfloat *fi,ftnfloat *f,ftnfloat *xi,ftnfloat *x,ftnfloat *fx,ftnfloat *h,wordint *m,wordint *mi,ftnfloat *cmu1,ftnfloat *c1,ftnfloat *clmdam,ftnfloat *cm,ftnfloat *a,ftnfloat *c,ftnfloat *d);
+extern int f77name(xyfll)  (ftnfloat *x,ftnfloat *y,ftnfloat *dlat,ftnfloat *dlon,ftnfloat *d60,ftnfloat *dgrw,wordint *nhem);
+extern int f77name(llfxy)  (ftnfloat *dlat,ftnfloat *dlon,ftnfloat *x,ftnfloat *y,ftnfloat *d60,ftnfloat *dgrw,wordint *nhem);
+extern int f77name(cigaxg) (char *igtyp,ftnfloat *xg1,ftnfloat *xg2,ftnfloat *xg3,ftnfloat *xg4,wordint *ig1,wordint *ig2,wordint *ig3,wordint *ig4);
+extern int f77name(cxgaig) (char *igtyp,wordint *ig1,wordint *ig2,wordint *ig3,wordint *ig4,ftnfloat *xg1,ftnfloat *xg2,ftnfloat *xg3,ftnfloat *xg4);
+extern int f77name(mscale) (ftnfloat *r,ftnfloat *d60,ftnfloat *pi,ftnfloat *pj,wordint *ni,wordint *nj);
+extern int f77name(wkoffit)(char *filename);
 
 extern int c_fnom();
 extern int c_fclos();
@@ -233,5 +239,6 @@ extern int c_gdll();
 extern int c_gdllsval();
 extern int c_gdllwdval();
 extern int c_gdllvval();
+extern int c_gdaxes();
 
 #endif
