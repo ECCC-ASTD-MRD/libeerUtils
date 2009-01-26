@@ -223,6 +223,7 @@ extern int c_fstluk();
 extern int c_fstinl();
 extern int c_fstopc();
 
+/*RPN external EZscint functions*/
 extern int c_ezqkdef();
 extern int c_ezgdef_fmem();
 extern int c_ezdefset();
@@ -240,5 +241,19 @@ extern int c_gdllsval();
 extern int c_gdllwdval();
 extern int c_gdllvval();
 extern int c_gdaxes();
+
+/*RPN external BURP functions*/
+extern int c_mrfopc();
+extern int c_mrfopn();
+extern int c_mrfmxl();
+extern int c_mrfcls();
+extern int c_mrfloc();
+extern int c_mrfget();
+extern int c_mrbhdr();
+extern int c_mrbloc();
+extern int c_mrbprm();
+extern int c_mrbxtr();
+extern int c_mrbcvt();
+extern int c_mrbdcl();
 
 #endif
