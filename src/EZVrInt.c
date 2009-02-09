@@ -32,17 +32,6 @@
  *    Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  *    Boston, MA 02111-1307, USA.
  *
- * Modification:
- *
- *   Nom         : - J.P. Gauthier
- *   Date        : - 14 mai 2003
- *   Description : - version 1.0rc1 : look more like ezcint
- *
- *
- *   Nom         : - J.P. Gauthier
- *   Date        : - 1 Septembre 2004
- *   Description : - version 1.0rc2 : Protection of the previous gird from overwriting
- *
  *==============================================================================
  */
 
@@ -62,9 +51,7 @@
 
 static viInterp *FInterp;
 
-/*
- * 1D Interpolation functions
- */
+/* 1D Interpolation functions */
 extern void f77name (interp1d_findpos) ();
 extern void f77name (interp1d_nearestneighbour) ();
 extern void f77name (interp1d_linear) ();
@@ -72,48 +59,37 @@ extern void f77name (interp1d_cubicwithderivs) ();
 extern void f77name (interp1d_cubiclagrange) ();
 extern void f77name (extrap1d_lapserate) ();
 
-/*
- * Convertion function
- */
+/* Convertion function */
 extern int f77name (hybrid_to_pres) ();
 
-/*
- * Prototypes
- */
-int  vigetLnP (struct sVerticalGrid *, float *, int, int, float *, float *);
-void vigetMASL (struct sVerticalGrid *, float *, int, int);
-void vicleanGrid (viInterp *);
+/* Prototypes */
+int vigetLnP (VerticalGrid *Grid, float *LnP,int NI,int NJ);
+int vigetMASL(VerticalGrid *Grid,float *Height,int NI,int NJ);
+void vicleanGrid (viInterp *Interp);
 
-/*
- * Fortran Interface
- */
-wordint f77name (videfine) () {
+/* Fortran Interface */
+wordint f77name(videfine)(void) {
    c_videfine ();
    return(1);
 }
-wordint f77name (viundefine) () {
+wordint f77name(viundefine)(void) {
    return(c_viundefine(FInterp));
 }
 
-wordint f77name (viqkdef) (wordint *numLevel, wordint *gridType, ftnfloat *levelList,
-                           ftnfloat *top, ftnfloat *pRef, ftnfloat *rCoef,
-                           ftnfloat *gz) {
-   return c_viqkdef (FInterp,*numLevel, *gridType, levelList, *top, *pRef, *rCoef, gz);
+wordint f77name(viqkdef)(wordint *numLevel,wordint *gridType,ftnfloat *levelList,ftnfloat *top,ftnfloat *pRef,ftnfloat *rCoef,ftnfloat *zcoord) {
+   return c_viqkdef(FInterp,*numLevel,*gridType,levelList,*top,*pRef,*rCoef,zcoord);
 }
 
-
-wordint f77name (videfset) (wordint *ni, wordint *nj, wordint *idGrdDest,
-                           wordint *idGrdSrc, ftnfloat *surf, ftnfloat *top) {
-   return c_videfset (FInterp,*ni, *nj, *idGrdDest, *idGrdSrc, surf, top);
+wordint f77name(videfset)(wordint *ni,wordint *nj,wordint *idGrdDest,wordint *idGrdSrc) {
+   return c_videfset(FInterp,*ni,*nj,*idGrdDest,*idGrdSrc);
 }
 
-wordint f77name (visetopt) (wordint *option, wordint *value) {
-   return c_visetopt(FInterp,(const char *) option, (const char *)value);
+wordint f77name(visetopt)(wordint *option,wordint *value) {
+   return c_visetopt(FInterp,(const char*)option,(const char*)value);
 }
 
-wordint f77name (visint) (ftnfloat *stateOut, ftnfloat *stateIn, ftnfloat *derivOut,
-                          ftnfloat *derivIn, ftnfloat *extrapGuideDown, ftnfloat *extrapGuideUp) {
-   return c_visint (FInterp,stateOut, stateIn, derivOut, derivIn, *extrapGuideDown, *extrapGuideUp);
+wordint f77name (visint)(ftnfloat *stateOut,ftnfloat *stateIn,ftnfloat *derivOut,ftnfloat *derivIn,ftnfloat *extrapGuideDown,ftnfloat *extrapGuideUp) {
+   return c_visint(FInterp,stateOut,stateIn,derivOut,derivIn,*extrapGuideDown,*extrapGuideUp);
 }
 
 /*----------------------------------------------------------------------------
@@ -133,7 +109,7 @@ wordint f77name (visint) (ftnfloat *stateOut, ftnfloat *stateIn, ftnfloat *deriv
  *                  (NOT REQUIRED FOR OTHER TYPE)
  *  <pRef>        : reference pressure (mb)
  *  <rCoef>       : known as 'expansion co-efficient'
- *  <gz>          : Geopotentiel
+ *  <zcoord>      : Geopotential for meters coord or surface pressure for pressure coords
  *
  * Retour         : id of the grid.
  *
@@ -154,10 +130,9 @@ viInterp* c_videfine (void) {
 
    interp=(viInterp*)malloc(sizeof(viInterp));
 
-   memset(interp->gGridArray,0x0,GRIDLENGTH*sizeof(VerticalGrid));
+   memset(interp->gGridArray,0x0,VIGRIDLENGTH*sizeof(VerticalGrid));
    interp->gGrdSrc_p=NULL;
    interp->gGrdDest_p=NULL;
-   interp->gGridSurf_p=NULL;
    interp->gCubeSrc_p=NULL;
    interp->gCubeDest_p=NULL;
    interp->gInterpIndex_p=NULL;
@@ -177,7 +152,6 @@ int c_viundefine(viInterp *interp) {
    if (interp) {
       if (interp->gGrdSrc_p)      free(interp->gGrdSrc_p);
       if (interp->gGrdDest_p)     free(interp->gGrdDest_p);
-      if (interp->gGridSurf_p)    free(interp->gGridSurf_p);
       if (interp->gCubeSrc_p)     free(interp->gCubeSrc_p);
       if (interp->gCubeDest_p)    free(interp->gCubeDest_p);
       if (interp->gInterpIndex_p) free(interp->gInterpIndex_p);
@@ -188,24 +162,24 @@ int c_viundefine(viInterp *interp) {
    return(1);
 }
 
-int c_viqkdef (viInterp *interp,const int numLevel, const int gridType, float *levelList,
-               float top, float pRef, float rCoef, float *gz) {
-   int        i;
+int c_viqkdef (viInterp *interp,const int numLevel,const int gridType,float *levelList,float top,float pRef,float rCoef,float *zcoord) {
 
-   if (!levelList || numLevel <= 0)
-      return -1;
+   int i;
+
+   if (!levelList || numLevel<=0)
+      return(0);
 
    /*On verifie si cette grille existe deja */
-   for (i = 0; i < GRIDLENGTH; i++) {
-      if (interp->gGridArray[i].numLevels == numLevel && interp->gGridArray[i].gridType == gridType) {
-         if (memcmp(interp->gGridArray[i].level_p, levelList, numLevel * sizeof (float)) == 0) {
-            interp->gGridArray[i].gz_p     = gz;
+   for (i=0;i<VIGRIDLENGTH;i++) {
+      if (interp->gGridArray[i].numLevels==numLevel && interp->gGridArray[i].gridType==gridType) {
+         if (memcmp(interp->gGridArray[i].level_p,levelList,numLevel*sizeof(float))==0) {
+            interp->gGridArray[i].z_p      = zcoord;
             interp->gGridArray[i].top      = top;
             interp->gGridArray[i].pRef     = pRef;
             interp->gGridArray[i].rCoef    = rCoef;
-            if (interp->gViOption & VERBOSE) printf ("c_viqkdef: Grid already defined (%i)\n", i);
+            if (interp->gViOption & VIVERBOSE) printf ("(INFO) c_viqkdef: Grid already defined (%i)\n", i);
             interp->last=i;
-            return i;
+            return(i);
          }
       }
    }
@@ -213,13 +187,13 @@ int c_viqkdef (viInterp *interp,const int numLevel, const int gridType, float *l
    /* Select a new grid form the maximum 10 but do not use the previous one*/
    /* in case we are doing single point interpolation */
 
-   interp->index=(interp->index+1)%GRIDLENGTH;
+   interp->index=(interp->index+1)%VIGRIDLENGTH;
    if (interp->index==interp->last) {
-      interp->index=(interp->index+1)%GRIDLENGTH;
+      interp->index=(interp->index+1)%VIGRIDLENGTH;
    }
    interp->last=interp->index;
 
-   if (interp->gViOption & VERBOSE) printf ("c_viqkdef: New grid (%i)\n", interp->index);
+   if (interp->gViOption & VIVERBOSE) printf ("(INFO) c_viqkdef: New grid (%i)\n", interp->index);
    if (interp->gGridArray[interp->index].level_p != NULL) {
       free (interp->gGridArray[interp->index].level_p);
       interp->gGridArray[interp->index].level_p = NULL;
@@ -227,21 +201,26 @@ int c_viqkdef (viInterp *interp,const int numLevel, const int gridType, float *l
 
    interp->gGridArray[interp->index].level_p = (float *) malloc (numLevel * sizeof (float));
    if (!interp->gGridArray[interp->index].level_p) {
-      fprintf (stderr, "c_viqkdef: malloc failed for gGridArray[%d].level_p\n", interp->index);
+      fprintf (stderr, "(ERROR) c_viqkdef: malloc failed for gGridArray[%d].level_p\n", interp->index);
       return -1;
    }
-   memcpy (interp->gGridArray[interp->index].level_p, levelList, numLevel * sizeof (float));
+   memcpy(interp->gGridArray[interp->index].level_p, levelList, numLevel * sizeof (float));
 
    interp->gGridArray[interp->index].numLevels = numLevel;
    interp->gGridArray[interp->index].gridType  = gridType;
-   interp->gGridArray[interp->index].gz_p      = gz;
+   interp->gGridArray[interp->index].z_p       = zcoord;
    interp->gGridArray[interp->index].top       = top;
    interp->gGridArray[interp->index].pRef      = pRef;
    interp->gGridArray[interp->index].rCoef     = rCoef;
 
    if (gridType == LVL_GALCHEN) {
       if (top == 0) {
-         fprintf (stderr, "c_viqkdef: Height at the top of the atmosphere is needed for Gal-Chen interpolation\n");
+         fprintf(stderr, "(ERROR) c_viqkdef: Height at the top of the atmosphere is needed for Gal-Chen interpolation\n");
+         return -1;
+      }
+   } else if (gridType == LVL_ETA) {
+      if (top == 0) {
+         fprintf(stderr, "(ERROR) c_viqkdef: Pressure at the top of the atmosphere is needed for Eta interpolation\n");
          return -1;
       }
    } else if (gridType != LVL_HYBRID) {
@@ -262,10 +241,8 @@ int c_viqkdef (viInterp *interp,const int numLevel, const int gridType, float *l
  *  <nj>          : other dimension of the horizontal grid in the interpolation
  *  <idGrdDest>   : id of the vertical grid of output points: obtained from c_viqkdef
  *  <idGrdSrc>    : id of the vertical grid of input points: obtained from c_viqkdef
- *  <surf>        : surface pressure at each horiz location
- *  <top>         : ceiling pressure for each horiz point (required only for eta units)
  *
- * Retour         :  -1 : Error
+ * Retour         :  0 : Error
  *
  * Remarques : It is assumed that the vertical levels of the grid 'idGrdSrc' are in
  *             either ascending or descending order.
@@ -281,50 +258,39 @@ int c_viqkdef (viInterp *interp,const int numLevel, const int gridType, float *l
  *    Description :
  *----------------------------------------------------------------------------
 */
-
-int c_videfset (viInterp *interp,const int ni, const int nj, int idGrdDest, int idGrdSrc,
-                float *surf, float *top) {
+int c_videfset(viInterp *interp,const int ni,const int nj,int idGrdDest,int idGrdSrc) {
 
    int numInterpSets, src_ijDim, dst_ijDim;
 #if defined(_AIX)
    fpflag_t flag;
 #endif
-
-   if (interp->gGrdSrc_p == &interp->gGridArray[idGrdSrc] && interp->gGrdDest_p == &interp->gGridArray[idGrdDest]) {
-      if (interp->gViOption & VERBOSE) printf ("c_videfset: Grids are the same\n");
-      if (surf) {
-         if (memcmp (interp->gGridSurf_p,surf,ni*nj*sizeof (float))==0) {
-            if (interp->gViOption & VERBOSE) printf ("c_videfset: Surface pressure are the same hence, same gridset\n");
-            return 0;
-         }
-      } else {
-         if (interp->gViOption & VERBOSE)  printf ("c_videfset: Same gridset\n");
-         return 0;
-      }
+   if (idGrdDest < 0 || idGrdDest > VIGRIDLENGTH || idGrdSrc < 0 || idGrdSrc > VIGRIDLENGTH) {
+      fprintf (stderr,"(ERROR) c_videfset: Invalid grid ID passed to c_videfset\n");
+      return(0);
    }
 
-   if (interp->gViOption & VERBOSE) printf ("c_videfset: New gridset\n");
-
-   if (idGrdDest < 0 || idGrdDest > GRIDLENGTH || idGrdSrc < 0 || idGrdSrc > GRIDLENGTH) {
-      fprintf (stderr, "c_videfset: Invalid grid ID passed to c_videfset\n");
-      return -1;
+   if (interp->gGrdSrc_p==&interp->gGridArray[idGrdSrc] && interp->gGrdDest_p==&interp->gGridArray[idGrdDest]) {
+      if (interp->gViOption & VIVERBOSE)  printf ("(INFO) c_videfset: Same gridset\n");
+      return(1);
    }
+
+   if (interp->gViOption & VIVERBOSE) printf ("(INFO) c_videfset: New gridset\n");
 
    interp->gGrdSrc_p = &interp->gGridArray[idGrdSrc];
    interp->gGrdDest_p = &interp->gGridArray[idGrdDest];
 
-   if (surf) {
-      if (interp->gGridSurf_p) free(interp->gGridSurf_p);
-      interp->gGridSurf_p= (float*)malloc(ni*nj*sizeof(float));
-      memcpy(interp->gGridSurf_p,surf,ni*nj*sizeof(float));
+   if (!interp->gGrdSrc_p || !interp->gGrdDest_p) {
+      fprintf(stderr,"(ERROR) c_videfset: Grid does not exists");
+      return(0);
    }
 
-   if (interp->gGrdSrc_p->numLevels==interp->gGrdDest_p->numLevels && memcmp (interp->gGrdSrc_p->level_p, interp->gGrdDest_p->level_p, interp->gGrdSrc_p->numLevels * sizeof (float)) == 0) {
-      if (interp->gViOption & VERBOSE) printf ("c_videfset: Levels are the same\n");
-      return 0;
+   if (interp->gGrdSrc_p->numLevels==interp->gGrdDest_p->numLevels &&
+      memcmp(interp->gGrdSrc_p->level_p,interp->gGrdDest_p->level_p,interp->gGrdSrc_p->numLevels*sizeof(float))==0) {
+      if (interp->gViOption & VIVERBOSE) printf ("(INFO) c_videfset: Levels are the same\n");
+      return(1);
    }
 
-   if (interp->gViOption & CHECKFLOAT) {
+   if (interp->gViOption & VICHECKFLOAT) {
       /* clear exception flags (plateforme specific) */
 #if defined(__GNUC__) || defined(IRIX)
       feclearexcept(FE_ALL_EXCEPT);
@@ -333,98 +299,84 @@ int c_videfset (viInterp *interp,const int ni, const int nj, int idGrdDest, int 
 #endif
    }
 
-   vicleanGrid (interp);
+   vicleanGrid(interp);
    interp->gNi = ni;
    interp->gNj = nj;
 
-   /*
-    * Create cubes of vertical levels ...
-    */
-   interp->gCubeSrc_p = (float *) malloc (ni * nj * interp->gGrdSrc_p->numLevels * sizeof (float));
+   /* Create cubes of vertical levels ... */
+   interp->gCubeSrc_p=(float*)malloc(ni*nj*interp->gGrdSrc_p->numLevels*sizeof(float));
    if (!interp->gCubeSrc_p) {
-      fprintf (stderr, "c_videfset: malloc failed for gCubeSrc_p\n");
-      return -1;
+      fprintf(stderr,"(ERROR) c_videfset: malloc failed for gCubeSrc_p\n");
+      return(0);
    }
-   interp->gCubeDest_p = (float *) malloc (ni * nj * interp->gGrdDest_p->numLevels * sizeof (float));
+   interp->gCubeDest_p=(float*)malloc(ni*nj*interp->gGrdDest_p->numLevels*sizeof (float));
    if (!interp->gCubeSrc_p) {
-      fprintf (stderr, "c_videfset: malloc failed for gCubeDest_p\n");
-      return -1;
+      fprintf(stderr,"(ERROR) c_videfset: malloc failed for gCubeDest_p\n");
+      return(0);
    }
 
-   /*
-    * ... and convert them to ...
-    */
-
-   if (!interp->gGrdSrc_p || !interp->gGrdDest_p) {
-      fprintf (stderr, "Grid does not exists");
-      return -1;
-   }
+   /* and convert them to ... */
 
    if ((interp->gGrdDest_p->gridType == LVL_GALCHEN) || (interp->gGrdDest_p->gridType == LVL_MASL) ||
        (interp->gGrdDest_p->gridType == LVL_MAGL) || (interp->gGrdDest_p->gridType == LVL_UNDEF) ||
        (interp->gGrdSrc_p->gridType == LVL_GALCHEN) || (interp->gGrdSrc_p->gridType == LVL_MASL) ||
        (interp->gGrdSrc_p->gridType == LVL_MAGL) || (interp->gGrdSrc_p->gridType == LVL_UNDEF)) {
-      /*
-       * ... height above sea
-       */
-      vigetMASL (interp->gGrdSrc_p, interp->gCubeSrc_p, ni, nj);
-      vigetMASL (interp->gGrdDest_p, interp->gCubeDest_p, ni, nj);
-   } else {
-      /*
-       * ... or ln(P)
-       */
-      if (vigetLnP (interp->gGrdSrc_p, interp->gCubeSrc_p, ni, nj, surf, top) < 0) {
-         /*
-          * if the grid type is not implemented
-          */
-         return -1;
+
+      /* ... height above sea  */
+      if (!vigetMASL(interp->gGrdSrc_p,interp->gCubeSrc_p,ni,nj)) {
+         return(0);
       }
-      if (vigetLnP (interp->gGrdDest_p, interp->gCubeDest_p, ni, nj, surf, top) < 0) {
-         /*
-          * if the grid type is not implemented
-          */
-         return -1;
+      if (!vigetMASL(interp->gGrdDest_p,interp->gCubeDest_p,ni,nj)) {
+         return(0);
+      }
+   } else {
+      /* ... or ln(P) */
+      if (!vigetLnP(interp->gGrdSrc_p,interp->gCubeSrc_p,ni,nj)) {
+         return(0);
+      }
+      if (!vigetLnP(interp->gGrdDest_p,interp->gCubeDest_p,ni,nj)) {
+         return(0);
       }
    }
 
-   if (interp->gViOption & CHECKFLOAT) {
+   if (interp->gViOption & VICHECKFLOAT) {
    /* Check for exception in the conversion (plateforme specific) */
 #if defined(__GNUC__)  || defined(SGI)
       if (fetestexcept(FE_DIVBYZERO)) {
-         fprintf (stderr, "WARNING : c_videfset: Grid conversion gives an infinity (DIVBYZERO)\n");
+         fprintf (stderr, "(WARNING) c_videfset: Grid conversion gives an infinity (DIVBYZERO)\n");
       }
       if (fetestexcept(FE_OVERFLOW)) {
-         fprintf (stderr, "WARNING : c_videfset: Grid conversion gives an overflow\n");
+         fprintf (stderr, "(WARNING) c_videfset: Grid conversion gives an overflow\n");
       }
       if (fetestexcept(FE_UNDERFLOW)) {
-         fprintf (stderr, "WARNING : c_videfset: Grid conversion gives an underflow\n");
+         fprintf (stderr, "(WARNING) c_videfset: Grid conversion gives an underflow\n");
       }
       if (fetestexcept(FE_INVALID)) {
-         fprintf (stderr, "WARNING : c_videfset: Grid conversion gives a NaN (not a number)\n");
+         fprintf (stderr, "(WARNING) c_videfset: Grid conversion gives a NaN (not a number)\n");
       }
 #elif defined(_AIX)
       flag = fp_read_flag();
       if (flag & FP_INVALID) {
-         fprintf (stderr, "WARNING : c_videfset: Grid conversion gives a NaN (not a number)\n");
+         fprintf (stderr, "(WARNING) c_videfset: Grid conversion gives a NaN (not a number)\n");
       }
       if (flag & FP_OVERFLOW) {
-         fprintf (stderr, "WARNING : c_videfset: Grid conversion gives an overflow\n");
+         fprintf (stderr, "(WARNING) c_videfset: Grid conversion gives an overflow\n");
       }
       if (flag & FP_UNDERFLOW) {
-         fprintf (stderr, "WARNING : c_videfset: Grid conversion gives an underflow\n");
+         fprintf (stderr, "(WARNING) c_videfset: Grid conversion gives an underflow\n");
       }
       if (flag & FP_DIV_BY_ZERO) {
-         fprintf (stderr, "WARNING : c_videfset: Grid conversion gives an infinity (DIV_BY_ZERO)\n");
+         fprintf (stderr, "(WARNING) c_videfset: Grid conversion gives an infinity (DIV_BY_ZERO)\n");
       }
 #else
-      fprintf(stderr,"Exception check is not availlable on this architecture");
+      fprintf(stderr,"(WARNING) Exception check is not availlable on this architecture");
 #endif
    }
 
    interp->gInterpIndex_p = (int *) malloc(ni * nj * interp->gGrdDest_p->numLevels * sizeof (int));
    if (!interp->gInterpIndex_p) {
-      fprintf (stderr, "c_videfset: malloc failed for gInterpIndex_p\n");
-      return -1;
+      fprintf (stderr, "(ERROR) c_videfset: malloc failed for gInterpIndex_p\n");
+      return(0);
    }
 
    numInterpSets = src_ijDim = dst_ijDim = ni * nj;
@@ -434,10 +386,10 @@ int c_videfset (viInterp *interp,const int ni, const int nj, int idGrdDest, int 
     * output of this routine is input for each of the interpolation
     * routines. The output is in gInterpIndex_p.
     */
-   (void) f77name (interp1d_findpos) (&numInterpSets, &interp->gGrdSrc_p->numLevels,
-                             &interp->gGrdDest_p->numLevels, &src_ijDim, &dst_ijDim,
-                             interp->gCubeSrc_p, interp->gInterpIndex_p, interp->gCubeDest_p);
-   return 0;
+   (void)f77name(interp1d_findpos)(&numInterpSets,&interp->gGrdSrc_p->numLevels,
+                             &interp->gGrdDest_p->numLevels,&src_ijDim,&dst_ijDim,
+                             interp->gCubeSrc_p,interp->gInterpIndex_p,interp->gCubeDest_p);
+   return(1);
 }
 
 /*----------------------------------------------------------------------------
@@ -451,14 +403,14 @@ int c_videfset (viInterp *interp,const int ni, const int nj, int idGrdDest, int 
  *
  * Parametres     :
  *  <option>      : string representing the option to be set:
- *                  "INTERP_DEGREE", "EXTRAP_DEGREE" or "VERBOSE"
+ *                  "INTERP_DEGREE", "EXTRAP_DEGREE" or "VIVERBOSE"
  *  <value>       : string representing the value to which the option is to
  *                  be set.
  *                  Possible values for the option, "INTERP_DEGREE", are:
  *                  "NEAREST", "LINEAR", "CUBICWITHDERIVS" or "CUBIC"
  *                  Possible values for the option, "EXTRAP_DEGREE", are:
  *                  "CLAMPED" or "LAPSERATE"
- *                  Possible values for the option, "VERBOSE", are:
+ *                  Possible values for the option, "VIVERBOSE", are:
  *                  YES or NO
  *
  * Remarques :
@@ -470,32 +422,32 @@ int c_videfset (viInterp *interp,const int ni, const int nj, int idGrdDest, int 
  *    Description :
  *----------------------------------------------------------------------------
 */
-
 int c_visetopt (viInterp *interp,const char *option, const char *value) {
+
    if (strncmp (option, "INTERP_DEGREE", 13) == 0) {
       if (strncmp (value, "NEAREST", 7) == 0) {
-         interp->gViOption |= NEAREST_NEIGHBOUR;
+         interp->gViOption |= VINEAREST_NEIGHBOUR;
       } else if (strncmp (value, "LINEAR", 6) == 0) {
-         interp->gViOption |= LINEAR;
+         interp->gViOption |= VILINEAR;
       } else if (strncmp (value, "CUBICWITHDERIVS", 15) == 0) {
-         interp->gViOption |= CUBIC_WITH_DERIV;
+         interp->gViOption |= VICUBIC_WITH_DERIV;
       } else if (strncmp (value, "CUBIC", 5) == 0) {
-         interp->gViOption |= CUBIC_LAGRANGE;
+         interp->gViOption |= VICUBIC_LAGRANGE;
       }
    } else if (strncmp (option, "EXTRAP_DEGREE" ,13) == 0) {
       if (strncmp (value, "CLAMPED", 7) == 0) {
-         interp->gViOption |= CLAMPED;
+         interp->gViOption |= VICLAMPED;
       } else if (strncmp (value, "LAPSERATE", 9) == 0) {
-         interp->gViOption |= LAPSERATE;
+         interp->gViOption |= VILAPSERATE;
       }
-   } else if (strncmp (option, "VERBOSE", 7) == 0) {
+   } else if (strncmp (option, "VIVERBOSE", 7) == 0) {
       if (strncmp (value, "YES", 3)  == 0) {
-         interp->gViOption |= VERBOSE;
+         interp->gViOption |= VIVERBOSE;
       } else {
-         interp->gViOption &= ~VERBOSE;
+         interp->gViOption &= ~VIVERBOSE;
       }
    } else if (strncmp (option, "CHECKFLOAT", 10) == 0) {
-      interp->gViOption |= CHECKFLOAT;
+      interp->gViOption |= VICHECKFLOAT;
    }
 
    return(interp->gViOption);
@@ -522,9 +474,8 @@ int c_visetopt (viInterp *interp,const char *option, const char *value) {
  *    Description :
  *----------------------------------------------------------------------------
 */
-
 int c_visetopti (viInterp *interp,const unsigned char option) {
-   return (interp->gViOption |= option);
+   return(interp->gViOption|=option);
 }
 
 /*----------------------------------------------------------------------------
@@ -558,22 +509,20 @@ int c_visetopti (viInterp *interp,const unsigned char option) {
  *    Description :
  *----------------------------------------------------------------------------
 */
-
-int c_visint (viInterp *interp,float *stateOut, float *stateIn, float *derivOut, float *derivIn,
-              float extrapGuideDown, float extrapGuideUp) {
+int c_visint(viInterp *interp,float *stateOut,float *stateIn,float *derivOut,float *derivIn,float extrapGuideDown,float extrapGuideUp) {
 
    int surf = interp->gNi * interp->gNj;
    int extrapEnable = 0;
 
    /* Assume that everything is set correctly */
    if (!interp->gCubeSrc_p || !interp->gCubeDest_p || !interp->gGrdDest_p || !interp->gInterpIndex_p || (interp->gViOption == 0x000)) {
-      return -1;
+      return(0);
    }
 
    if (memcmp (interp->gGrdSrc_p->level_p, interp->gGrdDest_p->level_p, interp->gGrdSrc_p->numLevels * sizeof (float)) == 0) {
       memcpy (stateOut, stateIn, surf * interp->gGrdSrc_p->numLevels);
-      printf ("c_videfset: Grids are the same\n");
-      return 0;
+      printf ("(INFOR) c_visint: Grids are the same\n");
+      return(1);
    }
 
    /*
@@ -581,68 +530,56 @@ int c_visint (viInterp *interp,float *stateOut, float *stateIn, float *derivOut,
     * Setting extrapEnableDown andextrapEnableUp to .false.
     * yields 'clamped'
     */
-   if (interp->gViOption & NEAREST_NEIGHBOUR) {
-      (void) f77name (interp1d_nearestneighbour) (&surf, &interp->gGrdSrc_p->numLevels,
-                                         &interp->gGrdDest_p->numLevels, &surf,
-                                         &surf, interp->gCubeSrc_p, stateIn,
-                                         derivIn, interp->gInterpIndex_p,
-                                         interp->gCubeDest_p, stateOut, derivOut,
-                                         &extrapEnable,&extrapEnable,&extrapGuideDown, &extrapGuideUp);
+   if (interp->gViOption & VINEAREST_NEIGHBOUR) {
+      (void)f77name(interp1d_nearestneighbour)(&surf,&interp->gGrdSrc_p->numLevels,&interp->gGrdDest_p->numLevels,&surf,
+                                         &surf,interp->gCubeSrc_p,stateIn,derivIn,interp->gInterpIndex_p,interp->gCubeDest_p,stateOut,derivOut,
+                                         &extrapEnable,&extrapEnable,&extrapGuideDown,&extrapGuideUp);
 
-   } else if (interp->gViOption & LINEAR) {
-      (void) f77name (interp1d_linear) (&surf, &interp->gGrdSrc_p->numLevels,
-                               &interp->gGrdDest_p->numLevels, &surf, &surf,
-                               interp->gCubeSrc_p, stateIn, derivIn, interp->gInterpIndex_p,
-                               interp->gCubeDest_p, stateOut, derivOut,
-                               &extrapEnable, &extrapEnable, &extrapGuideDown, &extrapGuideUp);
+   } else if (interp->gViOption & VILINEAR) {
+      (void)f77name(interp1d_linear)(&surf,&interp->gGrdSrc_p->numLevels,&interp->gGrdDest_p->numLevels,&surf,&surf,
+                               interp->gCubeSrc_p,stateIn,derivIn,interp->gInterpIndex_p,interp->gCubeDest_p,stateOut,derivOut,
+                               &extrapEnable,&extrapEnable,&extrapGuideDown,&extrapGuideUp);
 
-   } else if (interp->gViOption & CUBIC_WITH_DERIV) {
+   } else if (interp->gViOption & VICUBIC_WITH_DERIV) {
       if ((derivIn == NULL) && (derivOut == NULL)) {
-         fprintf (stderr,
-                  "Error : Cubic interpolation with derivatives requested\n");
-         return -1;
+         fprintf (stderr,"(ERROR) c_visint: Cubic interpolation with derivatives requested\n");
+         return(0);
       }
 
-      (void) f77name (interp1d_cubicwithderivs) (&surf, &interp->gGrdSrc_p->numLevels,
-                                        &interp->gGrdDest_p->numLevels, &surf, &surf,
-                                        interp->gCubeSrc_p, stateIn, derivIn,
-                                        interp->gInterpIndex_p, interp->gCubeDest_p, stateOut, derivOut,
-                                        &extrapEnable, &extrapEnable, &extrapGuideDown, &extrapGuideUp);
+      (void)f77name(interp1d_cubicwithderivs)(&surf,&interp->gGrdSrc_p->numLevels,&interp->gGrdDest_p->numLevels,&surf,&surf,
+                                        interp->gCubeSrc_p,stateIn,derivIn,interp->gInterpIndex_p,interp->gCubeDest_p,stateOut,derivOut,
+                                        &extrapEnable,&extrapEnable,&extrapGuideDown,&extrapGuideUp);
 
-   } else if (interp->gViOption & CUBIC_LAGRANGE) {
-      (void) f77name (interp1d_cubiclagrange) (&surf, &interp->gGrdSrc_p->numLevels,
-                                      &interp->gGrdDest_p->numLevels, &surf, &surf,
-                                      interp->gCubeSrc_p, stateIn, derivIn,
-                                      interp->gInterpIndex_p, interp->gCubeDest_p, stateOut, derivOut,
-                                      &extrapEnable, &extrapEnable, &extrapGuideDown, &extrapGuideUp);
+   } else if (interp->gViOption & VICUBIC_LAGRANGE) {
+      (void)f77name(interp1d_cubiclagrange)(&surf,&interp->gGrdSrc_p->numLevels,&interp->gGrdDest_p->numLevels,&surf,&surf,
+                                      interp->gCubeSrc_p,stateIn,derivIn,interp->gInterpIndex_p,interp->gCubeDest_p,stateOut,derivOut,
+                                      &extrapEnable,&extrapEnable,&extrapGuideDown,&extrapGuideUp);
    } else {
-      fprintf (stderr, "Error : Unknown interpolation algorithm\n");
-      return -1;
+      fprintf (stderr, "(ERROR) c_visint: Unknown interpolation algorithm\n");
+      return(0);
    }
 
-   if (interp->gViOption & VERBOSE) printf ("c_visint: Interpolation completed\n");
+   if (interp->gViOption & VIVERBOSE) printf ("(INFO) c_visint: Interpolation completed\n");
 
    /* Extrapolation */
-   if (interp->gViOption & CLAMPED) {
+   if (interp->gViOption & VICLAMPED) {
       /*
        * Do nothing. It has already been done during interpolation.
        * This option exist for compatibility with EzInterpv
        */
       return 0;
 
-   } else if (interp->gViOption & LAPSERATE) {
+   } else if (interp->gViOption & VILAPSERATE) {
       extrapEnable = 1;
 
-      (void) f77name (extrap1d_lapserate) (&surf, &interp->gGrdSrc_p->numLevels,
-                                  &interp->gGrdDest_p->numLevels, &surf, &surf,
-                                  interp->gCubeSrc_p, stateIn, derivIn,
-                                  interp->gInterpIndex_p, interp->gCubeDest_p, stateOut, derivOut,
-                                  &extrapEnable, &extrapEnable, &extrapGuideDown, &extrapGuideUp);
+      (void)f77name(extrap1d_lapserate)(&surf,&interp->gGrdSrc_p->numLevels,&interp->gGrdDest_p->numLevels,&surf,&surf,
+                                  interp->gCubeSrc_p,stateIn,derivIn,interp->gInterpIndex_p,interp->gCubeDest_p,stateOut,derivOut,
+                                  &extrapEnable,&extrapEnable,&extrapGuideDown,&extrapGuideUp);
 
-      if (interp->gViOption & VERBOSE) printf ("c_visint: Lapserate extrapolation completed\n");
+      if (interp->gViOption & VIVERBOSE) printf ("(INFO) c_visint: Lapserate extrapolation completed\n");
    }
 
-   return 0;
+   return(1);
 }
 
 /*----------------------------------------------------------------------------
@@ -665,22 +602,21 @@ int c_visint (viInterp *interp,float *stateOut, float *stateIn, float *derivOut,
  *    Description :
  *----------------------------------------------------------------------------
 */
+void vicleanGrid(viInterp *Interp) {
 
-void vicleanGrid (viInterp *interp) {
-
-   if (interp->gCubeSrc_p) {
-      free (interp->gCubeSrc_p);
-      interp->gCubeSrc_p = NULL;
+   if (Interp->gCubeSrc_p) {
+      free(Interp->gCubeSrc_p);
+      Interp->gCubeSrc_p=NULL;
    }
 
-   if (interp->gCubeDest_p) {
-      free (interp->gCubeDest_p);
-      interp->gCubeDest_p = NULL;
+   if (Interp->gCubeDest_p) {
+      free(Interp->gCubeDest_p);
+      Interp->gCubeDest_p=NULL;
    }
 
-   if (interp->gInterpIndex_p) {
-      free (interp->gInterpIndex_p);
-      interp->gInterpIndex_p = NULL;
+   if (Interp->gInterpIndex_p) {
+      free(Interp->gInterpIndex_p);
+      Interp->gInterpIndex_p=NULL;
    }
 }
 
@@ -691,66 +627,55 @@ void vicleanGrid (viInterp *interp) {
  * But      : Converts each pressure in the cube of vertical levels to meter
  *            above sea.
  *
- * Parametres     :
- *  <grd_p>       : pointer to the grid structure
- *  <height>      : meter above sea
- *  <ni>          : horizontal dimensions
- *  <nj>          : horizontal dimensions
+ * Parametres    :
+ *  <Grid>       : pointer to the grid structure
+ *  <Height>     : meter above sea
+ *  <NI>         : horizontal dimensions
+ *  <NJ>         : horizontal dimensions
  *
  *
  * Remarques :
- *
- * Modifications :
- *
- *    Nom         :
- *    Date        :
- *    Description :
  *----------------------------------------------------------------------------
 */
+int vigetMASL(VerticalGrid *Grid,float *Height,int NI,int NJ) {
 
-void vigetMASL (VerticalGrid * grd_p, float *height, int ni, int nj) {
-   int i, j, k, indiceK, indiceJK, surf, indiceIJK;
-   float heightTopo = 0.0f;
+   int   i,j,k,idxk,idxjk,nij;
+   float topo=0.0f;
 
-   i = j = k = indiceK = indiceJK = indiceIJK = 0;
-   surf = ni * nj;
+   nij=NI*NJ;
 
    /*
     * Create the 'cube' of vertical levels
     */
-   switch (grd_p->gridType) {
+   switch (Grid->gridType) {
       case LVL_PRES:
       case LVL_HYBRID:
       case LVL_SIGMA:
       case LVL_ETA:
       case LVL_UNDEF:
       case LVL_THETA:
-         for (i = 0; i < surf * grd_p->numLevels; i++) {
-            height[i] = grd_p->gz_p[i] * 10;
+         for (i=0;i<nij*Grid->numLevels;i++) {
+            Height[i]=Grid->z_p[i]*10.0;
          }
          break;
 
       case LVL_MASL:
-         for (k = 0; k < grd_p->numLevels; k++) {
-            indiceK = k * surf;
-            for (i = 0; i < surf; i++) {
-               height[indiceK + i] = grd_p->level_p[k];
+         for (k=0;k<Grid->numLevels;k++) {
+            idxk=k*nij;
+            for (i=0;i<nij;i++) {
+               Height[idxk+i]=Grid->level_p[k];
             }
          }
          break;
 
       case LVL_MAGL:
-         /*
-          * Add the topography to the gz to get the heigth above the sea
-          */
-         for (k = 0; k < grd_p->numLevels; k++) {
-            indiceK = k * surf;
-            for (j = 0; j < nj; j++) {
-               indiceJK = j * ni;
-               for (i = 0; i < ni; i++) {
-                  indiceIJK = indiceK + indiceJK + i;
-                  /* optimiser la mult par 10 */
-                  height[indiceIJK] = (grd_p->gz_p[indiceJK + i] * 10) + grd_p->level_p[k];
+         /*Add the topography to the gz to get the heigth above the sea*/
+         for (k=0;k<Grid->numLevels;k++) {
+            idxk=k*nij;
+            for (j=0;j<NJ;j++) {
+               idxjk=j*NI;
+               for (i=0;i<NI;i++) {
+                  Height[idxk+idxjk+i]=(Grid->z_p[idxjk+i]*10.0)+Grid->level_p[k];
                }
             }
          }
@@ -758,29 +683,29 @@ void vigetMASL (VerticalGrid * grd_p, float *height, int ni, int nj) {
 
       case LVL_GALCHEN:
          /*
-          * height = GALCHEN * (1 - h0/H) + h0
+          * Height = GALCHEN * (1 - h0/H) + h0
           * Where
           *  - GALCHEN is the level in gal-chen meters
           *  - h0 is the topography
-          *  - H is the height of the top of the atmosphere
+          *  - H is the Height of the top of the atmosphere
           */
-         for (k = 0; k < grd_p->numLevels; k++) {
-            indiceK = k * surf;
-            for (j = 0; j < nj; j++) {
-               indiceJK = j * ni;
-               for (i = 0; i < ni; i++) {
-                  indiceIJK = indiceK + indiceJK + i;
-                  heightTopo = grd_p->gz_p[indiceJK + i] * 10;
-                  height[indiceIJK] = grd_p->level_p[k] * (1 - heightTopo / grd_p->top) + heightTopo;
+         for (k=0;k<Grid->numLevels;k++) {
+            idxk=k*nij;
+            for (j=0;j<NJ;j++) {
+               idxjk=j*NI;
+               for (i=0;i<NI;i++) {
+                  topo=Grid->z_p[idxjk+i]*10.0;
+                  Height[idxk+idxjk+i]=Grid->level_p[k]*(1.0-topo/Grid->top)+topo;
                }
             }
          }
          break;
 
       default:
-         fprintf (stderr, "vigetMASL: invalid type entry");
-         return;
+         fprintf(stderr,"(ERROR) vigetMASL: invalid type entry");
+         return(0);
    }
+   return(1);
 }
 
 /*----------------------------------------------------------------------------
@@ -792,16 +717,13 @@ void vigetMASL (VerticalGrid * grd_p, float *height, int ni, int nj) {
  *            'pressure' is copied directly as 'ln(P)', and no conversion
  *            is performed.
  *
- * Parametres     :
- *  <grd_p>       : pointer to the grid structure
- *  <lnP>         : ln pressure, referenced to 1 mb
- *  <ni>          : horizontal dimensions
- *  <nj>          : horizontal dimensions
- *  <pSurf>       : surface pressure for each horiz point, in units of mb
- *  <top>        : ceiling pressure for each horiz point (required only
- *                  for eta units, in units of mb)
+ * Parametres    :
+ *  <Grid>       : Pointer to the grid structure
+ *  <LnP>        : ln pressure, referenced to 1 mb
+ *  <NI>         : Horizontal dimensions
+ *  <NJ>         : Horizontal dimensions
  *
- * Retour         :  -1 : Error
+ * Retour        :  0 : Error
  *
  * Remarques : The conversion from P to ln P cannot be left up to the user
  *             and must be performed here because there is one case
@@ -812,69 +734,53 @@ void vigetMASL (VerticalGrid * grd_p, float *height, int ni, int nj) {
  *             of the grid must be the ceiling. This constraint is imposed
  *             by the function, hybrid_to_pres, which is used to make the
  *             conversion to pressure.
- *
- * Modifications :
- *
- *    Nom         :
- *    Date        :
- *    Description :
  *----------------------------------------------------------------------------
 */
+int vigetLnP (VerticalGrid *Grid, float *LnP,int NI,int NJ) {
 
-int vigetLnP (VerticalGrid * grd_p, float *lnP, int ni, int nj, float *pSurf,
-              float *top) {
-
-   int i, j, k, indiceK, indiceJK, surf;
+   int    i,j,k,idxk,idxjk,nij;
    float *hybridModel;
 
-   i = j = k = indiceK = indiceJK = 0;
-   surf = ni * nj;
+   nij=NI*NJ;
 
-   if (!pSurf && grd_p->gridType != LVL_PRES) {
-      fprintf (stderr, "c_videfset: Surface pressure is required\n");
-      return -1;
+   if (!Grid->z_p && Grid->gridType!=LVL_PRES) {
+      fprintf(stderr,"(ERROR) vigetLnP: Surface pressure is required\n");
+      return(0);
    }
 
-   /*
-    * Create the 'cube' of vertical levels
-    */
-   switch (grd_p->gridType) {
+   /* Create the 'cube' of vertical levels */
+   switch(Grid->gridType) {
       case LVL_PRES:
-         for (k = 0; k < grd_p->numLevels; k++) {
-            indiceK = k * surf;
-            for (j = 0; j < nj; j++) {
-               indiceJK = j * ni;
-               for (i = 0; i < ni; i++) {
-                  lnP[indiceK + indiceJK + i] = (float) log(grd_p->level_p[k]);
+         for (k=0;k<Grid->numLevels;k++) {
+            idxk =k*nij;
+            for (j=0;j<NJ;j++) {
+               idxjk=j*NI;
+               for (i=0;i<NI;i++) {
+                  LnP[idxk+idxjk+i]=(float)log(Grid->level_p[k]);
                }
             }
          }
          break;
 
       case LVL_ETA:
-         if (!top) {
-            fprintf (stderr, "c_videfset: Ceiling pressure is required for grid type ETA\n");
-            return -1;
-         }
-
-         for (k = 0; k < grd_p->numLevels; k++) {
-            indiceK = k * surf;
-            for (j = 0; j < nj; j++) {
-               indiceJK = j * ni;
-               for (i = 0; i < ni; i++) {
-                  lnP[indiceK + indiceJK + i] = (float) log(top[indiceJK + i] + (pSurf[indiceJK + i] - top[indiceJK + i])
-                         * grd_p->level_p[k]);
+         for (k=0;k<Grid->numLevels;k++) {
+            idxk=k*nij;
+            for (j=0;j<NJ;j++) {
+               idxjk=j*NI;
+               for (i=0;i<NI;i++) {
+                  LnP[idxk+idxjk+i]=(float)log(Grid->top+(Grid->z_p[idxjk+i]-Grid->top)*Grid->level_p[k]);
                }
             }
          }
          break;
+
       case LVL_SIGMA:
-         for (k = 0; k < grd_p->numLevels; k++) {
-            indiceK = k * surf;
-            for (j = 0; j < nj; j++) {
-               indiceJK = j * ni;
-               for (i = 0; i < ni; i++) {
-                  lnP[indiceK + indiceJK + i] = (float) log(pSurf[indiceJK + i] * grd_p->level_p[k]);
+         for (k=0;k<Grid->numLevels;k++) {
+            idxk=k*nij;
+            for (j=0;j<NJ;j++) {
+               idxjk=j*NI;
+               for (i=0;i<NI;i++) {
+                  LnP[idxk+idxjk+i]=(float)log(Grid->z_p[idxjk+i]*Grid->level_p[k]);
                }
             }
          }
@@ -882,21 +788,20 @@ int vigetLnP (VerticalGrid * grd_p, float *lnP, int ni, int nj, float *pSurf,
 
       case LVL_HYBRID:
          /* variable bidon : le £$@¬¤¢ de fortran en a besoin */
-         i = 1;
-         hybridModel = (float *) malloc (grd_p->numLevels * sizeof (float));
-         f77name (hybrid_to_pres) (lnP, hybridModel, &grd_p->top, pSurf, &surf,
-                                   &i, &grd_p->rCoef, &grd_p->pRef, grd_p->level_p,
-                                   &grd_p->numLevels);
-         free (hybridModel);
-         for (k = 0; k < grd_p->numLevels * surf; k++) {
-            lnP[k] = (float) log (lnP[k]);
+         i=1;
+         hybridModel=(float*)malloc(Grid->numLevels*sizeof (float));
+         f77name(hybrid_to_pres)(LnP,hybridModel,&Grid->top,Grid->z_p,&nij,&i,&Grid->rCoef,&Grid->pRef,Grid->level_p,&Grid->numLevels);
+         free(hybridModel);
+
+         for (k=0;k<Grid->numLevels*nij;k++) {
+            LnP[k]=(float)log(LnP[k]);
          }
          break;
 
       default:
-         fprintf (stderr, "vigetLnP: invalid type entry");
-         return -1;
+         fprintf(stderr,"(ERROR) vigetLnP: invalid type entry");
+         return(0);
    }
 
-   return 0;
+   return(1);
 }
