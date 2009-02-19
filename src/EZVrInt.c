@@ -403,14 +403,14 @@ int c_videfset(viInterp *interp,const int ni,const int nj,int idGrdDest,int idGr
  *
  * Parametres     :
  *  <option>      : string representing the option to be set:
- *                  "INTERP_DEGREE", "EXTRAP_DEGREE" or "VIVERBOSE"
+ *                  "INTERP_DEGREE", "EXTRAP_DEGREE" or "VERBOSE"
  *  <value>       : string representing the value to which the option is to
  *                  be set.
  *                  Possible values for the option, "INTERP_DEGREE", are:
  *                  "NEAREST", "LINEAR", "CUBICWITHDERIVS" or "CUBIC"
  *                  Possible values for the option, "EXTRAP_DEGREE", are:
  *                  "CLAMPED" or "LAPSERATE"
- *                  Possible values for the option, "VIVERBOSE", are:
+ *                  Possible values for the option, "VERBOSE", are:
  *                  YES or NO
  *
  * Remarques :
@@ -440,7 +440,7 @@ int c_visetopt (viInterp *interp,const char *option, const char *value) {
       } else if (strncmp (value, "LAPSERATE", 9) == 0) {
          interp->gViOption |= VILAPSERATE;
       }
-   } else if (strncmp (option, "VIVERBOSE", 7) == 0) {
+   } else if (strncmp (option, "VERBOSE", 7) == 0) {
       if (strncmp (value, "YES", 3)  == 0) {
          interp->gViOption |= VIVERBOSE;
       } else {
@@ -519,8 +519,8 @@ int c_visint(viInterp *interp,float *stateOut,float *stateIn,float *derivOut,flo
       return(0);
    }
 
-   if (memcmp (interp->gGrdSrc_p->level_p, interp->gGrdDest_p->level_p, interp->gGrdSrc_p->numLevels * sizeof (float)) == 0) {
-      memcpy (stateOut, stateIn, surf * interp->gGrdSrc_p->numLevels);
+   if (memcmp(interp->gGrdSrc_p->level_p,interp->gGrdDest_p->level_p,interp->gGrdSrc_p->numLevels*sizeof(float))==0) {
+      memcpy(stateOut,stateIn,surf*interp->gGrdSrc_p->numLevels);
       printf ("(INFOR) c_visint: Grids are the same\n");
       return(1);
    }
