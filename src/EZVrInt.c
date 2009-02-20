@@ -286,9 +286,11 @@ int c_videfset(viInterp *interp,const int ni,const int nj,int idGrdDest,int idGr
 
    if (interp->gGrdSrc_p->numLevels==interp->gGrdDest_p->numLevels &&
       memcmp(interp->gGrdSrc_p->level_p,interp->gGrdDest_p->level_p,interp->gGrdSrc_p->numLevels*sizeof(float))==0) {
+      interp->same=1;
       if (interp->gViOption & VIVERBOSE) printf ("(INFO) c_videfset: Levels are the same\n");
       return(1);
    }
+   interp->same=0;
 
    if (interp->gViOption & VICHECKFLOAT) {
       /* clear exception flags (plateforme specific) */
@@ -519,7 +521,7 @@ int c_visint(viInterp *interp,float *stateOut,float *stateIn,float *derivOut,flo
       return(0);
    }
 
-   if (memcmp(interp->gGrdSrc_p->level_p,interp->gGrdDest_p->level_p,interp->gGrdSrc_p->numLevels*sizeof(float))==0) {
+   if (interp->same) {
       memcpy(stateOut,stateIn,surf*interp->gGrdSrc_p->numLevels);
       printf ("(INFOR) c_visint: Grids are the same\n");
       return(1);
@@ -639,8 +641,8 @@ void vicleanGrid(viInterp *Interp) {
 */
 int vigetMASL(VerticalGrid *Grid,float *Height,int NI,int NJ) {
 
-   int   i,j,k,idxk,idxjk,nij;
-   float topo=0.0f;
+   int   ij,nij,k,idxk;
+   float topo;
 
    nij=NI*NJ;
 
@@ -654,16 +656,16 @@ int vigetMASL(VerticalGrid *Grid,float *Height,int NI,int NJ) {
       case LVL_ETA:
       case LVL_UNDEF:
       case LVL_THETA:
-         for (i=0;i<nij*Grid->numLevels;i++) {
-            Height[i]=Grid->z_p[i]*10.0;
+         for (k=0;k<nij*Grid->numLevels;k++) {
+            Height[k]=Grid->z_p[k]*10.0;
          }
          break;
 
       case LVL_MASL:
          for (k=0;k<Grid->numLevels;k++) {
             idxk=k*nij;
-            for (i=0;i<nij;i++) {
-               Height[idxk+i]=Grid->level_p[k];
+            for (ij=0;ij<nij;ij++) {
+               Height[idxk+ij]=Grid->level_p[k];
             }
          }
          break;
@@ -672,11 +674,8 @@ int vigetMASL(VerticalGrid *Grid,float *Height,int NI,int NJ) {
          /*Add the topography to the gz to get the heigth above the sea*/
          for (k=0;k<Grid->numLevels;k++) {
             idxk=k*nij;
-            for (j=0;j<NJ;j++) {
-               idxjk=j*NI;
-               for (i=0;i<NI;i++) {
-                  Height[idxk+idxjk+i]=(Grid->z_p[idxjk+i]*10.0)+Grid->level_p[k];
-               }
+            for (ij=0;ij<nij;ij++) {
+               Height[idxk+ij]=(Grid->z_p[ij]*10.0)+Grid->level_p[k];
             }
          }
          break;
@@ -691,12 +690,9 @@ int vigetMASL(VerticalGrid *Grid,float *Height,int NI,int NJ) {
           */
          for (k=0;k<Grid->numLevels;k++) {
             idxk=k*nij;
-            for (j=0;j<NJ;j++) {
-               idxjk=j*NI;
-               for (i=0;i<NI;i++) {
-                  topo=Grid->z_p[idxjk+i]*10.0;
-                  Height[idxk+idxjk+i]=Grid->level_p[k]*(1.0-topo/Grid->top)+topo;
-               }
+            for (ij=0;ij<nij;ij++) {
+               topo=Grid->z_p[ij]*10.0;
+               Height[idxk+ij]=Grid->level_p[k]*(1.0-topo/Grid->top)+topo;
             }
          }
          break;
@@ -738,7 +734,7 @@ int vigetMASL(VerticalGrid *Grid,float *Height,int NI,int NJ) {
 */
 int vigetLnP (VerticalGrid *Grid, float *LnP,int NI,int NJ) {
 
-   int    i,j,k,idxk,idxjk,nij;
+   int    ij,nij,k,idxk;
    float *hybridModel;
 
    nij=NI*NJ;
@@ -752,24 +748,9 @@ int vigetLnP (VerticalGrid *Grid, float *LnP,int NI,int NJ) {
    switch(Grid->gridType) {
       case LVL_PRES:
          for (k=0;k<Grid->numLevels;k++) {
-            idxk =k*nij;
-            for (j=0;j<NJ;j++) {
-               idxjk=j*NI;
-               for (i=0;i<NI;i++) {
-                  LnP[idxk+idxjk+i]=(float)log(Grid->level_p[k]);
-               }
-            }
-         }
-         break;
-
-      case LVL_ETA:
-         for (k=0;k<Grid->numLevels;k++) {
             idxk=k*nij;
-            for (j=0;j<NJ;j++) {
-               idxjk=j*NI;
-               for (i=0;i<NI;i++) {
-                  LnP[idxk+idxjk+i]=(float)log(Grid->top+(Grid->z_p[idxjk+i]-Grid->top)*Grid->level_p[k]);
-               }
+            for (ij=0;ij<nij;ij++) {
+               LnP[idxk+ij]=(float)log(Grid->level_p[k]);
             }
          }
          break;
@@ -777,20 +758,26 @@ int vigetLnP (VerticalGrid *Grid, float *LnP,int NI,int NJ) {
       case LVL_SIGMA:
          for (k=0;k<Grid->numLevels;k++) {
             idxk=k*nij;
-            for (j=0;j<NJ;j++) {
-               idxjk=j*NI;
-               for (i=0;i<NI;i++) {
-                  LnP[idxk+idxjk+i]=(float)log(Grid->z_p[idxjk+i]*Grid->level_p[k]);
-               }
+            for (ij=0;ij<nij;ij++) {
+               LnP[idxk+ij]=(float)log(Grid->z_p[ij]*Grid->level_p[k]);
+            }
+         }
+         break;
+
+      case LVL_ETA:
+         for (k=0;k<Grid->numLevels;k++) {
+            idxk=k*nij;
+            for (ij=0;ij<nij;ij++) {
+               LnP[idxk+ij]=(float)log(Grid->top+(Grid->z_p[ij]-Grid->top)*Grid->level_p[k]);
             }
          }
          break;
 
       case LVL_HYBRID:
          /* variable bidon : le £$@¬¤¢ de fortran en a besoin */
-         i=1;
+         ij=1;
          hybridModel=(float*)malloc(Grid->numLevels*sizeof (float));
-         f77name(hybrid_to_pres)(LnP,hybridModel,&Grid->top,Grid->z_p,&nij,&i,&Grid->rCoef,&Grid->pRef,Grid->level_p,&Grid->numLevels);
+         f77name(hybrid_to_pres)(LnP,hybridModel,&Grid->top,Grid->z_p,&nij,&ij,&Grid->rCoef,&Grid->pRef,Grid->level_p,&Grid->numLevels);
          free(hybridModel);
 
          for (k=0;k<Grid->numLevels*nij;k++) {

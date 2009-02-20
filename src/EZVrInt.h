@@ -90,7 +90,7 @@ typedef struct viInterp {
    int           *gInterpIndex_p;
    unsigned char gViOption;
    int           gNi, gNj;
-   int           index,last;
+   int           index,last,same;
 } viInterp;
 
 viInterp* c_videfine (void);
