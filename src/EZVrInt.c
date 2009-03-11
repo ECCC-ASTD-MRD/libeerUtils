@@ -63,8 +63,8 @@ extern void f77name (extrap1d_lapserate) ();
 extern int f77name (hybrid_to_pres) ();
 
 /* Prototypes */
-int vigetLnP (VerticalGrid *Grid, float *LnP,int NI,int NJ);
-int vigetMASL(VerticalGrid *Grid,float *Height,int NI,int NJ);
+int vigetLnP (VerticalGrid* restrict const Grid, float *LnP,const int NI,const int NJ);
+int vigetMASL(VerticalGrid* restrict const Grid,float *Height,const int NI,const int NJ);
 void vicleanGrid (viInterp *Interp);
 
 /* Fortran Interface */
@@ -639,7 +639,7 @@ void vicleanGrid(viInterp *Interp) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-int vigetMASL(VerticalGrid *Grid,float *Height,int NI,int NJ) {
+int vigetMASL(VerticalGrid* restrict const Grid,float *Height,const int NI,const int NJ) {
 
    int   ij,nij,k,idxk;
    float topo;
@@ -732,10 +732,11 @@ int vigetMASL(VerticalGrid *Grid,float *Height,int NI,int NJ) {
  *             conversion to pressure.
  *----------------------------------------------------------------------------
 */
-int vigetLnP (VerticalGrid *Grid, float *LnP,int NI,int NJ) {
+int vigetLnP (VerticalGrid* restrict const Grid, float *LnP,const int NI,const int NJ) {
 
    int    ij,nij,k,idxk;
    float *hybridModel;
+   double pr,pk;
 
    nij=NI*NJ;
 
@@ -774,7 +775,7 @@ int vigetLnP (VerticalGrid *Grid, float *LnP,int NI,int NJ) {
          break;
 
       case LVL_HYBRID:
-         /* variable bidon : le £$@¬¤¢ de fortran en a besoin */
+         /* variable bidon : le £$@¬¤¢ de fortran en a besoin
          ij=1;
          hybridModel=(float*)malloc(Grid->numLevels*sizeof (float));
          f77name(hybrid_to_pres)(LnP,hybridModel,&Grid->top,Grid->z_p,&nij,&ij,&Grid->rCoef,&Grid->pRef,Grid->level_p,&Grid->numLevels);
@@ -782,6 +783,16 @@ int vigetLnP (VerticalGrid *Grid, float *LnP,int NI,int NJ) {
 
          for (k=0;k<Grid->numLevels*nij;k++) {
             LnP[k]=(float)log(LnP[k]);
+         }
+*/
+         /*Version Alain */
+         for (k=0;k<Grid->numLevels;k++) {
+            pk=Grid->pRef*Grid->level_p[k];
+            pr=pow(((Grid->level_p[k]-Grid->top/Grid->pRef)/(1.0-Grid->top/Grid->pRef)),Grid->rCoef);
+            idxk=k*nij;
+            for (ij=0;ij<nij;ij++) {
+               LnP[idxk+ij]=(float)log(pk+(Grid->z_p[ij]-Grid->pRef)*pr);
+            }
          }
          break;
 
