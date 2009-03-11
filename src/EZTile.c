@@ -660,7 +660,7 @@ int EZGrid_Tile(int FIdTo,int NI, int NJ,int FId,char* Var,char* TypVar,char* Et
    cs_fstinl(FId,&ni,&nj,&nk,DateV,Etiket,IP1,IP2,-1,TypVar,Var,idlst,&nid,TILEMAX);
 
    if (nid<=0) {
-      fprintf(stderr,"(ERROR) EZGrid_Read: Specified fields do not exist\n");
+      fprintf(stderr,"(ERROR) EZGrid_Tile: Specified fields do not exist\n");
       return(0);
    }
    tile=(float*)malloc(NI*NJ*sizeof(float));
@@ -743,7 +743,7 @@ int EZGrid_UnTile(int FIdTo,int FId,char* Var,char* TypVar,char* Etiket,int Date
    cs_fstinl(FId,&ni,&nj,&nk,DateV,Etiket,IP1,IP2,1,TypVar,Var,idlst,&nid,TILEMAX);
 
    if (nid<=0) {
-      fprintf(stderr,"(ERROR) EZGrid_Read: Specified fields do not exist\n");
+      fprintf(stderr,"(ERROR) EZGrid_UnTile: Specified fields do not exist\n");
       return(0);
    }
 
@@ -1488,7 +1488,6 @@ int EZGrid_IJGetValue(TGrid* restrict const Grid,float I,float J,int K0,int K1,f
 
    I++;J++;
 
-   pthread_mutex_lock(&RPNIntMutex);
    k=K0;
    do {
       if (Grid->NbTiles>1) {
@@ -1496,13 +1495,16 @@ int EZGrid_IJGetValue(TGrid* restrict const Grid,float I,float J,int K0,int K1,f
          while(n--) {
             EZGrid_TileBurn(Grid,tile[n],k);
          }
+         pthread_mutex_lock(&RPNIntMutex);
          c_gdxysval(Grid->GID,&Value[ik++],Grid->Data,&I,&J,1);
+         pthread_mutex_unlock(&RPNIntMutex);
       } else {
          EZGrid_TileGetData(Grid,&Grid->Tiles[0],k);
+         pthread_mutex_lock(&RPNIntMutex);
          c_gdxysval(Grid->GID,&Value[ik++],Grid->Tiles[0].Data[k],&I,&J,1);
+         pthread_mutex_unlock(&RPNIntMutex);
       }
    } while ((K0<=K1?k++:k--)!=K1);
-   pthread_mutex_unlock(&RPNIntMutex);
    return(1);
 }
 
@@ -1573,7 +1575,6 @@ int EZGrid_IJGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
 
    I++;J++;
 
-   pthread_mutex_lock(&RPNIntMutex);
    k=K0;
    do {
       if (GridU->NbTiles>1) {
@@ -1582,11 +1583,15 @@ int EZGrid_IJGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
             EZGrid_TileBurn(GridU,tile[0][n],k);
             EZGrid_TileBurn(GridV,tile[1][n],k);
          }
+         pthread_mutex_lock(&RPNIntMutex);
          c_gdxywdval(GridU->GID,&UU[ik],&VV[ik],GridU->Data,GridV->Data,&I,&J,1);
+         pthread_mutex_unlock(&RPNIntMutex);
       } else {
          EZGrid_TileGetData(GridU,&GridU->Tiles[0],k);
          EZGrid_TileGetData(GridV,&GridV->Tiles[0],k);
+         pthread_mutex_lock(&RPNIntMutex);
          c_gdxywdval(GridU->GID,&UU[ik],&VV[ik],GridU->Tiles[0].Data[k],GridV->Tiles[0].Data[k],&I,&J,1);
+         pthread_mutex_unlock(&RPNIntMutex);
       }
       d=DEG2RAD(VV[ik]);
       v=UU[ik]*0.515f;
@@ -1595,7 +1600,6 @@ int EZGrid_IJGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
       VV[ik]=-v*cosf(d);
       ik++;
    } while ((K0<=K1?k++:k--)!=K1);
-   pthread_mutex_unlock(&RPNIntMutex);
    return(1);
 }
 
