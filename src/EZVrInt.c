@@ -76,8 +76,8 @@ wordint f77name(viundefine)(void) {
    return(c_viundefine(FInterp));
 }
 
-wordint f77name(viqkdef)(wordint *numLevel,wordint *gridType,ftnfloat *levelList,ftnfloat *top,ftnfloat *pRef,ftnfloat *rCoef,ftnfloat *zcoord) {
-   return c_viqkdef(FInterp,*numLevel,*gridType,levelList,*top,*pRef,*rCoef,zcoord);
+wordint f77name(viqkdef)(wordint *numLevel,wordint *gridType,ftnfloat *levelList,ftnfloat *top,ftnfloat *pRef,ftnfloat *rCoef,ftnfloat *zcoord,ftnfloat *a,ftnfloat *b) {
+   return c_viqkdef(FInterp,*numLevel,*gridType,levelList,*top,*pRef,*rCoef,zcoord,a,b);
 }
 
 wordint f77name(videfset)(wordint *ni,wordint *nj,wordint *idGrdDest,wordint *idGrdSrc) {
@@ -162,7 +162,7 @@ int c_viundefine(viInterp *interp) {
    return(1);
 }
 
-int c_viqkdef (viInterp *interp,const int numLevel,const int gridType,float *levelList,float top,float pRef,float rCoef,float *zcoord) {
+int c_viqkdef (viInterp *interp,const int numLevel,const int gridType,float *levelList,float top,float pRef,float rCoef,float *zcoord,float *a,float *b) {
 
    int i;
 
@@ -212,6 +212,8 @@ int c_viqkdef (viInterp *interp,const int numLevel,const int gridType,float *lev
    interp->gGridArray[interp->index].top       = top;
    interp->gGridArray[interp->index].pRef      = pRef;
    interp->gGridArray[interp->index].rCoef     = rCoef;
+   interp->gGridArray[interp->index].a         = a;
+   interp->gGridArray[interp->index].b         = b;
 
    if (gridType == LVL_GALCHEN) {
       if (top == 0) {
@@ -775,23 +777,33 @@ int vigetLnP (VerticalGrid* restrict const Grid, float *LnP,const int NI,const i
          break;
 
       case LVL_HYBRID:
-         /* variable bidon : le £$@¬¤¢ de fortran en a besoin
-         ij=1;
-         hybridModel=(float*)malloc(Grid->numLevels*sizeof (float));
-         f77name(hybrid_to_pres)(LnP,hybridModel,&Grid->top,Grid->z_p,&nij,&ij,&Grid->rCoef,&Grid->pRef,Grid->level_p,&Grid->numLevels);
-         free(hybridModel);
+         /*Test for which hybrid case*/
+         if (Grid->a && Grid->b) {
+            for (k=0;k<Grid->numLevels;k++) {
+               idxk=k*nij;
+               for (ij=0;ij<nij;ij++) {
+                  LnP[idxk+ij]=(float)log(exp(Grid->a[k]+Grid->b[k]*Grid->z_p[ij])/100.0);
+               }
+            }
+         } else {
+            /* variable bidon : le £$@¬¤¢ de fortran en a besoin
+            ij=1;
+            hybridModel=(float*)malloc(Grid->numLevels*sizeof (float));
+            f77name(hybrid_to_pres)(LnP,hybridModel,&Grid->top,Grid->z_p,&nij,&ij,&Grid->rCoef,&Grid->pRef,Grid->level_p,&Grid->numLevels);
+            free(hybridModel);
 
-         for (k=0;k<Grid->numLevels*nij;k++) {
-            LnP[k]=(float)log(LnP[k]);
-         }
-*/
-         /*Version Alain */
-         for (k=0;k<Grid->numLevels;k++) {
-            pk=Grid->pRef*Grid->level_p[k];
-            pr=pow(((Grid->level_p[k]-Grid->top/Grid->pRef)/(1.0-Grid->top/Grid->pRef)),Grid->rCoef);
-            idxk=k*nij;
-            for (ij=0;ij<nij;ij++) {
-               LnP[idxk+ij]=(float)log(pk+(Grid->z_p[ij]-Grid->pRef)*pr);
+            for (k=0;k<Grid->numLevels*nij;k++) {
+               LnP[k]=(float)log(LnP[k]);
+            }
+   */
+            /*Version Alain */
+            for (k=0;k<Grid->numLevels;k++) {
+               pk=Grid->pRef*Grid->level_p[k];
+               pr=pow(((Grid->level_p[k]-Grid->top/Grid->pRef)/(1.0-Grid->top/Grid->pRef)),Grid->rCoef);
+               idxk=k*nij;
+               for (ij=0;ij<nij;ij++) {
+                  LnP[idxk+ij]=(float)log(pk+(Grid->z_p[ij]-Grid->pRef)*pr);
+               }
             }
          }
          break;
