@@ -171,12 +171,10 @@ int c_viqkdef (viInterp *interp,const int numLevel,const int gridType,float *lev
 
    /*On verifie si cette grille existe deja */
    for (i=0;i<VIGRIDLENGTH;i++) {
-      if (interp->gGridArray[i].numLevels==numLevel && interp->gGridArray[i].gridType==gridType) {
+      if (interp->gGridArray[i].numLevels==numLevel && interp->gGridArray[i].gridType==gridType && interp->gGridArray[i].top==top &&
+          interp->gGridArray[i].pRef==pRef && interp->gGridArray[i].rCoef==rCoef
+          && interp->gGridArray[i].a==a && interp->gGridArray[i].b==b && interp->gGridArray[i].z_p==zcoord) {
          if (memcmp(interp->gGridArray[i].level_p,levelList,numLevel*sizeof(float))==0) {
-            interp->gGridArray[i].z_p      = zcoord;
-            interp->gGridArray[i].top      = top;
-            interp->gGridArray[i].pRef     = pRef;
-            interp->gGridArray[i].rCoef    = rCoef;
             if (interp->gViOption & VIVERBOSE) printf ("(INFO) c_viqkdef: Grid already defined (%i)\n", i);
             interp->last=i;
             return(i);

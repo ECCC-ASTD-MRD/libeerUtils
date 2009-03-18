@@ -62,7 +62,7 @@
 /* check for float exception (will do nothing on SX6) */
 #define VICHECKFLOAT 0x080
 
-#define VIGRIDLENGTH 10
+#define VIGRIDLENGTH 16
 
 typedef struct sVerticalGrid {
    int gridType;    /* representation used for vertical levels */
