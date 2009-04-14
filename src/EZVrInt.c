@@ -175,17 +175,15 @@ int c_viqkdef(viInterp *interp,const int numLevel,const int gridType,float *leve
           interp->gGridArray[i].pRef==pRef && interp->gGridArray[i].rCoef==rCoef &&
           interp->gGridArray[i].z_p==zcoord && interp->gGridArray[i].a==a && interp->gGridArray[i].b==b) {
           if (memcmp(interp->gGridArray[i].level_p,levelList,numLevel*sizeof(float))==0) {
-            if (interp->gViOption & VIVERBOSE) printf ("(INFO) c_viqkdef: Grid already defined (%i)\n", i);
-            interp->last=i;
-            return(i);
+             if (interp->gViOption & VIVERBOSE) printf ("(INFO) c_viqkdef: Grid already defined (%i)\n", i);
+             interp->last=i;
+             return(i);
          }
       }
    }
-//          && interp->gGridArray[i].a==a && interp->gGridArray[i].b==b)
 
-   /* Select a new grid form the maximum 10 but do not use the previous one*/
+   /* Select a new grid form the maximum but do not use the previous one*/
    /* in case we are doing single point interpolation */
-
    interp->index=(interp->index+1)%VIGRIDLENGTH;
    if (interp->index==interp->last) {
       interp->index=(interp->index+1)%VIGRIDLENGTH;
@@ -226,6 +224,14 @@ int c_viqkdef(viInterp *interp,const int numLevel,const int gridType,float *leve
       }
    } else if (gridType != LVL_HYBRID) {
       interp->gGridArray[interp->index].top = interp->gGridArray[interp->index].pRef = interp->gGridArray[interp->index].rCoef = 0.0f;
+   }
+
+   /*Make sure the gridset is reinitialised if we just changed the grid it used on last set*/
+   if (interp->gGrdSrc_p==&interp->gGridArray[interp->index]) {
+      interp->gGrdSrc_p=NULL;
+   }
+   if (interp->gGrdDest_p==&interp->gGridArray[interp->index]) {
+      interp->gGrdDest_p=NULL;
    }
 
    return(interp->index);
@@ -271,7 +277,7 @@ int c_videfset(viInterp *interp,const int ni,const int nj,int idGrdDest,int idGr
    }
 
    if (interp->gGrdSrc_p==&interp->gGridArray[idGrdSrc] && interp->gGrdDest_p==&interp->gGridArray[idGrdDest]) {
-      if (interp->gViOption & VIVERBOSE)  printf ("(INFO) c_videfset: Same gridset\n");
+      if (interp->gViOption & VIVERBOSE) printf ("(INFO) c_videfset: Same gridset\n");
       return(1);
    }
 
