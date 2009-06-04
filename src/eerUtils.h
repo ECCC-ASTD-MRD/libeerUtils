@@ -99,8 +99,20 @@
 #define FARENOUGH(DT,X0,Y0,X1,Y1)         (hypot((Y1-Y0),(X1-X0))>DT)
 #define LOG2(V)                           (floor(log10(V)/log10(2)))
 
+#define DSIZE(D)                          (D[0]?(D[1]?(D[2]?3:2):1):0)
+#define FSIZE2D(D)                        (D->NI*D->NJ)
+#define FSIZE3D(D)                        (D->NI*D->NJ*D->NK)
+#define FSIZECHECK(D0,D1)                 (D0->NI==D1->NI && D0->NJ==D1->NJ && D0->NK==D1->NK)
+#define FIDX2D(D,I,J)                     ((J)*D->NI+(I))
+#define FIDX3D(D,I,J,K)                   ((K)*D->NI*D->NJ+(J)*D->NI+(I))
+#define FIN2D(D,I,J)                      (J>=0 && J<D->NJ && I>=0 && I<D->NI)
+#define FIN25D(D,I,J)                     (J>-0.5 && J<D->NJ-0.5 && I>-0.5 && I<D->NI-0.5)
+
 #define CLAMP(A,MIN,MAX)                  (A>MAX?MAX:A<MIN?MIN:A)
 #define ORDER(VAL)                        (VAL==0.0?1.0:floor(log10(ABS(VAL))))
+#define RANGE_ORDER(VAL)                  (VAL==0.0?1.0:ceil(log10(ABS(VAL))-0.25))
+#define RANGE_INCR(VAL)                   (pow(10,VAL-1))
+
 #define VOUT(C0,C1,MI,MA)                 ((C0<MI && C1<MI) || (C0>MA && C1>MA))
 #define VIN(VAL,MIN,MAX)                  ((VAL>MIN && VAL<MAX))
 #define INSIDE(PT,X0,Y0,X1,Y1)            (PT[0]<=X1 && PT[0]>=X0 && PT[1]<=Y1 && PT[1]>=Y0)
@@ -244,6 +256,7 @@ extern int c_gdaxes();
 
 /*RPN external BURP functions*/
 extern int c_mrfopc();
+extern int c_mrfopr();
 extern int c_mrfopn();
 extern int c_mrfmxl();
 extern int c_mrfcls();
