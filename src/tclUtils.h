@@ -37,16 +37,26 @@
 
 #include <tcl.h>
 
+typedef int (TclY_HashFreeEntryDataFunc) (ClientData EntryData);
+
 int   TclY_Get0IntFromObj(Tcl_Interp *Interp,Tcl_Obj *Obj,int *Var);
 int   TclY_Get0LongFromObj(Tcl_Interp *Interp,Tcl_Obj *Obj,long *Var);
 FILE* TclY_ChannelOrSocketOpen(Tcl_Interp *Interp,Tcl_Obj *Obj,char *Mode);
+int   TclY_ListObjFind(Tcl_Interp *Interp,Tcl_Obj *List,Tcl_Obj *Item);
+
+Tcl_HashEntry* TclY_CreateHashEntry(Tcl_HashTable *Table,char *Name,int *new);
+Tcl_HashEntry* TclY_FindHashEntry(Tcl_HashTable *Table,char *Name);
+void  TclY_DeleteHashEntry(Tcl_HashEntry *Entry);
 int   TclY_HashAll(Tcl_Interp *Interp,Tcl_HashTable *Table);
 void* TclY_HashGet(Tcl_HashTable *Table,char *Name);
 void* TclY_HashDel(Tcl_HashTable *Table,char *Name);
 void* TclY_HashPut(Tcl_Interp *Interp,Tcl_HashTable *Table,char *Name,unsigned int Size);
 void* TclY_HashReplace(Tcl_Interp *Interp,Tcl_HashTable *Table,char *Name,void *Data);
 int   TclY_HashSet(Tcl_Interp *Interp,Tcl_HashTable *Table,char *Name,void *Data);
-int   TclY_ListObjFind(Tcl_Interp *Interp,Tcl_Obj *List,Tcl_Obj *Item);
+void  TclY_HashWipe(Tcl_HashTable *Table,TclY_HashFreeEntryDataFunc *TclY_HashFreeEntryData);
+
+void TclY_LockHash();
+void TclY_UnlockHash();
 
 #endif
 

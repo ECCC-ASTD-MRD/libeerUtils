@@ -42,6 +42,8 @@
 #include "tclPort.h"
 #include "tclIO.h"
 
+TCL_DECLARE_MUTEX(MUTEX_HASH)
+
 typedef struct TcpState {
     Tcl_Channel channel;           /* Channel associated with this file. */
     int fd;                        /* The socket itself. */
@@ -107,6 +109,42 @@ int TclY_ListObjFind(Tcl_Interp *Interp,Tcl_Obj *List,Tcl_Obj *Item) {
    return(idx);
 }
 
+void TclY_LockHash(){
+   Tcl_MutexLock(&MUTEX_HASH);
+}
+void TclY_UnlockHash(){
+   Tcl_MutexUnlock(&MUTEX_HASH);
+}
+
+Tcl_HashEntry* TclY_CreateHashEntry(Tcl_HashTable *Table,char *Name,int *new) {
+
+   Tcl_HashEntry *entry;
+
+   Tcl_MutexLock(&MUTEX_HASH);
+   entry=Tcl_CreateHashEntry(Table,Name,new);
+   Tcl_MutexUnlock(&MUTEX_HASH);
+
+   return(entry);
+}
+
+Tcl_HashEntry* TclY_FindHashEntry(Tcl_HashTable *Table,char *Name) {
+
+   Tcl_HashEntry *entry;
+
+   Tcl_MutexLock(&MUTEX_HASH);
+   entry=Tcl_FindHashEntry(Table,Name);
+   Tcl_MutexUnlock(&MUTEX_HASH);
+
+   return(entry);
+}
+
+void TclY_DeleteHashEntry(Tcl_HashEntry *Entry) {
+
+   Tcl_MutexLock(&MUTEX_HASH);
+   Tcl_DeleteHashEntry(Entry);
+   Tcl_MutexUnlock(&MUTEX_HASH);
+}
+
 int TclY_HashAll(Tcl_Interp *Interp,Tcl_HashTable *Table) {
 
    Tcl_Obj       *lst;
@@ -114,12 +152,16 @@ int TclY_HashAll(Tcl_Interp *Interp,Tcl_HashTable *Table) {
    Tcl_HashEntry  *entry=NULL;
 
    lst=Tcl_NewListObj(0,NULL);
+
+   Tcl_MutexLock(&MUTEX_HASH);
    entry=Tcl_FirstHashEntry(Table,&ptr);
 
    while (entry) {
       Tcl_ListObjAppendElement(Interp,lst,Tcl_NewStringObj(Tcl_GetHashKey(Table,entry),-1));
       entry=Tcl_NextHashEntry(&ptr);
    }
+   Tcl_MutexUnlock(&MUTEX_HASH);
+
    Tcl_SetObjResult(Interp,lst);
    return(TCL_OK);
 }
@@ -129,7 +171,7 @@ void* TclY_HashGet(Tcl_HashTable *Table,char *Name) {
    Tcl_HashEntry *entry;
 
    if (Name && strlen(Name)>0) {
-      entry=Tcl_FindHashEntry(Table,Name);
+      entry=TclY_FindHashEntry(Table,Name);
       if (entry) {
          return (void*)(Tcl_GetHashValue(entry));
       }
@@ -142,7 +184,7 @@ int TclY_HashSet(Tcl_Interp *Interp,Tcl_HashTable *Table,char *Name,void *Data) 
    Tcl_HashEntry *entry;
    int            new;
 
-   entry=Tcl_CreateHashEntry(Table,Name,&new);
+   entry=TclY_CreateHashEntry(Table,Name,&new);
    if (!new) {
       if (Interp) Tcl_AppendResult(Interp,"TclY_HashSet: Name already used \"",Name,"\"",(char*)NULL);
       return(TCL_ERROR);
@@ -158,7 +200,7 @@ void* TclY_HashPut(Tcl_Interp *Interp,Tcl_HashTable *Table,char *Name,unsigned i
    Tcl_HashEntry  *entry;
    int             new;
 
-   entry=Tcl_CreateHashEntry(Table,Name,&new);
+   entry=TclY_CreateHashEntry(Table,Name,&new);
 
    if (!new) {
       if (Interp) Tcl_AppendResult(Interp,"TclY_HashSet: Name already used \"",Name,"\"",(char*)NULL);
@@ -174,6 +216,7 @@ void* TclY_HashPut(Tcl_Interp *Interp,Tcl_HashTable *Table,char *Name,unsigned i
          }
       }
    }
+
    return(data);
 }
 
@@ -183,10 +226,10 @@ void* TclY_HashReplace(Tcl_Interp *Interp,Tcl_HashTable *Table,char *Name,void *
    Tcl_HashEntry  *entry;
    int             new;
 
-   entry=Tcl_FindHashEntry(Table,Name);
+   entry=TclY_FindHashEntry(Table,Name);
 
    if (!entry) {
-      entry=Tcl_CreateHashEntry(Table,Name,&new);
+      entry=TclY_CreateHashEntry(Table,Name,&new);
       data=NULL;
    } else {
       data=Tcl_GetHashValue(entry);
@@ -202,14 +245,37 @@ void* TclY_HashDel(Tcl_HashTable *Table,char *Name) {
    void          *item=NULL;
 
    if (Name) {
+      Tcl_MutexLock(&MUTEX_HASH);
       entry=Tcl_FindHashEntry(Table,Name);
 
       if (entry) {
          item=Tcl_GetHashValue(entry);
          Tcl_DeleteHashEntry(entry);
       }
+      Tcl_MutexUnlock(&MUTEX_HASH);
    }
    return(item);
 }
 
+void TclY_HashWipe(Tcl_HashTable *Table,TclY_HashFreeEntryDataFunc *TclY_HashFreeEntryData) {
+
+   Tcl_HashSearch ptr;
+   Tcl_HashEntry  *entry=NULL;
+
+   Tcl_MutexLock(&MUTEX_HASH);
+   entry=Tcl_FirstHashEntry(Table,&ptr);
+
+   while(entry) {
+      if (TclY_HashFreeEntryData) {
+         Tcl_MutexUnlock(&MUTEX_HASH);
+         TclY_HashFreeEntryData(Tcl_GetHashValue(entry));
+         Tcl_MutexLock(&MUTEX_HASH);
+      }
+      Tcl_DeleteHashEntry(entry);
+      entry=Tcl_FirstHashEntry(Table,&ptr);
+   }
+
+//   Tcl_DeleteHashTable(Table);
+   Tcl_MutexUnlock(&MUTEX_HASH);
+}
 #endif
