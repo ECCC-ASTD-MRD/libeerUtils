@@ -36,6 +36,7 @@
 #include "rpn_macros_arch.h"
 #include "/usr/local/env/armnlib/include/fnom.h"
 
+static char FGFDTLock[MAXFILES];
 static TGrid *GridCache[GRIDCACHEMAX];
 static pthread_mutex_t CacheMutex=PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t RPNFieldMutex=PTHREAD_MUTEX_INITIALIZER;
@@ -63,22 +64,27 @@ void EZUnLock_RPNInt() {
    pthread_mutex_unlock(&RPNIntMutex);
 }
 
-int cs_fnomid() {
+
+int cs_fstunlockid(int Unit) {
+   pthread_mutex_lock(&RPNFileMutex);
+   FGFDTLock[Unit-1]=1;
+   pthread_mutex_unlock(&RPNFileMutex);
+}
+
+int cs_fstlockid() {
 
    int id;
 
    pthread_mutex_lock(&RPNFileMutex);
-
    for (id=0;id<MAXFILES;id++) {
       /*Patch pour rmn008 (Unit 6 = bad)*/
-      if (FGFDT[id].iun==0) {
+      if (id!=5 && FGFDT[id].iun==0 && FGFDTLock[id]==0) {
+         FGFDTLock[id]=1;
          id++;
-         if (id==6) id=999;
          break;
       }
    }
    pthread_mutex_unlock(&RPNFileMutex);
-
    return(id);
 }
 
@@ -88,7 +94,7 @@ int cs_fstouv(char *Path,char *Mode) {
    char mode[32];
 
    if (Path) {
-      id=cs_fnomid();
+      id=cs_fstlockid();
       pthread_mutex_lock(&RPNFileMutex);
       if (index(Path,':') && Path[0]!=':') {
          strcpy(mode,Mode);
@@ -111,6 +117,7 @@ int cs_fstfrm(int Unit) {
    pthread_mutex_lock(&RPNFileMutex);
    err=c_fstfrm(Unit);
    err=c_fclos(Unit);
+   FGFDTLock[Unit-1]=0;
    pthread_mutex_unlock(&RPNFileMutex);
 
    return(err);

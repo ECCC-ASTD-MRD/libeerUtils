@@ -104,7 +104,8 @@ void EZUnLock_RPNField();
 void EZLock_RPNInt();
 void EZUnLock_RPNInt();
 
-int cs_fnomid();
+int cs_fstunlockid(int Unit);
+int cs_fstlockid();
 int cs_fstfrm(int Unit);
 int cs_fstouv(char *Path,char *Mode);
 int cs_fstinl(int Unit,int *NI,int *NJ,int *NK,int DateO,char *Etiket,int IP1,int IP2,int IP3,char* TypVar,char *NomVar,int *List,int *Nb,int Max);
