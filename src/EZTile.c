@@ -67,7 +67,7 @@ void EZUnLock_RPNInt() {
 
 int cs_fstunlockid(int Unit) {
    pthread_mutex_lock(&RPNFileMutex);
-   FGFDTLock[Unit-1]=1;
+   FGFDTLock[Unit-1]=0;
    pthread_mutex_unlock(&RPNFileMutex);
 }
 

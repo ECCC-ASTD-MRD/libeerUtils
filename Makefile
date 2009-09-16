@@ -1,5 +1,5 @@
 ARCH        = $(shell uname)
-VERSION     = 1.1.1
+VERSION     = 1.1.3
 
 include Makefile.$(ARCH)
 
@@ -10,7 +10,7 @@ EER_DIR     = /users/dor/afse/eer
 LIBS        = -L$(EER_DIR)/lib/$(ARCH) -lrmn
 INCLUDES    = -I./src -I${ARMNLIB}/include -I${ARMNLIB}/include/${ARCH} -I$(TCL_DIR)/generic
 
-DEFINES     = -DVERSION=$(VERSION) -D_$(ARCH)_
+DEFINES     = -DVERSION=$(VERSION) -D_$(ARCH)_  -DTCL_THREADS
 CFLAGS      = $(CDEBUGFLAGS) $(CCOPTIONS) $(INCLUDES) $(DEFINES)
 
 OBJ_C = $(subst .c,.o,$(wildcard src/*.c))
