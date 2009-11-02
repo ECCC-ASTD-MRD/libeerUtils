@@ -1,5 +1,5 @@
 ARCH        = $(shell uname)
-VERSION     = 1.1.3
+VERSION     = 1.2
 
 include Makefile.$(ARCH)
 

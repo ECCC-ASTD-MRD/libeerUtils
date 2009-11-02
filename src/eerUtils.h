@@ -148,6 +148,18 @@
 #define CLAMPLAT(LAT)        (LAT=LAT>90.0?90.0:(LAT<-90.0?-90.0:LAT))
 #define CLAMPLON(LON)        (LON=LON>180?LON-360:(LON<-180?LON+360:LON))
 
+/*Vertical referential definition*/
+typedef struct TZRef {
+   float *Levels;       /*Levels list*/
+   int    LevelType;    /*Type of levels*/
+   int    LevelNb;      /*Number of Levels*/
+   float  PTop;         /*Pressure at top of atmosphere*/
+   float  PRef;         /*Refference pressure*/
+   float  RCoef[2];     /*Hybrid level coefficient*/
+   float  ETop;         /*Eta coordinate a top*/
+   float  *A,*B;        /*Pressure calculation factors*/
+} TZRef;
+
 /*Standard struct to read an RPN Field*/
 typedef struct TRPNHeader {
    int  FID;               /*Fichier dont provient le champs*/
@@ -173,6 +185,7 @@ typedef struct TRPNHeader {
 }  TRPNHeader;
 
 int   QSort_Double(const void *A,const void *B);
+int   QSort_Float(const void *A,const void *B);
 int   QSort_Int(const void *A,const void *B);
 
 double InterpCubic(double X0,double X1,double X2, double X3,double F);

@@ -421,6 +421,17 @@ int QSort_Double(const void *A,const void *B){
    }
 }
 
+int QSort_Float(const void *A,const void *B){
+
+   if (*(const float*)A<*(const float*)B) {
+      return(-1);
+   } else if (*(const float*)A>*(const float*)B) {
+      return(1);
+   } else {
+      return(0);
+   }
+}
+
 int QSort_Int(const void *A, const void *B) {
    return(*(const int*)A)-(*(const int*)B);
 }

@@ -52,31 +52,35 @@ typedef struct {
 struct TGrid;
 
 typedef struct TGrid {
-   TRPNHeader    H;                  /*RPN Standard file header*/
-   int           GID;                /*EZSCINT Tile grid id (for interpolation)*/
-   int           IP1,IP2,IP3,Master; /*Grid template identifier*/
-   int           Incr;               /*Increasing sorting*/
-   int           Factor;             /*Increasing sorting*/
-   int          *Levels;             /*List of encoded levels (Ordered bottom-up)*/
-   float        *Data;               /*Data pointer*/
-   unsigned long NTI,NTJ;            /*Number of tiles in I and J*/
+   TRPNHeader    H;                    /*RPN Standard file header*/
+   TZRef        *ZRef;                 /*Vertical referential*/
 
-   float         FT0,FT1;            /*Time interpolation factor*/
-   struct TGrid *T0,*T1;             /*Time interpolation strat and end grid*/
+   int           GID;                  /*EZSCINT Tile grid id (for interpolation)*/
+   int           IP1,IP2,IP3,Master;   /*Grid template identifier*/
+   int           Incr;                 /*Increasing sorting*/
+   int           Factor;               /*Increasing sorting*/
+   float        *Data;                 /*Data pointer*/
+   unsigned long NTI,NTJ;              /*Number of tiles in I and J*/
 
-   unsigned int  NbTiles;            /*Number of tiles*/
-   TGridTile    *Tiles;              /*Array of tiles*/
+   float         FT0,FT1;              /*Time interpolation factor*/
+   struct TGrid *T0,*T1;               /*Time interpolation strat and end grid*/
+
+   unsigned int  NbTiles;              /*Number of tiles*/
+   TGridTile    *Tiles;                /*Array of tiles*/
 } TGrid;
 
 int    EZGrid_CopyDesc(const int FIdTo,TGrid* restrict const Grid);
 TGrid *EZGrid_New();
-int    EZGrid_Free(TGrid* restrict const Grid);
+void   EZGrid_Free(TGrid* restrict const Grid);
 TGrid* EZGrid_Get(TGrid* restrict const Grid);
+TZRef* EZGrid_GetZRef(const TGrid* restrict const Grid);
 TGrid* EZGrid_Read(int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2,int Incr);
 TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr);
 int    EZGrid_Load(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1,int J1,int K1);
 int    EZGrid_GetLevelNb(const TGrid* restrict const Grid);
 int    EZGrid_GetLevels(const TGrid* restrict const Grid,float* restrict Levels,int* restrict Type);
+float  EZGrid_GetLevel(const TGrid* restrict const Grid,float Pressure,float P0);
+float  EZGrid_GetPressure(const TGrid* restrict const Grid,float Level,float P0);
 
 void   EZGrid_Factor(TGrid* restrict Grid,float Factor);
 int    EZGrid_GetValue(const TGrid* restrict const Grid,int I,int J,int K0,int K1,float* restrict Value);
