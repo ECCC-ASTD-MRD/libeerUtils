@@ -654,7 +654,7 @@ int EZGrid_CopyDesc(int FIdTo,TGrid* restrict const Grid) {
  *   <FidTo>     : Fichier dans lequel copier
  *   <NI>        : Dimension des tuiles en I
  *   <NJ>        : Dimension des tuiles en J
- *   <FId>       : Fichier source
+ *   <FIdFrom>   : Fichier source
  *   <Var>       : Variable ("" pour toutes)
  *   <TypVar>    : Type de variable  ("" pour toutes)
  *   <Etiket>    : Etiquette  ("" pour toutes)
@@ -668,7 +668,7 @@ int EZGrid_CopyDesc(int FIdTo,TGrid* restrict const Grid) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-int EZGrid_Tile(int FIdTo,int NI, int NJ,int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2) {
+int EZGrid_Tile(int FIdTo,int NI, int NJ,int FIdFrom,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2) {
 
    TGrid *new;
    int    key,n,no,i,j,ni,nj,nk,szd=0,pj;
@@ -676,7 +676,7 @@ int EZGrid_Tile(int FIdTo,int NI, int NJ,int FId,char* Var,char* TypVar,char* Et
    int    idlst[TILEMAX],nid;
 
    /*Get the number of fields*/
-   cs_fstinl(FId,&ni,&nj,&nk,DateV,Etiket,IP1,IP2,-1,TypVar,Var,idlst,&nid,TILEMAX);
+   cs_fstinl(FIdFrom,&ni,&nj,&nk,DateV,Etiket,IP1,IP2,-1,TypVar,Var,idlst,&nid,TILEMAX);
 
    if (nid<=0) {
       fprintf(stderr,"(ERROR) EZGrid_Tile: Specified fields do not exist\n");
@@ -687,7 +687,7 @@ int EZGrid_Tile(int FIdTo,int NI, int NJ,int FId,char* Var,char* TypVar,char* Et
    /*Loop on all found fields*/
    for(n=0;n<nid;n++) {
       new=EZGrid_New();
-      new->H.FID=FId;
+      new->H.FID=FIdFrom;
 
       strcpy(new->H.NOMVAR,"    ");
       strcpy(new->H.TYPVAR,"  ");
@@ -738,7 +738,7 @@ int EZGrid_Tile(int FIdTo,int NI, int NJ,int FId,char* Var,char* TypVar,char* Et
  *
  * Parametres :
  *   <FidTo>     : Fichier dans lequel copier
- *   <FId>       : Fichier source
+ *   <FIdFrom>   : Fichier source
  *   <Var>       : Variable ("" pour toutes)
  *   <TypVar>    : Type de variable  ("" pour toutes)
  *   <Etiket>    : Etiquette  ("" pour toutes)
@@ -752,14 +752,14 @@ int EZGrid_Tile(int FIdTo,int NI, int NJ,int FId,char* Var,char* TypVar,char* Et
  * Remarques :
  *----------------------------------------------------------------------------
 */
-int EZGrid_UnTile(int FIdTo,int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2) {
+int EZGrid_UnTile(int FIdTo,int FIdFrom,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2) {
 
    TGrid *new;
    int    n,ni,nj,nk;
    int    idlst[TILEMAX],nid;
 
    /*Get the number of fields (tile number=1)*/
-   cs_fstinl(FId,&ni,&nj,&nk,DateV,Etiket,IP1,IP2,1,TypVar,Var,idlst,&nid,TILEMAX);
+   cs_fstinl(FIdFrom,&ni,&nj,&nk,DateV,Etiket,IP1,IP2,1,TypVar,Var,idlst,&nid,TILEMAX);
 
    if (nid<=0) {
       fprintf(stderr,"(ERROR) EZGrid_UnTile: Specified fields do not exist\n");
@@ -768,7 +768,7 @@ int EZGrid_UnTile(int FIdTo,int FId,char* Var,char* TypVar,char* Etiket,int Date
 
    /*Loop on all found fields*/
    for(n=0;n<nid;n++) {
-      new=EZGrid_ReadIdx(FId,idlst[n],0);
+      new=EZGrid_ReadIdx(FIdFrom,idlst[n],0);
       EZGrid_TileBurnAll(new,0);
    }
    return(nid);
@@ -1482,7 +1482,7 @@ wordint f77name(ezgrid_getlevelnb)(wordint *gdid) {
    return(EZGrid_GetLevelNb(GridCache[*gdid]));
 }
 int EZGrid_GetLevelNb(const TGrid* restrict const Grid) {
-   return(Grid->H.NK);
+   return(Grid->ZRef->LevelNb);
 }
 
 /*----------------------------------------------------------------------------
@@ -1520,17 +1520,18 @@ int EZGrid_GetLevels(const TGrid* restrict const Grid,float* restrict Levels,int
 }
 
 /*----------------------------------------------------------------------------
- * Nom      : <EZGrid_GetPressure>
+ * Nom      : <EZGrid_GetLevel>
  * Creation : Octobre 2009 - J.P. Gauthier - CMC/CMOE
  *
  * But      : Calculer la pression a un niveaux specifique
  *
  * Parametres :
  *   <Grid>       : Grille
- *   <Level>      : Liste des niveaux
+ *   <Pressure>   : Pression du niveau
+ *   <P0>         : Pression au sol
  *
  * Retour:
- *   <Pressure>  : Pression
+ *   <Level>      : Niveau du modele
  *
  * Remarques :
  *
@@ -1996,10 +1997,11 @@ int EZGrid_GetValue(const TGrid* restrict const Grid,int I,int J,int K0,int K1,f
  *
  * Parametres :
  *   <Grid>       : Grille
+ *   <Nb>         : Nombre de points
  *   <I>          : Coordonnees en I
  *   <J>          : Coordonnees en J
  *   <K>          : Coordonnees en K
- *   <Val>        : Valeurs au points de grilles
+ *   <Value>      : Valeurs au points de grilles
  *
  * Retour:
  *   <int>       : Code d'erreur (0=erreur, 1=ok)
