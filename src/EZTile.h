@@ -79,6 +79,7 @@ TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr);
 int    EZGrid_Load(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1,int J1,int K1);
 int    EZGrid_GetLevelNb(const TGrid* restrict const Grid);
 int    EZGrid_GetLevels(const TGrid* restrict const Grid,float* restrict Levels,int* restrict Type);
+int    EZGrid_GetLevelType(const TGrid* restrict const Grid);
 float  EZGrid_GetLevel(const TGrid* restrict const Grid,float Pressure,float P0);
 float  EZGrid_GetPressure(const TGrid* restrict const Grid,float Level,float P0);
 

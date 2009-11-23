@@ -940,13 +940,24 @@ TZRef* EZGrid_GetZRef(const TGrid* restrict const Grid) {
 
    /*Get the levels*/
    zref->LevelNb=Grid->H.NK;
-   for(k=0;k<zref->LevelNb;k++) {
+   for(k=k2=0;k<zref->LevelNb;k++) {
       key=c_fstprm(idlst[k],&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&h.NK,&h.NBITS,
             &h.DATYP,&ip1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,
             h.GRTYP,&h.IG1,&h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,
             &h.UBC,&h.EX1,&h.EX2,&h.EX3);
-      f77name(convip)(&ip1,&zref->Levels[k],&zref->LevelType,&mode,&format,&flag);
+
+      /*Make sure we use a single type of level, the firts we get*/
+      if (k==0) {
+         f77name(convip)(&ip1,&zref->Levels[k2],&zref->LevelType,&mode,&format,&flag);
+         k2++;
+      } else {
+         f77name(convip)(&ip1,&zref->Levels[k2],&l,&mode,&format,&flag);
+         if (l==zref->LevelType) {
+            k2++;
+         }
+      }
    }
+   zref->LevelNb=k2;
 
    /*Sort the levels from ground up*/
    qsort(zref->Levels,zref->LevelNb,sizeof(float),QSort_Float);
@@ -1023,11 +1034,12 @@ TZRef* EZGrid_GetZRef(const TGrid* restrict const Grid) {
          /*If we find a PT field, we have ETA coordinate otherwise, its'SIGMA*/
          key=l=c_fstinf(Grid->H.FID,&h.NI,&h.NJ,&h.NK,Grid->H.DATEV,Grid->H.ETIKET,-1,-1,-1,"","PT");
          if (l>=0) {
+         fprintf(stderr,"-----------sdhfsgdfjasfdgsd EEETTTTAAAA\n");
+            zref->LevelType=LVL_ETA;
             if (!(pt=(float*)malloc(h.NI*h.NJ*h.NK*sizeof(float)))) {
                fprintf(stderr,"(WARNING) EZGrid_GetZRef: Could not allocate memory for top pressure.\n");
             } else {
                l=c_fstluk(pt,key,&h.NI,&h.NJ,&h.NK);
-               zref->LevelType=LVL_ETA;
                zref->PTop=pt[0];
             }
          } else {
@@ -1483,6 +1495,29 @@ wordint f77name(ezgrid_getlevelnb)(wordint *gdid) {
 }
 int EZGrid_GetLevelNb(const TGrid* restrict const Grid) {
    return(Grid->ZRef->LevelNb);
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <EZGrid_GetLevelType>
+ * Creation : Janvier 2008 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Obtenir le nombre de niveau disponible pour la grille specifiee
+ *
+ * Parametres :
+ *   <Grid>       : Grille
+ *
+ * Retour:
+ *   <int>       : Nombre de niveau
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+*/
+wordint f77name(ezgrid_getleveltype)(wordint *gdid) {
+   return(EZGrid_GetLevelType(GridCache[*gdid]));
+}
+int EZGrid_GetLevelType(const TGrid* restrict const Grid) {
+   return(Grid->ZRef->LevelType);
 }
 
 /*----------------------------------------------------------------------------
