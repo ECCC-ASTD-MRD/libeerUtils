@@ -1628,7 +1628,7 @@ float EZGrid_GetLevel(const TGrid* restrict const Grid,float Pressure,float P0) 
             d=Pressure;
             r=zref->RCoef[0];
 
-            /*Use iterative method Newton-Raphson (developped by Alain Malo*/
+            /*Use iterative method Newton-Raphson (developped by Alain Malo)*/
             level=0.5;
             err=1.0;
             while(err>0.0001) {
@@ -1640,7 +1640,7 @@ float EZGrid_GetLevel(const TGrid* restrict const Grid,float Pressure,float P0) 
          break;
 
       default:
-         fprintf(stderr,"(ERROR) EZGrid_GetPressure: invalid level type");
+         fprintf(stderr,"(ERROR) EZGrid_GetLevel: invalid level type");
    }
    return(level);
 }
