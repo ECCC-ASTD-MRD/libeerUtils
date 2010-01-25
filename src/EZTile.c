@@ -1034,7 +1034,6 @@ TZRef* EZGrid_GetZRef(const TGrid* restrict const Grid) {
          /*If we find a PT field, we have ETA coordinate otherwise, its'SIGMA*/
          key=l=c_fstinf(Grid->H.FID,&h.NI,&h.NJ,&h.NK,Grid->H.DATEV,Grid->H.ETIKET,-1,-1,-1,"","PT");
          if (l>=0) {
-         fprintf(stderr,"-----------sdhfsgdfjasfdgsd EEETTTTAAAA\n");
             zref->LevelType=LVL_ETA;
             if (!(pt=(float*)malloc(h.NI*h.NJ*h.NK*sizeof(float)))) {
                fprintf(stderr,"(WARNING) EZGrid_GetZRef: Could not allocate memory for top pressure.\n");
