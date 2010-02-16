@@ -374,7 +374,7 @@ static inline TGridTile* EZGrid_TileFind(const TGrid* restrict const Grid,int I,
 */
 float* EZGrid_TileBurn(TGrid* restrict const Grid,TGridTile* restrict const Tile,int K) {
 
-   int j;
+   int j,sz,dj,sj;
 
    if (Tile->KBurn!=-1 && Tile->KBurn==K) {
       return(Grid->Data);
@@ -392,8 +392,10 @@ float* EZGrid_TileBurn(TGrid* restrict const Grid,TGridTile* restrict const Tile
       }
    }
 
-   for(j=0;j<Tile->NJ;j++) {
-      memcpy(&Grid->Data[(Tile->J+j)*Grid->H.NI+Tile->I],&Tile->Data[K][j*Tile->NI],Tile->NI*sizeof(float));
+   sz=Tile->NI*sizeof(float);
+   for(j=0,sj=0,dj=Tile->J*Grid->H.NI+Tile->I;j<Tile->NJ;j++,sj+=Tile->NI,dj+=Grid->H.NI) {
+//      memcpy(&Grid->Data[(Tile->J+j)*Grid->H.NI+Tile->I],&Tile->Data[K][j*Tile->NI],Tile->NI*sizeof(float));
+      memcpy(&Grid->Data[dj],&Tile->Data[K][sj],sz);
    }
    Tile->KBurn=K;
 
