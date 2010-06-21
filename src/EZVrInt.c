@@ -530,7 +530,7 @@ int c_visint(viInterp *interp,float *stateOut,float *stateIn,float *derivOut,flo
 
    if (interp->same) {
       memcpy(stateOut,stateIn,surf*interp->gGrdSrc_p->numLevels);
-      printf ("(INFOR) c_visint: Grids are the same\n");
+      printf ("(INFO) c_visint: Grids are the same\n");
       return(1);
    }
 

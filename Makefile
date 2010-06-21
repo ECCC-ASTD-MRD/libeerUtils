@@ -1,17 +1,16 @@
 OS        = $(shell uname -s)
 PROC      = $(shell uname -m)
 ARCH      = $(OS)_$(PROC)
-VERSION     = 1.2
+VERSION     = 1.3
 
 include Makefile.$(OS)
 
 INSTALL_DIR = /users/dor/afse/eer
-TCL_DIR     = /data/cmoe/afsr005/Archive/tcl8.4.13
+TCL_DIR     = /cnfs/ops/cmoe/afsr005/Archive/tcl8.5.7
 EER_DIR     = /users/dor/afse/eer
 
 LIBS        = -L$(EER_DIR)/lib/$(ARCH) -lrmn
-#LIBS        = -L${ARMNLIB}/lib/Linux_x86-64 -lrmnbeta
-INCLUDES    = -I./src -I${ARMNLIB}/include -I${ARMNLIB}/include/${ARCH} -I${ARMNLIB}/include/Linux_x86-64 -I$(TCL_DIR)/generic
+INCLUDES    = -I./src -I${ARMNLIB}/include -I${ARMNLIB}/include/${ARCH} -I${ARMNLIB}/include/Linux_x86-64 -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic 
 
 DEFINES     = -DVERSION=$(VERSION) -D_$(OS)_  -DTCL_THREADS
 CFLAGS      = $(CDEBUGFLAGS) $(CCOPTIONS) $(INCLUDES) $(DEFINES)
