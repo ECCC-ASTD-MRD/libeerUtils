@@ -51,9 +51,13 @@ void Vect_Normalize(Vect3d V){
 
    norm=1.0/sqrt(V[0]*V[0]+V[1]*V[1]+V[2]*V[2]);
 
-   V[0]*=norm;
-   V[1]*=norm;
-   V[2]*=norm;
+   if (norm==0.0) {
+      V[0]=V[1]=V[2]=0.0;
+   } else {
+      V[0]*=norm;
+      V[1]*=norm;
+      V[2]*=norm;
+   }
 }
 
 void Vect3f_Normalize(Vect3f V){
@@ -62,9 +66,13 @@ void Vect3f_Normalize(Vect3f V){
 
    norm=1.0/sqrt(V[0]*V[0]+V[1]*V[1]+V[2]*V[2]);
 
-   V[0]*=norm;
-   V[1]*=norm;
-   V[2]*=norm;
+   if (norm==0.0) {
+      V[0]=V[1]=V[2]=0.0;
+   } else {
+      V[0]*=norm;
+      V[1]*=norm;
+      V[2]*=norm;
+   }
 }
 
 /*----------------------------------------------------------------------------

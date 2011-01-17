@@ -2121,13 +2121,13 @@ int EZGrid_GetArray(TGrid* restrict const Grid,int K,float* restrict Value) {
    float *data;
 
    if (!Grid) {
-      fprintf(stderr,"(ERROR) EZGrid_IJGetValues: Invalid grid\n");
+      fprintf(stderr,"(ERROR) EZGrid_GetArray: Invalid grid\n");
       return(0);
    }
 
    /*Check inclusion in master grid limits*/
    if (K<0 || K>=Grid->H.NK) {
-      fprintf(stderr,"(WARNING) EZGrid_IJGetValues: Coordinates out of range\n");
+      fprintf(stderr,"(WARNING) EZGrid_GetArray: Coordinates out of range\n");
       return(0);
    }
    data=EZGrid_TileBurnAll(Grid,K);
@@ -2170,14 +2170,14 @@ int EZGrid_GetRange(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1
    int        i,j,k;
 
    if (!Grid) {
-      fprintf(stderr,"(ERROR) EZGrid_IJGetValues: Invalid grid\n");
+      fprintf(stderr,"(ERROR) EZGrid_GetRange: Invalid grid\n");
       return(0);
    }
 
    /*Check inclusion in master grid limits*/
    if (I0<0 || J0<0 || K0<0 || I0>=Grid->H.NI || J0>=Grid->H.NJ || K0>=Grid->H.NK ||
        I1<0 || J1<0 || K1<0 || I1>=Grid->H.NI || J1>=Grid->H.NJ || K1>=Grid->H.NK) {
-      fprintf(stderr,"(WARNING) EZGrid_IJGetValues: Coordinates out of range\n");
+      fprintf(stderr,"(WARNING) EZGrid_GetRange: Coordinates out of range\n");
       return(0);
    }
 

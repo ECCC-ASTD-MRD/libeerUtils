@@ -1,7 +1,7 @@
 OS        = $(shell uname -s)
 PROC      = $(shell uname -m)
 ARCH      = $(OS)_$(PROC)
-VERSION     = 1.3
+VERSION     = 1.4
 
 include Makefile.$(OS)
 

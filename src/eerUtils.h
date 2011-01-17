@@ -155,7 +155,7 @@ typedef struct TZRef {
    int    LevelType;    /*Type of levels*/
    int    LevelNb;      /*Number of Levels*/
    float  PTop;         /*Pressure at top of atmosphere*/
-   float  PRef;         /*Refference pressure*/
+   float  PRef;         /*Reference pressure*/
    float  RCoef[2];     /*Hybrid level coefficient*/
    float  ETop;         /*Eta coordinate a top*/
    float  *A,*B;        /*Pressure calculation factors*/
