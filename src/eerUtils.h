@@ -107,7 +107,7 @@
 #define FIDX2D(D,I,J)                     ((J)*D->NI+(I))
 #define FIDX3D(D,I,J,K)                   ((K)*D->NI*D->NJ+(J)*D->NI+(I))
 #define FIN2D(D,I,J)                      (J>=0 && J<D->NJ && I>=0 && I<D->NI)
-#define FIN25D(D,I,J)                     (J>-0.5 && J<D->NJ-0.5 && I>-0.5 && I<D->NI-0.5)
+#define FIN25D(D,I,J)                     (J>-0.5 && J<D->NJ+0.5 && I>-0.5 && I<D->NI+0.5)
 
 #define CLAMP(A,MIN,MAX)                  (A>MAX?MAX:A<MIN?MIN:A)
 #define ORDER(VAL)                        (VAL==0.0?1.0:floor(log10(ABS(VAL))))

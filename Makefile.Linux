@@ -1,4 +1,4 @@
-CC          = c99
+CC          = c99 
 AR          = ar rv
 LD          = ld -shared -x
 

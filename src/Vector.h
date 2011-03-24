@@ -53,6 +53,7 @@
 #define Vect_SMul(V1,V2,SC)      V1[0]=V2[0]*SC;V1[1]=V2[1]*SC;V1[2]=V2[2]*SC
 #define Vect_SDiv(V1,V2,SC)      V1[0]=V2[0]/SC;V1[1]=V2[1]/SC;V1[2]=V2[2]/SC
 
+typedef double Vect4d[4];
 typedef double Vect3d[3];
 typedef double Vect2d[2];
 typedef float  Vect4f[4];
