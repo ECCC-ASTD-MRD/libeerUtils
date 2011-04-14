@@ -2200,3 +2200,121 @@ int EZGrid_GetRange(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1
    }
    return(1);
 }
+
+/*----------------------------------------------------------------------------
+ * Nom      : <EZGrid_GetDelta>
+ * Creation : Avril 2010 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Obtenir les valeurs de distance en X et Y ainsi que l'aire
+ *            pour chaque cellule de la grille
+ *
+ * Parametres :
+ *   <Grid>       : Grille
+ *   <K>          : Coordonnee en K
+ *   <DX>         : Valeurs de distance en X
+ *   <DY>         : Valeurs de distance en X
+ *   <DA>         : Valeurs de l'aire
+ *
+ * Retour:
+ *   <int>       : Code d'erreur (0=erreur, 1=ok)
+ *
+ * Remarques :
+ *    - Si un des tableau est NULL, il ne sera pas remplie
+ *----------------------------------------------------------------------------
+*/
+int f77name(ezgrid_getdelta)(wordint *gdid,wordint *k,ftnfloat *dx,ftnfloat *dy,ftnfloat *da) {
+   return(EZGrid_GetDelta(GridCache[*gdid],*k-1,dx,dy,da));
+}
+
+int EZGrid_GetDelta(TGrid* restrict const Grid,int K,float* DX,float* DY,float* DA) {
+
+   int    i,j,idx;
+   float  dx[4],dy[4],di[4],dj[4],dlat[4],dlon[4];
+
+   if (!Grid) {
+      fprintf(stderr,"(ERROR) EZGrid_GetDelta: Invalid grid\n");
+      return(0);
+   }
+
+   /*Check inclusion in master grid limits*/
+   if (K<0 || K>=Grid->H.NK) {
+      fprintf(stderr,"(WARNING) EZGrid_GetDelta: Coordinates out of range\n");
+      return(0);
+   }
+
+   pthread_mutex_lock(&RPNFieldMutex);
+
+   for(j=0;j<Grid->H.NJ;j++) {
+      idx=j*Grid->H.NI;
+      for(i=0;i<Grid->H.NI;i++,idx++) {
+         di[0]=i-0.5; dj[0]=j;
+         di[1]=i+0.5; dj[1]=j;
+         di[2]=i;     dj[2]=j-0.5;
+         di[3]=i;     dj[3]=j+0.5;
+
+         c_gdllfxy(Grid->GID,dlat,dlon,di,dj,4);
+         dx[0]=DEG2RAD(dlon[0]); dy[0]=DEG2RAD(dlat[0]);
+         dx[1]=DEG2RAD(dlon[1]); dy[1]=DEG2RAD(dlat[1]);
+         dx[2]=DEG2RAD(dlon[2]); dy[2]=DEG2RAD(dlat[2]);
+         dx[3]=DEG2RAD(dlon[3]); dy[3]=DEG2RAD(dlat[3]);
+
+         if (DX) DX[idx]=DIST(0.0,dy[0],dx[0],dy[1],dx[1]);
+         if (DY) DY[idx]=DIST(0.0,dy[2],dx[2],dy[3],dx[3]);
+         if (DA) DA[idx]=(DX[idx])*(DY[idx]);
+      }
+   }
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <EZGrid_GetLL>
+ * Creation : Avril 2011 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Obtenir les latlon a partir des I J
+ *
+ * Parametres :
+ *   <Grid>       : Grille
+ *   <Lat>        : Latitudes
+ *   <Lon>        : Longitudes
+ *   <I>          : I grille
+ *   <J>          : J Grille
+ *
+ * Retour:
+ *   <int>       : Code d'erreur (0=erreur, 1=ok)
+ *
+ * Remarques :
+ *    - Ceci n'est qu'un wrapper sur c_gdllfxy pour le rendre threadsafe
+ *----------------------------------------------------------------------------
+*/
+int EZGrid_GetLL(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float* J,int Nb) {
+
+   pthread_mutex_lock(&RPNFieldMutex);
+   c_gdllfxy(Grid->GID,Lat,Lon,I,J,Nb);
+   pthread_mutex_unlock(&RPNFieldMutex);
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <EZGrid_GetIJ>
+ * Creation : Avril 2011 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Obtenir les IJs a partir des latlon
+ *
+ * Parametres :
+ *   <Grid>       : Grille
+ *   <Lat>        : Latitudes
+ *   <Lon>        : Longitudes
+ *   <I>          : I grille
+ *   <J>          : J Grille
+ *
+ * Retour:
+ *   <int>       : Code d'erreur (0=erreur, 1=ok)
+ *
+ * Remarques :
+ *    - Ceci n'est qu'un wrapper sur c_gdxyfll pour le rendre threadsafe
+ *----------------------------------------------------------------------------
+*/
+int EZGrid_GetIJ(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float* J,int Nb) {
+
+   pthread_mutex_lock(&RPNFieldMutex);
+   c_gdxyfll(Grid->GID,I,J,Lat,Lon,Nb);
+   pthread_mutex_unlock(&RPNFieldMutex);
+}
