@@ -111,6 +111,17 @@ int cs_fstouv(char *Path,char *Mode) {
    return(err<0?err:id);
 }
 
+int cs_fstflush(int Unit) {
+   int err;
+
+   pthread_mutex_lock(&RPNFileMutex);
+   err=c_fstfrm(Unit);
+   err=c_fstouv(Unit,"RND");
+   pthread_mutex_unlock(&RPNFileMutex);
+
+   return(err);
+}
+
 int cs_fstfrm(int Unit) {
    int err;
 
