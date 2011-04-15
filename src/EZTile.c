@@ -2263,6 +2263,7 @@ int EZGrid_GetDelta(TGrid* restrict const Grid,int K,float* DX,float* DY,float* 
          if (DA) DA[idx]=(DX[idx])*(DY[idx]);
       }
    }
+   pthread_mutex_unlock(&RPNFieldMutex);
 }
 
 /*----------------------------------------------------------------------------
