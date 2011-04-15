@@ -948,7 +948,7 @@ TZRef* EZGrid_GetZRef(const TGrid* restrict const Grid) {
             h.GRTYP,&h.IG1,&h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,
             &h.UBC,&h.EX1,&h.EX2,&h.EX3);
 
-      /*Make sure we use a single type of level, the firts we get*/
+      /*Make sure we use a single type of level, the first we get*/
       if (k==0) {
          f77name(convip)(&ip1,&zref->Levels[k2],&zref->LevelType,&mode,&format,&flag);
          k2++;
@@ -966,9 +966,9 @@ TZRef* EZGrid_GetZRef(const TGrid* restrict const Grid) {
 
    if (Grid->Incr!=1) {
       for(k=0;k<zref->LevelNb/2;k++) {
-         l=zref->Levels[k];
+         lvl=zref->Levels[k];
          zref->Levels[k]=zref->Levels[zref->LevelNb-1-k];
-         zref->Levels[zref->LevelNb-1-k]=l;
+         zref->Levels[zref->LevelNb-1-k]=lvl;
       }
    }
 
