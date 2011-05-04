@@ -1860,7 +1860,7 @@ int EZGrid_IJGetValue(TGrid* restrict const Grid,float I,float J,int K0,int K1,f
       }
    }
 
-   I++;J++;
+   I+=1.0;J+=1.0;
 
    k=K0;
    do {
@@ -1947,7 +1947,7 @@ int EZGrid_IJGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
       }
    }
 
-   I++;J++;
+   I+=1.0;J+=1.0;
 
    k=K0;
    do {
@@ -2326,7 +2326,14 @@ int EZGrid_GetLL(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float
 */
 int EZGrid_GetIJ(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float* J,int Nb) {
 
+   int i;
+
    pthread_mutex_lock(&RPNFieldMutex);
    c_gdxyfll(Grid->GID,I,J,Lat,Lon,Nb);
    pthread_mutex_unlock(&RPNFieldMutex);
+
+   for(i=0;i<Nb;i++) {
+      I[i]-=1.0;
+      J[i]-=1.0;
+   }
 }
