@@ -2240,7 +2240,8 @@ int f77name(ezgrid_getdelta)(wordint *gdid,wordint *k,ftnfloat *dx,ftnfloat *dy,
 int EZGrid_GetDelta(TGrid* restrict const Grid,int K,float* DX,float* DY,float* DA) {
 
    int    i,j,idx;
-   float  dx[4],dy[4],di[4],dj[4],dlat[4],dlon[4];
+   float  di[4],dj[4],dlat[4],dlon[4];
+   double fx,fy,dx[4],dy[4];
 
    if (!Grid) {
       fprintf(stderr,"(ERROR) EZGrid_GetDelta: Invalid grid\n");
@@ -2269,9 +2270,11 @@ int EZGrid_GetDelta(TGrid* restrict const Grid,int K,float* DX,float* DY,float* 
          dx[2]=DEG2RAD(dlon[2]); dy[2]=DEG2RAD(dlat[2]);
          dx[3]=DEG2RAD(dlon[3]); dy[3]=DEG2RAD(dlat[3]);
 
-         if (DX) DX[idx]=DIST(0.0,dy[0],dx[0],dy[1],dx[1]);
-         if (DY) DY[idx]=DIST(0.0,dy[2],dx[2],dy[3],dx[3]);
-         if (DA) DA[idx]=(DX[idx])*(DY[idx]);
+         fx=DIST(0.0,dy[0],dx[0],dy[1],dx[1]);
+         fy=DIST(0.0,dy[2],dx[2],dy[3],dx[3]);
+         if (DX) DX[idx]=fx;
+         if (DY) DY[idx]=fy;
+         if (DA) DA[idx]=(fx*fy);
       }
    }
    pthread_mutex_unlock(&RPNFieldMutex);
@@ -2299,8 +2302,15 @@ int EZGrid_GetDelta(TGrid* restrict const Grid,int K,float* DX,float* DY,float* 
 */
 int EZGrid_GetLL(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float* J,int Nb) {
 
+   int i;
+   float fi,fj;
+
    pthread_mutex_lock(&RPNFieldMutex);
-   c_gdllfxy(Grid->GID,Lat,Lon,I,J,Nb);
+   for(i=0;i<Nb;i++) {
+      fi=I[i]+1.0;
+      fj=J[i]+1.0;
+      c_gdllfxy(Grid->GID,Lat,Lon,&fi,&fj,1);
+   }
    pthread_mutex_unlock(&RPNFieldMutex);
 }
 
