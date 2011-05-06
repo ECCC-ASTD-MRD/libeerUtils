@@ -101,8 +101,9 @@ int    EZGrid_GetIJ(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,fl
 int    EZGrid_Tile(int FIdTo,int NI, int NJ,int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2);
 int    EZGrid_UnTile(int FIdTo,int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2);
 
+int    EZGrid_Interp(TGrid* restrict const To,TGrid* restrict const From);
 TGrid *EZGrid_InterpTime(const TGrid* restrict const Grid0,const TGrid* restrict const Grid1,int Date);
-TGrid *EZGrid_Interp(TGrid* restrict const Grid0,TGrid* restrict const Grid1,float Factor0,float Factor1);
+TGrid *EZGrid_InterpFactor(TGrid* restrict const Grid0,TGrid* restrict const Grid1,float Factor0,float Factor1);
 
 float* EZGrid_TileBurn(TGrid* restrict const Grid,TGridTile* restrict const Tile,int K);
 float* EZGrid_TileBurnAll(TGrid* restrict const Grid,int K);

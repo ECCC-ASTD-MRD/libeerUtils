@@ -1454,11 +1454,11 @@ void EZGrid_Factor(TGrid* restrict Grid,const float Factor) {
    Grid->Factor=Factor;
 }
 
-wordint f77name(ezgrid_interp)(wordint *gdid0,wordint *gdid1,ftnfloat *f0,ftnfloat *f1) {
-   return(EZGrid_CacheIdx(EZGrid_Interp(GridCache[*gdid0],GridCache[*gdid1],*f0,*f1)));
+wordint f77name(ezgrid_interpfactor)(wordint *gdid0,wordint *gdid1,ftnfloat *f0,ftnfloat *f1) {
+   return(EZGrid_CacheIdx(EZGrid_InterpFactor(GridCache[*gdid0],GridCache[*gdid1],*f0,*f1)));
 }
 
-TGrid *EZGrid_Interp(TGrid* restrict const Grid0,TGrid* restrict const Grid1,float Factor0,float Factor1) {
+TGrid *EZGrid_InterpFactor(TGrid* restrict const Grid0,TGrid* restrict const Grid1,float Factor0,float Factor1) {
 
    TGrid *new;
    int    i;
@@ -1879,6 +1879,52 @@ int EZGrid_IJGetValue(TGrid* restrict const Grid,float I,float J,int K0,int K1,f
          pthread_mutex_unlock(&RPNIntMutex);
       }
    } while ((K0<=K1?k++:k--)!=K1);
+   return(1);
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <EZGrid_Interp>
+ * Creation : Mai 2011 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Interpoler un champs dans une autre grille
+ *
+ * Parametres :
+ *   <To>     : Destination
+ *   <From>   : Source
+ *
+ * Retour:
+ *   <int>       : Code d'erreur (0=erreur, 1=ok)
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+*/
+wordint f77name(ezgrid_interp)(wordint *to,wordint *from) {
+   return(EZGrid_Interp(GridCache[*to],GridCache[*from]));
+}
+
+int EZGrid_Interp(TGrid* restrict const To, TGrid* restrict const From) {
+
+   int n,ok;
+   float *from,*to;
+
+   if (!From) {
+      fprintf(stderr,"(ERROR) EZGrid_Interp: Invalid input grid\n");
+      return(0);
+   }
+
+   if (!To) {
+      fprintf(stderr,"(ERROR) EZGrid_Interp: Invalid output grid\n");
+      return(0);
+   }
+
+   from=EZGrid_TileBurnAll(From,0);
+   to=EZGrid_TileBurnAll(To,0);
+
+   pthread_mutex_lock(&RPNIntMutex);
+   ok=c_ezdefset(To->GID,From->GID);
+   ok=c_ezsint(to,from);
+   pthread_mutex_unlock(&RPNIntMutex);
+
    return(1);
 }
 
