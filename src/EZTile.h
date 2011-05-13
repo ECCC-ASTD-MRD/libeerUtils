@@ -40,6 +40,7 @@
 #define EZGrid_IsLoaded(TILE,Z)      (TILE->Data && TILE->Data[(int)Z])
 #define EZGrid_TileValue(TILE,X,Y,Z) (TILE->Data[(int)Z][((int)Y-TILE->J)*TILE->NI+((int)X-TILE->I)])
 #define EZGrid_IsInside(GRID,X,Y)    ((X>=0 && Y>=0 && X<GRID->H.NI || Y<GRID->H.NJ))
+#define EZGrid_WrapFlip(GRID,X)      (GRID->Wrap?((X>GRID->H.NI-1)?X-GRID->H.NI+1:X<0?X+GRID->H.NI-1:X):X)
 #define EZGrid_Size(GRID)            (GRID->H.NJ*GRID->H.NI)
 
 typedef struct {
@@ -56,6 +57,7 @@ struct TGrid;
 typedef struct TGrid {
    TRPNHeader    H;                    /*RPN Standard file header*/
    TZRef        *ZRef;                 /*Vertical referential*/
+   int           Wrap;                 /*Flag indicating grid globe wrap-around (global grids)*/
 
    int           GID;                  /*EZSCINT Tile grid id (for interpolation)*/
    int           IP1,IP2,IP3,Master;   /*Grid template identifier*/
@@ -85,6 +87,7 @@ int    EZGrid_GetLevelType(const TGrid* restrict const Grid);
 float  EZGrid_GetLevel(const TGrid* restrict const Grid,float Pressure,float P0);
 float  EZGrid_GetPressure(const TGrid* restrict const Grid,float Level,float P0);
 
+int    EZGrid_Wrap(TGrid* restrict const Grid);
 void   EZGrid_Factor(TGrid* restrict Grid,float Factor);
 int    EZGrid_GetValue(const TGrid* restrict const Grid,int I,int J,int K0,int K1,float* restrict Value);
 int    EZGrid_GetValues(const TGrid* restrict const Grid,int Nb,float* restrict const I,float* restrict const J,float* restrict const K,float* restrict Value);
@@ -123,6 +126,7 @@ int cs_fstflush(int Unit);
 int cs_fstinl(int Unit,int *NI,int *NJ,int *NK,int DateO,char *Etiket,int IP1,int IP2,int IP3,char* TypVar,char *NomVar,int *List,int *Nb,int Max);
 int cs_fstinf(int Unit,int *NI,int *NJ,int *NK,int DateO,char *Etiket,int IP1,int IP2,int IP3,char* TypVar,char *NomVar);
 int cs_fstprm(int Unit,int *DateO,int *Deet,int *NPas,int *NI,int *NJ,int *NK,int *NBits,int *Datyp,int *IP1,int *IP2,int *IP3,char* TypVar,char *NomVar,char *Etiket,char *GrTyp,int *IG1,int *IG2,int *IG3,int *IG4,int *Swa,int *Lng,int *DLTF,int *UBC,int *EX1,int *EX2,int *EX3);
+int cs_fstlir(float *Buf,int Unit,int *NI,int *NJ,int *NK,int DateO,char *Etiket,int IP1,int IP2,int IP3,char* TypVar,char *NomVar);
 int cs_fstluk(float *Data,int Idx,int *NI,int *NJ,int *NK);
 int cs_fstecr(float *Data,int NPak,int Unit, int DateO,int Deet,int NPas,int NI,int NJ,int NK,int IP1,int IP2,int IP3,char* TypVar,char *NomVar,char *Etiket,char *GrTyp,int IG1,int IG2,int IG3,int IG4,int DaTyp,int Over);
 
