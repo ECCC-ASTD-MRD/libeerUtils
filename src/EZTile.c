@@ -133,12 +133,12 @@ int cs_fstfrm(int Unit) {
    return(err);
 }
 
-int cs_fstlir(float *Buf,int Unit,int *NI,int *NJ,int *NK,int DateO,char *Etiket,int IP1,int IP2,int IP3,char* TypVar,char *NomVar) {
+int cs_fstlir(float *Buf,int Unit,int *NI,int *NJ,int *NK,int DateV,char *Etiket,int IP1,int IP2,int IP3,char* TypVar,char *NomVar) {
 
    int err;
 
    pthread_mutex_lock(&RPNFieldMutex);
-   err=cs_fstlir(Buf,Unit,NI,NJ,NK,DateO,Etiket,IP1,IP2,IP3,TypVar,NomVar);
+   err=c_fstlir(Buf,Unit,NI,NJ,NK,DateV,Etiket,IP1,IP2,IP3,TypVar,NomVar);
    pthread_mutex_unlock(&RPNFieldMutex);
 
    return(err);
@@ -2248,6 +2248,21 @@ int EZGrid_GetArray(TGrid* restrict const Grid,int K,float* restrict Value) {
    memcpy(Value,data,Grid->H.NI*Grid->H.NI*sizeof(float));
 
    return(1);
+}
+
+float* EZGrid_GetArrayPtr(TGrid* restrict const Grid,int K) {
+
+   if (!Grid) {
+      fprintf(stderr,"(ERROR) EZGrid_GetArrayPtr: Invalid grid (%s)\n",Grid->H.NOMVAR);
+      return(0);
+   }
+
+   /*Check inclusion in master grid limits*/
+   if (K<0 || K>=Grid->H.NK) {
+      fprintf(stderr,"(WARNING) EZGrid_GetArrayPtr: Coordinates out of range (%s): K(%i)\n",Grid->H.NOMVAR,K);
+      return(0);
+   }
+   return(EZGrid_TileBurnAll(Grid,K));
 }
 
 /*----------------------------------------------------------------------------

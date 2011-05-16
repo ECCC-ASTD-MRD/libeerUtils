@@ -20,6 +20,7 @@ OBJ_F = $(subst .f,.o,$(wildcard src/*.f))
 
 %.o:%.f
 #	gfortran -src $< "-o $@"
+#	s.compile -src $< -optf="-o $@"
 	r.compile -src $< -optf="-o $@"
 
 all: obj lib exec

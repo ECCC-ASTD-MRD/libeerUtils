@@ -96,6 +96,7 @@ int    EZGrid_IJGetUVValue(TGrid* restrict const GridU,TGrid* restrict const Gri
 int    EZGrid_LLGetValue(TGrid* restrict const Grid,float Lat,float Lon,int K0,int K1,float* restrict Value);
 int    EZGrid_LLGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,float Lat,float Lon,int K0,int K1,float* restrict UU,float* restrict VV);
 int    EZGrid_GetArray(TGrid* restrict const Grid,int K,float* restrict Value);
+float* EZGrid_GetArrayPtr(TGrid* restrict const Grid,int K);
 int    EZGrid_GetRange(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1,int J1,int K1,float* restrict Value);
 int    EZGrid_GetDelta(TGrid* restrict const Grid,int K,float* DX,float* DY,float* DA);
 int    EZGrid_GetLL(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float* J,int Nb);
