@@ -85,7 +85,7 @@ time_t System_DateTime2Seconds(int YYYYMMDD,int HHMMSS,int GMT) {
    date.tm_mon=fmod(YYYYMMDD,100)-1;   /*mois apres Janvier [0,11]*/
    YYYYMMDD/=100;
    date.tm_year=YYYYMMDD-1900;         /*annee depuis 1900*/
-   date.tm_isdst=0;                   /*Flag de l'heure avancee*/
+   date.tm_isdst=0;                    /*Flag de l'heure avancee*/
 
    /* Force GMT and set back to original TZ after*/
    if (GMT) {
