@@ -194,7 +194,6 @@ double InterpHermite(double X0,double X1,double X2, double X3,double F,double T,
 
 double HCentile(double *M,int N,int K);
 
-extern char *strdup(const char *str);
 char* strpath(char *Path,char *File);
 char* strcatalloc(char *StrTo,char *StrFrom);
 void  strtrim(char* Str,char Tok);
@@ -236,7 +235,7 @@ extern int f77name(llfxy)  (ftnfloat *dlat,ftnfloat *dlon,ftnfloat *x,ftnfloat *
 extern int f77name(cigaxg) (char *igtyp,ftnfloat *xg1,ftnfloat *xg2,ftnfloat *xg3,ftnfloat *xg4,wordint *ig1,wordint *ig2,wordint *ig3,wordint *ig4);
 extern int f77name(cxgaig) (char *igtyp,wordint *ig1,wordint *ig2,wordint *ig3,wordint *ig4,ftnfloat *xg1,ftnfloat *xg2,ftnfloat *xg3,ftnfloat *xg4);
 extern int f77name(mscale) (ftnfloat *r,ftnfloat *d60,ftnfloat *pi,ftnfloat *pj,wordint *ni,wordint *nj);
-extern int f77name(wkoffit)(char *filename);
+extern int f77name(wkoffit)(char *filename,int size);
 
 extern int f77name(rmnlib_version) (char *rmn,wordint *print,wordint *len);
 
@@ -248,6 +247,7 @@ extern int c_fstecr();
 extern int c_fstinf();
 extern int c_fstprm();
 extern int c_fstluk();
+extern int c_fstsui();
 extern int c_fstinl();
 extern int c_fstopc();
 
@@ -262,6 +262,7 @@ extern int c_gdllfxy();
 extern int c_gdrls();
 extern int c_ezsint();
 extern int c_ezuvint();
+extern int c_ezwdint();
 extern int c_ezsetval();
 extern int c_ezsetopt();
 extern int c_gdll();
@@ -284,5 +285,8 @@ extern int c_mrbprm();
 extern int c_mrbxtr();
 extern int c_mrbcvt();
 extern int c_mrbdcl();
+
+/*RPN date functions*/
+extern int difdatr();
 
 #endif
