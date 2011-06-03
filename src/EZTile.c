@@ -517,24 +517,28 @@ static TGrid* EZGrid_CacheFind(const TGrid* restrict const Grid) {
       pthread_mutex_lock(&CacheMutex);
       for(n=0;n<GRIDCACHEMAX;n++) {
          if (GridCache[n]) {
-            // Check for same level
+            // Check for same level type and definitions
             f77name(convip)(&Grid->H.IP1,&level,&type,&mode,&format,&flag);
-            if (type!= GridCache[n]->ZRef->LevelType) {
+            if (type!=GridCache[n]->ZRef->LevelType) {
+               continue;
+            }
+
+            if (GridCache[n]->H.NK!=Grid->H.NK || GridCache[n]->ZRef->Levels[0]!=level) {
                continue;
             }
 
             // Check for same grid
             if (Grid->H.GRTYP[0]=='#') {
-               if (GridCache[n]->IP1==Grid->H.IG1 && GridCache[n]->IP2==Grid->H.IG2 && GridCache[n]->H.NK==Grid->H.NK) {
+               if (GridCache[n]->IP1==Grid->H.IG1 && GridCache[n]->IP2==Grid->H.IG2) {
                   pthread_mutex_unlock(&CacheMutex);
                   return(GridCache[n]);
                }
             } else if (Grid->H.GRTYP[0]=='Z') {
-               if (GridCache[n]->IP1==Grid->H.IG1 && GridCache[n]->IP2==Grid->H.IG2 && GridCache[n]->IP3==Grid->H.IG3 && GridCache[n]->H.NK==Grid->H.NK) {
+               if (GridCache[n]->IP1==Grid->H.IG1 && GridCache[n]->IP2==Grid->H.IG2 && GridCache[n]->IP3==Grid->H.IG3) {
                   pthread_mutex_unlock(&CacheMutex);
                   return(GridCache[n]);
                }
-            } else if (GridCache[n]->H.GRTYP[0]==Grid->H.GRTYP[0] && GridCache[n]->H.IG1==Grid->H.IG1 && GridCache[n]->H.IG2==Grid->H.IG2 && GridCache[n]->H.IG3==Grid->H.IG3 && GridCache[n]->H.NK==Grid->H.NK) {
+            } else if (GridCache[n]->H.GRTYP[0]==Grid->H.GRTYP[0] && GridCache[n]->H.IG1==Grid->H.IG1 && GridCache[n]->H.IG2==Grid->H.IG2 && GridCache[n]->H.IG3==Grid->H.IG3) {
                pthread_mutex_unlock(&CacheMutex);
                return(GridCache[n]);
             }
@@ -978,7 +982,7 @@ TZRef* EZGrid_GetZRef(const TGrid* restrict const Grid) {
    char    format;
 
    if (!Grid) {
-      fprintf(stderr,"(ERROR) EZGrid_GetLevels Invalid grid (%s)\n",Grid->H.NOMVAR);
+      fprintf(stderr,"(ERROR) EZGrid_GetZRef: Invalid grid (%s)\n",Grid->H.NOMVAR);
       return(0);
    }
 
