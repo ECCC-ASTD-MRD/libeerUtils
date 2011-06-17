@@ -1,16 +1,32 @@
 OS        = $(shell uname -s)
 PROC      = $(shell uname -m)
-ARCH      = $(OS)_$(PROC)
+#ARCH      = $(OS)_$(PROC)
+ARCH      = $(OS)
 VERSION     = 1.4
 
 include Makefile.$(OS)
 
 INSTALL_DIR = /users/dor/afse/eer
 TCL_DIR     = /cnfs/ops/cmoe/afsr005/Archive/tcl8.5.7
-EER_DIR     = /users/dor/afse/eer
 
-LIBS        = -L$(EER_DIR)/lib/$(ARCH) -lrmn
-INCLUDES    = -I./src -I${ARMNLIB}/include -I${ARMNLIB}/include/${ARCH} -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic 
+ifeq ($(OS),Linux)
+
+   EER_DIR     = /users/dor/afsr/005
+   LIBS = -L$(EER_DIR)/lib/$(ARCH) -lrmn -lpgc  
+   LINK_EXEC = -lm -lpthread -Wl,-rpath,$(EER_DIR)/lib/$(ARCH) -shared 
+
+   ifeq ($(PROC),x86_64)
+        ARCH = $(OS)_$(PROC)
+	INCLUDES    = -I./src -I$(ARMNLIB)/include -I$(ARMNLIB)/include/Linux_x86-64 -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic 
+   else
+	INCLUDES    = -I./src -I$(ARMNLIB)/include -I$(ARMNLIB)/include/${ARCH} -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic 
+   endif
+else
+   EER_DIR     = /users/dor/afse/eer
+   INCLUDES    = -I./src -I$(ARMNLIB)/include -I$(ARMNLIB)/include/$(ARCH) 
+   LIBS        = -L$(EER_DIR)/lib/$(ARCH) -L/home/ordenv/ssm-domains1/ssm-rmnlib-dev/multi/lib/AIX/xlf13 -lrmn_012
+   LINK_EXEC   = -lxlf90 -lxlsmp -lm -lc -lpthread 
+endif
 
 DEFINES     = -DVERSION=$(VERSION) -D_$(OS)_  -DTCL_THREADS
 CFLAGS      = $(CDEBUGFLAGS) $(CCOPTIONS) $(INCLUDES) $(DEFINES)
@@ -20,7 +36,7 @@ OBJ_F = $(subst .f,.o,$(wildcard src/*.f))
 
 %.o:%.f
 #	gfortran -src $< "-o $@"
-	s.compile -src $< -optf="-o $@"
+	s.compile -src $< -optf="-o $@" -librmn
 #	r.compile -src $< -optf="-o $@"
 
 all: obj lib exec
@@ -34,7 +50,7 @@ lib:
 
 exec:
 	mkdir -p ./bin
-	$(CC) Utilities/EZTiler.c -o bin/EZTiler-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) -lm -lpthread -Wl,-rpath,$(EER_DIR)/lib/$(ARCH)
+	$(CC) Utilities/EZTiler.c -o bin/EZTiler-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC) 
 #	$(CC) Utilities/EZVrInter.c -o bin/EZVrInter-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) -lm -lpthread -Wl,-rpath,$(EER_DIR)/lib/$(ARCH)
 
 install: all

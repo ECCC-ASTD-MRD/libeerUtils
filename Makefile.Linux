@@ -2,6 +2,10 @@ CC          = c99
 AR          = ar rv
 LD          = ld -shared -x
 
-CCOPTIONS   = -O2 -finline-functions -fomit-frame-pointer -funroll-loops 
-#CCOPTIONS   = -O2 -finline-functions -fomit-frame-pointer -funroll-loops -m64 -DSTDC_HEADERS 
+ifeq ($(PROC),x86_64)
+        CCOPTIONS   = -O2 -finline-functions -fomit-frame-pointer -funroll-loops -fPIC -m64 -DSTDC_HEADERS
+else
+        CCOPTIONS   = -O2 -finline-functions -fomit-frame-pointer -funroll-loops
+endif
+
 CDEBUGFLAGS =
