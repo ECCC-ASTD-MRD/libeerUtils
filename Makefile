@@ -6,7 +6,7 @@ VERSION     = 1.4
 
 include Makefile.$(OS)
 
-INSTALL_DIR = /users/dor/afse/eer
+INSTALL_DIR = /users/dor/afsr/005
 TCL_DIR     = /cnfs/ops/cmoe/afsr005/Archive/tcl8.5.7
 
 ifeq ($(OS),Linux)
