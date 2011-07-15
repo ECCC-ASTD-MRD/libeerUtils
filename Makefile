@@ -8,10 +8,10 @@ include Makefile.$(OS)
 
 INSTALL_DIR = /users/dor/afsr/005
 TCL_DIR     = /cnfs/ops/cmoe/afsr005/Archive/tcl8.5.7
+EER_DIR     = /users/dor/afsr/005
 
 ifeq ($(OS),Linux)
 
-   EER_DIR     = /users/dor/afsr/005
    LIBS = -L$(EER_DIR)/lib/$(ARCH) -lrmn -lpgc  
    LINK_EXEC = -lm -lpthread -Wl,-rpath,$(EER_DIR)/lib/$(ARCH) -shared 
 
@@ -22,10 +22,9 @@ ifeq ($(OS),Linux)
 	INCLUDES    = -I./src -I$(ARMNLIB)/include -I$(ARMNLIB)/include/${ARCH} -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic 
    endif
 else
-   EER_DIR     = /users/dor/afse/eer
    INCLUDES    = -I./src -I$(ARMNLIB)/include -I$(ARMNLIB)/include/$(ARCH) 
    LIBS        = -L$(EER_DIR)/lib/$(ARCH) -L/home/ordenv/ssm-domains1/ssm-rmnlib-dev/multi/lib/AIX/xlf13 -lrmn_012
-   LINK_EXEC   = -lxlf90 -lxlsmp -lm -lc -lpthread 
+   LINK_EXEC   = -lxlf90 -lxlsmp -lc -lpthread -lmass
 endif
 
 DEFINES     = -DVERSION=$(VERSION) -D_$(OS)_  -DTCL_THREADS

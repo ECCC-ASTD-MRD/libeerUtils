@@ -33,6 +33,7 @@
 #define _EZTile_h
 
 #include "eerUtils.h"
+#include <pthread.h>
 
 #define GRIDCACHEMAX 4096
 #define TILEMAX      1024
@@ -55,22 +56,23 @@ typedef struct {
 struct TGrid;
 
 typedef struct TGrid {
-   TRPNHeader    H;                    /*RPN Standard file header*/
-   TZRef        *ZRef;                 /*Vertical referential*/
-   int           Wrap;                 /*Flag indicating grid globe wrap-around (global grids)*/
+   TRPNHeader      H;                    /*RPN Standard file header*/
+   TZRef          *ZRef;                 /*Vertical referential*/
+   int             Wrap;                 /*Flag indicating grid globe wrap-around (global grids)*/
 
-   int           GID;                  /*EZSCINT Tile grid id (for interpolation)*/
-   int           IP1,IP2,IP3,Master;   /*Grid template identifier*/
-   int           Incr;                 /*Increasing sorting*/
-   int           Factor;               /*Increasing sorting*/
-   float        *Data;                 /*Data pointer*/
-   unsigned long NTI,NTJ;              /*Number of tiles in I and J*/
+   int             GID;                  /*EZSCINT Tile grid id (for interpolation)*/
+   int             IP1,IP2,IP3,Master;   /*Grid template identifier*/
+   int             Incr;                 /*Increasing sorting*/
+   int             Factor;               /*Increasing sorting*/
+   float          *Data;                 /*Data pointer*/
+   unsigned long   NTI,NTJ;              /*Number of tiles in I and J*/
 
-   float         FT0,FT1;              /*Time interpolation factor*/
-   struct TGrid *T0,*T1;               /*Time interpolation strat and end grid*/
+   float           FT0,FT1;              /*Time interpolation factor*/
+   struct TGrid   *T0,*T1;               /*Time interpolation strat and end grid*/
 
-   unsigned int  NbTiles;              /*Number of tiles*/
-   TGridTile    *Tiles;                /*Array of tiles*/
+   unsigned int    NbTiles;              /*Number of tiles*/
+   TGridTile      *Tiles;                /*Array of tiles*/
+   pthread_mutex_t Mutex;                /*Per grid mutex for IO*/
 } TGrid;
 
 int    EZGrid_CopyDesc(const int FIdTo,TGrid* restrict const Grid);

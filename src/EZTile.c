@@ -31,15 +31,11 @@
 
 #include "EZTile.h"
 
-#include <pthread.h>
-
 #include "rpn_macros_arch.h"
 #include "/usr/local/env/armnlib/include/fnom.h"
 
 static char FGFDTLock[MAXFILES];
 static TGrid *GridCache[GRIDCACHEMAX];
-static pthread_mutex_t BurnMutex=PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t DataMutex=PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t CacheMutex=PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t RPNFieldMutex=PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t RPNFileMutex=PTHREAD_MUTEX_INITIALIZER;
@@ -295,24 +291,25 @@ static float **EZGrid_TileGetData(const TGrid* restrict const Grid,TGridTile* re
    int        flag=0,ip1=0,mode=2,type;
    char       format;
    float    **data,*datak;
-   
-   if (!Safe) pthread_mutex_lock(&DataMutex);
+
+   if (!Safe) pthread_mutex_lock(&Grid->Mutex);
+
    if (!EZGrid_IsLoaded(Tile,K)) {
       /*Allocate Tile data if not already done*/
       if (!Tile->Data) {
          if (!(data=(float**)calloc(Grid->H.NK,sizeof(float*)))) {
             fprintf(stderr,"(ERROR) EZGrid_TileGetData: Unable to allocate memory for tile data levels (%s)\n",Grid->H.NOMVAR);
-            pthread_mutex_unlock(&DataMutex);
+            if (!Safe) pthread_mutex_unlock(&Grid->Mutex);
             return(NULL);
          }
       } else {
          data=Tile->Data;
       }
-      
+
       if (!data[K]) {
          if (!(datak=(float*)malloc(Grid->H.NIJ*sizeof(float*)))) {
             fprintf(stderr,"(ERROR) EZGrid_TileGetData: Unable to allocate memory for tile data slices (%s)\n",Grid->H.NOMVAR);
-            pthread_mutex_unlock(&DataMutex);
+            if (!Safe) pthread_mutex_unlock(&Grid->Mutex);
             return(NULL);
          }
       } else {
@@ -339,7 +336,6 @@ static float **EZGrid_TileGetData(const TGrid* restrict const Grid,TGridTile* re
          }
          pthread_mutex_unlock(&RPNFieldMutex);
       } else if (Grid->T0 && Grid->T1) {  /*Check for time interpolation needs*/
-
          /*Figure out T0 and T1 tile to use*/
          if (Grid->NbTiles>1) {
             while(&Grid->Tiles[t]!=Tile) t++;
@@ -348,30 +344,12 @@ static float **EZGrid_TileGetData(const TGrid* restrict const Grid,TGridTile* re
          t1=&(Grid->T1->Tiles[t]);
 
          /*Make sure the data form the needed tile is loaded*/
-         EZGrid_TileGetData(Grid->T0,t0,K,1);
-         EZGrid_TileGetData(Grid->T1,t1,K,1);
-         
+         if (!EZGrid_IsLoaded(t0,K)) EZGrid_TileGetData(Grid->T0,t0,K,1);
+         if (!EZGrid_IsLoaded(t1,K)) EZGrid_TileGetData(Grid->T1,t1,K,1);
+
          /*Interpolate between by applying factors*/
-         if (Grid->FT0==0.0) {
-            if (Grid->FT1==1.0) {
-               memcpy(datak,t1->Data[K],Tile->NIJ*sizeof(float));
-            } else {
-               for(ni=0;ni<Tile->NIJ;ni++) {
-                  datak[ni]=t1->Data[K][ni]*Grid->FT1;
-               }
-            }
-         } else if (Grid->FT1==0.0) {
-            if (Grid->FT0==1.0) {
-               memcpy(datak,t0->Data[K],Tile->NIJ*sizeof(float));
-            } else {
-               for(ni=0;ni<Tile->NIJ;ni++) {
-                  datak[ni]=t0->Data[K][ni]*Grid->FT0;
-               }
-            }
-         } else {
-            for(ni=0;ni<Tile->NIJ;ni++) {
-               datak[ni]=t0->Data[K][ni]*Grid->FT0+t1->Data[K][ni]*Grid->FT1;
-            }
+         for(ni=0;ni<Tile->NIJ;ni++) {
+            datak[ni]=t0->Data[K][ni]*Grid->FT0+t1->Data[K][ni]*Grid->FT1;
          }
       }
 
@@ -384,7 +362,8 @@ static float **EZGrid_TileGetData(const TGrid* restrict const Grid,TGridTile* re
       data[K]=datak;
       Tile->Data=data;
    }
-   if (!Safe) pthread_mutex_unlock(&DataMutex);
+   if (!Safe) pthread_mutex_unlock(&Grid->Mutex);
+
    return(Tile->Data);
 }
 
@@ -444,7 +423,7 @@ float* EZGrid_TileBurn(TGrid* restrict const Grid,TGridTile* restrict const Tile
 
    int j,sz,dj,sj;
 
-   pthread_mutex_lock(&BurnMutex);
+   pthread_mutex_lock(&Grid->Mutex);
    if (Tile->KBurn!=-1 && Tile->KBurn==K) {
       return(Grid->Data);
    }
@@ -467,9 +446,9 @@ float* EZGrid_TileBurn(TGrid* restrict const Grid,TGridTile* restrict const Tile
       memcpy(&Grid->Data[dj],&Tile->Data[K][sj],sz);
    }
    Tile->KBurn=K;
-   
-   pthread_mutex_unlock(&BurnMutex);
-   
+
+   pthread_mutex_unlock(&Grid->Mutex);
+
    return(Grid->Data);
 }
 
@@ -1104,7 +1083,7 @@ TZRef* EZGrid_GetZRef(const TGrid* restrict const Grid) {
                               }
                            }
                            if (j==h.NJ) {
-                              fprintf(stderr,"(WARNING) EZGrid_GetZRef: Could not find level %i in lookup table.\n",zref->Levels[k]);
+                              fprintf(stderr,"(WARNING) EZGrid_GetZRef: Could not find level %.4f in lookup table.\n",zref->Levels[k]);
                            }
                         }
                      } else {
@@ -1177,6 +1156,7 @@ TGrid *EZGrid_New() {
       new->T0=new->T1=NULL;
       new->NbTiles=0;
       new->Tiles=NULL;
+      pthread_mutex_init(&new->Mutex,NULL);
    }
    return(new);
 }
@@ -1256,6 +1236,7 @@ void EZGrid_Free(TGrid* restrict const Grid) {
       free(Grid->Data);
       Grid->Data=NULL;
    }
+   pthread_mutex_destroy(&Grid->Mutex);
 
    /*If this is a master, keep in memory*/
    if (!Grid->Master) {

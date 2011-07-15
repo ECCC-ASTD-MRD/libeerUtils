@@ -50,6 +50,29 @@ int System_ByteOrder(void) {
    return(byte[0]?SYS_LITTLE_ENDIAN:SYS_BIG_ENDIAN);
 }
 
+int System_TimeValSubtract(struct timeval *Result,struct timeval *T0,struct timeval *T1) {
+   
+   int nsec;
+   
+   /* Perform the carry for the later subtraction by updating y. */
+   if (T0->tv_usec<T1->tv_usec) {
+      nsec=(T1->tv_usec-T0->tv_usec)/1000000+1;
+      T1->tv_usec-=1000000*nsec;
+      T1->tv_sec+=nsec;
+   }
+   if (T0->tv_usec-T1->tv_usec>1000000) {
+      nsec=(T1->tv_usec-T0->tv_usec)/1000000;
+      T1->tv_usec+=1000000*nsec;
+      T1->tv_sec-=nsec;
+   }
+   
+   Result->tv_sec =T0->tv_sec-T1->tv_sec;
+   Result->tv_usec=T0->tv_usec-T1->tv_usec;
+   
+   /* Return 1 if result is negative. */
+   return(T0->tv_sec<T1->tv_sec);
+}
+
 /*----------------------------------------------------------------------------
  * Nom      : <System_DateTime2Seconds>
  * Creation : Mai 2006 - J.P. Gauthier - CMC/CMOE

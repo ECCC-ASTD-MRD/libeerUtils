@@ -40,6 +40,7 @@
 #define _eerUtils_h
 
 #include <time.h>
+#include <sys/time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -213,7 +214,8 @@ long   System_Stamp2Seconds(int Stamp);
 int    System_Seconds2Stamp(long Sec);
 void   System_StampDecode(int Stamp,int *YYYY,int *MM,int *DD,int *H,int *M,int *S);
 void   System_StampEncode(int *Stamp,int YYYY,int MM,int DD,int H,int M,int S);
-
+int    System_TimeValSubtract(struct timeval *Result,struct timeval *T0,struct timeval *T1);
+   
 void Astro_SunPos(time_t Sec,double *Lat,double *Lon);
 void Astro_MoonPos(time_t ssue,float *lat,float *lon);
 
