@@ -66,6 +66,8 @@
 #define SYS_IFSWAP4(i,t,x) if (i!=t) SYS_SWAP4(x)
 #define SYS_IFSWAP8(i,t,x) if (i!=t) SYS_SWAP8(x)
 
+#define SYS_IOTHREAD_STACKSIZE 83886080
+
 /*Mathematical related constants and functions*/
 #ifndef M_PI
 #define M_PI        3.141592653589793115997963468544        /*Pi*/
@@ -99,7 +101,7 @@
 #define ILVIN(VAL,A,B)                    ((A!=B) && ((VAL>=A && VAL<=B) || (VAL<=A && VAL>=B)))
 #define ILADD(SIDE,F)                     (SIDE?1.0f-F:F)
 #define FARENOUGH(DT,X0,Y0,X1,Y1)         (hypot((Y1-Y0),(X1-X0))>DT)
-#define LOG2(V)                           (floor(log10(V)/log10(2)))
+#define LOG2(V)                           (log10(V)/log10(2))
 
 #define DSIZE(D)                          (D[0]?(D[1]?(D[2]?3:2):1):0)
 #define FSIZE2D(D)                        (D->NI*D->NJ)
@@ -206,6 +208,7 @@ int   strrindex(char *Str);
 
 int    System_IsBigEndian(void);
 int    System_ByteOrder(void);
+int    System_BitCount(unsigned int N);
 time_t System_DateTime2Seconds(int YYYYMMDD,int HHMMSS,int GMT);
 double System_Date2Julian(int Year,int Month,int Day);
 time_t System_Seconds2DateTime(time_t Sec,int *YYYYMMDD,int *HHMMSS,int GMT);
@@ -215,7 +218,7 @@ int    System_Seconds2Stamp(long Sec);
 void   System_StampDecode(int Stamp,int *YYYY,int *MM,int *DD,int *H,int *M,int *S);
 void   System_StampEncode(int *Stamp,int YYYY,int MM,int DD,int H,int M,int S);
 int    System_TimeValSubtract(struct timeval *Result,struct timeval *T0,struct timeval *T1);
-   
+
 void Astro_SunPos(time_t Sec,double *Lat,double *Lon);
 void Astro_MoonPos(time_t ssue,float *lat,float *lon);
 
@@ -271,7 +274,7 @@ extern int c_gdll();
 extern int c_gdllsval();
 extern int c_gdllwdval();
 extern int c_gdllvval();
-extern int c_gdaxes();
+extern int c_gdgaxes();
 
 /*RPN external BURP functions*/
 extern int c_mrfopc();

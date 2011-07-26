@@ -27,7 +27,7 @@ else
    LINK_EXEC   = -lxlf90 -lxlsmp -lc -lpthread -lmass
 endif
 
-DEFINES     = -DVERSION=$(VERSION) -D_$(OS)_  -DTCL_THREADS
+DEFINES     = -DVERSION=$(VERSION) -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE
 CFLAGS      = $(CDEBUGFLAGS) $(CCOPTIONS) $(INCLUDES) $(DEFINES)
 
 OBJ_C = $(subst .c,.o,$(wildcard src/*.c))

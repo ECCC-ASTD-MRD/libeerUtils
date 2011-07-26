@@ -38,8 +38,8 @@
 #define GRIDCACHEMAX 4096
 #define TILEMAX      1024
 
-#define EZGrid_IsLoaded(TILE,Z)      (TILE->Data && TILE->Data[(int)Z])
-#define EZGrid_TileValue(TILE,X,Y,Z) (TILE->Data[(int)Z][((int)Y-TILE->J)*TILE->NI+((int)X-TILE->I)])
+#define EZGrid_IsLoaded(TILE,Z)      (TILE->Data && TILE->Data[Z])
+#define EZGrid_TileValue(TILE,X,Y,Z) (TILE->Data[Z][((int)Y-TILE->J)*TILE->NI+((int)X-TILE->I)])
 #define EZGrid_IsInside(GRID,X,Y)    ((X>=0 && Y>=0 && X<GRID->H.NI || Y<GRID->H.NJ))
 #define EZGrid_WrapFlip(GRID,X)      (GRID->Wrap?((X>GRID->H.NI-1)?X-GRID->H.NI+1:X<0?X+GRID->H.NI-1:X):X)
 #define EZGrid_Size(GRID)            (GRID->H.NJ*GRID->H.NI)

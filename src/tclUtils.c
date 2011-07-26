@@ -65,7 +65,7 @@ int TclY_Get0IntFromObj(Tcl_Interp *Interp,Tcl_Obj *Obj,int *Var) {
 int TclY_Get0LongFromObj(Tcl_Interp *Interp,Tcl_Obj *Obj,long *Var) {
 
    if (Tcl_GetString(Obj)[0]=='0') {
-       sscanf(Tcl_GetString(Obj),"%d",Var);
+       sscanf(Tcl_GetString(Obj),"%ld",Var);
        return(TCL_OK);
    } else {
        return(Tcl_GetLongFromObj(Interp,Obj,Var));

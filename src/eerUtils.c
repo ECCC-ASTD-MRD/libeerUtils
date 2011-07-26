@@ -50,10 +50,21 @@ int System_ByteOrder(void) {
    return(byte[0]?SYS_LITTLE_ENDIAN:SYS_BIG_ENDIAN);
 }
 
+int System_BitCount(unsigned int N) {
+   //This is HACKMEM 169, as used in X11 sources. Source: MIT AI Lab memo, late 1970?s.
+   /* works for 32-bit numbers only    */
+   /* fix last line for 64-bit numbers */
+
+   register unsigned int tmp;
+
+   tmp = N - ((N>>1) & 033333333333) - ((N>>2) & 011111111111);
+   return ((tmp + (tmp >> 3)) & 030707070707) % 63;
+}
+
 int System_TimeValSubtract(struct timeval *Result,struct timeval *T0,struct timeval *T1) {
-   
+
    int nsec;
-   
+
    /* Perform the carry for the later subtraction by updating y. */
    if (T0->tv_usec<T1->tv_usec) {
       nsec=(T1->tv_usec-T0->tv_usec)/1000000+1;
@@ -65,10 +76,10 @@ int System_TimeValSubtract(struct timeval *Result,struct timeval *T0,struct time
       T1->tv_usec+=1000000*nsec;
       T1->tv_sec-=nsec;
    }
-   
+
    Result->tv_sec =T0->tv_sec-T1->tv_sec;
    Result->tv_usec=T0->tv_usec-T1->tv_usec;
-   
+
    /* Return 1 if result is negative. */
    return(T0->tv_sec<T1->tv_sec);
 }
