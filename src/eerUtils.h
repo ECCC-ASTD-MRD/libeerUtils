@@ -242,7 +242,7 @@ extern int f77name(cxgaig) (char *igtyp,wordint *ig1,wordint *ig2,wordint *ig3,w
 extern int f77name(mscale) (ftnfloat *r,ftnfloat *d60,ftnfloat *pi,ftnfloat *pj,wordint *ni,wordint *nj);
 extern int f77name(wkoffit)(char *filename,int size);
 
-extern int f77name(rmnlib_version) (char *rmn,wordint *print,wordint *len);
+extern int f77name(rmnlib_version) (char *rmn,wordint *print,wordint len);
 
 extern int c_fnom();
 extern int c_fclos();
