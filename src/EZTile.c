@@ -1782,25 +1782,33 @@ float EZGrid_GetPressure(const TGrid* restrict const Grid,float Level,float P0) 
    return(pres);
 }
 
+
 static inline float EZGrid_Bilin(TGrid* restrict const Grid,float* restrict const Data,float I,float J) {
 
-   int idx,idx0,idxj,idxi,idxij;
-   int i,j;
+   int   i,j,idx,idxj;
    float dx,dy;
 
    i=I;
    j=J;
+
    dx=I-i;
    dy=J-j;
 
    idx =j*Grid->H.NI+i;
    idxj=idx+Grid->H.NI;
-   idxi=idx+1;
-   idxij=idxj+1;
 
-   return(Data[idx] + (Data[idxi]-Data[idx])*dx + (Data[idxj]-Data[idx])*dy + (Data[idxij]-Data[idxi]-Data[idxj]+Data[idx])*dx*dy);
+   return(Data[idx] + (Data[idx+1]-Data[idx])*dx + (Data[idxj]-Data[idx])*dy + (Data[idxj+1]-Data[idx+1]-Data[idxj]+Data[idx])*dx*dy);
 }
 
+static inline float EZGrid_BilinDD(TGrid* restrict const Grid,float* restrict const Data,int I,int J,float DX, float DY) {
+
+   int   idx,idxj;
+
+   idx =J*Grid->H.NI+I;
+   idxj=idx+Grid->H.NI;
+
+   return(Data[idx] + (Data[idx+1]-Data[idx])*DX + (Data[idxj]-Data[idx])*DY + (Data[idxj+1]-Data[idx+1]-Data[idxj]+Data[idx])*DX*DY);
+}
 /*----------------------------------------------------------------------------
  * Nom      : <EZGrid_LLGetValue>
  * Creation : Janvier 2008 - J.P. Gauthier - CMC/CMOE
@@ -1916,7 +1924,8 @@ wordint f77name(ezgrid_ijgetvalue)(wordint *gdid,ftnfloat *i,ftnfloat *j,wordint
 int EZGrid_IJGetValue(TGrid* restrict const Grid,float I,float J,int K0,int K1,float* restrict Value) {
 
    TGridTile *tile[4],*t;
-   int        k,n,ik=0,in[4],jn[4];
+   int        k,n,ik=0,in[4],jn[4],i,j;
+   float      dx,dy;
 
    if (!Grid) {
       fprintf(stderr,"(ERROR) EZGrid_IJGetValue: Invalid grid (%s)\n",Grid->H.NOMVAR);
@@ -1929,9 +1938,14 @@ int EZGrid_IJGetValue(TGrid* restrict const Grid,float I,float J,int K0,int K1,f
       return(0);
    }
 
+   i=I;
+   j=J;
+   dx=I-i;
+   dy=J-j;
+
    if (Grid->NbTiles>1) {
-      in[0]=in[2]=floor(I);
-      jn[0]=jn[1]=floor(J);
+      in[0]=in[2]=i;
+      jn[0]=jn[1]=j;
       in[1]=in[3]=in[0]+1;
       jn[2]=jn[3]=jn[0]+1;
 
@@ -1955,22 +1969,20 @@ int EZGrid_IJGetValue(TGrid* restrict const Grid,float I,float J,int K0,int K1,f
          while(n--) {
             EZGrid_TileBurn(Grid,tile[n],k);
          }
-//         pthread_mutex_lock(&RPNIntMutex);
-         Value[ik]=EZGrid_Bilin(Grid,Grid->Data,I,J);
+//         Value[ik]=EZGrid_Bilin(Grid,Grid->Data,I,J);
+         Value[ik]=EZGrid_BilinDD(Grid,Grid->Data,i,j,dx,dy);
          ik++;
-//         c_gdxysval(Grid->GID,&Value[ik++],Grid->Data,&I,&J,1);
 //         pthread_mutex_unlock(&RPNIntMutex);
       } else {
          t=&Grid->Tiles[0];
          if (!EZGrid_IsLoaded(t,k))
             EZGrid_TileGetData(Grid,t,k,0);
-//         pthread_mutex_lock(&RPNIntMutex);
 
-         Value[ik]=EZGrid_Bilin(Grid,t->Data[k],I,J);
+//         Value[ik]=EZGrid_Bilin(Grid,t->Data[k],I,J);
+         Value[ik]=EZGrid_BilinDD(Grid,t->Data[k],i,j,dx,dy);
          ik++;
 
 //         c_gdxysval(Grid->GID,&Value[ik++],t->Data[k],&I,&J,1);
-//         pthread_mutex_unlock(&RPNIntMutex);
       }
    } while ((K0<=K1?k++:k--)!=K1);
    return(1);

@@ -232,6 +232,7 @@ extern int f77name(incdatr)(wordint *dat1,wordint *dat2,double *nhours);
 extern int f77name(difdatr)(wordint *dat1,wordint *dat2,double *nhours);
 extern int f77name(convip) (wordint *ip,ftnfloat *p,wordint *kind,wordint *mode,char *string,wordint *flag);
 extern int f77name(sort)   (ftnfloat *work,wordint *n);
+extern int f77name(ipsort) (wordint *ip,ftnfloat *a,wordint *n);
 extern int f77name(fd1)    (ftnfloat *gd1,ftnfloat *f,ftnfloat *h);
 extern int f77name(fdm)    (ftnfloat *gdm,ftnfloat *f,ftnfloat *h,wordint *m);
 extern int f77name(int1d1) (ftnfloat *fi,ftnfloat *f,ftnfloat *xi,ftnfloat *x,ftnfloat *fx,ftnfloat *h,wordint *m,wordint *mi,ftnfloat *cmu1,ftnfloat *c1,ftnfloat *clmdam,ftnfloat *cm,ftnfloat *a,ftnfloat *c,ftnfloat *d);
