@@ -59,12 +59,7 @@ extern void f77name (interp1d_cubicwithderivs) ();
 extern void f77name (interp1d_cubiclagrange) ();
 extern void f77name (extrap1d_lapserate) ();
 
-/* Convertion function */
-extern int f77name (hybrid_to_pres) ();
-
 /* Prototypes */
-int vigetLnP (VerticalGrid* restrict const Grid, float *LnP,const int NI,const int NJ);
-int vigetMASL(VerticalGrid* restrict const Grid,float *Height,const int NI,const int NJ);
 void vicleanGrid (viInterp *Interp);
 
 /* Fortran Interface */
@@ -77,7 +72,19 @@ wordint f77name(viundefine)(void) {
 }
 
 wordint f77name(viqkdef)(wordint *numLevel,wordint *gridType,ftnfloat *levelList,ftnfloat *top,ftnfloat *pRef,ftnfloat *rCoef,ftnfloat *zcoord,ftnfloat *a,ftnfloat *b) {
-   return c_viqkdef(FInterp,*numLevel,*gridType,levelList,*top,*pRef,*rCoef,zcoord,a,b);
+   TZRef zref;
+
+   zref.Type=*gridType;
+   zref.LevelNb=*numLevel;
+   zref.Levels=levelList;
+   zref.PTop=*top;
+   zref.PRef=*pRef;
+   zref.RCoef[0]=*rCoef;
+   zref.P0=zcoord;
+   zref.A=a;
+   zref.B=b;
+
+   return c_viqkdef(FInterp,&zref);
 }
 
 wordint f77name(videfset)(wordint *ni,wordint *nj,wordint *idGrdDest,wordint *idGrdSrc) {
@@ -130,9 +137,9 @@ viInterp* c_videfine (void) {
 
    interp=(viInterp*)malloc(sizeof(viInterp));
 
-   memset(interp->gGridArray,0x0,VIGRIDLENGTH*sizeof(VerticalGrid));
-   interp->gGrdSrc_p=NULL;
-   interp->gGrdDest_p=NULL;
+   memset(interp->ZRefs,0x0,VIGRIDLENGTH*sizeof(TZRef));
+   interp->ZRefSrc=NULL;
+   interp->ZRefDest=NULL;
    interp->gCubeSrc_p=NULL;
    interp->gCubeDest_p=NULL;
    interp->gInterpIndex_p=NULL;
@@ -147,11 +154,12 @@ viInterp* c_videfine (void) {
 
    return(interp);
 }
+
 int c_viundefine(viInterp *interp) {
 
    if (interp) {
-      if (interp->gGrdSrc_p)      free(interp->gGrdSrc_p);
-      if (interp->gGrdDest_p)     free(interp->gGrdDest_p);
+      if (interp->ZRefSrc)      free(interp->ZRefSrc);
+      if (interp->ZRefDest)     free(interp->ZRefDest);
       if (interp->gCubeSrc_p)     free(interp->gCubeSrc_p);
       if (interp->gCubeDest_p)    free(interp->gCubeDest_p);
       if (interp->gInterpIndex_p) free(interp->gInterpIndex_p);
@@ -162,19 +170,18 @@ int c_viundefine(viInterp *interp) {
    return(1);
 }
 
-int c_viqkdef(viInterp *interp,const int numLevel,const int gridType,float *levelList,float top,float pRef,float rCoef,float *zcoord,float *a,float *b) {
-
+int c_viqkdef(viInterp *interp,TZRef *ZRef) {
    int i;
 
-   if (!levelList || numLevel<=0)
+   if (!ZRef->Levels || ZRef->LevelNb<=0)
       return(0);
 
    /*On verifie si cette grille existe deja */
    for (i=0;i<VIGRIDLENGTH;i++) {
-      if (interp->gGridArray[i].numLevels==numLevel && interp->gGridArray[i].gridType==gridType && interp->gGridArray[i].top==top &&
-          interp->gGridArray[i].pRef==pRef && interp->gGridArray[i].rCoef==rCoef &&
-          interp->gGridArray[i].z_p==zcoord && interp->gGridArray[i].a==a && interp->gGridArray[i].b==b) {
-          if (memcmp(interp->gGridArray[i].level_p,levelList,numLevel*sizeof(float))==0) {
+      if (interp->ZRefs[i].LevelNb==ZRef->LevelNb && interp->ZRefs[i].Type==ZRef->Type && interp->ZRefs[i].PTop==ZRef->PTop &&
+           interp->ZRefs[i].PRef==ZRef->PRef && interp->ZRefs[i].RCoef[0]==ZRef->RCoef[0] && interp->ZRefs[i].RCoef[1]==ZRef->RCoef[1] &&
+          interp->ZRefs[i].P0==ZRef->P0 && interp->ZRefs[i].A==ZRef->A && interp->ZRefs[i].B==ZRef->B) {
+          if (memcmp(interp->ZRefs[i].Levels,ZRef->Levels,ZRef->LevelNb*sizeof(float))==0) {
              if (interp->gViOption & VIVERBOSE) printf ("(INFO) c_viqkdef: Grid already defined (%i)\n", i);
              interp->last=i;
              return(i);
@@ -191,47 +198,41 @@ int c_viqkdef(viInterp *interp,const int numLevel,const int gridType,float *leve
    interp->last=interp->index;
 
    if (interp->gViOption & VIVERBOSE) printf ("(INFO) c_viqkdef: New grid (%i)\n", interp->index);
-   if (interp->gGridArray[interp->index].level_p != NULL) {
-      free (interp->gGridArray[interp->index].level_p);
-      interp->gGridArray[interp->index].level_p = NULL;
+   if (interp->ZRefs[interp->index].Levels) {
+      free (interp->ZRefs[interp->index].Levels);
+      interp->ZRefs[interp->index].Levels = NULL;
    }
 
-   interp->gGridArray[interp->index].level_p = (float *) malloc (numLevel * sizeof (float));
-   if (!interp->gGridArray[interp->index].level_p) {
-      fprintf (stderr, "(ERROR) c_viqkdef: malloc failed for gGridArray[%d].level_p\n", interp->index);
+   memcpy(&interp->ZRefs[interp->index],ZRef,sizeof(TZRef));
+
+   interp->ZRefs[interp->index].Levels = (float*)malloc(ZRef->LevelNb*sizeof(float));
+   if (!interp->ZRefs[interp->index].Levels) {
+      fprintf (stderr, "(ERROR) c_viqkdef: malloc failed for ZRefs[%d].Levels\n", interp->index);
       return -1;
    }
-   memcpy(interp->gGridArray[interp->index].level_p, levelList, numLevel * sizeof (float));
 
-   interp->gGridArray[interp->index].numLevels = numLevel;
-   interp->gGridArray[interp->index].gridType  = gridType;
-   interp->gGridArray[interp->index].z_p       = zcoord;
-   interp->gGridArray[interp->index].top       = top;
-   interp->gGridArray[interp->index].pRef      = pRef;
-   interp->gGridArray[interp->index].rCoef     = rCoef;
-   interp->gGridArray[interp->index].a         = a;
-   interp->gGridArray[interp->index].b         = b;
+   memcpy(interp->ZRefs[interp->index].Levels,ZRef->Levels,ZRef->LevelNb*sizeof (float));
 
-   if (gridType == LVL_GALCHEN) {
-      if (top == 0) {
+   if (ZRef->Type == LVL_GALCHEN) {
+      if (ZRef->PTop == 0) {
          fprintf(stderr, "(ERROR) c_viqkdef: Height at the top of the atmosphere is needed for Gal-Chen interpolation\n");
          return -1;
       }
-   } else if (gridType == LVL_ETA) {
-      if (top == 0) {
+   } else if (ZRef->Type == LVL_ETA) {
+      if (ZRef->PTop == 0) {
          fprintf(stderr, "(ERROR) c_viqkdef: Pressure at the top of the atmosphere is needed for Eta interpolation\n");
          return -1;
       }
-   } else if (gridType != LVL_HYBRID) {
-      interp->gGridArray[interp->index].top = interp->gGridArray[interp->index].pRef = interp->gGridArray[interp->index].rCoef = 0.0f;
+   } else if (ZRef->Type != LVL_HYBRID) {
+      interp->ZRefs[interp->index].PTop = interp->ZRefs[interp->index].PRef = interp->ZRefs[interp->index].RCoef[0] = interp->ZRefs[interp->index].RCoef[1]= 0.0f;
    }
 
    /*Make sure the gridset is reinitialised if we just changed the grid it used on last set*/
-   if (interp->gGrdSrc_p==&interp->gGridArray[interp->index]) {
-      interp->gGrdSrc_p=NULL;
+   if (interp->ZRefSrc==&interp->ZRefs[interp->index]) {
+      interp->ZRefSrc=NULL;
    }
-   if (interp->gGrdDest_p==&interp->gGridArray[interp->index]) {
-      interp->gGrdDest_p=NULL;
+   if (interp->ZRefDest==&interp->ZRefs[interp->index]) {
+      interp->ZRefDest=NULL;
    }
 
    return(interp->index);
@@ -276,23 +277,23 @@ int c_videfset(viInterp *interp,const int ni,const int nj,int idGrdDest,int idGr
       return(0);
    }
 
-   if (interp->gGrdSrc_p==&interp->gGridArray[idGrdSrc] && interp->gGrdDest_p==&interp->gGridArray[idGrdDest]) {
+   if (interp->ZRefSrc==&interp->ZRefs[idGrdSrc] && interp->ZRefDest==&interp->ZRefs[idGrdDest]) {
       if (interp->gViOption & VIVERBOSE) printf ("(INFO) c_videfset: Same gridset\n");
       return(1);
    }
 
    if (interp->gViOption & VIVERBOSE) printf ("(INFO) c_videfset: New gridset\n");
 
-   interp->gGrdSrc_p = &interp->gGridArray[idGrdSrc];
-   interp->gGrdDest_p = &interp->gGridArray[idGrdDest];
+   interp->ZRefSrc = &interp->ZRefs[idGrdSrc];
+   interp->ZRefDest = &interp->ZRefs[idGrdDest];
 
-   if (!interp->gGrdSrc_p || !interp->gGrdDest_p) {
+   if (!interp->ZRefSrc || !interp->ZRefDest) {
       fprintf(stderr,"(ERROR) c_videfset: Grid does not exists");
       return(0);
    }
 
-   if (interp->gGrdSrc_p->numLevels==interp->gGrdDest_p->numLevels &&
-      memcmp(interp->gGrdSrc_p->level_p,interp->gGrdDest_p->level_p,interp->gGrdSrc_p->numLevels*sizeof(float))==0) {
+   if (interp->ZRefSrc->LevelNb==interp->ZRefDest->LevelNb &&
+      memcmp(interp->ZRefSrc->Levels,interp->ZRefDest->Levels,interp->ZRefSrc->LevelNb*sizeof(float))==0) {
       interp->same=1;
       if (interp->gViOption & VIVERBOSE) printf ("(INFO) c_videfset: Levels are the same\n");
       return(1);
@@ -313,12 +314,12 @@ int c_videfset(viInterp *interp,const int ni,const int nj,int idGrdDest,int idGr
    interp->gNj = nj;
 
    /* Create cubes of vertical levels ... */
-   interp->gCubeSrc_p=(float*)malloc(ni*nj*interp->gGrdSrc_p->numLevels*sizeof(float));
+   interp->gCubeSrc_p=(float*)malloc(ni*nj*interp->ZRefSrc->LevelNb*sizeof(float));
    if (!interp->gCubeSrc_p) {
       fprintf(stderr,"(ERROR) c_videfset: malloc failed for gCubeSrc_p\n");
       return(0);
    }
-   interp->gCubeDest_p=(float*)malloc(ni*nj*interp->gGrdDest_p->numLevels*sizeof (float));
+   interp->gCubeDest_p=(float*)malloc(ni*nj*interp->ZRefDest->LevelNb*sizeof (float));
    if (!interp->gCubeSrc_p) {
       fprintf(stderr,"(ERROR) c_videfset: malloc failed for gCubeDest_p\n");
       return(0);
@@ -326,24 +327,24 @@ int c_videfset(viInterp *interp,const int ni,const int nj,int idGrdDest,int idGr
 
    /* and convert them to ... */
 
-   if ((interp->gGrdDest_p->gridType == LVL_GALCHEN) || (interp->gGrdDest_p->gridType == LVL_MASL) ||
-       (interp->gGrdDest_p->gridType == LVL_MAGL) || (interp->gGrdDest_p->gridType == LVL_UNDEF) ||
-       (interp->gGrdSrc_p->gridType == LVL_GALCHEN) || (interp->gGrdSrc_p->gridType == LVL_MASL) ||
-       (interp->gGrdSrc_p->gridType == LVL_MAGL) || (interp->gGrdSrc_p->gridType == LVL_UNDEF)) {
+   if ((interp->ZRefDest->Type == LVL_GALCHEN) || (interp->ZRefDest->Type == LVL_MASL) ||
+       (interp->ZRefDest->Type == LVL_MAGL) || (interp->ZRefDest->Type == LVL_UNDEF) ||
+       (interp->ZRefSrc->Type == LVL_GALCHEN) || (interp->ZRefSrc->Type == LVL_MASL) ||
+       (interp->ZRefSrc->Type == LVL_MAGL) || (interp->ZRefSrc->Type == LVL_UNDEF)) {
 
       /* ... height above sea  */
-      if (!vigetMASL(interp->gGrdSrc_p,interp->gCubeSrc_p,ni,nj)) {
+      if (!ZRef_KCube2Meter(interp->ZRefSrc,interp->ZRefSrc->P0,ni*nj,interp->gCubeSrc_p)) {
          return(0);
       }
-      if (!vigetMASL(interp->gGrdDest_p,interp->gCubeDest_p,ni,nj)) {
+      if (!ZRef_KCube2Meter(interp->ZRefDest,interp->ZRefDest->P0,ni*nj,interp->gCubeDest_p)) {
          return(0);
       }
    } else {
       /* ... or ln(P) */
-      if (!vigetLnP(interp->gGrdSrc_p,interp->gCubeSrc_p,ni,nj)) {
+      if (!ZRef_KCube2Pressure(interp->ZRefSrc,interp->ZRefSrc->P0,ni*nj,TRUE,interp->gCubeSrc_p)) {
          return(0);
       }
-      if (!vigetLnP(interp->gGrdDest_p,interp->gCubeDest_p,ni,nj)) {
+      if (!ZRef_KCube2Pressure(interp->ZRefDest,interp->ZRefDest->P0,ni*nj,TRUE,interp->gCubeDest_p)) {
          return(0);
       }
    }
@@ -382,7 +383,7 @@ int c_videfset(viInterp *interp,const int ni,const int nj,int idGrdDest,int idGr
 #endif
    }
 
-   interp->gInterpIndex_p = (int *) malloc(ni * nj * interp->gGrdDest_p->numLevels * sizeof (int));
+   interp->gInterpIndex_p = (int *) malloc(ni * nj * interp->ZRefDest->LevelNb*sizeof (int));
    if (!interp->gInterpIndex_p) {
       fprintf (stderr, "(ERROR) c_videfset: malloc failed for gInterpIndex_p\n");
       return(0);
@@ -395,8 +396,8 @@ int c_videfset(viInterp *interp,const int ni,const int nj,int idGrdDest,int idGr
     * output of this routine is input for each of the interpolation
     * routines. The output is in gInterpIndex_p.
     */
-   (void)f77name(interp1d_findpos)(&numInterpSets,&interp->gGrdSrc_p->numLevels,
-                             &interp->gGrdDest_p->numLevels,&src_ijDim,&dst_ijDim,
+   (void)f77name(interp1d_findpos)(&numInterpSets,&interp->ZRefSrc->LevelNb,
+                             &interp->ZRefDest->LevelNb,&src_ijDim,&dst_ijDim,
                              interp->gCubeSrc_p,interp->gInterpIndex_p,interp->gCubeDest_p);
    return(1);
 }
@@ -524,12 +525,12 @@ int c_visint(viInterp *interp,float *stateOut,float *stateIn,float *derivOut,flo
    int extrapEnable = 0;
 
    /* Assume that everything is set correctly */
-   if (!interp->gCubeSrc_p || !interp->gCubeDest_p || !interp->gGrdDest_p || !interp->gInterpIndex_p || (interp->gViOption == 0x000)) {
+   if (!interp->gCubeSrc_p || !interp->gCubeDest_p || !interp->ZRefDest || !interp->gInterpIndex_p || (interp->gViOption == 0x000)) {
       return(0);
    }
 
    if (interp->same) {
-      memcpy(stateOut,stateIn,surf*interp->gGrdSrc_p->numLevels);
+      memcpy(stateOut,stateIn,surf*interp->ZRefSrc->LevelNb);
       printf ("(INFO) c_visint: Grids are the same\n");
       return(1);
    }
@@ -540,12 +541,12 @@ int c_visint(viInterp *interp,float *stateOut,float *stateIn,float *derivOut,flo
     * yields 'clamped'
     */
    if (interp->gViOption & VINEAREST_NEIGHBOUR) {
-      (void)f77name(interp1d_nearestneighbour)(&surf,&interp->gGrdSrc_p->numLevels,&interp->gGrdDest_p->numLevels,&surf,
+      (void)f77name(interp1d_nearestneighbour)(&surf,&interp->ZRefSrc->LevelNb,&interp->ZRefDest->LevelNb,&surf,
                                          &surf,interp->gCubeSrc_p,stateIn,derivIn,interp->gInterpIndex_p,interp->gCubeDest_p,stateOut,derivOut,
                                          &extrapEnable,&extrapEnable,&extrapGuideDown,&extrapGuideUp);
 
    } else if (interp->gViOption & VILINEAR) {
-      (void)f77name(interp1d_linear)(&surf,&interp->gGrdSrc_p->numLevels,&interp->gGrdDest_p->numLevels,&surf,&surf,
+      (void)f77name(interp1d_linear)(&surf,&interp->ZRefSrc->LevelNb,&interp->ZRefDest->LevelNb,&surf,&surf,
                                interp->gCubeSrc_p,stateIn,derivIn,interp->gInterpIndex_p,interp->gCubeDest_p,stateOut,derivOut,
                                &extrapEnable,&extrapEnable,&extrapGuideDown,&extrapGuideUp);
 
@@ -555,12 +556,12 @@ int c_visint(viInterp *interp,float *stateOut,float *stateIn,float *derivOut,flo
          return(0);
       }
 
-      (void)f77name(interp1d_cubicwithderivs)(&surf,&interp->gGrdSrc_p->numLevels,&interp->gGrdDest_p->numLevels,&surf,&surf,
+      (void)f77name(interp1d_cubicwithderivs)(&surf,&interp->ZRefSrc->LevelNb,&interp->ZRefDest->LevelNb,&surf,&surf,
                                         interp->gCubeSrc_p,stateIn,derivIn,interp->gInterpIndex_p,interp->gCubeDest_p,stateOut,derivOut,
                                         &extrapEnable,&extrapEnable,&extrapGuideDown,&extrapGuideUp);
 
    } else if (interp->gViOption & VICUBIC_LAGRANGE) {
-      (void)f77name(interp1d_cubiclagrange)(&surf,&interp->gGrdSrc_p->numLevels,&interp->gGrdDest_p->numLevels,&surf,&surf,
+      (void)f77name(interp1d_cubiclagrange)(&surf,&interp->ZRefSrc->LevelNb,&interp->ZRefDest->LevelNb,&surf,&surf,
                                       interp->gCubeSrc_p,stateIn,derivIn,interp->gInterpIndex_p,interp->gCubeDest_p,stateOut,derivOut,
                                       &extrapEnable,&extrapEnable,&extrapGuideDown,&extrapGuideUp);
    } else {
@@ -581,7 +582,7 @@ int c_visint(viInterp *interp,float *stateOut,float *stateIn,float *derivOut,flo
    } else if (interp->gViOption & VILAPSERATE) {
       extrapEnable = 1;
 
-      (void)f77name(extrap1d_lapserate)(&surf,&interp->gGrdSrc_p->numLevels,&interp->gGrdDest_p->numLevels,&surf,&surf,
+      (void)f77name(extrap1d_lapserate)(&surf,&interp->ZRefSrc->LevelNb,&interp->ZRefDest->LevelNb,&surf,&surf,
                                   interp->gCubeSrc_p,stateIn,derivIn,interp->gInterpIndex_p,interp->gCubeDest_p,stateOut,derivOut,
                                   &extrapEnable,&extrapEnable,&extrapGuideDown,&extrapGuideUp);
 
@@ -627,196 +628,4 @@ void vicleanGrid(viInterp *Interp) {
       free(Interp->gInterpIndex_p);
       Interp->gInterpIndex_p=NULL;
    }
-}
-
-/*----------------------------------------------------------------------------
- * Nom      : <vigetMASL>
- * Creation : mai 2003 - S. Gaudreault - CMC/CMOE
- *
- * But      : Converts each pressure in the cube of vertical levels to meter
- *            above sea.
- *
- * Parametres    :
- *  <Grid>       : pointer to the grid structure
- *  <Height>     : meter above sea
- *  <NI>         : horizontal dimensions
- *  <NJ>         : horizontal dimensions
- *
- *
- * Remarques :
- *----------------------------------------------------------------------------
-*/
-int vigetMASL(VerticalGrid* restrict const Grid,float *Height,const int NI,const int NJ) {
-
-   int   ij,nij,k,idxk;
-   float topo;
-
-   nij=NI*NJ;
-
-   /*
-    * Create the 'cube' of vertical levels
-    */
-   switch (Grid->gridType) {
-      case LVL_PRES:
-      case LVL_HYBRID:
-      case LVL_SIGMA:
-      case LVL_ETA:
-      case LVL_UNDEF:
-      case LVL_THETA:
-         for (k=0;k<nij*Grid->numLevels;k++) {
-            Height[k]=Grid->z_p[k]*10.0;
-         }
-         break;
-
-      case LVL_MASL:
-         for (k=0;k<Grid->numLevels;k++) {
-            idxk=k*nij;
-            for (ij=0;ij<nij;ij++) {
-               Height[idxk+ij]=Grid->level_p[k];
-            }
-         }
-         break;
-
-      case LVL_MAGL:
-         /*Add the topography to the gz to get the heigth above the sea*/
-         for (k=0;k<Grid->numLevels;k++) {
-            idxk=k*nij;
-            for (ij=0;ij<nij;ij++) {
-               Height[idxk+ij]=(Grid->z_p[ij]*10.0)+Grid->level_p[k];
-            }
-         }
-         break;
-
-      case LVL_GALCHEN:
-         /*
-          * Height = GALCHEN * (1 - h0/H) + h0
-          * Where
-          *  - GALCHEN is the level in gal-chen meters
-          *  - h0 is the topography
-          *  - H is the Height of the top of the atmosphere
-          */
-         for (k=0;k<Grid->numLevels;k++) {
-            idxk=k*nij;
-            for (ij=0;ij<nij;ij++) {
-               topo=Grid->z_p[ij]*10.0;
-               Height[idxk+ij]=Grid->level_p[k]*(1.0-topo/Grid->top)+topo;
-            }
-         }
-         break;
-
-      default:
-         fprintf(stderr,"(ERROR) vigetMASL: invalid type entry");
-         return(0);
-   }
-   return(1);
-}
-
-/*----------------------------------------------------------------------------
- * Nom      : <vigetLnP>
- * Creation : mai 2003 - S. Gaudreault - CMC/CMOE
- *
- * But      : Converts each pressure in the cube of vertical levels to ln(P).
- *            The exception is the 'generic' grid type. In this case, the
- *            'pressure' is copied directly as 'ln(P)', and no conversion
- *            is performed.
- *
- * Parametres    :
- *  <Grid>       : Pointer to the grid structure
- *  <LnP>        : ln pressure, referenced to 1 mb
- *  <NI>         : Horizontal dimensions
- *  <NJ>         : Horizontal dimensions
- *
- * Retour        :  0 : Error
- *
- * Remarques : The conversion from P to ln P cannot be left up to the user
- *             and must be performed here because there is one case
- *             (generic) where the conversion has no sense. This routine
- *             automatically does no conversion in this case.
- *
- *             In the case of LVL_HYBRID, the first vertical level
- *             of the grid must be the ceiling. This constraint is imposed
- *             by the function, hybrid_to_pres, which is used to make the
- *             conversion to pressure.
- *----------------------------------------------------------------------------
-*/
-int vigetLnP (VerticalGrid* restrict const Grid, float *LnP,const int NI,const int NJ) {
-
-   int    ij,nij,k,idxk;
-   float *hybridModel;
-   double pr,pk;
-
-   nij=NI*NJ;
-
-   if (!Grid->z_p && Grid->gridType!=LVL_PRES) {
-      fprintf(stderr,"(ERROR) vigetLnP: Surface pressure is required\n");
-      return(0);
-   }
-
-   /* Create the 'cube' of vertical levels */
-   switch(Grid->gridType) {
-      case LVL_PRES:
-         for (k=0;k<Grid->numLevels;k++) {
-            idxk=k*nij;
-            for (ij=0;ij<nij;ij++) {
-               LnP[idxk+ij]=(float)log(Grid->level_p[k]);
-            }
-         }
-         break;
-
-      case LVL_SIGMA:
-         for (k=0;k<Grid->numLevels;k++) {
-            idxk=k*nij;
-            for (ij=0;ij<nij;ij++) {
-               LnP[idxk+ij]=(float)log(Grid->z_p[ij]*Grid->level_p[k]);
-            }
-         }
-         break;
-
-      case LVL_ETA:
-         for (k=0;k<Grid->numLevels;k++) {
-            idxk=k*nij;
-            for (ij=0;ij<nij;ij++) {
-               LnP[idxk+ij]=(float)log(Grid->top+(Grid->z_p[ij]-Grid->top)*Grid->level_p[k]);
-            }
-         }
-         break;
-
-      case LVL_HYBRID:
-         /*Test for which hybrid case*/
-         if (Grid->a && Grid->b) {
-            for (k=0;k<Grid->numLevels;k++) {
-               idxk=k*nij;
-               for (ij=0;ij<nij;ij++) {
-                  LnP[idxk+ij]=(float)log(exp(Grid->a[k]+Grid->b[k]*Grid->z_p[ij])/100.0);
-               }
-            }
-         } else {
-            /* variable bidon : le £$@¬¤¢ de fortran en a besoin
-            ij=1;
-            hybridModel=(float*)malloc(Grid->numLevels*sizeof (float));
-            f77name(hybrid_to_pres)(LnP,hybridModel,&Grid->top,Grid->z_p,&nij,&ij,&Grid->rCoef,&Grid->pRef,Grid->level_p,&Grid->numLevels);
-            free(hybridModel);
-
-            for (k=0;k<Grid->numLevels*nij;k++) {
-               LnP[k]=(float)log(LnP[k]);
-            }
-   */
-            /*Version Alain */
-            for (k=0;k<Grid->numLevels;k++) {
-               pk=Grid->pRef*Grid->level_p[k];
-               pr=pow(((Grid->level_p[k]-Grid->top/Grid->pRef)/(1.0-Grid->top/Grid->pRef)),Grid->rCoef);
-               idxk=k*nij;
-               for (ij=0;ij<nij;ij++) {
-                  LnP[idxk+ij]=(float)log(pk+(Grid->z_p[ij]-Grid->pRef)*pr);
-               }
-            }
-         }
-         break;
-
-      default:
-         fprintf(stderr,"(ERROR) vigetLnP: invalid type entry");
-         return(0);
-   }
-
-   return(1);
 }

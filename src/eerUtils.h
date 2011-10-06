@@ -49,6 +49,7 @@
 #include <malloc.h>
 
 #include "rpnmacros.h"
+#include "ZRef.h"
 
 /*System related constants and functions*/
 #define SYS_BIG_ENDIAN     0
@@ -125,21 +126,6 @@
 #define FWITHIN(DL,LA0,LO0,LA1,LO1,LA,LO) ((LA>=LA0 && LA<=LA1)?((DL<=180)?(LO>=LO0 && LO<=LO1):((LO<=LO0 && DL>-180) || (LO>=LO1 && DL<180))):0)
 #define FCLAMP(R,PX0,PY0,PX1,PY1)         if (PX0<R->X0) PX0=R->X0; if (PY0<R->Y0) PY0=R->Y0; if (PX1>R->X1) PX1=R->X1; if (PY1>R->Y1) PY1=R->Y1;
 
-/*Level related constants and functions*/
-#define LVL_MASL         0  /* Meters above sea level */
-#define LVL_SIGMA        1  /* P/Ps */
-#define LVL_PRES         2  /* Pressure mb */
-#define LVL_UNDEF        3  /* units are user defined */
-#define LVL_MAGL         4  /* Meters above ground level */
-#define LVL_HYBRID       5  /* Hybrid levels*/
-#define LVL_THETA        6  /* ? */
-#define LVL_ETA          7  /* (Pt-P)/(Pt-Ps) -not in convip */
-#define LVL_GALCHEN      8  /* Original Gal-Chen -not in convip */
-#define LVL_ANGLE        9  /* Radar angles */
-
-#define PRESS2METER(LVL) (-8409.1*log((LVL==0?1e-31:LVL)/1200.0))
-#define SIGMA2METER(LVL) (-8409.1*log(LVL==0?1e-31:LVL))
-
 /*Geographical related constants and functions*/
 #define EARTHRADIUS          6378140.0                          /*Rayon de la terre en metres*/
 
@@ -152,17 +138,6 @@
 #define CLAMPLAT(LAT)        (LAT=LAT>90.0?90.0:(LAT<-90.0?-90.0:LAT))
 #define CLAMPLON(LON)        (LON=LON>180?LON-360:(LON<-180?LON+360:LON))
 
-/*Vertical referential definition*/
-typedef struct TZRef {
-   float *Levels;       /*Levels list*/
-   int    LevelType;    /*Type of levels*/
-   int    LevelNb;      /*Number of Levels*/
-   float  PTop;         /*Pressure at top of atmosphere*/
-   float  PRef;         /*Reference pressure*/
-   float  RCoef[2];     /*Hybrid level coefficient*/
-   float  ETop;         /*Eta coordinate a top*/
-   float  *A,*B;        /*Pressure calculation factors*/
-} TZRef;
 
 /*Standard struct to read an RPN Field*/
 typedef struct TRPNHeader {
@@ -227,21 +202,21 @@ extern int f77name(r8ipsort)(wordint *ip,double *a,wordint *n);
 extern int f77name(binarysearchfindlevel2)(ftnfloat *hybvl,ftnfloat *hyb,wordint *size,wordint *ikk,wordint *ikn);
 
 /*RPN external C && Fortran functions*/
-extern int f77name(newdate)(wordint *dat1,wordint *dat2,wordint *dat3,wordint *mode);
-extern int f77name(incdatr)(wordint *dat1,wordint *dat2,double *nhours);
-extern int f77name(difdatr)(wordint *dat1,wordint *dat2,double *nhours);
-extern int f77name(convip) (wordint *ip,ftnfloat *p,wordint *kind,wordint *mode,char *string,wordint *flag);
-extern int f77name(sort)   (ftnfloat *work,wordint *n);
-extern int f77name(ipsort) (wordint *ip,ftnfloat *a,wordint *n);
-extern int f77name(fd1)    (ftnfloat *gd1,ftnfloat *f,ftnfloat *h);
-extern int f77name(fdm)    (ftnfloat *gdm,ftnfloat *f,ftnfloat *h,wordint *m);
-extern int f77name(int1d1) (ftnfloat *fi,ftnfloat *f,ftnfloat *xi,ftnfloat *x,ftnfloat *fx,ftnfloat *h,wordint *m,wordint *mi,ftnfloat *cmu1,ftnfloat *c1,ftnfloat *clmdam,ftnfloat *cm,ftnfloat *a,ftnfloat *c,ftnfloat *d);
-extern int f77name(xyfll)  (ftnfloat *x,ftnfloat *y,ftnfloat *dlat,ftnfloat *dlon,ftnfloat *d60,ftnfloat *dgrw,wordint *nhem);
-extern int f77name(llfxy)  (ftnfloat *dlat,ftnfloat *dlon,ftnfloat *x,ftnfloat *y,ftnfloat *d60,ftnfloat *dgrw,wordint *nhem);
-extern int f77name(cigaxg) (char *igtyp,ftnfloat *xg1,ftnfloat *xg2,ftnfloat *xg3,ftnfloat *xg4,wordint *ig1,wordint *ig2,wordint *ig3,wordint *ig4);
-extern int f77name(cxgaig) (char *igtyp,wordint *ig1,wordint *ig2,wordint *ig3,wordint *ig4,ftnfloat *xg1,ftnfloat *xg2,ftnfloat *xg3,ftnfloat *xg4);
-extern int f77name(mscale) (ftnfloat *r,ftnfloat *d60,ftnfloat *pi,ftnfloat *pj,wordint *ni,wordint *nj);
-extern int f77name(wkoffit)(char *filename,int size);
+extern wordint f77name(newdate)(wordint *dat1,wordint *dat2,wordint *dat3,wordint *mode);
+extern wordint f77name(incdatr)(wordint *dat1,wordint *dat2,double *nhours);
+extern wordint f77name(difdatr)(wordint *dat1,wordint *dat2,double *nhours);
+extern wordint f77name(convip) (wordint *ip,ftnfloat *p,wordint *kind,wordint *mode,char *string,wordint *flag);
+extern wordint f77name(sort)   (ftnfloat *work,wordint *n);
+extern wordint f77name(ipsort) (wordint *ip,ftnfloat *a,wordint *n);
+extern wordint f77name(fd1)    (ftnfloat *gd1,ftnfloat *f,ftnfloat *h);
+extern wordint f77name(fdm)    (ftnfloat *gdm,ftnfloat *f,ftnfloat *h,wordint *m);
+extern wordint f77name(int1d1) (ftnfloat *fi,ftnfloat *f,ftnfloat *xi,ftnfloat *x,ftnfloat *fx,ftnfloat *h,wordint *m,wordint *mi,ftnfloat *cmu1,ftnfloat *c1,ftnfloat *clmdam,ftnfloat *cm,ftnfloat *a,ftnfloat *c,ftnfloat *d);
+extern wordint f77name(xyfll)  (ftnfloat *x,ftnfloat *y,ftnfloat *dlat,ftnfloat *dlon,ftnfloat *d60,ftnfloat *dgrw,wordint *nhem);
+extern wordint f77name(llfxy)  (ftnfloat *dlat,ftnfloat *dlon,ftnfloat *x,ftnfloat *y,ftnfloat *d60,ftnfloat *dgrw,wordint *nhem);
+extern wordint f77name(cigaxg) (char *igtyp,ftnfloat *xg1,ftnfloat *xg2,ftnfloat *xg3,ftnfloat *xg4,wordint *ig1,wordint *ig2,wordint *ig3,wordint *ig4);
+extern wordint f77name(cxgaig) (char *igtyp,wordint *ig1,wordint *ig2,wordint *ig3,wordint *ig4,ftnfloat *xg1,ftnfloat *xg2,ftnfloat *xg3,ftnfloat *xg4);
+extern wordint f77name(mscale) (ftnfloat *r,ftnfloat *d60,ftnfloat *pi,ftnfloat *pj,wordint *ni,wordint *nj);
+extern wordint f77name(wkoffit)(char *filename,int size);
 
 extern int f77name(rmnlib_version) (char *rmn,wordint *print,wordint len);
 
@@ -258,24 +233,55 @@ extern int c_fstinl();
 extern int c_fstopc();
 
 /*RPN external EZscint functions*/
-extern int c_ezqkdef();
-extern int c_ezgdef_fmem();
-extern int c_ezdefset();
-extern int c_gdxysval();
-extern int c_gdxywdval();
-extern int c_gdxyfll();
-extern int c_gdllfxy();
-extern int c_gdrls();
-extern int c_ezsint();
-extern int c_ezuvint();
-extern int c_ezwdint();
-extern int c_ezsetval();
-extern int c_ezsetopt();
-extern int c_gdll();
-extern int c_gdllsval();
-extern int c_gdllwdval();
-extern int c_gdllvval();
-extern int c_gdgaxes();
+extern wordint c_ezfreegridset(wordint gdid, wordint index);
+extern wordint c_ezdefset(wordint gdout, wordint gdin);
+extern wordint c_ezgdef(wordint ni, wordint nj, char *grtyp, char *grref,wordint ig1, wordint ig2, wordint ig3, wordint ig4, ftnfloat *ax, ftnfloat *ay);
+extern wordint c_ezgdef_ffile(wordint ni, wordint nj, char *grtyp,wordint ig1, wordint ig2, wordint ig3, wordint ig4, wordint iunit);
+extern wordint c_ezgdef_fll(wordint ni, wordint nj,ftnfloat *lat, ftnfloat *lon);
+extern wordint c_ezgdef_fmem(wordint ni, wordint nj, char *grtyp, char *grref,wordint ig1, wordint ig2, wordint ig3, wordint ig4, ftnfloat *ax, ftnfloat *ay);
+extern wordint c_ezgenpole(ftnfloat *vpolnor, ftnfloat *vpolsud, ftnfloat *fld,wordint ni, wordint nj, wordint vecteur,char *grtyp, wordint hem);
+extern wordint c_ezgetopt(char *option, char *value);
+extern wordint c_ezgetval(char *option, ftnfloat *value);
+extern wordint c_gdll(wordint gdid, ftnfloat *lat, ftnfloat *lon);
+extern wordint c_ezqkdef(wordint ni, wordint nj, char *grtyp,wordint ig1, wordint ig2, wordint ig3, wordint ig4, wordint iunit);
+extern wordint c_ezquickdef(wordint ni, wordint nj, char *grtyp,wordint ig1, wordint ig2, wordint ig3, wordint ig4, wordint iunit);
+extern wordint c_gdrls(wordint gdin);
+extern wordint c_ezsetopt(char *option, char *value);
+extern wordint c_ezsetval(char *option, ftnfloat fvalue);
+extern wordint c_ezsint(ftnfloat *zout, ftnfloat *zin);
+extern wordint c_ezuvint(ftnfloat *uuout, ftnfloat *vvout, ftnfloat *uuin, ftnfloat *vvin);
+extern wordint c_ezwdint(ftnfloat *uuout, ftnfloat *vvout, ftnfloat *uuin, ftnfloat *vvin);
+extern wordint c_gdgaxes(wordint gdid, ftnfloat *ax, ftnfloat *ay);
+extern wordint c_gdgxpndaxes(wordint gdid, ftnfloat *ax, ftnfloat *ay);
+extern wordint c_gdllfxy(wordint gdid, ftnfloat *lat, ftnfloat *lon, ftnfloat *x, ftnfloat *y, wordint n);
+extern wordint c_gdllfxyz(wordint gdid, ftnfloat *lat, ftnfloat *lon, ftnfloat *x, ftnfloat *y, wordint n);
+extern wordint c_gdllsval(wordint gdid, ftnfloat *zout, ftnfloat *zin, ftnfloat *lat, ftnfloat *lon, wordint n);
+extern wordint c_gdllvval(wordint gdid, ftnfloat *uuout, ftnfloat *vvout, ftnfloat *uuin, ftnfloat *vvin,ftnfloat *lat, ftnfloat *lon, wordint n);
+extern wordint c_gdllwdval(wordint gdid, ftnfloat *uuout, ftnfloat *vvout, ftnfloat *uuin, ftnfloat *vvin,ftnfloat *lat, ftnfloat *lon, wordint n);
+extern wordint c_gdxpncf(wordint gdin, wordint *i1, wordint *i2, wordint *j1, wordint *j2);
+extern wordint c_gdxysval(wordint gdin, ftnfloat *zout, ftnfloat *zin, ftnfloat *x, ftnfloat *y, wordint n);
+extern wordint c_gdxywdval(wordint gdin, ftnfloat *uuout, ftnfloat *vvout, ftnfloat *uuin, ftnfloat *vvin, ftnfloat *x, ftnfloat *y, wordint n);
+extern wordint c_gdxyvval(wordint gdin, ftnfloat *uuout, ftnfloat *vvout, ftnfloat *uuin, ftnfloat *vvin, ftnfloat *x, ftnfloat *y, wordint n);
+extern wordint c_gduvfwd(wordint gdid,  ftnfloat *uugdout, ftnfloat *vvgdout, ftnfloat *uullin, ftnfloat *vvllin,ftnfloat *latin, ftnfloat *lonin, wordint npts);
+extern wordint c_gdwdfuv(wordint gdid, ftnfloat *uullout, ftnfloat *vvllout, ftnfloat *uuin, ftnfloat *vvin,ftnfloat *latin, ftnfloat *lonin, wordint npts);
+extern wordint c_gdxpngd(wordint gdin, ftnfloat *zxpnded, ftnfloat *zin);
+extern wordint c_gdxyfll(wordint gdid, ftnfloat *x, ftnfloat *y, ftnfloat *lat, ftnfloat *lon, wordint n);
+extern wordint c_gdxyzfll(wordint gdid, ftnfloat *x, ftnfloat *y, ftnfloat *lat, ftnfloat *lon, wordint n);
+extern wordint c_guval(wordint gdin, ftnfloat *uuout, ftnfloat *vvout, ftnfloat *uuin,  ftnfloat *vvin, ftnfloat *x, ftnfloat *y, wordint n);
+extern void    c_ezgfllfxy(ftnfloat *lonp, ftnfloat *latp,ftnfloat *lon, ftnfloat *lat,ftnfloat *r, ftnfloat *ri, wordint *npts,ftnfloat *xlat1, ftnfloat *xlon1, ftnfloat *xlat2, ftnfloat *xlon2);
+extern void    c_ezgfxyfll(ftnfloat *lonp, ftnfloat *latp,ftnfloat *lon, ftnfloat *lat,ftnfloat *r, ftnfloat *ri, wordint *npts,ftnfloat *xlat1, ftnfloat *xlon1, ftnfloat *xlat2, ftnfloat *xlon2);
+extern void    c_ezgfwfllw(ftnfloat *uullout, ftnfloat *vvllout, ftnfloat *latin, ftnfloat *lonin,ftnfloat *xlatingf, ftnfloat *xloningf,wordint *ni, wordint *nj,char *grtyp, wordint *ig1, wordint *ig2, wordint *ig3, wordint *ig4);
+extern void    c_ezllwfgfw(ftnfloat *uullout, ftnfloat *vvllout, ftnfloat *latin, ftnfloat *lonin,ftnfloat *xlatingf, ftnfloat *xloningf,wordint *ni,wordint *nj,char *grtyp,wordint *ig1,wordint *ig2,wordint *ig3,wordint *ig4);
+extern void    c_ezdefxg(wordint gdid);
+extern void    c_ezdefaxes(wordint gdid, ftnfloat *ax, ftnfloat *ay);
+extern wordint c_gdinterp(ftnfloat *zout, ftnfloat *zin, wordint gdin, ftnfloat *x, ftnfloat *y, wordint npts);
+extern int     c_gdsetmask(int gdid, int *mask);
+extern int     c_gdgetmask(int gdid, int *mask);
+extern int     c_ezsint_m(float *zout, float *zin);
+extern int     c_ezuvint_m(float *uuout, float *vvout, float *uuin, float *vvin);
+extern int     c_ezsint_mdm(float *zout, int *mask_out, float *zin, int *mask_in);
+extern int     c_ezuvint_mdm(float *uuout, float *vvout, int *mask_out, float *uuin, float *vvin, int *mask_in);
+extern int     c_ezsint_mask(int *mask_out, int *mask_in);
 
 /*RPN external BURP functions*/
 extern int c_mrfopc();

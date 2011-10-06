@@ -34,6 +34,22 @@
 #include "eerUtils.h"
 #include "rpnmacros.h"
 
+
+/*----------------------------------------------------------------------------
+ * Nom      : <System_IsBigEndian>
+ * Creation : Mars 2006 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Verifier l'endianness.
+ *
+ * Parametres  :
+ *
+ * Retour:
+ *  <True>     : Vrai si la machine est big-endianness
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 int System_IsBigEndian(void) {
    short w=0x4321;
 
@@ -43,6 +59,21 @@ int System_IsBigEndian(void) {
      return(0);
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <System_ByteOrder>
+ * Creation : Mars 2006 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Verifier l'endianness.
+ *
+ * Parametres  :
+ *
+ * Retour:
+ *  <Order>   : Endianness (SYS_LITTLE_ENDIAN ou SYS_BIG_ENDIAN)
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 int System_ByteOrder(void) {
    short w=0x0001;
    char *byte=(char*)&w;
@@ -50,10 +81,25 @@ int System_ByteOrder(void) {
    return(byte[0]?SYS_LITTLE_ENDIAN:SYS_BIG_ENDIAN);
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <SSystem_BitCount>
+ * Creation : Mars 2006 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Compte du nombre de bit a 1.
+ *
+ * Parametres  :
+ *   <N>       : Bytes a verifier
+ *
+ * Retour:
+ *  <Nombre>   : Nombre de bit a 1
+ *
+ * Remarques :
+ *   This is HACKMEM 169, as used in X11 sources. Source: MIT AI Lab memo, late 1970?s.
+ *   works for 32-bit numbers only, fix last line for 64-bit numbers
+ *
+ *----------------------------------------------------------------------------
+ */
 int System_BitCount(unsigned int N) {
-   //This is HACKMEM 169, as used in X11 sources. Source: MIT AI Lab memo, late 1970?s.
-   /* works for 32-bit numbers only    */
-   /* fix last line for 64-bit numbers */
 
    register unsigned int tmp;
 
@@ -61,6 +107,24 @@ int System_BitCount(unsigned int N) {
    return ((tmp + (tmp >> 3)) & 030707070707) % 63;
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <System_TimeValSubtract>
+ * Creation : Mars 2006 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Difference entre 2 temps en structure timeval
+ *
+ * Parametres  :
+ *   <Result>  : Difference
+ *   <T0>      : Temps 0
+ *   <T1>      : Temps 1
+ *
+ * Retour:
+ *  <Neg>      : Negatif (1=negatif,0=positif);
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 int System_TimeValSubtract(struct timeval *Result,struct timeval *T0,struct timeval *T1) {
 
    int nsec;

@@ -322,7 +322,7 @@ static float **EZGrid_TileGetData(const TGrid* restrict const Grid,TGridTile* re
          if (Grid->H.FID>=0) {                                       /*Check for data to read*/
             pthread_mutex_lock(&RPNFieldMutex);
             mode=2;
-            type=Grid->ZRef->LevelType==LVL_ETA?LVL_SIGMA:Grid->ZRef->LevelType;
+            type=Grid->ZRef->Type==LVL_ETA?LVL_SIGMA:Grid->ZRef->Type;
             f77name(convip)(&ip1,&Grid->ZRef->Levels[k],&type,&mode,&format,&flag);
             key=c_fstinf(Grid->H.FID,&ni,&nj,&nk,Grid->H.DATEV,Grid->H.ETIKET,ip1,Grid->H.IP2,Tile->NO,Grid->H.TYPVAR,Grid->H.NOMVAR);
             if (key<0) {
@@ -522,7 +522,7 @@ static TGrid* EZGrid_CacheFind(const TGrid* restrict const Grid) {
          if (GridCache[n]) {
             // Check for same level type and definitions
             f77name(convip)(&Grid->H.IP1,&level,&type,&mode,&format,&flag);
-            if (type!=GridCache[n]->ZRef->LevelType) {
+            if (type!=GridCache[n]->ZRef->Type) {
                continue;
             }
 
@@ -994,7 +994,7 @@ TZRef* EZGrid_GetZRef(const TGrid* restrict const Grid) {
    }
 
    /*Initialize default*/
-   zref->LevelType=LVL_UNDEF;
+   zref->Type=LVL_UNDEF;
    zref->PTop=0.0;
    zref->PRef=0.0;
    zref->RCoef[0]=0.0;
@@ -1023,20 +1023,22 @@ TZRef* EZGrid_GetZRef(const TGrid* restrict const Grid) {
 
       /*Make sure we use a single type of level, the first we get*/
       if (k==0) {
-         f77name(convip)(&ip1,&zref->Levels[k2],&zref->LevelType,&mode,&format,&flag);
+         f77name(convip)(&ip1,&zref->Levels[k2],&zref->Type,&mode,&format,&flag);
          k2++;
       } else {
          f77name(convip)(&ip1,&zref->Levels[k2],&l,&mode,&format,&flag);
-         if (l==zref->LevelType) {
+         if (l==zref->Type) {
             k2++;
          }
       }
    }
+
    zref->LevelNb=k2;
 
    /*Sort the levels from ground up*/
    qsort(zref->Levels,zref->LevelNb,sizeof(float),QSort_Float);
 
+   /*Invert the list if requestet*/
    if (Grid->Incr!=1) {
       for(k=0;k<zref->LevelNb/2;k++) {
          lvl=zref->Levels[k];
@@ -1045,85 +1047,8 @@ TZRef* EZGrid_GetZRef(const TGrid* restrict const Grid) {
       }
    }
 
-   switch(zref->LevelType) {
-      case LVL_HYBRID:
-         /*Try hybrid coordinates*/
-         key=l=c_fstinf(Grid->H.FID,&h.NI,&h.NJ,&h.NK,Grid->H.DATEV,Grid->H.ETIKET,-1,-1,-1,"X","HY");
-         if (l>=0) {
-            l=c_fstprm(key,&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&h.NK,&h.NBITS,&h.DATYP,&h.IP1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,
-                 h.ETIKET,h.GRTYP,&h.IG1,&h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,&h.UBC,&h.EX1,&h.EX2,&h.EX3);
-            f77name(convip)(&h.IP1,&zref->PTop,&kind,&mode,&format,&flag);
-            zref->RCoef[0]=h.IG2/1000.0f;
-            zref->RCoef[1]=0.0f;
-            zref->PRef=h.IG1;
-         } else {
-            /*Try hybrid staggered coordinates*/
-            key=l=c_fstinf(Grid->H.FID,&h.NI,&h.NJ,&h.NK,Grid->H.DATEV,Grid->H.ETIKET,-1,-1,-1,"X","!!");
-            if (l>=0) {
-               l=c_fstprm(key,&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&h.NK,&h.NBITS,&h.DATYP,&h.IP1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,
-                    h.ETIKET,h.GRTYP,&h.IG1,&h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,&h.UBC,&h.EX1,&h.EX2,&h.EX3);
-               if (l>=0) {
-                  zref->PRef=1000.0;
-                  zref->PTop=h.IG2/100.0;
-                  zref->ETop=0.0;
-                  zref->RCoef[0]=h.IG3/1000.0f;
-                  zref->RCoef[1]=h.IG4/1000.0f;
-
-                  buf=(double*)malloc(h.NI*h.NJ*sizeof(double));
-                  zref->A=(float*)malloc(zref->LevelNb*sizeof(float));
-                  zref->B=(float*)malloc(zref->LevelNb*sizeof(float));
-
-                  if (buf && zref->A && zref->B) {
-                     l=c_fstluk(buf,key,&h.NI,&h.NJ,&h.NK);
-                     if (l>=0) {
-                        for(k=0;k<zref->LevelNb;k++) {
-                           for(j=0;j<h.NJ;j++) {
-                              ip1=buf[j*h.NI];
-                              f77name(convip)(&ip1,&lvl,&zref->LevelType,&mode,&format,&flag);
-                              if (lvl==zref->Levels[k]) {
-                                 zref->A[k]=buf[j*h.NI+1];
-                                 zref->B[k]=buf[j*h.NI+2];
-                                 break;
-                              }
-                           }
-                           if (j==h.NJ) {
-                              fprintf(stderr,"(WARNING) EZGrid_GetZRef: Could not find level %.4f in lookup table.\n",zref->Levels[k]);
-                           }
-                        }
-                     } else {
-                        fprintf(stderr,"(WARNING) EZGrid_GetZRef: Could not read !! field (c_fstluk).\n");
-                    }
-                  } else {
-                     fprintf(stderr,"(WARNING) EZGrid_GetZRef: Could not allocate A and B arrays.\n");
-                  }
-               } else {
-                  fprintf(stderr,"(WARNING) EZGrid_GetZRef: Could not get info on !! field (c_fstprm).\n");
-               }
-            } else {
-               fprintf(stderr,"(WARNING) EZGrid_GetZRef: Could not find !! or HY field (c_fstinf).\n");
-            }
-         }
-         break;
-
-      case LVL_SIGMA:
-         /*If we find a PT field, we have ETA coordinate otherwise, its'SIGMA*/
-         key=l=c_fstinf(Grid->H.FID,&h.NI,&h.NJ,&h.NK,Grid->H.DATEV,Grid->H.ETIKET,-1,-1,-1,"","PT");
-         if (l>=0) {
-            zref->LevelType=LVL_ETA;
-            if (!(pt=(float*)malloc(h.NI*h.NJ*h.NK*sizeof(float)))) {
-               fprintf(stderr,"(WARNING) EZGrid_GetZRef: Could not allocate memory for top pressure.\n");
-            } else {
-               l=c_fstluk(pt,key,&h.NI,&h.NJ,&h.NK);
-               zref->PTop=pt[0];
-            }
-         } else {
-            zref->PTop=10.0;
-         }
-         break;
-   }
-
-   if (buf) free(buf);
-   if (pt)  free(pt);
+   /*Decode vertical coordinate parameters*/
+   ZRef_DecodeRPN(zref,Grid->H.FID);
 
    return(zref);
 }
@@ -1180,41 +1105,6 @@ TGrid *EZGrid_New() {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-void ZRef_Free(TZRef *ZRef) {
-
-   if (ZRef->Levels) {
-      free(ZRef->Levels);
-      ZRef->Levels=NULL;
-   }
-   if (ZRef->A) {
-      free(ZRef->A);
-      ZRef->A=NULL;
-   }
-   if (ZRef->B) {
-      free(ZRef->B);
-      ZRef->B=NULL;
-   }
-   free(ZRef);
-}
-
-TZRef *ZRef_Copy(TZRef *ZRef) {
-
-   TZRef *zref=NULL;
-
-   if ((zref->Levels=(float*)malloc(ZRef->LevelNb*sizeof(float)))) {
-      memcpy(zref->Levels,ZRef->Levels,ZRef->LevelNb*sizeof(float));
-      zref->LevelType=ZRef->LevelType;
-      zref->LevelNb=ZRef->LevelNb;
-      zref->PTop=ZRef->PTop;
-      zref->PRef=ZRef->PRef;
-      zref->RCoef[0]=ZRef->RCoef[0];
-      zref->RCoef[1]=ZRef->RCoef[0];
-      zref->ETop=ZRef->ETop;
-      zref->A=zref->A;
-      zref->B=zref->B;
-   }
-   return(zref);
-}
 
 wordint f77name(ezgrid_free)(wordint *gdid) {
    EZGrid_Free(GridCache[*gdid]);
@@ -1595,7 +1485,7 @@ wordint f77name(ezgrid_getleveltype)(wordint *gdid) {
    return(EZGrid_GetLevelType(GridCache[*gdid]));
 }
 int EZGrid_GetLevelType(const TGrid* restrict const Grid) {
-   return(Grid->ZRef->LevelType);
+   return(Grid->ZRef->Type);
 }
 
 /*----------------------------------------------------------------------------
@@ -1627,7 +1517,7 @@ int EZGrid_GetLevels(const TGrid* restrict const Grid,float* restrict Levels,int
    }
 
    memcpy(Levels,Grid->ZRef->Levels,Grid->ZRef->LevelNb*sizeof(float));
-   *Type=Grid->ZRef->LevelType;
+   *Type=Grid->ZRef->Type;
 
    return(Grid->ZRef->LevelNb);
 }
@@ -1662,65 +1552,10 @@ float EZGrid_GetLevel(const TGrid* restrict const Grid,float Pressure,float P0) 
 
    if (!Grid) {
       fprintf(stderr,"(ERROR) EZGrid_GetLevel: Invalid grid (%s)\n",Grid->H.NOMVAR);
-      return(-1.0);
+      return(level);
    }
 
-   zref=Grid->ZRef;
-
-   switch(zref->LevelType) {
-      case LVL_PRES:
-         level=Pressure;
-         break;
-
-      case LVL_SIGMA:
-         level=Pressure/P0;
-         break;
-
-      case LVL_ETA:
-         level=(Pressure-zref->PTop)/(P0-zref->PTop);
-         break;
-
-      case LVL_HYBRID:
-         if (zref->A && zref->B) {
-//         if (!(pres=(float*)(malloc(zref->LevelNb*sizeof(float))))) {
-//            fprintf(stderr,"(ERROR) EZGrid_GetLevel: Unable to allocate pressure level array\n");
-//            return(-1.0);
-//         }
-
-         /*Hybrid levels can't be analyticaly calculated,
-           so we find between which pressure level it is and interpolate the hybrid level*/
-//         pres[0]=EZGrid_GetPressure(Grid,zref->Levels[0],P0);
-//         for(z=1;z<zref->LevelNb;z++) {
-//            pres[z]=EZGrid_GetPressure(Grid,zref->Levels[z],P0);
-//            if (Pressure<=pres[z] && Pressure>=pres[z-1]) {
-//               level=(pres[z]-Pressure)/(pres[z]-pres[z-1]);
-//               level=ILIN(pres[z],pres[z-1],level);
-//               break;
-//            }
-         } else {
-            double a,b,c,d,r,l,err;
-
-            a=zref->PRef;
-            b=P0-zref->PRef;
-            c=zref->PTop/zref->PRef;
-            d=Pressure;
-            r=zref->RCoef[0];
-
-            /*Use iterative method Newton-Raphson (developped by Alain Malo)*/
-            level=0.5;
-            err=1.0;
-            while(err>0.0001) {
-               l=level-((a*level+b*pow((level-c)/(1-c),r)-d)/(a+b*r/(pow(1-c,r))*pow(level-c,r-1)));
-               err=fabs(l-level)/level;
-               level=l;
-            }
-         }
-         break;
-
-      default:
-         fprintf(stderr,"(ERROR) EZGrid_GetLevel: invalid level type (%s)",Grid->H.NOMVAR);
-   }
-   return(level);
+   return(ZRef_Pressure2Level(Grid->ZRef,P0,Pressure));
 }
 
 /*----------------------------------------------------------------------------
@@ -1750,65 +1585,14 @@ float EZGrid_GetPressure(const TGrid* restrict const Grid,float Level,float P0) 
 
    if (!Grid) {
       fprintf(stderr,"(ERROR) EZGrid_GetPressure: Invalid grid (%s)\n",Grid->H.NOMVAR);
-      return(0);
+      return(pres);
 
    }
-   zref=Grid->ZRef;
 
-   switch(zref->LevelType) {
-      case LVL_PRES:
-         pres=Level;
-         break;
-
-      case LVL_SIGMA:
-         pres=P0*Level;
-         break;
-
-      case LVL_ETA:
-         pres=zref->PTop+(P0-zref->PTop)*Level;
-         break;
-
-      case LVL_HYBRID:
-         if (zref->A && zref->B) {
-//            pres=exp(zref->A[K]+zref->B[K]*P0)/100.0;
-         } else {
-            pres=zref->PRef*Level+(P0-zref->PRef)*pow((Level-zref->PTop/zref->PRef)/(1.0-zref->PTop/zref->PRef),zref->RCoef[0]);
-         }
-         break;
-
-      default:
-         fprintf(stderr,"(ERROR) EZGrid_GetPressure: invalid level type (%s)",Grid->H.NOMVAR);
-   }
-   return(pres);
+   return(ZRef_Level2Pressure(Grid->ZRef,P0,Level));
 }
 
 
-static inline float EZGrid_Bilin(TGrid* restrict const Grid,float* restrict const Data,float I,float J) {
-
-   int   i,j,idx,idxj;
-   float dx,dy;
-
-   i=I;
-   j=J;
-
-   dx=I-i;
-   dy=J-j;
-
-   idx =j*Grid->H.NI+i;
-   idxj=idx+Grid->H.NI;
-
-   return(Data[idx] + (Data[idx+1]-Data[idx])*dx + (Data[idxj]-Data[idx])*dy + (Data[idxj+1]-Data[idx+1]-Data[idxj]+Data[idx])*dx*dy);
-}
-
-static inline float EZGrid_BilinDD(TGrid* restrict const Grid,float* restrict const Data,int I,int J,float DX, float DY) {
-
-   int   idx,idxj;
-
-   idx =J*Grid->H.NI+I;
-   idxj=idx+Grid->H.NI;
-
-   return(Data[idx] + (Data[idx+1]-Data[idx])*DX + (Data[idxj]-Data[idx])*DY + (Data[idxj+1]-Data[idx+1]-Data[idxj]+Data[idx])*DX*DY);
-}
 /*----------------------------------------------------------------------------
  * Nom      : <EZGrid_LLGetValue>
  * Creation : Janvier 2008 - J.P. Gauthier - CMC/CMOE
@@ -1894,6 +1678,33 @@ int EZGrid_LLGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
    return(EZGrid_IJGetUVValue(GridU,GridV,i-1.0,j-1.0,K0,K1,UU,VV));
 }
 
+static inline float EZGrid_Bilin(TGrid* restrict const Grid,float* restrict const Data,float I,float J) {
+
+   int   i,j,idx,idxj;
+   float dx,dy;
+
+   i=I;
+   j=J;
+
+   dx=I-i;
+   dy=J-j;
+
+   idx =j*Grid->H.NI+i;
+   idxj=idx+Grid->H.NI;
+
+   return(Data[idx] + (Data[idx+1]-Data[idx])*dx + (Data[idxj]-Data[idx])*dy + (Data[idxj+1]-Data[idx+1]-Data[idxj]+Data[idx])*dx*dy);
+}
+
+static inline float EZGrid_BilinDD(TGrid* restrict const Grid,float* restrict const Data,int I,int J,float DX, float DY) {
+
+   int   idx,idxj;
+
+   idx =J*Grid->H.NI+I;
+   idxj=idx+Grid->H.NI;
+
+   return(Data[idx] + (Data[idx+1]-Data[idx])*DX + (Data[idxj]-Data[idx])*DY + (Data[idxj+1]-Data[idx+1]-Data[idxj]+Data[idx])*DX*DY);
+}
+
 /*----------------------------------------------------------------------------
  * Nom      : <EZGrid_IJGetValue>
  * Creation : Janvier 2008 - J.P. Gauthier - CMC/CMOE
@@ -1969,7 +1780,6 @@ int EZGrid_IJGetValue(TGrid* restrict const Grid,float I,float J,int K0,int K1,f
          while(n--) {
             EZGrid_TileBurn(Grid,tile[n],k);
          }
-//         Value[ik]=EZGrid_Bilin(Grid,Grid->Data,I,J);
          Value[ik]=EZGrid_BilinDD(Grid,Grid->Data,i,j,dx,dy);
          ik++;
 //         pthread_mutex_unlock(&RPNIntMutex);
@@ -1978,7 +1788,6 @@ int EZGrid_IJGetValue(TGrid* restrict const Grid,float I,float J,int K0,int K1,f
          if (!EZGrid_IsLoaded(t,k))
             EZGrid_TileGetData(Grid,t,k,0);
 
-//         Value[ik]=EZGrid_Bilin(Grid,t->Data[k],I,J);
          Value[ik]=EZGrid_BilinDD(Grid,t->Data[k],i,j,dx,dy);
          ik++;
 

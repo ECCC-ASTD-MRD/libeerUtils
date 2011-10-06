@@ -64,21 +64,10 @@
 
 #define VIGRIDLENGTH 256
 
-typedef struct sVerticalGrid {
-   int gridType;    /* representation used for vertical levels */
-   int numLevels;   /* number of vertical points in this grid */
-   float *level_p;  /*List of levels*/
-   float *z_p;      /*Height data (Pressure -> P0(2D), Meters -> GZ(3D)*/
-   float *a,*b;     /*Hybrid staggered factors*/
-   float top;       /* pressure (mb) at the model top (hybrid) OR height of the model top (Gal-Chen) */
-   float pRef;      /* reference pressure (mb) */
-   float rCoef;     /* known as 'expansion co-efficient */
-} VerticalGrid;
-
 typedef struct viInterp {
-   VerticalGrid  gGridArray[VIGRIDLENGTH];
-   VerticalGrid  *gGrdSrc_p, *gGrdDest_p;
-   float         *gCubeSrc_p, *gCubeDest_p;
+   TZRef          ZRefs[VIGRIDLENGTH];
+   TZRef         *ZRefSrc,*ZRefDest;
+   float         *gCubeSrc_p,*gCubeDest_p;
    int           *gInterpIndex_p;
    unsigned char gViOption;
    int           gNi, gNj;
@@ -87,7 +76,7 @@ typedef struct viInterp {
 
 viInterp* c_videfine (void);
 int c_viundefine(viInterp *interp);
-int c_viqkdef (viInterp *interp,const int numLevel,const int gridType,float *levelList,float top,float pRef,float rCoef,float *zcoord,float *a,float *b);
+int c_viqkdef(viInterp *interp,TZRef *ZRef);
 int c_videfset(viInterp *interp,const int ni,const int nj,int idGrdDest,int idGrdSrc);
 int c_visetopt (viInterp *interp,const char *option, const char *value);
 int c_visetopti (viInterp *interp,const unsigned char option);
