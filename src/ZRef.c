@@ -173,8 +173,6 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
    double    *buf=NULL;
    float     *pt=NULL;
 
-   EZLock_RPNField();
-
    // Check fo regular hybrid (field HY)
    key = c_fstinf(Unit,&h.NI,&h.NJ,&h.NK,-1,"",-1,-1,-1,"X","HY");
    if (key>=0) {
@@ -260,7 +258,6 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
    if (buf) free(buf);
    if (pt)  free(pt);
 
-   EZUnLock_RPNField();
    return(key>=0);
 }
 
