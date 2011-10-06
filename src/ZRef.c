@@ -187,7 +187,12 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
       } else {
          fprintf(stdout,"(WARNING) ZRef_DecodeRPN: Could not get info on HY field (c_fstprm).\n");
       }
-   } else {
+
+      /*There might be an HY field with coordinate sigma, in which case it really is ETA*/
+      if (ZRef->Type==LVL_SIGMA) {
+         ZRef->Type=LVL_ETA;
+      }
+
       // Check for GEM 4 type vertical coordinate (!! field)
       key=c_fstinf(Unit,&h.NI,&h.NJ,&h.NK,-1,"",-1,-1,-1,"X","!!");
       if (key>=0) {
@@ -594,10 +599,10 @@ double ZRef_Pressure2Level(TZRef* restrict const ZRef,double P0,double Pressure)
 //               break;
 //            }
          } else {
-            a=ZRef->PRef;
-            b=P0-ZRef->PRef;
-            c=ZRef->PTop/ZRef->PRef;
-            d=Pressure;
+            a=ZRef->PRef*100.0;
+            b=(P0-ZRef->PRef)*100.0;
+            c=(ZRef->PTop/ZRef->PRef)*100.0;
+            d=Pressure*100.0;
             r=ZRef->RCoef[0];
 
             /*Use iterative method Newton-Raphson (developped by Alain Malo)*/
