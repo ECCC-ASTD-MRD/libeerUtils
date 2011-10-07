@@ -362,46 +362,78 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
    pref=ZRef->PRef*100.0;
    ptop=ZRef->PTop*100.0;
 
-   switch(ZRef->Type) {
-      case LVL_PRES:
-         for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
-            for (ij=0;ij<NIJ;ij++) {
-               Pres[idxk+ij]=ZRef->Levels[k];
-            }
-         }
-         break;
-
-      case LVL_SIGMA:
-         for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
-            for (ij=0;ij<NIJ;ij++) {
-               Pres[idxk+ij]=P0[ij]*ZRef->Levels[k];
-            }
-         }
-         break;
-
-      case LVL_ETA:
-         for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
-            for (ij=0;ij<NIJ;ij++) {
-               Pres[idxk+ij]=(ptop+(P0[ij]*100.0-ptop)*ZRef->Levels[k])*0.01;
-            }
-         }
-         break;
-
-      case LVL_HYBRID:
-         if (ZRef->A && ZRef->B) {
-            for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
-               for (ij=0;ij<NIJ;ij++) {
-                  Pres[idxk+ij]=expf(ZRef->A[k]+ZRef->B[k]*log(P0[ij]*100.0/pref))*0.01;
+   switch(ZRef->Version) {
+      case 0:
+         switch(ZRef->Type) {
+            case LVL_PRES:
+               for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
+                  for (ij=0;ij<NIJ;ij++) {
+                     Pres[idxk+ij]=ZRef->Levels[k];
+                  }
                }
-            }
-         } else {
-            rtop=ptop/pref;
-            for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
-               pk=pref*ZRef->Levels[k];
-               pr=powf(((ZRef->Levels[k]-rtop)/(1.0-rtop)),ZRef->RCoef[0]);
-               for (ij=0;ij<NIJ;ij++) {
-                  Pres[idxk+ij]=(pk+(ZRef->P0[ij]*100.0-pref)*pr)*0.01;
+               break;
+
+            case LVL_SIGMA:
+               for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
+                  for (ij=0;ij<NIJ;ij++) {
+                     Pres[idxk+ij]=P0[ij]*ZRef->Levels[k];
+                  }
                }
+               break;
+
+            case LVL_ETA:
+               for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
+                  for (ij=0;ij<NIJ;ij++) {
+                     Pres[idxk+ij]=(ptop+(P0[ij]*100.0-ptop)*ZRef->Levels[k])*0.01;
+                  }
+               }
+               break;
+
+            case LVL_HYBRID:
+               rtop=ptop/pref;
+               for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
+                  pk=pref*ZRef->Levels[k];
+                  pr=powf(((ZRef->Levels[k]-rtop)/(1.0-rtop)),ZRef->RCoef[0]);
+                  for (ij=0;ij<NIJ;ij++) {
+                     Pres[idxk+ij]=(pk+(ZRef->P0[ij]*100.0-pref)*pr)*0.01;
+                  }
+               }
+               break;
+
+            default:
+               fprintf(stderr,"(ERROR) ZRef_KCube2Pressure: invalid level type (%i)",ZRef->Type);
+         }
+         break;
+
+      case 1001:                                                      // Sigma
+         for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
+            for (ij=0;ij<NIJ;ij++) {
+               Pres[idxk+ij]=ZRef->B[k]*P0[ij];
+            }
+         }
+         break;
+
+      case 1002:                                                      // Eta
+      case 1003:                                                      // Hybrid normalized
+      case 5001:                                                      // Hybrid
+         for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
+            for (ij=0;ij<NIJ;ij++) {
+               Pres[idxk+ij]=(ZRef->A[k]+ZRef->B[k]*P0[ij]*100.0)*0.01;
+            }
+         }
+         break;
+
+      case 2001:                                                      // Pressure
+         for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
+            for (ij=0;ij<NIJ;ij++) {
+               Pres[idxk+ij]=ZRef->A[k]*0.01;
+            }
+         }
+         break;
+      case 5002:                                                     // Hybrid momentum
+         for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
+            for (ij=0;ij<NIJ;ij++) {
+               Pres[idxk+ij]=exp(ZRef->A[k]+ZRef->B[k]*log(P0[ij]*100.0/pref))*0.01;
             }
          }
          break;
@@ -510,6 +542,7 @@ int ZRef_KCube2Meter(TZRef* restrict const ZRef,float *GZ,const int NIJ,float *H
 double ZRef_Level2Pressure(TZRef* restrict const ZRef,double P0,double Level) {
 
    double pres=-1.0,pref,ptop,rtop;
+   int    z,z0,z1,o;
 
    P0*=100.0;
    pref=ZRef->PRef*100.0;
@@ -529,8 +562,29 @@ double ZRef_Level2Pressure(TZRef* restrict const ZRef,double P0,double Level) {
          break;
 
       case LVL_HYBRID:
-         if (ZRef->A && ZRef->B) {
-            //            pres=exp(zref->A[K]+zref->B[K]*P0)/100.0;
+         //TODO need to add analytical function for GEM4 type
+         if (ZRef->Version==5002) {
+            // Check for level ordering
+            o=(ZRef->Levels[0]<ZRef->Levels[ZRef->LevelNb]);
+
+            // Find enclosing levels
+            for(z=0;z<ZRef->LevelNb;z++) {
+               if ((o && Level<ZRef->Levels[z]) || (!o && Level>ZRef->Levels[z])) {
+                  z1=o?z:z-1;
+                  z0=o?z-1:z;
+                  break;
+               }
+            }
+
+            // if we are within the vertical limits
+            if (z>0 || z<ZRef->LevelNb) {
+
+               // Interpolate between levels (in log(p))
+               z=(z1-z);
+               z0=ZRef->A[z0]+ZRef->B[z0]*log(P0/pref);
+               z1=ZRef->A[z1]+ZRef->B[z1]*log(P0/pref);
+               pres=exp(ILIN(z0,z1,z));
+            }
          } else {
             rtop=ptop/pref;
             pres=pref*Level+(P0-pref)*pow((Level-rtop)/(1.0-rtop),ZRef->RCoef[0]);
@@ -565,7 +619,7 @@ double ZRef_Pressure2Level(TZRef* restrict const ZRef,double P0,double Pressure)
 
    double level=-1.0;
    double a,b,c,d,r,l,err;
-   float *pres;
+   float  p,pres,pres0=0,pres1;
    int    z;
 
    switch(ZRef->Type) {
@@ -582,22 +636,26 @@ double ZRef_Pressure2Level(TZRef* restrict const ZRef,double P0,double Pressure)
          break;
 
       case LVL_HYBRID:
-         if (ZRef->A && ZRef->B) {
-//         if (!(pres=(float*)(malloc(zref->LevelNb*sizeof(float))))) {
-//            fprintf(stderr,"(ERROR) EZGrid_GetLevel: Unable to allocate pressure level array\n");
-//            return(-1.0);
-//         }
+         //TODO need to add analytical function for GEM4 type
+         if (ZRef->Version==5002) {
+            // Interpolate in log(p)
+            pres=log(Pressure*100.0);
 
-          /*Hybrid levels can't be analyticaly calculated,
-           *so we find between which pressure level it is and interpolate the hybrid level*/
-//         pres[0]=EZGrid_GetPressure(Grid,zref->Levels[0],P0);
-//         for(z=1;z<zref->LevelNb;z++) {
-//            pres[z]=EZGrid_GetPressure(Grid,zref->Levels[z],P0);
-//            if (Pressure<=pres[z] && Pressure>=pres[z-1]) {
-//               level=(pres[z]-Pressure)/(pres[z]-pres[z-1]);
-//               level=ILIN(pres[z],pres[z-1],level);
-//               break;
-//            }
+            // Find enclosing levels
+            for(z=0;z<ZRef->LevelNb;z++) {
+               pres1=pres0;
+               pres0=ZRef->A[z]+ZRef->B[z]*log(P0/ZRef->PRef*100.0);
+               if (pres>=pres0 && pres<=pres1) {
+                  level=(pres1-pres)/(pres1-pres0);
+                  level=ILIN(ZRef->Levels[z],ZRef->Levels[z-1],level);
+                  break;
+               }
+               if (pres>=pres1 && pres<=pres0) {
+                  level=(pres0-pres)/(pres0-pres1);
+                  level=ILIN(ZRef->Levels[z-1],ZRef->Levels[z],level);
+                  break;
+               }
+            }
          } else {
             a=ZRef->PRef*100.0;
             b=(P0-ZRef->PRef)*100.0;
@@ -609,6 +667,7 @@ double ZRef_Pressure2Level(TZRef* restrict const ZRef,double P0,double Pressure)
             level=0.5;
             err=1.0;
             while(err>0.0001) {
+               // TODO: above 12 mb, this code fails with a nan on the pow(level-c,r-1)
                l=level-((a*level+b*pow((level-c)/(1-c),r)-d)/(a+b*r/(pow(1-c,r))*pow(level-c,r-1)));
                err=fabs(l-level)/level;
                level=l;

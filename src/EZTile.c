@@ -1038,7 +1038,7 @@ TZRef* EZGrid_GetZRef(const TGrid* restrict const Grid) {
    /*Sort the levels from ground up*/
    qsort(zref->Levels,zref->LevelNb,sizeof(float),QSort_Float);
 
-   /*Invert the list if requestet*/
+   /*Invert the list if requested*/
    if (Grid->Incr!=1) {
       for(k=0;k<zref->LevelNb/2;k++) {
          lvl=zref->Levels[k];
