@@ -55,7 +55,6 @@
 #define PRESS2METER(LVL) (-8409.1*log((LVL==0?1e-31:LVL)/1200.0))
 #define SIGMA2METER(LVL) (-8409.1*log(LVL==0?1e-31:LVL))
 
-
 /*Vertical referential definition*/
 typedef struct TZRef {
    int    Version;      /*Version*/

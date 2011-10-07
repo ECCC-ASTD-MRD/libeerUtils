@@ -193,7 +193,8 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
          ZRef->Type=LVL_ETA;
       }
 
-      // Check for GEM 4 type vertical coordinate (!! field)
+   } else {
+
       key=c_fstinf(Unit,&h.NI,&h.NJ,&h.NK,-1,"",-1,-1,-1,"X","!!");
       if (key>=0) {
          cd=c_fstprm(key,&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&h.NK,&h.NBITS,&h.DATYP,&h.IP1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,h.GRTYP,&h.IG1,
