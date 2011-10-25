@@ -2105,7 +2105,7 @@ int EZGrid_GetArray(TGrid* restrict const Grid,int K,float* restrict Value) {
       return(0);
    }
    data=EZGrid_TileBurnAll(Grid,K);
-   memcpy(Value,data,Grid->H.NI*Grid->H.NI*sizeof(float));
+   memcpy(Value,data,Grid->H.NI*Grid->H.NJ*sizeof(float));
 
    return(1);
 }
