@@ -104,6 +104,7 @@ int    EZGrid_GetDelta(TGrid* restrict const Grid,int K,float* DX,float* DY,floa
 int    EZGrid_GetLL(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float* J,int Nb);
 int    EZGrid_GetIJ(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float* J,int Nb);
 
+int    EZGrid_TileGrid(int FIdTo,int NI, int NJ,TGrid* restrict const Grid);
 int    EZGrid_Tile(int FIdTo,int NI, int NJ,int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2);
 int    EZGrid_UnTile(int FIdTo,int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2);
 

@@ -689,7 +689,8 @@ int EZGrid_CopyDesc(int FIdTo,TGrid* restrict const Grid) {
    strcpy(h.NOMVAR,"    ");
    strcpy(h.TYPVAR,"  ");
    strcpy(h.ETIKET,"            ");
-   strcpy(h.GRTYP,"  ");
+   strcpy(h.GRTYP," ");
+
    key=c_fstprm(key,&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&h.NK,&h.NBITS,&h.DATYP,
       &h.IP1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,h.GRTYP,&h.IG1,
       &h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,&h.UBC,&h.EX1,&h.EX2,&h.EX3);
@@ -713,6 +714,7 @@ int EZGrid_CopyDesc(int FIdTo,TGrid* restrict const Grid) {
 
    EZGrid_CacheAdd(Grid);
    free(data);
+
    return(1);
 }
 
@@ -800,6 +802,37 @@ int EZGrid_Tile(int FIdTo,int NI, int NJ,int FIdFrom,char* Var,char* TypVar,char
    free(data);
    free(tile);
    return(nid);
+}
+
+int EZGrid_TileGrid(int FIdTo,int NI, int NJ,TGrid* restrict const Grid) {
+
+   int    i,j,ni,nj,pj,no,key;
+   float *tile=NULL,*data;
+
+   tile=(float*)malloc(NI*NJ*sizeof(float));
+
+   EZGrid_CopyDesc(FIdTo,Grid);
+   data=EZGrid_TileBurnAll(Grid,0);
+
+   /*Build and save the tiles*/
+   no=0;
+   for(j=0;j<Grid->H.NJ;j+=NJ) {
+      nj=(j+NJ>Grid->H.NJ)?(Grid->H.NJ-j):NJ;
+      for(i=0;i<Grid->H.NI;i+=NI) {
+         no++;
+         ni=(i+NI>Grid->H.NI)?(Grid->H.NI-i):NI;
+
+         for(pj=0;pj<nj;pj++) {
+            memcpy(&tile[pj*ni],&data[(j+pj)*Grid->H.NI+i],ni*sizeof(float));
+         }
+         key=cs_fstecr(tile,-Grid->H.NBITS,FIdTo,Grid->H.DATEO,Grid->H.DEET,Grid->H.NPAS,ni,nj,1,Grid->H.IP1,Grid->H.IP2,
+                       no,Grid->H.TYPVAR,Grid->H.NOMVAR,Grid->H.ETIKET,"#",Grid->H.IG1,Grid->H.IG2,i+1,j+1,Grid->H.DATYP,1);
+      }
+   }
+
+   free(tile);
+
+   return(1);
 }
 
 /*----------------------------------------------------------------------------
@@ -1250,7 +1283,7 @@ TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr) {
 
    /*Check previous master grid existence*/
    if ((mst=EZGrid_CacheFind(new))) {
-      new->Master=0;
+     new->Master=0;
       new->Data=NULL;
       new->GID=mst->GID;
       new->ZRef=mst->ZRef;

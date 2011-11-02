@@ -26,7 +26,7 @@ ifeq ($(OS),Linux)
    LD          = ld -shared -x
    LIBS        = -L$(EER_DIR)/lib/$(ARCH) -lrmn -lpgc  
    INCLUDES    = -I./src -I$(ARMNLIB)/include -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic -I$(ARMNLIB)/include/$(ARCH)
-   LINK_EXEC   = -lm -lpthread -Wl,-rpath,$(EER_DIR)/lib/$(ARCH) -shared 
+   LINK_EXEC   = -lm -lpthread -Wl,-rpath,$(EER_DIR)/lib/$(ARCH)  
    CCOPTIONS   = -O2 -finline-functions -fomit-frame-pointer -funroll-loops
    CDEBUGFLAGS =
 

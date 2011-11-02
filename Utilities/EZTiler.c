@@ -32,16 +32,20 @@ int main (int argc, char **argv) {
    i=atoi(argv[3]);
    j=atoi(argv[4]);
 
+//   fld0=EZGrid_Read(10,"GZ","","",-1,12000,-1,1);
+//   EZGrid_TileGrid(20,i,j,fld0);
+
    for(n=5;n<argc;n++) {
       printf("(INFO) Tiling var %s\n",argv[n]);
       EZGrid_Tile(20,i,j,10,argv[n],"","",-1,-1,-1);
    }
+
    c_fstfrm(10);
    c_fclos(10);
    c_fstfrm(20);
    c_fclos(20);
 
-   exit(0);
+  exit(0);
 
    /*Test*/
    c_fnom(10,"/data/cmoex7/afsr005/tile/glb/2008010712_000","STD+RND+R/O",0);
