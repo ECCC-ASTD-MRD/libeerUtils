@@ -105,11 +105,11 @@
 #define LOG2(V)                           (log10(V)/log10(2))
 
 #define DSIZE(D)                          (D[0]?(D[1]?(D[2]?3:2):1):0)
-#define FSIZE2D(D)                        (D->NI*D->NJ)
-#define FSIZE3D(D)                        (D->NI*D->NJ*D->NK)
+#define FSIZE2D(D)                        ((unsigned long)(D->NI)*D->NJ)
+#define FSIZE3D(D)                        ((unsigned long)(D->NI)*D->NJ*D->NK)
 #define FSIZECHECK(D0,D1)                 (D0->NI==D1->NI && D0->NJ==D1->NJ && D0->NK==D1->NK)
-#define FIDX2D(D,I,J)                     ((J)*D->NI+(I))
-#define FIDX3D(D,I,J,K)                   ((K)*D->NI*D->NJ+(J)*D->NI+(I))
+#define FIDX2D(D,I,J)                     ((unsigned long)(J)*D->NI+(I))
+#define FIDX3D(D,I,J,K)                   ((unsigned long)(K)*D->NI*D->NJ+(J)*D->NI+(I))
 #define FIN2D(D,I,J)                      (J>=0 && J<D->NJ && I>=0 && I<D->NI)
 #define FIN25D(D,I,J)                     (J>-0.5 && J<D->NJ+0.5 && I>-0.5 && I<D->NI+0.5)
 
@@ -137,6 +137,19 @@
 #define RAD2M(R)             ((R)*6.36670701949370745569e+06)
 #define CLAMPLAT(LAT)        (LAT=LAT>90.0?90.0:(LAT<-90.0?-90.0:LAT))
 #define CLAMPLON(LON)        (LON=LON>180?LON-360:(LON<-180?LON+360:LON))
+
+/*Structure pour les coordonees latlon*/
+typedef struct TGridCoord {
+   float Lat,Lon,I,J;
+} TGridCoord;
+
+typedef struct TGridPoint {
+   float I,J;
+} TGridPoint;
+
+typedef struct TCoord {
+   double Lon,Lat,Elev;
+} TCoord;
 
 
 /*Standard struct to read an RPN Field*/

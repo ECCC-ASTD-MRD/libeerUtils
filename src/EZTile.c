@@ -806,27 +806,33 @@ int EZGrid_Tile(int FIdTo,int NI, int NJ,int FIdFrom,char* Var,char* TypVar,char
 
 int EZGrid_TileGrid(int FIdTo,int NI, int NJ,TGrid* restrict const Grid) {
 
-   int    i,j,ni,nj,pj,no,key;
+   char   format;
+   int    i,j,k,ni,nj,pj,no,key;
    float *tile=NULL,*data;
+   int    flag=0,ip1=0,mode=2,type;
 
    tile=(float*)malloc(NI*NJ*sizeof(float));
 
    EZGrid_CopyDesc(FIdTo,Grid);
-   data=EZGrid_TileBurnAll(Grid,0);
 
    /*Build and save the tiles*/
    no=0;
-   for(j=0;j<Grid->H.NJ;j+=NJ) {
-      nj=(j+NJ>Grid->H.NJ)?(Grid->H.NJ-j):NJ;
-      for(i=0;i<Grid->H.NI;i+=NI) {
-         no++;
-         ni=(i+NI>Grid->H.NI)?(Grid->H.NI-i):NI;
+   for(k=0;j<Grid->H.NK;k++) {
+      data=EZGrid_TileBurnAll(Grid,k);
 
-         for(pj=0;pj<nj;pj++) {
-            memcpy(&tile[pj*ni],&data[(j+pj)*Grid->H.NI+i],ni*sizeof(float));
+      for(j=0;j<Grid->H.NJ;j+=NJ) {
+         nj=(j+NJ>Grid->H.NJ)?(Grid->H.NJ-j):NJ;
+         for(i=0;i<Grid->H.NI;i+=NI) {
+            no++;
+            ni=(i+NI>Grid->H.NI)?(Grid->H.NI-i):NI;
+
+            for(pj=0;pj<nj;pj++) {
+               memcpy(&tile[pj*ni],&data[(j+pj)*Grid->H.NI+i],ni*sizeof(float));
+            }
+            f77name(convip)(&ip1,&Grid->ZRef->Levels[k],&type,&mode,&format,&flag);
+            key=cs_fstecr(tile,-Grid->H.NBITS,FIdTo,Grid->H.DATEO,Grid->H.DEET,Grid->H.NPAS,ni,nj,1,ip1,Grid->H.IP2,
+                        no,Grid->H.TYPVAR,Grid->H.NOMVAR,Grid->H.ETIKET,"#",Grid->H.IG1,Grid->H.IG2,i+1,j+1,Grid->H.DATYP,1);
          }
-         key=cs_fstecr(tile,-Grid->H.NBITS,FIdTo,Grid->H.DATEO,Grid->H.DEET,Grid->H.NPAS,ni,nj,1,Grid->H.IP1,Grid->H.IP2,
-                       no,Grid->H.TYPVAR,Grid->H.NOMVAR,Grid->H.ETIKET,"#",Grid->H.IG1,Grid->H.IG2,i+1,j+1,Grid->H.DATYP,1);
       }
    }
 
@@ -2105,7 +2111,7 @@ int EZGrid_GetValues(const TGrid* restrict const Grid,int Nb,float* restrict con
  * Nom      : <EZGrid_GetArray>
  * Creation : Janvier 2008 - J.P. Gauthier - CMC/CMOE
  *
- * But      : Obtenir un pointeru sur les valeurs
+ * But      : Obtenir un pointeur sur les valeurs
  *
  * Parametres :
  *   <Grid>       : Grille

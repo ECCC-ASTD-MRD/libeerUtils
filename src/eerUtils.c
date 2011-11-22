@@ -332,16 +332,16 @@ void System_StampDecode(int Stamp,int *YYYY,int *MM,int *DD,int *H,int *M,int *S
 
    f77name(newdate)(&Stamp,&date,&time,&op);
 
-   *YYYY=date/1e4;
-   *DD=date-((*YYYY)*1e4);
-   *MM=(*DD)/1e2;
-   *DD-=((*MM)*1e2);
+   *YYYY=date/10000;
+   *DD=date-((*YYYY)*10000);
+   *MM=(*DD)/100;
+   *DD-=((*MM)*100);
 
-   *H=time/1e6;
-   *S=time-(*H)*1e6;
-   *M=(*S)/1e4;
-   *S-=(*M)*1e4;
-   *S/=1e2;
+   *H=time/100000;
+   *S=time-(*H)*100000;
+   *M=(*S)/1000;
+   *S-=(*M)*1000;
+   *S/=100;
 }
 
 void System_StampEncode(int *Stamp,int YYYY,int MM,int DD,int H,int M,int S) {
