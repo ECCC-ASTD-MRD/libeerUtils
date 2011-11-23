@@ -337,10 +337,10 @@ void System_StampDecode(int Stamp,int *YYYY,int *MM,int *DD,int *H,int *M,int *S
    *MM=(*DD)/100;
    *DD-=((*MM)*100);
 
-   *H=time/100000;
-   *S=time-(*H)*100000;
-   *M=(*S)/1000;
-   *S-=(*M)*1000;
+   *H=time/1000000;
+   *S=time-(*H)*1000000;
+   *M=(*S)/10000;
+   *S-=(*M)*10000;
    *S/=100;
 }
 
