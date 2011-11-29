@@ -173,6 +173,10 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
    double    *buf=NULL;
    float     *pt=NULL;
 
+   if (ZRef->Type==LVL_PRES) {
+     return(1);
+   }
+
    // Check fo regular hybrid (field HY)
    key = c_fstinf(Unit,&h.NI,&h.NJ,&h.NK,-1,"",-1,-1,-1,"X","HY");
    if (key>=0) {
