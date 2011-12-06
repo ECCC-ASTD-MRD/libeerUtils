@@ -32,7 +32,7 @@
 #include "EZTile.h"
 
 #include "rpn_macros_arch.h"
-#include "/usr/local/env/armnlib/include/fnom.h"
+#include "fnom.h"
 
 static char FGFDTLock[MAXFILES];
 static TGrid *GridCache[GRIDCACHEMAX];
