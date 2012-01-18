@@ -195,6 +195,96 @@ int cs_fstecr(float *Data,int NPak,int Unit, int DateO,int Deet,int NPas,int NI,
    return(err);
 }
 
+static unsigned short *EZGrid_Ids=NULL;
+static unsigned int    EZGrid_IdsNb=0;
+
+/*----------------------------------------------------------------------------
+ * Nom      : <EZGrid_IdNew>
+ * Creation : Janvier 2012 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Wrapper autour de c_ezqkdef pour garder un compte du nombre
+ *           d'allocation de chaque grille ezscint
+ *
+ * Parametres :
+ *
+ * Retour:
+ *  <Id>      : Identificateur de grille ezscint
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+ */
+int EZGrid_IdNew(int NI,int NJ,char* GRTYP,int IG1,int IG2,int IG3, int IG4,int FID) {
+
+   int id;
+
+   pthread_mutex_lock(&RPNIntMutex);
+   id=c_ezqkdef(NI,NJ,GRTYP,IG1,IG2,IG3,IG4,FID);
+
+   if (id>=EZGrid_IdsNb) {
+      if (!(EZGrid_Ids=(unsigned short *)realloc(EZGrid_Ids,(EZGrid_IdsNb+256)*sizeof(unsigned short)))) {
+         fprintf(stderr,"(ERROR) Unable to reallocate GeoRef_RPN array to %i elements\n",EZGrid_IdsNb+256);
+         pthread_mutex_unlock(&RPNIntMutex);
+         return(-1);
+      }
+      memset(&EZGrid_Ids[EZGrid_IdsNb],0x0,256);
+      EZGrid_IdsNb+=256;
+   }
+   EZGrid_Ids[id]++;
+   pthread_mutex_unlock(&RPNIntMutex);
+
+   return(id);
+}
+
+int EZGrid_IdIncr(int Id) {
+
+   pthread_mutex_lock(&RPNIntMutex);
+
+   if (Id>=EZGrid_IdsNb) {
+      if (!(EZGrid_Ids=(unsigned short *)realloc(EZGrid_Ids,(EZGrid_IdsNb+256)*sizeof(unsigned short)))) {
+         fprintf(stderr,"(ERROR) Unable to reallocate GeoRef_RPN array to %i elements\n",EZGrid_IdsNb+256);
+         pthread_mutex_unlock(&RPNIntMutex);
+         return(-1);
+      }
+      EZGrid_IdsNb+=256;
+   }
+   EZGrid_Ids[Id]++;
+   pthread_mutex_unlock(&RPNIntMutex);
+
+   return(EZGrid_Ids[Id]);
+}
+/*----------------------------------------------------------------------------
+ * Nom      : <EZGrid_IdFree>
+ * Creation : Janvier 2012 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Wrapper autour de c_gdrls pour garder un compte du nombre
+ *           d'allocation de chaque grille ezscint
+ *
+ * Parametres :
+ *  <Id>      : Identificateur de grille ezscint
+ *
+ * Retour:
+ *  <n>      : Compte du nobre d'allocation de la grille ezscint
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+ */
+int EZGrid_IdFree(int Id) {
+
+   int n=-1;
+
+   pthread_mutex_lock(&RPNIntMutex);
+   if (Id>EZGrid_IdsNb) {
+      fprintf(stderr,"(WARNING) Grid id is not in id cache: %i\n",Id);
+   } else {
+      if (!(n=(--EZGrid_Ids[Id]))) {
+         c_gdrls(Id);
+      }
+   }
+   pthread_mutex_unlock(&RPNIntMutex);
+
+   return(n);
+}
+
 /*----------------------------------------------------------------------------
  * Nom      : <EZGrid_Wrap>
  * Creation : Mai 2011 - J.P. Gauthier - CMC/CMOE
@@ -986,9 +1076,7 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
    h.GRTYP[1]='\0';
 
    /*c_ezqkdef uses fstd functions to get grid def so we need to keep the RPNFieldMutex on*/
-   pthread_mutex_lock(&RPNIntMutex);
-   Grid->GID=c_ezqkdef(Grid->H.NI,Grid->H.NJ,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,Grid->H.FID);
-   pthread_mutex_unlock(&RPNIntMutex);
+   Grid->GID=EZGrid_IdNew(Grid->H.NI,Grid->H.NJ,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,Grid->H.FID);
    pthread_mutex_unlock(&RPNFieldMutex);
 
    Grid->Wrap=EZGrid_Wrap(Grid);

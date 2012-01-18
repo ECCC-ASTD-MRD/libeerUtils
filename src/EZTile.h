@@ -122,6 +122,11 @@ void EZUnLock_RPNField();
 void EZLock_RPNInt();
 void EZUnLock_RPNInt();
 
+int EZGrid_IdNew(int NI,int NJ,char* GRTYP,int IG1,int IG2,int IG3, int IG4,int FID);
+int EZGrid_IdFree(int Id);
+int EZGrid_IdIncr(int Id);
+
+
 int cs_fstunlockid(int Unit);
 int cs_fstlockid();
 int cs_fstfrm(int Unit);
