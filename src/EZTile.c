@@ -213,6 +213,17 @@ static unsigned int    EZGrid_IdsNb=0;
  * Remarques :
  *----------------------------------------------------------------------------
  */
+int EZGrid_IdRealloc(int Nb) {
+
+   if (!(EZGrid_Ids=(unsigned short *)realloc(EZGrid_Ids,(EZGrid_IdsNb+Nb)*sizeof(unsigned short)))) {
+      fprintf(stderr,"(ERROR) Unable to reallocate GeoRef_RPN array to %i elements\n",EZGrid_IdsNb+Nb);
+      return(0);
+   }
+
+   memset(&EZGrid_Ids[EZGrid_IdsNb],0x0,Nb*sizeof(unsigned short));
+   EZGrid_IdsNb+=Nb;
+}
+
 int EZGrid_IdNew(int NI,int NJ,char* GRTYP,int IG1,int IG2,int IG3, int IG4,int FID) {
 
    int id;
@@ -220,14 +231,9 @@ int EZGrid_IdNew(int NI,int NJ,char* GRTYP,int IG1,int IG2,int IG3, int IG4,int 
    pthread_mutex_lock(&RPNIntMutex);
    id=c_ezqkdef(NI,NJ,GRTYP,IG1,IG2,IG3,IG4,FID);
 
-   if (id>=EZGrid_IdsNb) {
-      if (!(EZGrid_Ids=(unsigned short *)realloc(EZGrid_Ids,(EZGrid_IdsNb+256)*sizeof(unsigned short)))) {
-         fprintf(stderr,"(ERROR) Unable to reallocate GeoRef_RPN array to %i elements\n",EZGrid_IdsNb+256);
-         pthread_mutex_unlock(&RPNIntMutex);
-         return(-1);
-      }
-      memset(&EZGrid_Ids[EZGrid_IdsNb],0x0,256);
-      EZGrid_IdsNb+=256;
+   if (id>=EZGrid_IdsNb && !EZGrid_IdRealloc(256)) {
+      pthread_mutex_unlock(&RPNIntMutex);
+      return(-1);
    }
    EZGrid_Ids[id]++;
    pthread_mutex_unlock(&RPNIntMutex);
@@ -237,16 +243,15 @@ int EZGrid_IdNew(int NI,int NJ,char* GRTYP,int IG1,int IG2,int IG3, int IG4,int 
 
 int EZGrid_IdIncr(int Id) {
 
-   pthread_mutex_lock(&RPNIntMutex);
+   if (Id<0)
+      return(0);
 
-   if (Id>=EZGrid_IdsNb) {
-      if (!(EZGrid_Ids=(unsigned short *)realloc(EZGrid_Ids,(EZGrid_IdsNb+256)*sizeof(unsigned short)))) {
-         fprintf(stderr,"(ERROR) Unable to reallocate GeoRef_RPN array to %i elements\n",EZGrid_IdsNb+256);
-         pthread_mutex_unlock(&RPNIntMutex);
-         return(-1);
-      }
-      EZGrid_IdsNb+=256;
+   pthread_mutex_lock(&RPNIntMutex);
+   if (Id>=EZGrid_IdsNb && !EZGrid_IdRealloc(256)) {
+      pthread_mutex_unlock(&RPNIntMutex);
+      return(-1);
    }
+
    EZGrid_Ids[Id]++;
    pthread_mutex_unlock(&RPNIntMutex);
 
@@ -272,12 +277,15 @@ int EZGrid_IdFree(int Id) {
 
    int n=-1;
 
+   if (Id<0)
+      return(n);
+
    pthread_mutex_lock(&RPNIntMutex);
    if (Id>EZGrid_IdsNb) {
       fprintf(stderr,"(WARNING) Grid id is not in id cache: %i\n",Id);
    } else {
       if (!(n=(--EZGrid_Ids[Id]))) {
-         c_gdrls(Id);
+//         c_gdrls(Id);
       }
    }
    pthread_mutex_unlock(&RPNIntMutex);
@@ -519,17 +527,20 @@ float* EZGrid_TileBurn(TGrid* restrict const Grid,TGridTile* restrict const Tile
 
    pthread_mutex_lock(&Grid->Mutex);
    if (Tile->KBurn!=-1 && Tile->KBurn==K) {
+      pthread_mutex_unlock(&Grid->Mutex);
       return(Grid->Data);
    }
 
    if (!Tile || !Tile->Data) {
       fprintf(stderr,"(ERROR) EZGrid_TileBurn: Invalid tile (%s)\n",Grid->H.NOMVAR);
+      pthread_mutex_unlock(&Grid->Mutex);
       return(NULL);
    }
 
    if (!Grid->Data) {
       if (!(Grid->Data=(float*)malloc(Grid->H.NIJ*sizeof(float)))) {
          fprintf(stderr,"(ERROR) EZGrid_TileBurn: Unable to allocate memory for grid data (%s)\n",Grid->H.NOMVAR);
+         pthread_mutex_unlock(&Grid->Mutex);
          return(NULL);
       }
    }
@@ -998,7 +1009,7 @@ int EZGrid_UnTile(int FIdTo,int FIdFrom,char* Var,char* TypVar,char* Etiket,int 
 TGrid* EZGrid_Get(TGrid* restrict const Grid) {
 
    TRPNHeader h;
-   int        n,r,i,j,k;
+   int        n,r,i,j,k,nt;
    int        ip3,key;
    int        l,idlst[TILEMAX];
 
@@ -1027,6 +1038,7 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
    Grid->IP3=Grid->H.IG3;
    Grid->H.NIJ=Grid->H.NI*Grid->H.NJ;
    i=j=-1;
+   nt=Grid->NbTiles;
 
    /*Parse the tiles to get the tile limits and structure*/
    for(n=0;n<Grid->NbTiles;n++) {
@@ -1063,8 +1075,11 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
          Grid->Tiles[k].J=0;
          Grid->NTI++;
          Grid->NTJ++;
+         Grid->NbTiles=1;
+         break;
       }
    }
+   pthread_mutex_unlock(&RPNFieldMutex);
 
    /*Create master grid*/
    if (Grid->H.GRTYP[0]=='#') {
@@ -1076,9 +1091,7 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
    h.GRTYP[1]='\0';
 
    /*c_ezqkdef uses fstd functions to get grid def so we need to keep the RPNFieldMutex on*/
-   Grid->GID=EZGrid_IdNew(Grid->H.NI,Grid->H.NJ,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,Grid->H.FID);
-   pthread_mutex_unlock(&RPNFieldMutex);
-
+   Grid->GID =EZGrid_IdNew(Grid->H.NI,Grid->H.NJ,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,Grid->H.FID);
    Grid->Wrap=EZGrid_Wrap(Grid);
 
    return(Grid);
@@ -1164,6 +1177,15 @@ TZRef* EZGrid_GetZRef(const TGrid* restrict const Grid) {
 
    /*Sort the levels from ground up*/
    qsort(zref->Levels,zref->LevelNb,sizeof(float),QSort_Float);
+
+   /*Remove duplicates*/
+   for(k=1;k<zref->LevelNb;k++) {
+      if (zref->Levels[k]==zref->Levels[k-1]) {
+         memcpy(&zref->Levels[k-1],&zref->Levels[k],(zref->LevelNb-k)*sizeof(float));
+         k--;
+         zref->LevelNb--;
+      }
+   }
 
    /*Invert the list if requested*/
    if (Grid->Incr!=1) {

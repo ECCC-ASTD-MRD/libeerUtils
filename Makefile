@@ -25,7 +25,7 @@ else
    CC          = xlc
    AR          = ar rv
    LD          = ld
-   LIBS        = -L$(EER_DIR)/lib/$(BASE_ARCH) -L/home/ordenv/ssm-domains1/ssm-rmnlib-dev/multi/lib/AIX/xlf13 -lrmn_012
+   LIBS        = -L$(EER_DIR)/lib/$(BASE_ARCH) -lrmnbeta_013
    INCLUDES    = -I./src -I$(ARMNLIB)/include -I$(ARMNLIB)/include/AIX
    LINK_EXEC   = -lxlf90 -lxlsmp -lc -lpthread -lmass -lm
    CCOPTIONS   = -O3 -qstrict -qmaxmem=-1 -Q -v  -qkeyword=restrict -qcache=auto -qtune=auto -qarch=auto
