@@ -72,6 +72,16 @@ int TclY_Get0LongFromObj(Tcl_Interp *Interp,Tcl_Obj *Obj,long *Var) {
    }
 }
 
+int TclY_Get0DoubleFromObj(Tcl_Interp *Interp,Tcl_Obj *Obj,double *Var) {
+
+   if (Tcl_GetString(Obj)[0]=='0') {
+      sscanf(Tcl_GetString(Obj),"%lf",Var);
+      return(TCL_OK);
+   } else {
+      return(Tcl_GetDoubleFromObj(Interp,Obj,Var));
+   }
+}
+
 FILE* TclY_ChannelOrSocketOpen(Tcl_Interp *Interp,Tcl_Obj *Obj,char *Mode) {
 
    Tcl_Channel  sock=NULL;
