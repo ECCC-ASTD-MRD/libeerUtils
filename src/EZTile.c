@@ -222,6 +222,8 @@ int EZGrid_IdRealloc(int Nb) {
 
    memset(&EZGrid_Ids[EZGrid_IdsNb],0x0,Nb*sizeof(unsigned short));
    EZGrid_IdsNb+=Nb;
+
+   return(EZGrid_IdsNb);
 }
 
 int EZGrid_IdNew(int NI,int NJ,char* GRTYP,int IG1,int IG2,int IG3, int IG4,int FID) {
