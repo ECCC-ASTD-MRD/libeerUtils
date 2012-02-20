@@ -126,6 +126,7 @@ int ZRef_Equal(TZRef *ZRef0,TZRef *ZRef1) {
  * Parametres  :
  *  <ZRef0>     : Vertical reference destination
  *  <ZRef1>     : Vertical reference source
+ *  <Level>     : (Level to copy or -1 for all)
  *
  * Retour:
  *  <Ok>       : (1=Ok, 0=Bad)
@@ -134,18 +135,27 @@ int ZRef_Equal(TZRef *ZRef0,TZRef *ZRef1) {
  *
  *----------------------------------------------------------------------------
  */
-int ZRef_Copy(TZRef *ZRef0,TZRef *ZRef1) {
+int ZRef_Copy(TZRef *ZRef0,TZRef *ZRef1,int Level) {
 
+   if (!ZRef0 || !ZRef1 || Level>ZRef1->LevelNb-1)
+      return(FALSE);
+
+      if (Level<0) {
+      ZRef0->LevelNb=ZRef1->LevelNb;
+      ZRef0->Levels=(float*)malloc(ZRef1->LevelNb*sizeof(float));
+      memcpy(ZRef0->Levels,ZRef1->Levels,ZRef1->LevelNb*sizeof(float));
+   } else {
+      ZRef0->LevelNb=1;
+      ZRef0->Levels=(float*)malloc(sizeof(float));
+      ZRef0->Levels[0]=ZRef1->Levels[Level];
+   }
    ZRef0->Type=ZRef1->Type;
-   ZRef0->LevelNb=ZRef1->LevelNb;
-   ZRef0->Levels=(float*)malloc(ZRef1->LevelNb*sizeof(float));
-   memcpy(ZRef0->Levels,ZRef1->Levels,ZRef1->LevelNb*sizeof(float));
    ZRef0->PTop=ZRef0->PRef=ZRef0->ETop=0.0;
    ZRef0->RCoef[0]=ZRef0->RCoef[1]=1.0;
    ZRef0->P0=ZRef0->A=ZRef0->B=NULL;
    ZRef0->Version=0;
 
-   return(1);
+   return(TRUE);
 }
 
 /*----------------------------------------------------------------------------
@@ -293,15 +303,14 @@ double ZRef_K2Pressure(TZRef* restrict const ZRef,double P0,int K) {
 
    double pres=-1.0,pref,ptop,rtop;
 
-   P0*=100.0;
-   pref=ZRef->PRef*100.0;
-   ptop=ZRef->PTop*100.0;
+   pref=ZRef->PRef;
+   ptop=ZRef->PTop;
 
    switch(ZRef->Version) {
       case 0:
          switch(ZRef->Type) {
             case LVL_PRES:
-               pres=ZRef->Levels[K]*100.0;
+               pres=ZRef->Levels[K];
                break;
 
             case LVL_SIGMA:
@@ -322,17 +331,17 @@ double ZRef_K2Pressure(TZRef* restrict const ZRef,double P0,int K) {
          }
          break;
 
-      case 1001: pres=ZRef->B[K]*P0; break;                           // Sigma
-      case 1002:                                                      // Eta
-      case 1003:                                                      // Hybrid normalized
-      case 5001: pres=ZRef->A[K]+ZRef->B[K]*P0; break;                // Hybrid
-      case 2001: pres=ZRef->A[K]; break;                              // Pressure
-      case 5002: pres=exp(ZRef->A[K]+ZRef->B[K]*log(P0/pref)); break; // Hybrid momentum
+      case 1001: pres=ZRef->B[K]*P0; break;                                      // Sigma
+      case 1002:                                                                 // Eta
+      case 1003:                                                                 // Hybrid normalized
+      case 5001: pres=(ZRef->A[K]+ZRef->B[K]*P0*100)*0.01; break;                // Hybrid
+      case 2001: pres=ZRef->A[K]*0.01; break;                                    // Pressure
+      case 5002: pres=exp(ZRef->A[K]+ZRef->B[K]*log(P0/pref))*0.01; break; // Hybrid momentum
       default:
          fprintf(stderr,"(ERROR) ZRef_Level2Pressure: invalid level type (%i)",ZRef->Type);
    }
 
-   return(pres*0.01);
+   return(pres);
 }
 
 /*----------------------------------------------------------------------------
@@ -364,8 +373,8 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
       return(0);
    }
 
-   pref=ZRef->PRef*100.0;
-   ptop=ZRef->PTop*100.0;
+   pref=ZRef->PRef;
+   ptop=ZRef->PTop;
 
    switch(ZRef->Version) {
       case 0:
@@ -389,7 +398,7 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
             case LVL_ETA:
                for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
                   for (ij=0;ij<NIJ;ij++) {
-                     Pres[idxk+ij]=(ptop+(P0[ij]*100.0-ptop)*ZRef->Levels[k])*0.01;
+                     Pres[idxk+ij]=ptop+(P0[ij]-ptop)*ZRef->Levels[k];
                   }
                }
                break;
@@ -400,7 +409,7 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
                   pk=pref*ZRef->Levels[k];
                   pr=powf(((ZRef->Levels[k]-rtop)/(1.0-rtop)),ZRef->RCoef[0]);
                   for (ij=0;ij<NIJ;ij++) {
-                     Pres[idxk+ij]=(pk+(ZRef->P0[ij]*100.0-pref)*pr)*0.01;
+                     Pres[idxk+ij]=pk+(P0[ij]-pref)*pr;
                   }
                }
                break;
@@ -438,7 +447,7 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
       case 5002:                                                     // Hybrid momentum
          for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
             for (ij=0;ij<NIJ;ij++) {
-               Pres[idxk+ij]=exp(ZRef->A[k]+ZRef->B[k]*log(P0[ij]*100.0/pref))*0.01;
+               Pres[idxk+ij]=exp(ZRef->A[k]+ZRef->B[k]*log(P0[ij]/pref))*0.01;
             }
          }
          break;
@@ -549,13 +558,12 @@ double ZRef_Level2Pressure(TZRef* restrict const ZRef,double P0,double Level) {
    double pres=-1.0,pref,ptop,rtop;
    int    z,z0,z1,o;
 
-   P0*=100.0;
-   pref=ZRef->PRef*100.0;
-   ptop=ZRef->PTop*100.0;
+   pref=ZRef->PRef;
+   ptop=ZRef->PTop;
 
    switch(ZRef->Type) {
       case LVL_PRES:
-         pres=Level*100.0;
+         pres=Level;
          break;
 
       case LVL_SIGMA:
@@ -588,7 +596,7 @@ double ZRef_Level2Pressure(TZRef* restrict const ZRef,double P0,double Level) {
                z=(z1-z);
                z0=ZRef->A[z0]+ZRef->B[z0]*log(P0/pref);
                z1=ZRef->A[z1]+ZRef->B[z1]*log(P0/pref);
-               pres=exp(ILIN(z0,z1,z));
+               pres=exp(ILIN(z0,z1,z))*0.01;
             }
          } else {
             rtop=ptop/pref;
@@ -599,7 +607,7 @@ double ZRef_Level2Pressure(TZRef* restrict const ZRef,double P0,double Level) {
       default:
          fprintf(stderr,"(ERROR) ZRef_Level2Pressure: invalid level type (%i)",ZRef->Type);
    }
-   return(pres*0.01);
+   return(pres);
 }
 
 /*----------------------------------------------------------------------------

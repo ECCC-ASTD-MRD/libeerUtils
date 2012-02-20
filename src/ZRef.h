@@ -72,7 +72,7 @@ typedef struct TZRef {
 int    ZRef_Init(TZRef *ZRef);
 int    ZRef_Free(TZRef *ZRef);
 int    ZRef_Equal(TZRef *Zref0,TZRef *ZRef1);
-int    ZRef_Copy(TZRef *ZRef0,TZRef *ZRef1);
+int    ZRef_Copy(TZRef *ZRef0,TZRef *ZRef1,int Level);
 int    ZRef_DecodeRPN(TZRef *ZRef,int Unit);
 double ZRef_K2Pressure(TZRef* restrict const ZRef,double P0,int K);
 int    ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,float *Pres);

@@ -410,7 +410,7 @@ static float **EZGrid_TileGetData(const TGrid* restrict const Grid,TGridTile* re
 //      for(k=0;k<Grid->H.NK;k++) {
 
          if (!data[k]) {
-            if (!(datak=(float*)malloc(Grid->H.NIJ*sizeof(float*)))) {
+            if (!(datak=(float*)calloc(Tile->NIJ,sizeof(float*)))) {
                fprintf(stderr,"(ERROR) EZGrid_TileGetData: Unable to allocate memory for tile data slices (%s)\n",Grid->H.NOMVAR);
                if (!Safe) pthread_mutex_unlock(&Grid->Mutex);
                return(NULL);
@@ -579,19 +579,23 @@ float* EZGrid_TileBurnAll(TGrid* restrict const Grid,int K) {
 
    int t;
 
-   if (Grid->NbTiles>1) {
-      for(t=0;t<Grid->NbTiles;t++) {
-         if (!Grid->Tiles[t].Data) {
-            EZGrid_TileGetData(Grid,&Grid->Tiles[t],K,0);
+   if (Grid) {
+      if (Grid->NbTiles>1) {
+         for(t=0;t<Grid->NbTiles;t++) {
+            if (!Grid->Tiles[t].Data) {
+               EZGrid_TileGetData(Grid,&Grid->Tiles[t],K,0);
+            }
+            if (!EZGrid_TileBurn(Grid,&Grid->Tiles[t],K)) {
+               return(NULL);
+            }
          }
-         if (!EZGrid_TileBurn(Grid,&Grid->Tiles[t],K)) {
-            return(NULL);
-         }
+         return(Grid->Data);
+      } else {
+         EZGrid_TileGetData(Grid,&Grid->Tiles[0],K,0);
+         return(Grid->Tiles[0].Data[K]);
       }
-      return(Grid->Data);
    } else {
-      EZGrid_TileGetData(Grid,&Grid->Tiles[0],K,0);
-      return(Grid->Tiles[0].Data[K]);
+      return(NULL);
    }
 }
 
@@ -775,16 +779,12 @@ int EZGrid_CopyDesc(int FIdTo,TGrid* restrict const Grid) {
    int        ni,nj,nk;
    int        key;
 
-   if (EZGrid_CacheFind(Grid)) {
-      return(1);
-   }
-
    pthread_mutex_lock(&RPNFieldMutex);
    key=c_fstinf(Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"",">>");
    if (key<0) {
       fprintf(stderr,"(WARNING) EZGrid_CopyDesc: Could not find master grid descriptor >>\n");
       pthread_mutex_unlock(&RPNFieldMutex);
-      return(0);
+      return(FALSE);
    }
    data=(char*)malloc((Grid->H.NI>Grid->H.NJ?Grid->H.NI:Grid->H.NJ)*sizeof(float));
    c_fstluk(data,key,&ni,&nj,&nk);
@@ -804,7 +804,7 @@ int EZGrid_CopyDesc(int FIdTo,TGrid* restrict const Grid) {
    if (key<0) {
       fprintf(stderr,"(ERROR) EZGrid_CopyDesc: Could not find master grid descriptor ^^\n");
       pthread_mutex_unlock(&RPNFieldMutex);
-      return(0);
+      return(FALSE);
    }
    c_fstluk(data,key,&ni,&nj,&nk);
 
@@ -815,10 +815,9 @@ int EZGrid_CopyDesc(int FIdTo,TGrid* restrict const Grid) {
       h.IP2,h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,h.DATYP,1);
    pthread_mutex_unlock(&RPNFieldMutex);
 
-   EZGrid_CacheAdd(Grid);
    free(data);
 
-   return(1);
+   return(TRUE);
 }
 
 /*----------------------------------------------------------------------------
@@ -882,7 +881,8 @@ int EZGrid_Tile(int FIdTo,int NI, int NJ,int FIdFrom,char* Var,char* TypVar,char
 
       new->IP1=new->H.IG1;
       new->IP2=new->H.IG2;
-      EZGrid_CopyDesc(FIdTo,new);
+      if (n==0)
+         EZGrid_CopyDesc(FIdTo,new);
 
       /*Read the field data*/
       cs_fstluk(data,idlst[n],&ni,&nj,&nk);
@@ -914,6 +914,9 @@ int EZGrid_TileGrid(int FIdTo,int NI, int NJ,TGrid* restrict const Grid) {
    float *tile=NULL,*data;
    int    flag=0,ip1=0,mode=2,type;
 
+   if (!Grid)
+      return(FALSE);
+
    tile=(float*)malloc(NI*NJ*sizeof(float));
 
    EZGrid_CopyDesc(FIdTo,Grid);
@@ -941,7 +944,37 @@ int EZGrid_TileGrid(int FIdTo,int NI, int NJ,TGrid* restrict const Grid) {
 
    free(tile);
 
-   return(1);
+   return(TRUE);
+}
+
+int EZGrid_Write(int FId,TGrid* restrict const Grid,int Overwrite) {
+
+   int        k,tidx,key,ok=0;
+   char       format;
+   int        flag=0,ip1=0,mode=2,type;
+   TGridTile *tile;
+
+   if (!Grid)
+      return(FALSE);
+
+   // Because of ETA being same as SIGMA, have to make a switch
+   type=Grid->ZRef->Type==LVL_ETA?LVL_SIGMA:Grid->ZRef->Type;
+   for(k=0;k<Grid->ZRef->LevelNb;k++) {
+      for (tidx=0;tidx<Grid->NbTiles;tidx++) {
+         tile=&Grid->Tiles[tidx];
+
+         f77name(convip)(&ip1,&Grid->ZRef->Levels[k],&type,&mode,&format,&flag);
+         if (Grid->NbTiles>1) {
+            key=cs_fstecr(tile->Data[k],-Grid->H.NBITS,FId,Grid->H.DATEO,Grid->H.DEET,Grid->H.NPAS,tile->NI,tile->NJ,1,ip1,Grid->H.IP2,
+                tile->NO,Grid->H.TYPVAR,Grid->H.NOMVAR,Grid->H.ETIKET,"#",Grid->H.IG1,Grid->H.IG2,tile->I+1,tile->J+1,Grid->H.DATYP,Overwrite);
+         } else {
+            key=cs_fstecr(tile->Data[k],-Grid->H.NBITS,FId,Grid->H.DATEO,Grid->H.DEET,Grid->H.NPAS,tile->NI,tile->NJ,1,ip1,Grid->H.IP2,
+                Grid->H.IP3,Grid->H.TYPVAR,Grid->H.NOMVAR,Grid->H.ETIKET,Grid->H.GRTYP,Grid->H.IG1,Grid->H.IG2,Grid->H.IG3,Grid->H.IG4,Grid->H.DATYP,Overwrite);
+         }
+         ok+=key;
+      }
+   }
+   return(!key);
 }
 
 /*----------------------------------------------------------------------------
@@ -1011,7 +1044,7 @@ int EZGrid_UnTile(int FIdTo,int FIdFrom,char* Var,char* TypVar,char* Etiket,int 
 TGrid* EZGrid_Get(TGrid* restrict const Grid) {
 
    TRPNHeader h;
-   int        n,r,i,j,k,nt;
+   int        n,r,i,j,k,nt,ni,nj;
    int        ip3,key;
    int        l,idlst[TILEMAX];
 
@@ -1063,25 +1096,37 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
       Grid->Tiles[k].NIJ=h.NI*h.NJ;
       Grid->Tiles[k].Data=NULL;
       Grid->Tiles[k].KBurn=-1;
+      Grid->Tiles[k].Side=GRID_CENTER;
 
       /*Check for tiled data or not*/
       if (Grid->H.GRTYP[0]=='#') {
          Grid->Tiles[k].I=h.IG3-1;
          Grid->Tiles[k].J=h.IG4-1;
 
+         if (h.IG3==1)               Grid->Tiles[k].Side|=GRID_LEFT;
+         if (h.IG3+h.NI==Grid->H.NI) Grid->Tiles[k].Side|=GRID_RIGHT;
+         if (h.IG4==1)               Grid->Tiles[k].Side|=GRID_BOTTOM;
+         if (h.IG4+h.NJ==Grid->H.NJ) Grid->Tiles[k].Side|=GRID_TOP;
+
          /*Count the number of tiles in I,J*/
-         if ((r=(h.NI+h.IG3))>i) { i=r; Grid->NTI++; }
-         if ((r=(h.NJ+h.IG4))>j) { j=r; Grid->NTJ++; }
+         if ((r=(h.NI+h.IG3))>i) { i=r; Grid->NTI++; ni+=h.NI; }
+         if ((r=(h.NJ+h.IG4))>j) { j=r; Grid->NTJ++; nj+=h.NJ; }
       } else {
          Grid->Tiles[k].I=0;
          Grid->Tiles[k].J=0;
          Grid->NTI++;
          Grid->NTJ++;
          Grid->NbTiles=1;
+         Grid->Tiles[k].Side|=GRID_LEFT|GRID_RIGHT|GRID_BOTTOM|GRID_TOP;
          break;
       }
    }
    pthread_mutex_unlock(&RPNFieldMutex);
+
+   /*Calculate halo width*/
+   if (ni>Grid->H.NI) {
+      Grid->Halo=((Grid->H.NI-ni)/Grid->NTI)/2;
+   }
 
    /*Create master grid*/
    if (Grid->H.GRTYP[0]=='#') {
@@ -1097,6 +1142,67 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
    Grid->Wrap=EZGrid_Wrap(Grid);
 
    return(Grid);
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <EZGrid_BoundaryCopy>
+ * Creation : Fevrierr 2012 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Etendre les valeurs internes vers la bordure d'un champs
+ *
+ * Parametres :
+ *   <Grid>   : Grille
+ *   <Width>  : Largeur de la bordure (1 ou 2)
+ *
+ * Retour:
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
+int EZGrid_BoundaryCopy(TGrid* restrict const Grid,int Width) {
+
+   TGridTile    *tile;
+   unsigned long idx,i,j,n,k;
+
+   if (Width!=1 && Width!=2)
+      return(FALSE);
+
+   for(n=0;n<Grid->NbTiles;n++) {
+      tile=&Grid->Tiles[n];
+
+      for(k=0;k<Grid->ZRef->LevelNb;k++) {
+         if (tile->Side&GRID_BOTTOM) {
+            for(i=0,idx=0;i<tile->NI;i++,idx++) {
+               if (Width==2)
+                  tile->Data[k][idx+tile->NI]=tile->Data[k][idx+tile->NI+tile->NI];
+               tile->Data[k][idx]=tile->Data[k][idx+tile->NI];
+            }
+         }
+         if (tile->Side&GRID_TOP) {
+            for(i=0,idx=(tile->NJ-1)*tile->NI-1;i<tile->NI;i++,idx++) {
+               if (Width==2)
+                  tile->Data[k][idx-tile->NI]=tile->Data[k][idx-tile->NI-tile->NI];
+               tile->Data[k][idx]=tile->Data[k][idx-tile->NI];
+            }
+         }
+         if (tile->Side&GRID_LEFT) {
+            for(j=0,idx=0;j<tile->NJ;j++,idx+=tile->NI) {
+               if (Width==2)
+                  tile->Data[k][idx+1]=tile->Data[k][idx+2];
+               tile->Data[k][idx]=tile->Data[k][idx+1];
+            }
+         }
+         if (tile->Side&GRID_RIGHT) {
+            for(j=0,idx=tile->NI-1;j<tile->NJ;j++,idx+=tile->NI) {
+               if (Width==2)
+                  tile->Data[k][idx-1]=tile->Data[k][idx-2];
+               tile->Data[k][idx]=tile->Data[k][idx-1];
+            }
+         }
+      }
+   }
+   return(TRUE);
 }
 
 /*----------------------------------------------------------------------------
@@ -1208,7 +1314,7 @@ TZRef* EZGrid_GetZRef(const TGrid* restrict const Grid) {
  * Nom      : <EZGrid_New>
  * Creation : Novembre 2008 - J.P. Gauthier - CMC/CMOE
  *
- * But      : Allouer une nouvell grille
+ * But      : Allouer une nouvelle grille
  *
  * Parametres :
  *
@@ -1218,26 +1324,92 @@ TZRef* EZGrid_GetZRef(const TGrid* restrict const Grid) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-TGrid *EZGrid_New() {
+TGrid *EZGrid_New(void) {
 
    TGrid *new=NULL;
+   int    n;
 
    if ((new=(TGrid*)malloc(sizeof(TGrid)))) {
-      new->GID=-1;
+      pthread_mutex_init(&new->Mutex,NULL);
       new->Master=0;
-      new->IP1=new->IP2=new->IP3=0;
+      new->Data=NULL;
+      new->T0=new->T1=NULL;
+      new->FT0=new->FT1=0.0f;
       new->Factor=0.0f;
       new->Incr=0;
-      new->Wrap=0;
+      new->GID=-1;
       new->ZRef=NULL;
-      new->Data=NULL;
+      new->Wrap=0;
+      new->H.NI=0;
+      new->H.NJ=0;
+      new->H.NK=0;
+      new->H.NIJ=0;
+      new->IP1=new->IP2=new->IP3=0;
       new->NTI=new->NTJ=0;
-      new->FT0=new->FT1=0.0f;
-      new->T0=new->T1=NULL;
       new->NbTiles=0;
       new->Tiles=NULL;
-      pthread_mutex_init(&new->Mutex,NULL);
+      new->H.FID=-1;
    }
+   return(new);
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <EZGrid_Copy>
+ * Creation : Fevrier 2012 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Copier une grille
+ *
+ * Parametres :
+ *  <Master>  : Copy from master (NULL=new empty)
+ *  <Level>   : (Level to copy or -1 for all)
+ *
+ * Retour:
+ *  <TGrid>   : Nouvelle Grille (NULL=Error)
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+ */
+TGrid *EZGrid_Copy(TGrid *Master,int Level) {
+
+   TGrid *new=NULL;
+   int    n;
+
+   if (Master && (new=(TGrid*)malloc(sizeof(TGrid)))) {
+      pthread_mutex_init(&new->Mutex,NULL);
+      new->Master=0;
+      new->Data=NULL;
+      new->T0=new->T1=NULL;
+      new->FT0=new->FT1=0.0f;
+      new->Factor=0.0f;
+      new->Incr=0;
+
+      new->GID=Master->GID;
+      new->Wrap=Master->Wrap;
+      memcpy(&new->H,&Master->H,sizeof(TRPNHeader));
+      new->H.FID=-1;
+
+      new->IP1=Master->IP1;
+      new->IP2=Master->IP2;
+      new->IP3=Master->IP3;
+      new->NTI=Master->NTI;
+      new->NTJ=Master->NTJ;
+      new->NbTiles=Master->NbTiles;
+      new->Tiles=(TGridTile*)malloc(Master->NbTiles*sizeof(TGridTile));
+      memcpy(new->Tiles,Master->Tiles,Master->NbTiles*sizeof(TGridTile));
+      for(n=0;n<Master->NbTiles;n++) {
+         memcpy(&new->Tiles[n],&Master->Tiles[n],sizeof(TGridTile));
+         new->Tiles[n].Data=NULL;
+         new->Tiles[n].KBurn=-1;
+      }
+      new->ZRef=(TZRef*)malloc(sizeof(TZRef));
+      ZRef_Copy(new->ZRef,Master->ZRef,Level);
+      new->H.NK=new->ZRef->LevelNb;
+
+      // Force memory allocation of all tiles
+      EZGrid_LoadAll(new);
+
+   }
+
    return(new);
 }
 
@@ -1281,6 +1453,7 @@ void EZGrid_Free(TGrid* restrict const Grid) {
       free(Grid->Data);
       Grid->Data=NULL;
    }
+
    pthread_mutex_destroy(&Grid->Mutex);
 
    /*If this is a master, keep in memory*/
@@ -1401,7 +1574,7 @@ TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr) {
 
    /*Check previous master grid existence*/
    if ((mst=EZGrid_CacheFind(new))) {
-     new->Master=0;
+      new->Master=0;
       new->Data=NULL;
       new->GID=mst->GID;
       new->ZRef=mst->ZRef;
@@ -1484,6 +1657,34 @@ int EZGrid_Load(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1,int
                return(0);
             }
          }
+      }
+   }
+   return(1);
+}
+
+wordint f77name(ezgrid_loadall)(wordint *gdid) {
+   return(EZGrid_LoadAll(GridCache[*gdid]));
+}
+int EZGrid_LoadAll(const TGrid* restrict const Grid) {
+
+   int k,idx;
+
+   if (!Grid) {
+      fprintf(stderr,"(ERROR) EZGrid_Load: Invalid grid (%s)\n",Grid->H.NOMVAR);
+      return(0);
+   }
+
+   /*Loop on coverage*/
+   for(k=0;k<Grid->H.NK;k++) {
+      idx=0;
+      while(idx<Grid->NTI*Grid->NTJ) {
+
+         /*Check for tile data*/
+         if (!EZGrid_TileGetData(Grid,&Grid->Tiles[idx],k,0)) {
+            fprintf(stderr,"(ERROR) EZGrid_LoadAll: Unable to get tile data (%s) at level %i\n",Grid->H.NOMVAR,k);
+            return(0);
+         }
+         idx++;
       }
    }
    return(1);
