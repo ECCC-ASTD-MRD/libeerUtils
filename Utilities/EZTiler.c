@@ -8,7 +8,7 @@ int main (int argc, char **argv) {
 
    TGrid *fld0,*fld1,*fldn;
    float  val,vals[58];
-   int    i,j,n=0,type;
+   int    i,j,n=0,type,in,out;
 
    if (argc<2) {
       fprintf(stderr,"(ERROR) No files were specified\n");
@@ -20,30 +20,29 @@ int main (int argc, char **argv) {
 
    /*Tile the fields*/
    printf("(INFO) Tiling file %s to %s\n",argv[1],argv[2]);
-   c_fnom(10,argv[1],"STD+RND+R/O",0);
-   c_fstouv(10,"RND");
+   if ((in=cs_fstouv(argv[1],"STD+RND+R/O"))<0) {
+//      Model_Log(Model,ERROR,"Problems opening meteorological file %s\n",In);
+      return(0);
+   }
 
-   c_fnom(20,argv[2],"STD+RND+R/W",0);
-   c_fstouv(20,"RND");
-
-   c_fstopc("MSGLVL","WARNIN",0);
-   c_fstopc("TOLRNC","SYSTEM",0);
+   if ((out=cs_fstouv(argv[2],"STD+RND+R/W"))<0) {
+//      Model_Log(Model,ERROR,"Problems opening output file %s\n",Out);
+      return(0);
+   }
 
    i=atoi(argv[3]);
    j=atoi(argv[4]);
 
 //   fld0=EZGrid_Read(10,"GZ","","",-1,12000,-1,1);
-//   EZGrid_TileGrid(20,i,j,fld0);
+//   EZGrid_TileGrid(20,i,j,2,fld0);
 
    for(n=5;n<argc;n++) {
       printf("(INFO) Tiling var %s\n",argv[n]);
-      EZGrid_Tile(20,i,j,10,argv[n],"","",-1,-1,-1);
+      EZGrid_Tile(out,i,j,2,in,argv[n],"","",-1,-1,-1);
    }
 
-   c_fstfrm(10);
-   c_fclos(10);
-   c_fstfrm(20);
-   c_fclos(20);
+   cs_fstfrm(in);
+   cs_fstfrm(out);
 
   exit(0);
 

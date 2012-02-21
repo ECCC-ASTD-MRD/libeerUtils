@@ -44,11 +44,11 @@
 #define GRID_BOTTOM 0x4
 #define GRID_TOP    0x8
 
-#define EZGrid_IsLoaded(TILE,Z)      (TILE->Data && TILE->Data[Z])
-#define EZGrid_TileValue(TILE,X,Y,Z) (TILE->Data[Z][((int)Y-TILE->J)*TILE->NI+((int)X-TILE->I)])
-#define EZGrid_IsInside(GRID,X,Y)    (X>=0 && Y>=0 && (GRID->Wrap || X<=(GRID->H.NI-1)) && Y<=(GRID->H.NJ-1))
-#define EZGrid_WrapFlip(GRID,X)      (GRID->Wrap?((X>GRID->H.NI-1)?X-GRID->H.NI+1:X<0?X+GRID->H.NI-1:X):X)
-#define EZGrid_Size(GRID)            (GRID->H.NJ*GRID->H.NI)
+#define EZGrid_IsLoaded(TILE,Z)        (TILE->Data && TILE->Data[Z])
+#define EZGrid_TileValue(TILE,X,Y,Z,H) (TILE->Data[Z][((int)Y-TILE->J+H)*(TILE->NI+H+H)+((int)X-TILE->I+H)])
+#define EZGrid_IsInside(GRID,X,Y)      (X>=0 && Y>=0 && (GRID->Wrap || X<=(GRID->H.NI-1)) && Y<=(GRID->H.NJ-1))
+#define EZGrid_WrapFlip(GRID,X)        (GRID->Wrap?((X>GRID->H.NI-1)?X-GRID->H.NI+1:X<0?X+GRID->H.NI-1:X):X)
+#define EZGrid_Size(GRID)              (GRID->H.NJ*GRID->H.NI)
 
 typedef struct {
    int     GID;                      /*EZSCINT Tile grid id (for interpolation)*/
@@ -116,8 +116,8 @@ int    EZGrid_GetDelta(TGrid* restrict const Grid,int K,float* DX,float* DY,floa
 int    EZGrid_GetLL(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float* J,int Nb);
 int    EZGrid_GetIJ(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float* J,int Nb);
 
-int    EZGrid_TileGrid(int FIdTo,int NI, int NJ,TGrid* restrict const Grid);
-int    EZGrid_Tile(int FIdTo,int NI, int NJ,int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2);
+int    EZGrid_TileGrid(int FIdTo,int NI, int NJ,int Halo,TGrid* restrict const Grid);
+int    EZGrid_Tile(int FIdTo,int NI, int NJ,int Halo,int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2);
 int    EZGrid_UnTile(int FIdTo,int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2);
 
 int    EZGrid_Interp(TGrid* restrict const To,TGrid* restrict const From);
