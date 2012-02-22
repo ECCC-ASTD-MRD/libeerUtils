@@ -902,28 +902,34 @@ int EZGrid_Tile(int FIdTo,int NI, int NJ,int Halo,int FIdFrom,char* Var,char* Ty
       /*Read the field data*/
       cs_fstluk(data,idlst[n],&ni,&nj,&nk);
 
-      /*Build and save the tiles, we adjust the tile size if it is too big*/
-      no=0;
-      for(j=0;j<new->H.NJ;j+=NJ) {
-         nj=((j+NJ>new->H.NJ)?(new->H.NJ-j):NJ)+Halo*2;
-         dj=j-Halo;
+      /*Check if dimensions allow tiling*/
+      if (new->H.NI==1 || new->H.NJ==1 || (new->H.NI<NI && new->H.NJ<NJ)) {
+         key=cs_fstecr(data,-new->H.NBITS,FIdTo,new->H.DATEO,new->H.DEET,new->H.NPAS,new->H.NI,new->H.NJ,1,new->H.IP1,new->H.IP2,
+            new->H.IP3,new->H.TYPVAR,new->H.NOMVAR,new->H.ETIKET,new->H.GRTYP,new->H.IG1,new->H.IG2,new->H.IG3,new->H.IG4,new->H.DATYP,1);
+      } else {
+         /*Build and save the tiles, we adjust the tile size if it is too big*/
+         no=0;
+         for(j=0;j<new->H.NJ;j+=NJ) {
+            nj=((j+NJ>new->H.NJ)?(new->H.NJ-j):NJ)+Halo*2;
+            dj=j-Halo;
 
-         if (dj<0)            { dj+=Halo; nj-=Halo; }
-         if (dj+nj>new->H.NJ) { nj-=Halo; }
+            if (dj<0)            { dj+=Halo; nj-=Halo; }
+            if (dj+nj>new->H.NJ) { nj-=Halo; }
 
-         for(i=0;i<new->H.NI;i+=NI) {
-            no++;
-            ni=((i+NI>new->H.NI)?(new->H.NI-i):NI)+Halo*2;
-            di=i-Halo;
+            for(i=0;i<new->H.NI;i+=NI) {
+               no++;
+               ni=((i+NI>new->H.NI)?(new->H.NI-i):NI)+Halo*2;
+               di=i-Halo;
 
-            if (di<0)            { di+=Halo; ni-=Halo; }
-            if (di+ni>new->H.NI) { ni-=Halo; }
+               if (di<0)            { di+=Halo; ni-=Halo; }
+               if (di+ni>new->H.NI) { ni-=Halo; }
 
-            for(pj=0;pj<nj;pj++) {
-               memcpy(&tile[pj*ni],&data[(dj+pj)*new->H.NI+di],ni*sizeof(float));
+               for(pj=0;pj<nj;pj++) {
+                  memcpy(&tile[pj*ni],&data[(dj+pj)*new->H.NI+di],ni*sizeof(float));
+               }
+               key=cs_fstecr(tile,-new->H.NBITS,FIdTo,new->H.DATEO,new->H.DEET,new->H.NPAS,ni,nj,1,new->H.IP1,new->H.IP2,
+                     no,new->H.TYPVAR,new->H.NOMVAR,new->H.ETIKET,"#",new->H.IG1,new->H.IG2,di+1,dj+1,new->H.DATYP,1);
             }
-            key=cs_fstecr(tile,-new->H.NBITS,FIdTo,new->H.DATEO,new->H.DEET,new->H.NPAS,ni,nj,1,new->H.IP1,new->H.IP2,
-                    no,new->H.TYPVAR,new->H.NOMVAR,new->H.ETIKET,"#",new->H.IG1,new->H.IG2,di+1,dj+1,new->H.DATYP,1);
          }
       }
    }
@@ -952,27 +958,35 @@ int EZGrid_TileGrid(int FIdTo,int NI, int NJ,int Halo,TGrid* restrict const Grid
    for(k=0;j<Grid->H.NK;k++) {
       data=EZGrid_TileBurnAll(Grid,k);
 
-      for(j=0;j<Grid->H.NJ;j+=NJ) {
-         nj=((j+NJ>Grid->H.NJ)?(Grid->H.NJ-j):NJ)+Halo*2;
-         dj=j-Halo;
+      /*Check if dimensions allow tiling*/
+      if (Grid->H.NI==1 || Grid->H.NJ==1 || (Grid->H.NI<NI && Grid->H.NJ<NJ)) {
+         f77name(convip)(&ip1,&Grid->ZRef->Levels[k],&type,&mode,&format,&flag);
+         key=cs_fstecr(data,-Grid->H.NBITS,FIdTo,Grid->H.DATEO,Grid->H.DEET,Grid->H.NPAS,Grid->H.NI,Grid->H.NJ,1,ip1,Grid->H.IP2,
+            Grid->H.IP3,Grid->H.TYPVAR,Grid->H.NOMVAR,Grid->H.ETIKET,Grid->H.GRTYP,Grid->H.IG1,Grid->H.IG2,Grid->H.IG3,Grid->H.IG4,Grid->H.DATYP,1);
+      } else {
+         /*Build and save the tiles, we adjust the tile size if it is too big*/
+         for(j=0;j<Grid->H.NJ;j+=NJ) {
+            nj=((j+NJ>Grid->H.NJ)?(Grid->H.NJ-j):NJ)+Halo*2;
+            dj=j-Halo;
 
-         if (dj<0)            { dj+=Halo; nj-=Halo; }
-         if (dj+nj>new->H.NJ) { nj-=Halo; }
+            if (dj<0)             { dj+=Halo; nj-=Halo; }
+            if (dj+nj>Grid->H.NJ) { nj-=Halo; }
 
-         for(i=0;i<Grid->H.NI;i+=NI) {
-            no++;
-            ni=((i+NI>new->H.NI)?(new->H.NI-i):NI)+Halo*2;
-            di=i-Halo;
+            for(i=0;i<Grid->H.NI;i+=NI) {
+               no++;
+               ni=((i+NI>Grid->H.NI)?(Grid->H.NI-i):NI)+Halo*2;
+               di=i-Halo;
 
-            if (di<0)            { di+=Halo; ni-=Halo; }
-            if (di+ni>new->H.NI) { ni-=Halo; }
+               if (di<0)             { di+=Halo; ni-=Halo; }
+               if (di+ni>Grid->H.NI) { ni-=Halo; }
 
-            for(pj=0;pj<nj;pj++) {
-               memcpy(&tile[pj*ni],&data[(j-Halo+pj)*Grid->H.NI+i-Halo],ni*sizeof(float));
+               for(pj=0;pj<nj;pj++) {
+                  memcpy(&tile[pj*ni],&data[(j-Halo+pj)*Grid->H.NI+i-Halo],ni*sizeof(float));
+               }
+               f77name(convip)(&ip1,&Grid->ZRef->Levels[k],&type,&mode,&format,&flag);
+               key=cs_fstecr(tile,-Grid->H.NBITS,FIdTo,Grid->H.DATEO,Grid->H.DEET,Grid->H.NPAS,ni,nj,1,ip1,Grid->H.IP2,
+                  no,Grid->H.TYPVAR,Grid->H.NOMVAR,Grid->H.ETIKET,"#",Grid->H.IG1,Grid->H.IG2,i+1-Halo,j+1-Halo,Grid->H.DATYP,1);
             }
-            f77name(convip)(&ip1,&Grid->ZRef->Levels[k],&type,&mode,&format,&flag);
-            key=cs_fstecr(tile,-Grid->H.NBITS,FIdTo,Grid->H.DATEO,Grid->H.DEET,Grid->H.NPAS,ni,nj,1,ip1,Grid->H.IP2,
-                 no,Grid->H.TYPVAR,Grid->H.NOMVAR,Grid->H.ETIKET,"#",Grid->H.IG1,Grid->H.IG2,i+1-Halo,j+1-Halo,Grid->H.DATYP,1);
          }
       }
    }
@@ -2118,8 +2132,8 @@ wordint f77name(ezgrid_ijgetvalue)(wordint *gdid,ftnfloat *i,ftnfloat *j,wordint
 }
 int EZGrid_IJGetValue(TGrid* restrict const Grid,float I,float J,int K0,int K1,float* restrict Value) {
 
-   TGridTile *tile[4],*t;
-   int        k,n,ik=0,in[4],jn[4],i,j;
+   TGridTile *t;
+   int        i,j,k,ik=0;
    float      dx,dy;
 
    if (!Grid) {
@@ -2133,51 +2147,26 @@ int EZGrid_IJGetValue(TGrid* restrict const Grid,float I,float J,int K0,int K1,f
       return(0);
    }
 
-   i=I;
-   j=J;
+   if (!(t=Grid->NbTiles>1?EZGrid_TileFind(Grid,I,J,k):&Grid->Tiles[0])) {
+      return(0);
+   }
+   i=I-t->I;
+   j=J-t->J;
    dx=I-i;
    dy=J-j;
-
-   if (Grid->NbTiles>1) {
-      in[0]=in[2]=i;
-      jn[0]=jn[1]=j;
-      in[1]=in[3]=in[0]+1;
-      jn[2]=jn[3]=jn[0]+1;
-
-      n=4;
-      while(n--) {
-         k=K0;
-         do {
-            if (!(tile[n]=EZGrid_TileFind(Grid,in[n],jn[n],k))) {
-               return(0);
-            }
-         } while ((K0<=K1?k++:k--)!=K1);
-      }
-   }
-
 //   I+=1.0f;J+=1.0f;
 
    k=K0;
    do {
-      if (Grid->NbTiles>1) {
-         n=4;
-         while(n--) {
-            EZGrid_TileBurn(Grid,tile[n],k);
-         }
-         Value[ik]=EZGrid_BilinDD(Grid,Grid->Data,i,j,dx,dy);
-         ik++;
-//         pthread_mutex_unlock(&RPNIntMutex);
-      } else {
-         t=&Grid->Tiles[0];
-         if (!EZGrid_IsLoaded(t,k))
-            EZGrid_TileGetData(Grid,t,k,0);
+      if (!EZGrid_IsLoaded(t,k))
+         EZGrid_TileGetData(Grid,t,k,0);
 
-         Value[ik]=EZGrid_BilinDD(Grid,t->Data[k],i,j,dx,dy);
-         ik++;
-
+      Value[ik++]=EZGrid_BilinDD(Grid,t->Data[k],i,j,dx,dy);
+//         pthread_mutex_lock(&RPNIntMutex);
 //         c_gdxysval(Grid->GID,&Value[ik++],t->Data[k],&I,&J,1);
-      }
+//         pthread_mutex_unlock(&RPNIntMutex);
    } while ((K0<=K1?k++:k--)!=K1);
+
    return(1);
 }
 
@@ -2257,9 +2246,9 @@ wordint f77name(ezgrid_ijgetuvvalue)(wordint *gdidu,wordint *gdidv,ftnfloat *i,f
 }
 int EZGrid_IJGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,float I,float J,int K0,int K1,float *UU,float* restrict VV) {
 
-   TGridTile *tile[2][4],*tu,*tv;
-   float      d,v;
-   int        ik=0,k,n,in[4],jn[4];
+   TGridTile *tu,*tv;
+   float      d,v,i,j;
+   int        ik=0,k;
 
    if (!GridU || !GridV) {
       fprintf(stderr,"(ERROR) EZGrid_IJGetUVValue: Invalid grid (%s,%s)\n",GridU->H.NOMVAR,GridV->H.NOMVAR);
@@ -2272,50 +2261,24 @@ int EZGrid_IJGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
       return(0);
    }
 
-   if (GridU->NbTiles>1) {
-      in[0]=in[2]=floor(I);
-      jn[0]=jn[1]=floor(J);
-      in[1]=in[3]=in[0]+1;
-      jn[2]=jn[3]=jn[0]+1;
-
-      n=4;
-      while(n--) {
-         k=K0;
-         do {
-            if (!(tile[0][n]=EZGrid_TileFind(GridU,in[n],jn[n],k))) {
-               return(0);
-            }
-            if (!(tile[1][n]=EZGrid_TileFind(GridV,in[n],jn[n],k))) {
-               return(0);
-            }
-         } while ((K0<=K1?k++:k--)!=K1);
-      }
+   if (!(tu=GridU->NbTiles>1?EZGrid_TileFind(GridU,I,J,k):&GridU->Tiles[0])) {
+      return(0);
    }
-
-   I+=1.0;J+=1.0;
+   if (!(tv=GridV->NbTiles>1?EZGrid_TileFind(GridV,I,J,k):&GridV->Tiles[0])) {
+      return(0);
+   }
+   I=I+1.0-tu->I;
+   J=J+1.0-tu->J;
 
    k=K0;
    do {
-      if (GridU->NbTiles>1) {
-         n=4;
-         while(n--) {
-            EZGrid_TileBurn(GridU,tile[0][n],k);
-            EZGrid_TileBurn(GridV,tile[1][n],k);
-         }
-//         pthread_mutex_lock(&RPNIntMutex);
-         c_gdxywdval(GridU->GID,&UU[ik],&VV[ik],GridU->Data,GridV->Data,&I,&J,1);
-//         pthread_mutex_unlock(&RPNIntMutex);
-      } else {
-         tu=&GridU->Tiles[0];
-         tv=&GridV->Tiles[0];
-         if (!EZGrid_IsLoaded(tu,k))
-            EZGrid_TileGetData(GridU,tu,k,0);
-         if (!EZGrid_IsLoaded(tv,k))
-            EZGrid_TileGetData(GridV,tv,k,0);
-//         pthread_mutex_lock(&RPNIntMutex);
-         c_gdxywdval(GridU->GID,&UU[ik],&VV[ik],tu->Data[k],tv->Data[k],&I,&J,1);
-//         pthread_mutex_unlock(&RPNIntMutex);
-      }
+      if (!EZGrid_IsLoaded(tu,k))
+         EZGrid_TileGetData(GridU,tu,k,0);
+      if (!EZGrid_IsLoaded(tv,k))
+         EZGrid_TileGetData(GridV,tv,k,0);
+
+      c_gdxywdval(GridU->GID,&UU[ik],&VV[ik],tu->Data[k],tv->Data[k],&I,&J,1);
+
       d=DEG2RAD(VV[ik]);
       v=UU[ik]*0.515f;
 
@@ -2323,6 +2286,7 @@ int EZGrid_IJGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
       VV[ik]=-v*cosf(d);
       ik++;
    } while ((K0<=K1?k++:k--)!=K1);
+
    return(1);
 }
 
@@ -2353,7 +2317,7 @@ wordint f77name(ezgrid_getvalue)(wordint *gdid,wordint *i,wordint *j,wordint *k0
 }
 int EZGrid_GetValue(const TGrid* restrict const Grid,int I,int J,int K0,int K1,float* restrict Value) {
 
-   TGridTile *tile;
+   TGridTile *t;
    int        k,ik=0;
 
    if (!Grid) {
@@ -2367,18 +2331,16 @@ int EZGrid_GetValue(const TGrid* restrict const Grid,int I,int J,int K0,int K1,f
       return(0);
    }
 
+   if (!(t=Grid->NbTiles>1?EZGrid_TileFind(Grid,I,J,k):&Grid->Tiles[0])) {
+      return(0);
+   }
+
    k=K0;
    do {
-      if (Grid->NbTiles>1) {
-         if (!(tile=EZGrid_TileFind(Grid,I,J,k))) {
-            return(0);
-         }
-      } else {
-         tile=&Grid->Tiles[0];
-         if (!EZGrid_IsLoaded(tile,k))
-            EZGrid_TileGetData(Grid,tile,k,0);
-      }
-      Value[ik++]=EZGrid_TileValue(tile,I,J,k,Grid->Halo);
+      if (!EZGrid_IsLoaded(t,k))
+         EZGrid_TileGetData(Grid,t,k,0);
+
+      Value[ik++]=EZGrid_TileValue(t,I,J,k,Grid->Halo);
    } while ((K0<=K1?k++:k--)!=K1);
 
    return(1);
@@ -2411,7 +2373,7 @@ wordint f77name(ezgrid_getvalues)(wordint *gdid,wordint *nb,ftnfloat *i,ftnfloat
 }
 int EZGrid_GetValues(const TGrid* restrict const Grid,int Nb,float* restrict const I,float* restrict const J,float* restrict const K,float* restrict Value) {
 
-   TGridTile *tile;
+   TGridTile *t;
    int        n,i,j,k;
 
    if (!Grid) {
@@ -2437,16 +2399,13 @@ int EZGrid_GetValues(const TGrid* restrict const Grid,int Nb,float* restrict con
          return(0);
       }
 
-      if (Grid->NbTiles>1) {
-         if (!(tile=EZGrid_TileFind(Grid,i,j,k))) {
-            return(0);
-         }
-      } else {
-         tile=&Grid->Tiles[0];
-         if (!EZGrid_IsLoaded(tile,k))
-            EZGrid_TileGetData(Grid,tile,k,0);
+      if (!(t=Grid->NbTiles>1?EZGrid_TileFind(Grid,i,j,k):&Grid->Tiles[0])) {
+         return(0);
       }
-      Value[n]=EZGrid_TileValue(tile,i,j,k,Grid->Halo);
+      if (!EZGrid_IsLoaded(t,k))
+         EZGrid_TileGetData(Grid,t,k,0);
+
+      Value[n]=EZGrid_TileValue(t,i,j,k,Grid->Halo);
    }
 
    return(1);
@@ -2538,7 +2497,7 @@ wordint f77name(ezgrid_getrange)(wordint *gdid,wordint *i0,wordint *j0,wordint *
 }
 int EZGrid_GetRange(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1,int J1,int K1,float* restrict Value) {
 
-   TGridTile *tile;
+   TGridTile *t;
    int        ik=0;
    int        i,j,k;
 
@@ -2558,16 +2517,13 @@ int EZGrid_GetRange(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1
    for(k=K0;k<=K1;k++) {
       for(j=J0;j<=J1;j++) {
          for(i=I0;i<=I1;i++) {
-            if (Grid->NbTiles>1) {
-               if (!(tile=EZGrid_TileFind(Grid,i,j,k))) {
-                  return(0);
-               }
-            } else {
-               EZGrid_TileGetData(Grid,&Grid->Tiles[0],k,0);
-               tile=&Grid->Tiles[0];
+            if (!(t=Grid->NbTiles>1?EZGrid_TileFind(Grid,i,j,k):&Grid->Tiles[0])) {
+               return(0);
             }
-            /*Get the value*/
-            Value[ik++]=EZGrid_TileValue(tile,i,j,k,Grid->Halo);
+            if (!EZGrid_IsLoaded(t,k))
+               EZGrid_TileGetData(Grid,t,k,0);
+
+            Value[ik++]=EZGrid_TileValue(t,i,j,k,Grid->Halo);
          }
       }
    }

@@ -36,9 +36,14 @@ int main (int argc, char **argv) {
 //   fld0=EZGrid_Read(10,"GZ","","",-1,12000,-1,1);
 //   EZGrid_TileGrid(20,i,j,2,fld0);
 
-   for(n=5;n<argc;n++) {
-      printf("(INFO) Tiling var %s\n",argv[n]);
-      EZGrid_Tile(out,i,j,2,in,argv[n],"","",-1,-1,-1);
+   if (argc==5) {
+      printf("(INFO) Tiling everything\n");
+      EZGrid_Tile(out,i,j,2,in,"","","",-1,-1,-1);
+   } else {
+      for(n=5;n<argc;n++) {
+         printf("(INFO) Tiling var %s\n",argv[n]);
+         EZGrid_Tile(out,i,j,2,in,argv[n],"","",-1,-1,-1);
+      }
    }
 
    cs_fstfrm(in);
