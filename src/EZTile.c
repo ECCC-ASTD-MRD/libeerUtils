@@ -643,6 +643,7 @@ static TGrid* EZGrid_CacheFind(const TGrid* restrict const Grid) {
          if (GridCache[n]) {
             // Check for same level type and definitions
             f77name(convip)(&Grid->H.IP1,&level,&type,&mode,&format,&flag);
+            type=type==LVL_SIGMA?LVL_ETA:type;
             if (type!=GridCache[n]->ZRef->Type) {
                continue;
             }
@@ -1122,6 +1123,7 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
    Grid->IP3=Grid->H.IG3;
    Grid->H.NIJ=Grid->H.NI*Grid->H.NJ;
    i=j=-1;
+   ni=nj=0;
    nt=Grid->NbTiles;
 
    /*Parse the tiles to get the tile limits and structure*/
@@ -2147,7 +2149,7 @@ int EZGrid_IJGetValue(TGrid* restrict const Grid,float I,float J,int K0,int K1,f
       return(0);
    }
 
-   if (!(t=Grid->NbTiles>1?EZGrid_TileFind(Grid,I,J,k):&Grid->Tiles[0])) {
+   if (!(t=Grid->NbTiles>1?EZGrid_TileGet(Grid,I,J):&Grid->Tiles[0])) {
       return(0);
    }
    i=I-t->I;
@@ -2261,10 +2263,10 @@ int EZGrid_IJGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
       return(0);
    }
 
-   if (!(tu=GridU->NbTiles>1?EZGrid_TileFind(GridU,I,J,k):&GridU->Tiles[0])) {
+   if (!(tu=GridU->NbTiles>1?EZGrid_TileGet(GridU,I,J):&GridU->Tiles[0])) {
       return(0);
    }
-   if (!(tv=GridV->NbTiles>1?EZGrid_TileFind(GridV,I,J,k):&GridV->Tiles[0])) {
+   if (!(tv=GridV->NbTiles>1?EZGrid_TileGet(GridV,I,J):&GridV->Tiles[0])) {
       return(0);
    }
    I=I+1.0-tu->I;
@@ -2331,7 +2333,7 @@ int EZGrid_GetValue(const TGrid* restrict const Grid,int I,int J,int K0,int K1,f
       return(0);
    }
 
-   if (!(t=Grid->NbTiles>1?EZGrid_TileFind(Grid,I,J,k):&Grid->Tiles[0])) {
+   if (!(t=Grid->NbTiles>1?EZGrid_TileGet(Grid,I,J):&Grid->Tiles[0])) {
       return(0);
    }
 
@@ -2399,7 +2401,7 @@ int EZGrid_GetValues(const TGrid* restrict const Grid,int Nb,float* restrict con
          return(0);
       }
 
-      if (!(t=Grid->NbTiles>1?EZGrid_TileFind(Grid,i,j,k):&Grid->Tiles[0])) {
+      if (!(t=Grid->NbTiles>1?EZGrid_TileGet(Grid,i,j):&Grid->Tiles[0])) {
          return(0);
       }
       if (!EZGrid_IsLoaded(t,k))
@@ -2517,7 +2519,7 @@ int EZGrid_GetRange(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1
    for(k=K0;k<=K1;k++) {
       for(j=J0;j<=J1;j++) {
          for(i=I0;i<=I1;i++) {
-            if (!(t=Grid->NbTiles>1?EZGrid_TileFind(Grid,i,j,k):&Grid->Tiles[0])) {
+            if (!(t=Grid->NbTiles>1?EZGrid_TileGet(Grid,i,j):&Grid->Tiles[0])) {
                return(0);
             }
             if (!EZGrid_IsLoaded(t,k))
