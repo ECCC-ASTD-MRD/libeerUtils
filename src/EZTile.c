@@ -1125,6 +1125,7 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
    i=j=-1;
    ni=nj=0;
    nt=Grid->NbTiles;
+   h.GRTYP[1]='\0';
 
    /*Parse the tiles to get the tile limits and structure*/
    for(n=0;n<Grid->NbTiles;n++) {
@@ -1148,6 +1149,9 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
       Grid->Tiles[k].Data=NULL;
       Grid->Tiles[k].KBurn=-1;
       Grid->Tiles[k].Side=GRID_CENTER;
+
+      /*c_ezqkdef uses fstd functions to get grid def so we need to keep the RPNFieldMutex on*/
+      Grid->Tiles[k].GID =EZGrid_IdNew(h.NI,h.NJ,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,Grid->H.FID);
 
       /*Check for tiled data or not*/
       if (Grid->H.GRTYP[0]=='#') {
@@ -1179,12 +1183,12 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
       Grid->Halo=ceil((ni-Grid->H.NI)/Grid->NTI/2.0);
    }
 
-   /*Substract halo from dimensions*/
+   /*Adjust dimensions with halo, we keep coordinates reference without halo*/
    for(n=0;n<Grid->NbTiles;n++) {
-      Grid->Tiles[n].I -=Grid->Halo;
-      Grid->Tiles[n].J -=Grid->Halo;
-      Grid->Tiles[n].NI-=Grid->Halo;
-      Grid->Tiles[n].NJ-=Grid->Halo;
+      Grid->Tiles[n].I +=Grid->Halo;
+      Grid->Tiles[n].J +=Grid->Halo;
+      Grid->Tiles[n].NI-=Grid->Halo*2;
+      Grid->Tiles[n].NJ-=Grid->Halo*2;
    }
 
    /*Create master grid*/
@@ -1194,9 +1198,8 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
    } else {
       h.GRTYP[0]=Grid->H.GRTYP[0];
    }
-   h.GRTYP[1]='\0';
 
-   /*c_ezqkdef uses fstd functions to get grid def so we need to keep the RPNFieldMutex on*/
+   /*c_ezqkdef uses fstd functions to get griddef so we need to keep the RPNFieldMutex on*/
    Grid->GID =EZGrid_IdNew(Grid->H.NI,Grid->H.NJ,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,Grid->H.FID);
    Grid->Wrap=EZGrid_Wrap(Grid);
 
@@ -2046,7 +2049,7 @@ int EZGrid_LLGetValue(TGrid* restrict const Grid,float Lat,float Lon,int K0,int 
    c_gdxyfll(Grid->GID,&i,&j,&Lat,&Lon,1);
 //   pthread_mutex_unlock(&RPNIntMutex);
 
-   return(EZGrid_IJGetValue(Grid,i-1.0,j-1.0,K0,K1,Value));
+   return(EZGrid_IJGetValue(Grid,i-1.0f,j-1.0f,K0,K1,Value));
 }
 
 /*----------------------------------------------------------------------------
@@ -2089,20 +2092,22 @@ int EZGrid_LLGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
    c_gdxyfll(GridU->GID,&i,&j,&Lat,&Lon,1);
 //   pthread_mutex_unlock(&RPNIntMutex);
 
-   return(EZGrid_IJGetUVValue(GridU,GridV,i-1.0,j-1.0,K0,K1,UU,VV));
+   return(EZGrid_IJGetUVValue(GridU,GridV,i-1.0f,j-1.0f,K0,K1,UU,VV));
 }
 
-static inline float EZGrid_BilinDD(TGrid* restrict const Grid,float* restrict const Data,int I,int J,float DX, float DY) {
+static inline float EZGrid_BilinDD(TGrid* restrict const Grid,TGridTile* restrict const Tile,int I,int J,int K,float DX, float DY) {
 
-   int   idx,idxj,ni;
+   int    idx,idxj,ni;
+   float *data;
 
+   data=Tile->Data[K];
    I+=Grid->Halo;
    J+=Grid->Halo;
-   ni=Grid->H.NI+Grid->Halo+Grid->Halo;
+   ni=Tile->NI+Grid->Halo+Grid->Halo;
    idx =J*ni+I;
    idxj=idx+ni;
 
-   return(Data[idx] + (Data[idx+1]-Data[idx])*DX + (Data[idxj]-Data[idx])*DY + (Data[idxj+1]-Data[idx+1]-Data[idxj]+Data[idx])*DX*DY);
+   return(data[idx] + (data[idx+1]-data[idx])*DX + (data[idxj]-data[idx])*DY + (data[idxj+1]-data[idx+1]-data[idxj]+data[idx])*DX*DY);
 }
 
 /*----------------------------------------------------------------------------
@@ -2152,20 +2157,24 @@ int EZGrid_IJGetValue(TGrid* restrict const Grid,float I,float J,int K0,int K1,f
    if (!(t=Grid->NbTiles>1?EZGrid_TileGet(Grid,I,J):&Grid->Tiles[0])) {
       return(0);
    }
-   i=I-t->I;
-   j=J-t->J;
+
+   i=I;
+   j=J;
    dx=I-i;
    dy=J-j;
-//   I+=1.0f;J+=1.0f;
+   i-=t->I;
+   j-=t->J;
+   //   I+=1.0f;J+=1.0f;
 
    k=K0;
    do {
       if (!EZGrid_IsLoaded(t,k))
          EZGrid_TileGetData(Grid,t,k,0);
 
-      Value[ik++]=EZGrid_BilinDD(Grid,t->Data[k],i,j,dx,dy);
+      Value[ik]=EZGrid_BilinDD(Grid,t,i,j,k,dx,dy);
+      ik++;
 //         pthread_mutex_lock(&RPNIntMutex);
-//         c_gdxysval(Grid->GID,&Value[ik++],t->Data[k],&I,&J,1);
+//         c_gdxysval(t->GID,&Value[ik++],t->Data[k],&I,&J,1);
 //         pthread_mutex_unlock(&RPNIntMutex);
    } while ((K0<=K1?k++:k--)!=K1);
 
@@ -2269,8 +2278,10 @@ int EZGrid_IJGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
    if (!(tv=GridV->NbTiles>1?EZGrid_TileGet(GridV,I,J):&GridV->Tiles[0])) {
       return(0);
    }
-   I=I+1.0-tu->I;
-   J=J+1.0-tu->J;
+
+   /*Have to readjust coordinate within tile for ezscint*/
+   I=I+1.0-(tu->I-GridU->Halo);
+   J=J+1.0-(tu->J-GridU->Halo);
 
    k=K0;
    do {
@@ -2279,7 +2290,7 @@ int EZGrid_IJGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
       if (!EZGrid_IsLoaded(tv,k))
          EZGrid_TileGetData(GridV,tv,k,0);
 
-      c_gdxywdval(GridU->GID,&UU[ik],&VV[ik],tu->Data[k],tv->Data[k],&I,&J,1);
+      c_gdxywdval(tu->GID,&UU[ik],&VV[ik],tu->Data[k],tv->Data[k],&I,&J,1);
 
       d=DEG2RAD(VV[ik]);
       v=UU[ik]*0.515f;
