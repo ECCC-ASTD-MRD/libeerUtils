@@ -1244,11 +1244,11 @@ int EZGrid_BoundaryCopy(TGrid* restrict const Grid,int Width) {
             }
          }
          if (tile->Side&GRID_TOP) {
-            for(i=0,idx=tile->NIJ-1-tile->NI-h;i<tile->NI;i++,idx++) {
+            for(i=0,idx=tile->NIJ-tile->NI-h+Grid->Halo;i<tile->NI;i++,idx++) {
                if (Width==2)
                   tile->Data[k][idx-tile->NI-h]=tile->Data[k][idx-tile->NI-tile->NI-h-h];
+               tile->Data[k][idx]=tile->Data[k][idx-tile->NI-h];
             }
-            tile->Data[k][idx]=tile->Data[k][idx-tile->NI-h];
          }
          if (tile->Side&GRID_LEFT) {
             for(j=0,idx=Grid->Halo;j<tile->NJ;j++,idx+=tile->NI+h) {
