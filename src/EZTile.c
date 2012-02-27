@@ -996,7 +996,7 @@ int EZGrid_TileGrid(int FIdTo,int NI, int NJ,int Halo,TGrid* restrict const Grid
    return(TRUE);
 }
 
-int EZGrid_Write(int FId,TGrid* restrict const Grid,int Overwrite) {
+int EZGrid_Write(int FId,TGrid* restrict const Grid,int NBits,int Overwrite) {
 
    int        k,tidx,key,ok=0;
    char       format;
@@ -1014,10 +1014,10 @@ int EZGrid_Write(int FId,TGrid* restrict const Grid,int Overwrite) {
 
          f77name(convip)(&ip1,&Grid->ZRef->Levels[k],&type,&mode,&format,&flag);
          if (Grid->NbTiles>1) {
-            key=cs_fstecr(tile->Data[k],-Grid->H.NBITS,FId,Grid->H.DATEO,Grid->H.DEET,Grid->H.NPAS,tile->NI+Grid->Halo*2,tile->NJ+Grid->Halo*2,1,ip1,Grid->H.IP2,
+            key=cs_fstecr(tile->Data[k],-NBits,FId,Grid->H.DATEO,Grid->H.DEET,Grid->H.NPAS,tile->NI+Grid->Halo*2,tile->NJ+Grid->Halo*2,1,ip1,Grid->H.IP2,
                  tile->NO,Grid->H.TYPVAR,Grid->H.NOMVAR,Grid->H.ETIKET,"#",Grid->H.IG1,Grid->H.IG2,tile->I+1-Grid->Halo,tile->J+1-Grid->Halo,Grid->H.DATYP,Overwrite);
          } else {
-            key=cs_fstecr(tile->Data[k],-Grid->H.NBITS,FId,Grid->H.DATEO,Grid->H.DEET,Grid->H.NPAS,tile->NI,tile->NJ,1,ip1,Grid->H.IP2,
+            key=cs_fstecr(tile->Data[k],-NBits,FId,Grid->H.DATEO,Grid->H.DEET,Grid->H.NPAS,tile->NI,tile->NJ,1,ip1,Grid->H.IP2,
                 Grid->H.IP3,Grid->H.TYPVAR,Grid->H.NOMVAR,Grid->H.ETIKET,Grid->H.GRTYP,Grid->H.IG1,Grid->H.IG2,Grid->H.IG3,Grid->H.IG4,Grid->H.DATYP,Overwrite);
          }
          ok+=key;
