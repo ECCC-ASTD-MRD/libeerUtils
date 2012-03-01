@@ -131,10 +131,10 @@
 
 #define DIST(E,A0,O0,A1,O1)  ((E+EARTHRADIUS)*acos(sin(A0)*sin(A1)+cos(O0-O1)*cos(A0)*cos(A1)))
 #define COURSE(A0,O0,A1,O1)  (fmod(atan2(sin(O0-O1)*cos(A1),cos(A0)*sin(A1)-sin(A0)*cos(A1)*cos(O0-O1)),M_2PI))
-#define RAD2DEG(R)           ((R)*57.295779513082322864647721871734)
-#define DEG2RAD(D)           ((D)*0.017453292519943295474371680598)
-#define M2RAD(M)             ((M)*0.00000015706707756635)
-#define RAD2M(R)             ((R)*6.36670701949370745569e+06)
+#define RAD2DEG(R)           ((double)(R)*57.295779513082322864647721871734)
+#define DEG2RAD(D)           ((double)(D)*0.017453292519943295474371680598)
+#define M2RAD(M)             ((double)(M)*0.00000015706707756635)
+#define RAD2M(R)             ((double)(R)*6.36670701949370745569e+06)
 #define CLAMPLAT(LAT)        (LAT=LAT>90.0?90.0:(LAT<-90.0?-90.0:LAT))
 #define CLAMPLON(LON)        (LON=LON>180?LON-360:(LON<-180?LON+360:LON))
 
