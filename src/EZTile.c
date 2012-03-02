@@ -990,10 +990,11 @@ int EZGrid_TileGrid(int FIdTo,int NI, int NJ,int Halo,TGrid* restrict const Grid
                if (di+ni>Grid->H.NI) { ni-=Halo; }
 
                for(pj=0;pj<nj;pj++) {
-                  memcpy(&tile[pj*ni],&data[(j-Halo+pj)*Grid->H.NI+i-Halo],ni*sizeof(float));
+                  memcpy(&tile[pj*ni],&data[(dj+pj)*Grid->H.NI+di],ni*sizeof(float));
+//                  memcpy(&tile[pj*ni],&data[(j-Halo+pj)*Grid->H.NI+i-Halo],ni*sizeof(float));
                }
                key=cs_fstecr(tile,-Grid->H.NBITS,FIdTo,Grid->H.DATEO,Grid->H.DEET,Grid->H.NPAS,ni,nj,1,ip1,Grid->H.IP2,
-                  no,Grid->H.TYPVAR,Grid->H.NOMVAR,Grid->H.ETIKET,"#",Grid->H.IG1,Grid->H.IG2,i+1-Halo,j+1-Halo,Grid->H.DATYP,0);
+                  no,Grid->H.TYPVAR,Grid->H.NOMVAR,Grid->H.ETIKET,"#",Grid->H.IG1,Grid->H.IG2,di+1,dj+1,Grid->H.DATYP,0);
             }
          }
       }
