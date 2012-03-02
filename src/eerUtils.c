@@ -34,7 +34,6 @@
 #include "eerUtils.h"
 #include "rpnmacros.h"
 
-
 /*----------------------------------------------------------------------------
  * Nom      : <System_IsBigEndian>
  * Creation : Mars 2006 - J.P. Gauthier - CMC/CMOE

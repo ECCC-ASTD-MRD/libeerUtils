@@ -795,39 +795,46 @@ int EZGrid_CopyDesc(int FIdTo,TGrid* restrict const Grid) {
    int        key;
 
    pthread_mutex_lock(&RPNFieldMutex);
-   key=c_fstinf(Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"",">>");
+
+   key=c_fstinf(FIdTo,&ni,&nj,&nk,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"",">>");
    if (key<0) {
-      fprintf(stderr,"(WARNING) EZGrid_CopyDesc: Could not find master grid descriptor >>\n");
-      pthread_mutex_unlock(&RPNFieldMutex);
-      return(FALSE);
+      key=c_fstinf(Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"",">>");
+      if (key<0) {
+         fprintf(stderr,"(WARNING) EZGrid_CopyDesc: Could not find master grid descriptor >>\n");
+         pthread_mutex_unlock(&RPNFieldMutex);
+         return(FALSE);
+      }
+      data=(char*)malloc((Grid->H.NI>Grid->H.NJ?Grid->H.NI:Grid->H.NJ)*sizeof(float));
+      c_fstluk(data,key,&ni,&nj,&nk);
+
+      strcpy(h.NOMVAR,"    ");
+      strcpy(h.TYPVAR,"  ");
+      strcpy(h.ETIKET,"            ");
+      strcpy(h.GRTYP," ");
+
+      key=c_fstprm(key,&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&h.NK,&h.NBITS,&h.DATYP,
+         &h.IP1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,h.GRTYP,&h.IG1,
+         &h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,&h.UBC,&h.EX1,&h.EX2,&h.EX3);
+      key=c_fstecr(data,NULL,-32,FIdTo,h.DATEO,h.DEET,h.NPAS,h.NI,h.NJ,h.NK,h.IP1,
+         h.IP2,h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,h.DATYP,1);
    }
-   data=(char*)malloc((Grid->H.NI>Grid->H.NJ?Grid->H.NI:Grid->H.NJ)*sizeof(float));
-   c_fstluk(data,key,&ni,&nj,&nk);
 
-   strcpy(h.NOMVAR,"    ");
-   strcpy(h.TYPVAR,"  ");
-   strcpy(h.ETIKET,"            ");
-   strcpy(h.GRTYP," ");
-
-   key=c_fstprm(key,&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&h.NK,&h.NBITS,&h.DATYP,
-      &h.IP1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,h.GRTYP,&h.IG1,
-      &h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,&h.UBC,&h.EX1,&h.EX2,&h.EX3);
-   key=c_fstecr(data,NULL,-32,FIdTo,h.DATEO,h.DEET,h.NPAS,h.NI,h.NJ,h.NK,h.IP1,
-      h.IP2,h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,h.DATYP,1);
-
-   key=c_fstinf(Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"","^^");
+   key=c_fstinf(FIdTo,&ni,&nj,&nk,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"","^^");
    if (key<0) {
-      fprintf(stderr,"(ERROR) EZGrid_CopyDesc: Could not find master grid descriptor ^^\n");
-      pthread_mutex_unlock(&RPNFieldMutex);
-      return(FALSE);
-   }
-   c_fstluk(data,key,&ni,&nj,&nk);
+      key=c_fstinf(Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"","^^");
+      if (key<0) {
+         fprintf(stderr,"(ERROR) EZGrid_CopyDesc: Could not find master grid descriptor ^^\n");
+         pthread_mutex_unlock(&RPNFieldMutex);
+         return(FALSE);
+      }
+      c_fstluk(data,key,&ni,&nj,&nk);
 
-   key=c_fstprm(key,&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&h.NK,&h.NBITS,&h.DATYP,
-      &h.IP1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,h.GRTYP,&h.IG1,
-      &h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,&h.UBC,&h.EX1,&h.EX2,&h.EX3);
-   key=c_fstecr(data,NULL,-32,FIdTo,h.DATEO,h.DEET,h.NPAS,h.NI,h.NJ,h.NK,h.IP1,
-      h.IP2,h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,h.DATYP,1);
+      key=c_fstprm(key,&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&h.NK,&h.NBITS,&h.DATYP,
+         &h.IP1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,h.GRTYP,&h.IG1,
+         &h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,&h.UBC,&h.EX1,&h.EX2,&h.EX3);
+      key=c_fstecr(data,NULL,-32,FIdTo,h.DATEO,h.DEET,h.NPAS,h.NI,h.NJ,h.NK,h.IP1,
+         h.IP2,h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,h.DATYP,1);
+   }
    pthread_mutex_unlock(&RPNFieldMutex);
 
    free(data);
@@ -956,14 +963,15 @@ int EZGrid_TileGrid(int FIdTo,int NI, int NJ,int Halo,TGrid* restrict const Grid
 
    /*Build and save the tiles*/
    no=0;
-   for(k=0;j<Grid->H.NK;k++) {
+   for(k=0;k<Grid->H.NK;k++) {
       data=EZGrid_TileBurnAll(Grid,k);
+
+      f77name(convip)(&ip1,&Grid->ZRef->Levels[k],&Grid->ZRef->Type,&mode,&format,&flag);
 
       /*Check if dimensions allow tiling*/
       if (Grid->H.NI==1 || Grid->H.NJ==1 || (Grid->H.NI<NI && Grid->H.NJ<NJ)) {
-         f77name(convip)(&ip1,&Grid->ZRef->Levels[k],&type,&mode,&format,&flag);
          key=cs_fstecr(data,-Grid->H.NBITS,FIdTo,Grid->H.DATEO,Grid->H.DEET,Grid->H.NPAS,Grid->H.NI,Grid->H.NJ,1,ip1,Grid->H.IP2,
-            Grid->H.IP3,Grid->H.TYPVAR,Grid->H.NOMVAR,Grid->H.ETIKET,Grid->H.GRTYP,Grid->H.IG1,Grid->H.IG2,Grid->H.IG3,Grid->H.IG4,Grid->H.DATYP,1);
+            Grid->H.IP3,Grid->H.TYPVAR,Grid->H.NOMVAR,Grid->H.ETIKET,Grid->H.GRTYP,Grid->H.IG1,Grid->H.IG2,Grid->H.IG3,Grid->H.IG4,Grid->H.DATYP,0);
       } else {
          /*Build and save the tiles, we adjust the tile size if it is too big*/
          for(j=0;j<Grid->H.NJ;j+=NJ) {
@@ -984,9 +992,8 @@ int EZGrid_TileGrid(int FIdTo,int NI, int NJ,int Halo,TGrid* restrict const Grid
                for(pj=0;pj<nj;pj++) {
                   memcpy(&tile[pj*ni],&data[(j-Halo+pj)*Grid->H.NI+i-Halo],ni*sizeof(float));
                }
-               f77name(convip)(&ip1,&Grid->ZRef->Levels[k],&type,&mode,&format,&flag);
                key=cs_fstecr(tile,-Grid->H.NBITS,FIdTo,Grid->H.DATEO,Grid->H.DEET,Grid->H.NPAS,ni,nj,1,ip1,Grid->H.IP2,
-                  no,Grid->H.TYPVAR,Grid->H.NOMVAR,Grid->H.ETIKET,"#",Grid->H.IG1,Grid->H.IG2,i+1-Halo,j+1-Halo,Grid->H.DATYP,1);
+                  no,Grid->H.TYPVAR,Grid->H.NOMVAR,Grid->H.ETIKET,"#",Grid->H.IG1,Grid->H.IG2,i+1-Halo,j+1-Halo,Grid->H.DATYP,0);
             }
          }
       }
@@ -1578,7 +1585,6 @@ TGrid *EZGrid_Read(int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1
    key=cs_fstinf(FId,&ni,&nj,&nk,DateV,Etiket,IP1,IP2,-1,TypVar,Var);
 
    if (key<0) {
-      fprintf(stderr,"(ERROR) EZGrid_Read: Specified field does not exist\n");
       return(NULL);
    }
    return(EZGrid_ReadIdx(FId,key,Incr));
