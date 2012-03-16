@@ -127,7 +127,8 @@
 #define FCLAMP(R,PX0,PY0,PX1,PY1)         if (PX0<R->X0) PX0=R->X0; if (PY0<R->Y0) PY0=R->Y0; if (PX1>R->X1) PX1=R->X1; if (PY1>R->Y1) PY1=R->Y1;
 
 /*Geographical related constants and functions*/
-#define EARTHRADIUS          6378140.0                          /*Rayon de la terre en metres*/
+//#define EARTHRADIUS          6378140.0                          /*Rayon de la terre en metres*/
+#define EARTHRADIUS          6371000.0                          /*Rayon de la terre en metres (Utilise par RPN)*/
 
 #define DIST(E,A0,O0,A1,O1)  ((E+EARTHRADIUS)*acos(sin(A0)*sin(A1)+cos(O0-O1)*cos(A0)*cos(A1)))
 #define COURSE(A0,O0,A1,O1)  (fmod(atan2(sin(O0-O1)*cos(A1),cos(A0)*sin(A1)-sin(A0)*cos(A1)*cos(O0-O1)),M_2PI))
@@ -238,6 +239,7 @@ extern int c_fclos();
 extern int c_fstouv();
 extern int c_fstfrm();
 extern int c_fstecr();
+extern int c_fstlir();
 extern int c_fstinf();
 extern int c_fstprm();
 extern int c_fstluk();

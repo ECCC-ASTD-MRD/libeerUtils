@@ -44,9 +44,10 @@
 #define GRID_BOTTOM 0x4
 #define GRID_TOP    0x8
 
+#define EZGrid_IsSame(GRID0,GRID1)     (GRID0->GID==GRID1->GID)
 #define EZGrid_IsLoaded(TILE,Z)        (TILE->Data && TILE->Data[Z])
-#define EZGrid_TileValue(TILE,X,Y,Z,H) (TILE->Data[Z][((int)Y-TILE->J+H)*(TILE->NI+H+H)+((int)X-TILE->I+H)])
 #define EZGrid_IsInside(GRID,X,Y)      (X>=0 && Y>=0 && (GRID->Wrap || X<=(GRID->H.NI-1)) && Y<=(GRID->H.NJ-1))
+#define EZGrid_TileValue(TILE,X,Y,Z,H) (TILE->Data[Z][((int)Y-TILE->J+H)*(TILE->NI+H+H)+((int)X-TILE->I+H)])
 #define EZGrid_WrapFlip(GRID,X)        (GRID->Wrap?((X>GRID->H.NI-1)?X-GRID->H.NI+1:X<0?X+GRID->H.NI-1:X):X)
 #define EZGrid_Size(GRID)              (GRID->H.NJ*GRID->H.NI)
 

@@ -90,6 +90,7 @@ int cs_fstouv(char *Path,char *Mode) {
    int err=-1,id=-1;
    char mode[32];
 
+
    if (Path) {
       id=cs_fstlockid();
       pthread_mutex_lock(&RPNFileMutex);
@@ -628,7 +629,7 @@ float* EZGrid_TileBurnAll(TGrid* restrict const Grid,int K) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-static TGrid* EZGrid_CacheFind(const TGrid* restrict const Grid) {
+static TGrid* EZGrid_CacheFind(TGrid *Grid) {
 
    register int n;
 
@@ -846,7 +847,7 @@ int EZGrid_CopyDesc(int FIdTo,TGrid* restrict const Grid) {
  * Nom      : <EZGrid_Tile>
  * Creation : Janvier 2008 - J.P. Gauthier - CMC/CMOE
  *
- * But      : Sauvegarder un champs en tuiles
+ * But      : Sauvegarder un champs a partir d'unfichier standard en tuiles
  *
  * Parametres :
  *   <FidTo>     : Fichier dans lequel copier
@@ -947,6 +948,25 @@ int EZGrid_Tile(int FIdTo,int NI, int NJ,int Halo,int FIdFrom,char* Var,char* Ty
    return(nid);
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <EZGrid_TileGrid>
+ * Creation : Janvier 2012 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Sauvegarder un champs en tuiles
+ *
+ * Parametres :
+ *   <FidTo>     : Fichier dans lequel copier
+ *   <NI>        : Dimension des tuiles en I
+ *   <NJ>        : Dimension des tuiles en J
+ *   <Halo>      : Tile halo size
+ *   <Grid>      : Champs
+ *
+ * Retour:
+ *  <int>        : Code de reussite (0=erreur, 1=ok)
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+*/
 int EZGrid_TileGrid(int FIdTo,int NI, int NJ,int Halo,TGrid* restrict const Grid) {
 
    char   format;
@@ -1004,6 +1024,24 @@ int EZGrid_TileGrid(int FIdTo,int NI, int NJ,int Halo,TGrid* restrict const Grid
    return(TRUE);
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <EZGrid_Write>
+ * Creation : Janvier 2012 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Sauvegarder un champs
+ *
+ * Parametres :
+ *   <Fid>       : Fichier dans lequel copier
+ *   <Grid>      : Champs
+ *   <NBits>     : Packing
+ *   <Overwrite> : Reecrie sur les champs existant
+ *
+ * Retour:
+ *  <int>        : Code de reussite (0=erreur, 1=ok)
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+*/
 int EZGrid_Write(int FId,TGrid* restrict const Grid,int NBits,int Overwrite) {
 
    int        k,tidx,key,ok=0;
@@ -2577,7 +2615,7 @@ int f77name(ezgrid_getdelta)(wordint *gdid,wordint *k,ftnfloat *dx,ftnfloat *dy,
 
 int EZGrid_GetDelta(TGrid* restrict const Grid,int K,float* DX,float* DY,float* DA) {
 
-   unsigned int i,j,idx;
+   unsigned int i,gi,j,gj,idx;
    float        di[4],dj[4],dlat[4],dlon[4];
    double       fx,fy,dx[4],dy[4];
 
@@ -2594,13 +2632,13 @@ int EZGrid_GetDelta(TGrid* restrict const Grid,int K,float* DX,float* DY,float* 
 
 //   pthread_mutex_lock(&RPNIntMutex);
 
-   for(j=0;j<Grid->H.NJ;j++) {
+   for(j=0,gj=1;j<Grid->H.NJ;j++,gj++) {
       idx=j*Grid->H.NI;
-      for(i=0;i<Grid->H.NI;i++,idx++) {
-         di[0]=i-0.5; dj[0]=j;
-         di[1]=i+0.5; dj[1]=j;
-         di[2]=i;     dj[2]=j-0.5;
-         di[3]=i;     dj[3]=j+0.5;
+      for(i=0,gi=1;i<Grid->H.NI;i++,idx++,gi++) {
+         di[0]=gi-0.5; dj[0]=gj;
+         di[1]=gi+0.5; dj[1]=gj;
+         di[2]=gi;     dj[2]=gj-0.5;
+         di[3]=gi;     dj[3]=gj+0.5;
 
          c_gdllfxy(Grid->GID,dlat,dlon,di,dj,4);
          dx[0]=DEG2RAD(dlon[0]); dy[0]=DEG2RAD(dlat[0]);
