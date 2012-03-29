@@ -979,14 +979,16 @@ int EZGrid_TileGrid(int FIdTo,int NI, int NJ,int Halo,TGrid* restrict const Grid
 
    tile=(float*)malloc((NI+Halo*2)*(NJ+Halo*2)*sizeof(float));
 
+   type=Grid->ZRef->Type==LVL_ETA?LVL_SIGMA:Grid->ZRef->Type;
+
    EZGrid_CopyDesc(FIdTo,Grid);
 
    /*Build and save the tiles*/
-   no=0;
    for(k=0;k<Grid->H.NK;k++) {
+      no=0;
       data=EZGrid_TileBurnAll(Grid,k);
 
-      f77name(convip)(&ip1,&Grid->ZRef->Levels[k],&Grid->ZRef->Type,&mode,&format,&flag);
+      f77name(convip)(&ip1,&Grid->ZRef->Levels[k],&type,&mode,&format,&flag);
 
       /*Check if dimensions allow tiling*/
       if (Grid->H.NI==1 || Grid->H.NJ==1 || (Grid->H.NI<NI && Grid->H.NJ<NJ)) {
@@ -1778,7 +1780,7 @@ wordint f77name(ezgrid_loadall)(wordint *gdid) {
 }
 int EZGrid_LoadAll(const TGrid* restrict const Grid) {
 
-   int k,idx;
+   int k=0,idx;
 
    if (Grid) {
       /*Loop on coverage*/
@@ -1794,10 +1796,8 @@ int EZGrid_LoadAll(const TGrid* restrict const Grid) {
             idx++;
          }
       }
-      return(TRUE);
-   } else {
-      return(FALSE);
    }
+   return(k);
 }
 
 /*----------------------------------------------------------------------------
