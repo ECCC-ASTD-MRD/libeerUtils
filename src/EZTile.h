@@ -47,17 +47,35 @@
 #define EZGrid_IsSame(GRID0,GRID1)     (GRID0->GID==GRID1->GID)
 #define EZGrid_IsLoaded(TILE,Z)        (TILE->Data && TILE->Data[Z])
 #define EZGrid_IsInside(GRID,X,Y)      (X>=0 && Y>=0 && (GRID->Wrap || X<=(GRID->H.NI-1)) && Y<=(GRID->H.NJ-1))
-#define EZGrid_TileValue(TILE,X,Y,Z,H) (TILE->Data[Z][((int)Y-TILE->J+H)*(TILE->NI+H+H)+((int)X-TILE->I+H)])
-#define EZGrid_WrapFlip(GRID,X)        (GRID->Wrap?((X>GRID->H.NI-1)?X-GRID->H.NI+1:X<0?X+GRID->H.NI-1:X):X)
 #define EZGrid_Size(GRID)              (GRID->H.NJ*GRID->H.NI)
+#define EZGrid_TileValue(TILE,X,Y,Z,H) (TILE->Data[Z][((int)Y-TILE->J+(TILE->Side&GRID_BOTTOM?0:H))*(TILE->NI+(TILE->Side&GRID_LEFT?0:H)+(TILE->Side&GRID_RIGHT?0:H))+((int)X-TILE->I+(TILE->Side&GRID_LEFT?0:H))])
 
-typedef struct {
+// All of the wrapping tests suppose that the last gridpoint is repeated along NI
+// This checks for wraps around longitude and flips over poles
+#define EZGrid_WrapFlip(GRID,X,Y) {\
+   if (GRID->Wrap) {\
+      if (Y>GRID->H.NJ-1) {\
+         Y=GRID->H.NJ-(Y-GRID->H.NJ+2);\
+         X=X<(GRID->H.NI>>1)?X+(GRID->H.NI>>1):X-(GRID->H.NI>>1);\
+      } else if (Y<0.0) {\
+         Y=-Y;\
+         X=X<(GRID->H.NI>>1)?X+(GRID->H.NI>>1):X-(GRID->H.NI>>1);\
+      }\
+      if (X>=GRID->H.NI-1) {\
+         X=X-GRID->H.NI+1.0;\
+      } else if (X<0.0) {\
+         X=X+GRID->H.NI-1.0;\
+      }\
+   }\
+}
+
+typedef struct TGridTile {
    int     GID;                      /*EZSCINT Tile grid id (for interpolation)*/
    char    Side;                     /*Side flag indicator*/
    int     I,J;                      /*Tile starting point within master grid*/
    int     NO;                       /*Tile number*/
    int     KBurn;                    /*Index estampille*/
-   int     NI,NJ,NIJ;                /*Tile dimensions*/
+   int     NI,NJ,NIJ;                /*Tile dimensions (NI,NJ without halo, NIJ, with halo)*/
    float **Data;                     /*Data pointer*/
 } TGridTile;
 
@@ -67,6 +85,7 @@ typedef struct TGrid {
    TRPNHeader      H;                    /*RPN Standard file header*/
    TZRef          *ZRef;                 /*Vertical referential*/
    int             Wrap;                 /*Flag indicating grid globe wrap-around (global grids)*/
+   float           Pole[2];              /*Pole coverage*/
 
    int             GID;                  /*EZSCINT Tile grid id (for interpolation)*/
    int             IP1,IP2,IP3,Master;   /*Grid template identifier*/

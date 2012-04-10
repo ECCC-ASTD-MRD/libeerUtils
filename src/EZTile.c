@@ -260,6 +260,7 @@ int EZGrid_IdIncr(int Id) {
 
    return(EZGrid_Ids[Id]);
 }
+
 /*----------------------------------------------------------------------------
  * Nom      : <EZGrid_IdFree>
  * Creation : Janvier 2012 - J.P. Gauthier - CMC/CMOE
@@ -315,15 +316,44 @@ int EZGrid_Wrap(TGrid* restrict const Grid) {
 
    float i,j,lat,lon;
 
-   i=Grid->H.NI+1.0;
-   j=Grid->H.NJ/2.0;
+   Grid->Wrap=0;
+   Grid->Pole[0]=Grid->Pole[1]=0.0f;
 
 //   pthread_mutex_lock(&RPNIntMutex);
+   // Check for south pole coverage
+   i=1.0;j=1.0;
+   c_gdllfxy(Grid->GID,&lat,&lon,&i,&j,1);
+   if (lat==-90.0) {
+      i=1.0;j=1.5;
+      c_gdllfxy(Grid->GID,&Grid->Pole[0],&lon,&i,&j,1);
+   }
+
+   // Check for north pole coverage
+   i=1.0;j=Grid->H.NJ;
+   c_gdllfxy(Grid->GID,&lat,&lon,&i,&j,1);
+   if (lat==90.0) {
+      i=1.0;j=Grid->H.NJ-0.5;
+      c_gdllfxy(Grid->GID,&Grid->Pole[1],&lon,&i,&j,1);
+   }
+
+   i=Grid->H.NI+1.0f;
+   j=Grid->H.NJ/2.0f;
    c_gdllfxy(Grid->GID,&lat,&lon,&i,&j,1);
    c_gdxyfll(Grid->GID,&i,&j,&lat,&lon,1);
+
 //   pthread_mutex_unlock(&RPNIntMutex);
 
-   return(i<Grid->H.NI);
+   // If the grid wraps
+   if (i<Grid->H.NI) {
+      // check if the last gridpoint is a repeat of the first
+      if (rintf(i)==1.0f) {
+         Grid->Wrap=1;
+      } else {
+         Grid->Wrap=2;
+      }
+   }
+
+   return(Grid->Wrap);
 }
 
 /*----------------------------------------------------------------------------
@@ -346,9 +376,12 @@ int EZGrid_Wrap(TGrid* restrict const Grid) {
 static inline TGridTile* EZGrid_TileGet(const TGrid* restrict const Grid,int I,int J) {
 
    TGridTile    *tile=NULL;
+   int           nb;
    register int  idx=0;
 
-   while((tile=&Grid->Tiles[idx])) {
+   nb=Grid->NTI*Grid->NTJ;
+
+   while(idx<nb && (tile=&Grid->Tiles[idx])) {
       if (I>=tile->I+tile->NI) {
          idx++;
          continue;
@@ -359,6 +392,10 @@ static inline TGridTile* EZGrid_TileGet(const TGrid* restrict const Grid,int I,i
       }
       break;
    }
+
+   if (!tile)
+      fprintf(stderr,"(WARNING) EZGrid_TileGet: Tile not found (%s) I(%i) J(%i)\n",Grid->H.NOMVAR,I,J);
+
    return(tile);
 }
 
@@ -473,41 +510,6 @@ static float **EZGrid_TileGetData(const TGrid* restrict const Grid,TGridTile* re
 }
 
 /*----------------------------------------------------------------------------
- * Nom      : <EZGrid_TileFind>
- * Creation : Janvier 2008 - J.P. Gauthier - CMC/CMOE
- *
- * But      : Trouver la tuile incluant le point specifie et en lire les donnees
- *
- * Parametres :
- *   <Grid>      : Grille maitre
- *   <I>         : Coordonnee du point de grille en I
- *   <J>         : Coordonnee du point de grille en J
- *   <K>         : Coordonnee du point de grille en K
- *
- * Retour:
- *  <tile*>      : Pointeur sur la tuile (ou NULL si erreur)
- *
- * Remarques :
- *----------------------------------------------------------------------------
-*/
-static inline TGridTile* EZGrid_TileFind(const TGrid* restrict const Grid,int I,int J,int K) {
-
-   TGridTile *tile;
-
-   /*Figure out the right tile*/
-   if (!(tile=EZGrid_TileGet(Grid,I,J))) {
-      return(NULL);
-   }
-
-   /*Check for tile data*/
-   if (!EZGrid_TileGetData(Grid,tile,K,0)) {
-      fprintf(stderr,"(ERROR) EZGrid_TileFind: Unable to get tile data (%s)\n",Grid->H.NOMVAR);
-      return(NULL);
-   }
-   return(tile);
-}
-
-/*----------------------------------------------------------------------------
  * Nom      : <EZGrid_TileBurn>
  * Creation : Janvier 2008 - J.P. Gauthier - CMC/CMOE
  *
@@ -526,7 +528,7 @@ static inline TGridTile* EZGrid_TileFind(const TGrid* restrict const Grid,int I,
 */
 float* EZGrid_TileBurn(TGrid* restrict const Grid,TGridTile* restrict const Tile,int K) {
 
-   int j,j0,j1,dj,i0,i1,di;
+   int j,j0,dj,i0,i1,di;
 
    pthread_mutex_lock(&Grid->Mutex);
    if (Tile->KBurn!=-1 && Tile->KBurn==K) {
@@ -548,23 +550,14 @@ float* EZGrid_TileBurn(TGrid* restrict const Grid,TGridTile* restrict const Tile
       }
    }
 
-   di=(Tile->NI+2*Grid->Halo);
+   i0=Tile->Side&GRID_LEFT?0:Grid->Halo;
+   i1=Tile->Side&GRID_RIGHT?0:Grid->Halo;
+   j0=Tile->Side&GRID_BOTTOM?0:Grid->Halo;
+   di=Tile->NI+i0+i1;
    dj=Tile->J*Grid->H.NI+Tile->I;
 
-   j0=Tile->J-Grid->Halo;
-   j0=j0<0?-j0:0;
-
-   j1=Tile->J+Tile->NJ+Grid->Halo;
-   j1=j1>Grid->H.NJ?j1-Grid->H.NJ:0;
-
-   i0=Tile->I-Grid->Halo;
-   i0=i0<0?-i0:0;
-
-   i1=Tile->I+Tile->NI+Grid->Halo;
-   i1=i1>Grid->H.NI?i1-Grid->H.NI:0;
-
-   for(j=j0;j<Tile->NJ-j1;j++) {
-      memcpy(&Grid->Data[dj],&Tile->Data[K][j*di+i0],(di-i1)*sizeof(float));
+   for(j=0;j<Tile->NJ;j++) {
+      memcpy(&Grid->Data[dj],&Tile->Data[K][(j+j0)*di+i0],Tile->NI*sizeof(float));
       dj+=Grid->H.NI;
    }
    Tile->KBurn=K;
@@ -649,7 +642,8 @@ static TGrid* EZGrid_CacheFind(TGrid *Grid) {
                continue;
             }
 
-            if (GridCache[n]->H.NK!=Grid->H.NK || GridCache[n]->ZRef->Levels[0]!=level) {
+//            if (GridCache[n]->H.NK!=Grid->H.NK || GridCache[n]->ZRef->Levels[0]!=level) {
+            if (GridCache[n]->H.NK!=Grid->H.NK) {
                continue;
             }
 
@@ -1013,7 +1007,6 @@ int EZGrid_TileGrid(int FIdTo,int NI, int NJ,int Halo,TGrid* restrict const Grid
 
                for(pj=0;pj<nj;pj++) {
                   memcpy(&tile[pj*ni],&data[(dj+pj)*Grid->H.NI+di],ni*sizeof(float));
-//                  memcpy(&tile[pj*ni],&data[(j-Halo+pj)*Grid->H.NI+i-Halo],ni*sizeof(float));
                }
                key=cs_fstecr(tile,-Grid->H.NBITS,FIdTo,Grid->H.DATEO,Grid->H.DEET,Grid->H.NPAS,ni,nj,1,ip1,Grid->H.IP2,
                   no,Grid->H.TYPVAR,Grid->H.NOMVAR,Grid->H.ETIKET,"#",Grid->H.IG1,Grid->H.IG2,di+1,dj+1,Grid->H.DATYP,0);
@@ -1229,14 +1222,14 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
    /*Calculate halo width*/
    if (ni>Grid->H.NI) {
       Grid->Halo=ceil((ni-Grid->H.NI)/Grid->NTI/2.0);
-   }
 
-   /*Adjust dimensions with halo, we keep coordinates reference without halo*/
-   for(n=0;n<Grid->NbTiles;n++) {
-      Grid->Tiles[n].I +=Grid->Halo;
-      Grid->Tiles[n].J +=Grid->Halo;
-      Grid->Tiles[n].NI-=Grid->Halo*2;
-      Grid->Tiles[n].NJ-=Grid->Halo*2;
+      /*Adjust dimensions with halo, we keep coordinates reference without halo*/
+      for(n=0;n<Grid->NbTiles;n++) {
+         Grid->Tiles[n].I +=(Grid->Tiles[n].Side&GRID_LEFT?0:Grid->Halo);
+         Grid->Tiles[n].J +=(Grid->Tiles[n].Side&GRID_BOTTOM?0:Grid->Halo);
+         Grid->Tiles[n].NI-=(Grid->Tiles[n].Side&GRID_LEFT?0:Grid->Halo)+(Grid->Tiles[n].Side&GRID_RIGHT?0:Grid->Halo);
+         Grid->Tiles[n].NJ-=(Grid->Tiles[n].Side&GRID_BOTTOM?0:Grid->Halo)+(Grid->Tiles[n].Side&GRID_TOP?0:Grid->Halo);
+      }
    }
 
    /*Create master grid*/
@@ -1747,7 +1740,8 @@ wordint f77name(ezgrid_load)(wordint *gdid,wordint *i0,wordint *j0,wordint *k0,w
 }
 int EZGrid_Load(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1,int J1,int K1) {
 
-   int i,j,k;
+   TGridTile *tile;
+   int        i,j,k;
 
    if (!Grid) {
       fprintf(stderr,"(ERROR) EZGrid_Load: Invalid grid (%s)\n",Grid->H.NOMVAR);
@@ -1766,7 +1760,12 @@ int EZGrid_Load(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1,int
       for(j=J0;j<=J1;j++) {
          for(i=I0;i<=I1;i++) {
             /*Figure out the right tile*/
-            if (!(EZGrid_TileFind(Grid,i,j,k))) {
+            if (!(tile=EZGrid_TileGet(Grid,i,j))) {
+               return(0);
+            }
+
+            /*Check for tile data*/
+            if (!EZGrid_TileGetData(Grid,tile,k,0)) {
                return(0);
             }
          }
@@ -2142,15 +2141,18 @@ int EZGrid_LLGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
 
 static inline float EZGrid_BilinDD(TGrid* restrict const Grid,TGridTile* restrict const Tile,int I,int J,int K,float DX, float DY) {
 
-   int    idx,idxj,ni;
+   int    idx,idxj,ni,nj;
    float *data;
 
    data=Tile->Data[K];
-   I+=Grid->Halo;
-   J+=Grid->Halo;
-   ni=Tile->NI+Grid->Halo+Grid->Halo;
+
+   // Calculate in-tile indexes and limits
+   I+=Tile->Side&GRID_LEFT?0:Grid->Halo;
+   J+=Tile->Side&GRID_BOTTOM?0:Grid->Halo;
+   ni=Tile->NI+(Tile->Side&GRID_LEFT?0:Grid->Halo)+(Tile->Side&GRID_RIGHT?0:Grid->Halo);
+   nj=Tile->NJ+(Tile->Side&GRID_BOTTOM?0:Grid->Halo)+(Tile->Side&GRID_TOP?0:Grid->Halo);
    idx =J*ni+I;
-   idxj=idx+ni;
+   idxj=J<=nj?idx:idx+ni;
 
    return(data[idx] + (data[idx+1]-data[idx])*DX + (data[idxj]-data[idx])*DY + (data[idxj+1]-data[idx+1]-data[idxj]+data[idx])*DX*DY);
 }
@@ -2194,7 +2196,7 @@ int EZGrid_IJGetValue(TGrid* restrict const Grid,float I,float J,int K0,int K1,f
    }
 
    /*Check inclusion in master grid limits*/
-   if (I<0 || J<0 || K0<0 || K1<0 || I>=Grid->H.NI || J>=Grid->H.NJ || K0>=Grid->H.NK || K1>=Grid->H.NK) {
+   if (I<0 || J<0 || K0<0 || K1<0 || I>Grid->H.NI-1 || J>=Grid->H.NJ || K0>=Grid->H.NK || K1>=Grid->H.NK) {
       fprintf(stderr,"(WARNING) EZGrid_IJGetValue: Coordinates out of range (%s): I(%f) J(%f) K(%i,%i) \n",Grid->H.NOMVAR,I,J,K0,K1);
       return(0);
    }
@@ -2325,8 +2327,8 @@ int EZGrid_IJGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
    }
 
    /*Have to readjust coordinate within tile for ezscint*/
-   I=I+1.0-(tu->I-GridU->Halo);
-   J=J+1.0-(tu->J-GridU->Halo);
+   I=I-tu->I+(tu->Side&GRID_LEFT?0:GridU->Halo)+1.0;
+   J=J-tu->J+(tu->Side&GRID_BOTTOM?0:GridU->Halo)+1.0;
 
    k=K0;
    do {
@@ -2640,14 +2642,22 @@ int EZGrid_GetDelta(TGrid* restrict const Grid,int K,float* DX,float* DY,float* 
          di[2]=gi;     dj[2]=gj-0.5;
          di[3]=gi;     dj[3]=gj+0.5;
 
+         // Reproject gridpoint length coordinates os segments crossing center of cell
          c_gdllfxy(Grid->GID,dlat,dlon,di,dj,4);
          dx[0]=DEG2RAD(dlon[0]); dy[0]=DEG2RAD(dlat[0]);
          dx[1]=DEG2RAD(dlon[1]); dy[1]=DEG2RAD(dlat[1]);
+
          dx[2]=DEG2RAD(dlon[2]); dy[2]=DEG2RAD(dlat[2]);
          dx[3]=DEG2RAD(dlon[3]); dy[3]=DEG2RAD(dlat[3]);
 
+         // Get distance in meters
          fx=DIST(0.0,dy[0],dx[0],dy[1],dx[1]);
          fy=DIST(0.0,dy[2],dx[2],dy[3],dx[3]);
+
+         // If x distance is null, we crossed the pole
+         if (fx==0.0)
+            fx=(M_PI*fy)/Grid->H.NI;
+
          if (DX) DX[idx]=fx;
          if (DY) DY[idx]=fy;
          if (DA) DA[idx]=(fx*fy);
