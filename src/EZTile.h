@@ -46,27 +46,27 @@
 
 #define EZGrid_IsSame(GRID0,GRID1)     (GRID0->GID==GRID1->GID)
 #define EZGrid_IsLoaded(TILE,Z)        (TILE->Data && TILE->Data[Z])
-#define EZGrid_IsInside(GRID,X,Y)      (X>=0 && Y>=0 && (GRID->Wrap || X<=(GRID->H.NI-1)) && Y<=(GRID->H.NJ-1))
+#define EZGrid_IsInside(GRID,X,Y)      (X>=0 && Y>=0 && (GRID->Wrap || (X<GRID->H.NI-1 && Y<GRID->H.NJ-1)))
 #define EZGrid_Size(GRID)              (GRID->H.NJ*GRID->H.NI)
-#define EZGrid_TileValue(TILE,X,Y,Z,H) (TILE->Data[Z][((int)Y-TILE->J+(TILE->Side&GRID_BOTTOM?0:H))*(TILE->NI+(TILE->Side&GRID_LEFT?0:H)+(TILE->Side&GRID_RIGHT?0:H))+((int)X-TILE->I+(TILE->Side&GRID_LEFT?0:H))])
+#define EZGrid_TileValue(TILE,X,Y,Z)   (TILE->Data[Z][((int)Y-TILE->J+TILE->HDJ)*TILE->HNI+((int)X-TILE->I+TILE->HDI)])
 
-// All of the wrapping tests suppose that the last gridpoint is repeated along NI
 // This checks for wraps around longitude and flips over poles
 #define EZGrid_WrapFlip(GRID,X,Y) {\
-   if (GRID->Wrap) {\
-      if (Y>GRID->H.NJ-1) {\
-         Y=GRID->H.NJ-(Y-GRID->H.NJ+2);\
-         X=X<(GRID->H.NI>>1)?X+(GRID->H.NI>>1):X-(GRID->H.NI>>1);\
-      } else if (Y<0.0) {\
-         Y=-Y;\
-         X=X<(GRID->H.NI>>1)?X+(GRID->H.NI>>1):X-(GRID->H.NI>>1);\
-      }\
-      if (X>=GRID->H.NI-1) {\
-         X=X-GRID->H.NI+1.0;\
-      } else if (X<0.0) {\
-         X=X+GRID->H.NI-1.0;\
-      }\
-   }\
+   if (GRID->Wrap) { \
+      if (Y>GRID->H.NJ-1) { \
+         Y=GRID->H.NJ-(Y-GRID->H.NJ+2); \
+         X=X<(GRID->H.NI>>1)?X+(GRID->H.NI>>1):X-(GRID->H.NI>>1); \
+      } else if (Y<0) { \
+         Y=-Y; \
+         X=X<(GRID->H.NI>>1)?X+(GRID->H.NI>>1):X-(GRID->H.NI>>1); \
+      } \
+      if (X>=GRID->H.NI) { \
+         X-=GRID->H.NI; \
+      } else if (X<0) { \
+         X+=GRID->H.NI;\
+         if (X==GRID->H.NI) X-=1e-4;\
+      } \
+   } \
 }
 
 typedef struct TGridTile {
@@ -75,7 +75,8 @@ typedef struct TGridTile {
    int     I,J;                      /*Tile starting point within master grid*/
    int     NO;                       /*Tile number*/
    int     KBurn;                    /*Index estampille*/
-   int     NI,NJ,NIJ;                /*Tile dimensions (NI,NJ without halo, NIJ, with halo)*/
+   int     NI,NJ,NIJ;                /*Tile dimensions without halo)*/
+   int     HDI,HDJ,HNI,HNJ,HNIJ;     /*Tile dimensions with halo*/
    float **Data;                     /*Data pointer*/
 } TGridTile;
 
