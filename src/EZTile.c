@@ -375,29 +375,46 @@ int EZGrid_Wrap(TGrid* restrict const Grid) {
 */
 static inline TGridTile* EZGrid_TileGet(const TGrid* restrict const Grid,int I,int J) {
 
-   TGridTile    *tile=NULL;
-   int           nb;
-   register int  idx=0;
+    TGridTile *tile=NULL;
 
-   nb=Grid->NTI*Grid->NTJ;
+    if (Grid->NbTiles>1) {
+       I/=Grid->Tiles[0].NI;
+       J/=Grid->Tiles[0].NJ;
 
-   while(idx<nb && (tile=&Grid->Tiles[idx])) {
-      if (I>=tile->I+tile->NI) {
-         idx++;
-         continue;
-      }
-      if (J>=tile->J+tile->NJ) {
-         idx+=Grid->NTI;
-         continue;
-      }
-      break;
-   }
-
-   if (!tile)
-      fprintf(stderr,"(WARNING) EZGrid_TileGet: Tile not found (%s) I(%i) J(%i)\n",Grid->H.NOMVAR,I,J);
-
-   return(tile);
+       if (I<Grid->NTI && J<Grid->NTJ) {
+          tile=&Grid->Tiles[J*Grid->NTI+I];
+       }
+    } else {
+       tile=&Grid->Tiles[0];
+    }
+    return(tile);
 }
+
+// static inline TGridTile* EZGrid_TileGet(const TGrid* restrict const Grid,int I,int J) {
+//
+//    TGridTile    *tile=NULL;
+//    int           nb;
+//    register int  idx=0;
+//
+//    nb=Grid->NTI*Grid->NTJ;
+//
+//    while(idx<nb && (tile=&Grid->Tiles[idx])) {
+//       if (I>=tile->I+tile->NI) {
+//          idx++;
+//          continue;
+//       }
+//       if (J>=tile->J+tile->NJ) {
+//          idx+=Grid->NTI;
+//          continue;
+//       }
+//       break;
+//    }
+//
+//    if (!tile)
+//       fprintf(stderr,"(WARNING) EZGrid_TileGet: Tile not found (%s) I(%i) J(%i)\n",Grid->H.NOMVAR,I,J);
+//
+//    return(tile);
+// }
 
 /*----------------------------------------------------------------------------
  * Nom      : <EZGrid_TileGetData>
@@ -637,7 +654,6 @@ static TGrid* EZGrid_CacheFind(TGrid *Grid) {
             if (type!=GridCache[n]->ZRef->Type) {
                continue;
             }
-
 //            if (GridCache[n]->H.NK!=Grid->H.NK || GridCache[n]->ZRef->Levels[0]!=level) {
             if (GridCache[n]->H.NK!=Grid->H.NK) {
                continue;
@@ -1131,7 +1147,7 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
 
    TRPNHeader h;
    TGridTile *tile;
-   int        n,i,j,k,nt,ni,nj;
+   int        n,i,j,k,nt,ni;
    int        ip3,key;
    int        l,idlst[TILEMAX];
 
@@ -1161,7 +1177,7 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
    Grid->IP3=Grid->H.IG3;
    Grid->H.NIJ=Grid->H.NI*Grid->H.NJ;
    i=j=-1;
-   ni=nj=0;
+   ni=0;
    nt=Grid->NbTiles;
    h.GRTYP[1]='\0';
 
@@ -1199,7 +1215,7 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
          tile->J=h.IG4-1;
 
          /*Set the border tile flags and count the number of tiles in I,J*/
-         if (h.IG3==1)                { tile->Side|=GRID_LEFT;   Grid->NTJ++; nj+=h.NJ; }
+         if (h.IG3==1)                { tile->Side|=GRID_LEFT;   Grid->NTJ++; }
          if (h.IG3+h.NI+2>Grid->H.NI) { tile->Side|=GRID_RIGHT; }
          if (h.IG4==1)                { tile->Side|=GRID_BOTTOM; Grid->NTI++; ni+=h.NI; }
          if (h.IG4+h.NJ+2>Grid->H.NJ) { tile->Side|=GRID_TOP; }
@@ -1213,8 +1229,9 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
    }
    pthread_mutex_unlock(&RPNFieldMutex);
 
-   /*Calculate halo width*/
+   /*Is there a halo arounf the tiles*/
    if (ni>Grid->H.NI) {
+      /*Calculate halo width*/
       Grid->Halo=ceil((ni-Grid->H.NI)/Grid->NTI/2.0);
 
       /*Adjust dimensions with halo, we keep coordinates reference without halo*/
@@ -1223,8 +1240,10 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
 
          tile->HDI = (tile->Side&GRID_LEFT?0:Grid->Halo);
          tile->HDJ = (tile->Side&GRID_BOTTOM?0:Grid->Halo);
-         tile->NI -= (tile->Side&GRID_LEFT?0:Grid->Halo)+(tile->Side&GRID_RIGHT?0:Grid->Halo);
-         tile->NJ -= (tile->Side&GRID_BOTTOM?0:Grid->Halo)+(tile->Side&GRID_TOP?0:Grid->Halo);
+         tile->I  += tile->HDI;
+         tile->J  += tile->HDJ;
+         tile->NI -= tile->HDI+(tile->Side&GRID_RIGHT?0:Grid->Halo);
+         tile->NJ -= tile->HDJ+(tile->Side&GRID_TOP?0:Grid->Halo);
          tile->NIJ = tile->NI*tile->NJ;
       }
    }
@@ -1408,6 +1427,9 @@ TZRef* EZGrid_GetZRef(const TGrid* restrict const Grid) {
 
    /*Decode vertical coordinate parameters*/
    ZRef_DecodeRPN(zref,Grid->H.FID);
+
+   /*Pathc SIGMA to ETA until we include PTOP in files*/
+   zref->Type=zref->Type==LVL_SIGMA?LVL_ETA:zref->Type;
 
    return(zref);
 }
@@ -1758,6 +1780,7 @@ int EZGrid_Load(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1,int
          for(i=I0;i<=I1;i++) {
             /*Figure out the right tile*/
             if (!(tile=EZGrid_TileGet(Grid,i,j))) {
+               fprintf(stderr,"(WARNING) EZGrid_Load: Tile not found (%s) I(%i) J(%i)\n",Grid->H.NOMVAR,i,j);
                return(0);
             }
 
@@ -2166,7 +2189,7 @@ wordint f77name(ezgrid_ijgetvalue)(wordint *gdid,ftnfloat *i,ftnfloat *j,wordint
 int EZGrid_IJGetValue(TGrid* restrict const Grid,float I,float J,int K0,int K1,float* restrict Value) {
 
    TGridTile *t,*tw=NULL;
-   int        i,j,k,ik=0,idx,idxj,idxw,wrap=0;
+   int        i,j,k,ik=0,idx,idxj,idxw,idxwj,wrap=0;
    float      dx,dy,d[4];
 
    if (!Grid) {
@@ -2189,7 +2212,8 @@ int EZGrid_IJGetValue(TGrid* restrict const Grid,float I,float J,int K0,int K1,f
       }
    }
 
-   if (!(t=Grid->NbTiles>1?EZGrid_TileGet(Grid,I,J):&Grid->Tiles[0])) {
+   if (!(t=EZGrid_TileGet(Grid,I,J))) {
+      fprintf(stderr,"(WARNING) EZGrid_IJGetValue: Tile not found (%s) I(%.f) J(%f)\n",Grid->H.NOMVAR,I,J);
       return(0);
    }
 
@@ -2203,14 +2227,17 @@ int EZGrid_IJGetValue(TGrid* restrict const Grid,float I,float J,int K0,int K1,f
    //   I+=1.0f;J+=1.0f;
 
    idx =j*t->HNI+i;
-   idxj=j<=t->HNJ?idx:idx+t->HNI;
+   idxj=j<t->HNJ-1?idx+t->HNI:idx;
 
    // Get the wrapping tile
    if (wrap) {
-      if (!(tw=Grid->NbTiles>1?t-(Grid->NTI-1)*sizeof(TGridTile):&Grid->Tiles[0])) {
+      if (!(tw=EZGrid_TileGet(Grid,0,J))) {
+         fprintf(stderr,"(WARNING) EZGrid_IJGetValue: Wrapped tile not found (%s) I(%.f) J(%f)\n",Grid->H.NOMVAR,I,J);
          return(0);
       }
+      // If we wrap, index of first point within wrapped tile
       idxw=j*tw->HNI;
+      idxwj=idxw+(idx==idxj?0:tw->HNI);
    }
 
    k=K0;
@@ -2226,7 +2253,7 @@ int EZGrid_IJGetValue(TGrid* restrict const Grid,float I,float J,int K0,int K1,f
             EZGrid_TileGetData(Grid,tw,k,0);
 
          d[1]=tw->Data[k][idxw];
-         d[3]=tw->Data[k][idxw+tw->HNI];
+         d[3]=tw->Data[k][idxwj];
       } else {
          d[1]=t->Data[k][idx+1];
          d[3]=t->Data[k][idxj+1];
@@ -2334,10 +2361,12 @@ int EZGrid_IJGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
       return(0);
    }
 
-   if (!(tu=GridU->NbTiles>1?EZGrid_TileGet(GridU,I,J):&GridU->Tiles[0])) {
+   if (!(tu=EZGrid_TileGet(GridU,I,J))) {
+      fprintf(stderr,"(WARNING) EZGrid_IJGetUVValue: Tile not found (%s) I(%f) J(%f)\n",GridU->H.NOMVAR,I,J);
       return(0);
    }
-   if (!(tv=GridV->NbTiles>1?EZGrid_TileGet(GridV,I,J):&GridV->Tiles[0])) {
+   if (!(tv=EZGrid_TileGet(GridV,I,J))) {
+      fprintf(stderr,"(WARNING) EZGrid_IJGetUVValue: Tile not found (%s) I(%f) J(%f)\n",GridV->H.NOMVAR,I,J);
       return(0);
    }
 
@@ -2406,7 +2435,8 @@ int EZGrid_GetValue(const TGrid* restrict const Grid,int I,int J,int K0,int K1,f
       return(0);
    }
 
-   if (!(t=Grid->NbTiles>1?EZGrid_TileGet(Grid,I,J):&Grid->Tiles[0])) {
+   if (!(t=EZGrid_TileGet(Grid,I,J))) {
+      fprintf(stderr,"(WARNING) EZGrid_GetValue: Tile not found (%s) I(%i) J(%i)\n",Grid->H.NOMVAR,I,J);
       return(0);
    }
 
@@ -2474,7 +2504,8 @@ int EZGrid_GetValues(const TGrid* restrict const Grid,int Nb,float* restrict con
          return(0);
       }
 
-      if (!(t=Grid->NbTiles>1?EZGrid_TileGet(Grid,i,j):&Grid->Tiles[0])) {
+      if (!(t=EZGrid_TileGet(Grid,i,j))) {
+         fprintf(stderr,"(WARNING) EZGrid_GetValues: Tile not found (%s) I(%i) J(%i)\n",Grid->H.NOMVAR,i,j);
          return(0);
       }
       if (!EZGrid_IsLoaded(t,k))
@@ -2592,7 +2623,8 @@ int EZGrid_GetRange(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1
    for(k=K0;k<=K1;k++) {
       for(j=J0;j<=J1;j++) {
          for(i=I0;i<=I1;i++) {
-            if (!(t=Grid->NbTiles>1?EZGrid_TileGet(Grid,i,j):&Grid->Tiles[0])) {
+            if (!(t=EZGrid_TileGet(Grid,i,j))) {
+               fprintf(stderr,"(WARNING) EZGrid_GetRange: Tile not found (%s) I(%i) J(%i)\n",Grid->H.NOMVAR,i,j);
                return(0);
             }
             if (!EZGrid_IsLoaded(t,k))
