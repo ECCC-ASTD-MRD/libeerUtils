@@ -1282,40 +1282,38 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
 int EZGrid_BoundaryCopy(TGrid* restrict const Grid,int Width) {
 
    TGridTile    *tile;
-   unsigned long idx,i,j,n,k,h;
+   unsigned long idx,i,j,n,k;
 
    if (Width!=1 && Width!=2)
       return(FALSE);
-
-   h=Grid->Halo*2;
 
    for(n=0;n<Grid->NbTiles;n++) {
       tile=&Grid->Tiles[n];
 
       for(k=0;k<Grid->ZRef->LevelNb;k++) {
          if (tile->Side&GRID_BOTTOM) {
-            for(i=0,idx=Grid->Halo;i<tile->NI;i++,idx++) {
+            for(i=0,idx=0;i<tile->HNI;i++,idx++) {
                if (Width==2)
-                  tile->Data[k][idx+tile->NI+h]=tile->Data[k][idx+tile->NI+tile->NI+h+h];
-               tile->Data[k][idx]=tile->Data[k][idx+tile->NI+h];
+                  tile->Data[k][idx+tile->HNI]=tile->Data[k][idx+tile->HNI+tile->HNI];
+               tile->Data[k][idx]=tile->Data[k][idx+tile->HNI];
             }
          }
          if (tile->Side&GRID_TOP) {
-            for(i=0,idx=tile->HNIJ-tile->NI-h+Grid->Halo;i<tile->NI;i++,idx++) {
+            for(i=0,idx=tile->HNIJ-tile->HNI-1;i<tile->HNI;i++,idx++) {
                if (Width==2)
-                  tile->Data[k][idx-tile->NI-h]=tile->Data[k][idx-tile->NI-tile->NI-h-h];
-               tile->Data[k][idx]=tile->Data[k][idx-tile->NI-h];
+                  tile->Data[k][idx-tile->HNI]=tile->Data[k][idx-tile->HNI-tile->HNI];
+               tile->Data[k][idx]=tile->Data[k][idx-tile->HNI];
             }
          }
          if (tile->Side&GRID_LEFT) {
-            for(j=0,idx=Grid->Halo;j<tile->NJ;j++,idx+=tile->NI+h) {
+            for(j=0,idx=0;j<tile->HNJ;j++,idx+=tile->HNI) {
                if (Width==2)
                   tile->Data[k][idx+1]=tile->Data[k][idx+2];
                tile->Data[k][idx]=tile->Data[k][idx+1];
             }
          }
          if (tile->Side&GRID_RIGHT) {
-            for(j=0,idx=tile->NI-1-Grid->Halo;j<tile->NJ;j++,idx+=tile->NI+h) {
+            for(j=0,idx=tile->HNI-1;j<tile->HNJ;j++,idx+=tile->HNI) {
                if (Width==2)
                   tile->Data[k][idx-1]=tile->Data[k][idx-2];
                tile->Data[k][idx]=tile->Data[k][idx-1];
