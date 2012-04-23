@@ -48,7 +48,7 @@
 #define EZGrid_IsLoaded(TILE,Z)        (TILE->Data && TILE->Data[Z])
 #define EZGrid_IsInside(GRID,X,Y)      (X>=0 && Y>=0 && (GRID->Wrap || (X<GRID->H.NI-1 && Y<GRID->H.NJ-1)))
 #define EZGrid_Size(GRID)              (GRID->H.NJ*GRID->H.NI)
-#define EZGrid_TileValue(TILE,X,Y,Z)   (TILE->Data[Z][((int)Y-TILE->J+TILE->HDJ)*TILE->HNI+((int)X-TILE->I+TILE->HDI)])
+#define EZGrid_TileValue(TILE,X,Y,Z)   (TILE->Data[Z][((int)Y-TILE->HJ)*TILE->HNI+((int)X-TILE->HI)])
 
 // This checks for wraps around longitude and flips over poles
 #define EZGrid_WrapFlip(GRID,X,Y) {\
@@ -70,14 +70,15 @@
 }
 
 typedef struct TGridTile {
-   int     GID;                      /*EZSCINT Tile grid id (for interpolation)*/
-   char    Side;                     /*Side flag indicator*/
-   int     I,J;                      /*Tile starting point within master grid*/
-   int     NO;                       /*Tile number*/
-   int     KBurn;                    /*Index estampille*/
-   int     NI,NJ,NIJ;                /*Tile dimensions without halo)*/
-   int     HDI,HDJ,HNI,HNJ,HNIJ;     /*Tile dimensions with halo*/
-   float **Data;                     /*Data pointer*/
+   int     GID;                         /*EZSCINT Tile grid id (for interpolation)*/
+   char    Side;                        /*Side flag indicator*/
+   int     I,J;                         /*Tile starting point within master grid*/
+   int     NO;                          /*Tile number*/
+   int     KBurn;                       /*Index estampille*/
+   int     NI,NJ,NIJ;                   /*Tile dimensions without halo)*/
+   int     HI,HJ,HDI,HDJ,HNI,HNJ,HNIJ;  /*Tile dimensions with halo*/
+   float **Data;                        /*Data pointer*/
+   pthread_mutex_t Mutex;               /*Per tile mutex for IO*/
 } TGridTile;
 
 struct TGrid;
@@ -133,7 +134,7 @@ int    EZGrid_LLGetUVValue(TGrid* restrict const GridU,TGrid* restrict const Gri
 int    EZGrid_GetArray(TGrid* restrict const Grid,int K,float* restrict Value);
 float* EZGrid_GetArrayPtr(TGrid* restrict const Grid,int K);
 int    EZGrid_GetRange(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1,int J1,int K1,float* restrict Value);
-int    EZGrid_GetDelta(TGrid* restrict const Grid,int K,float* DX,float* DY,float* DA);
+int    EZGrid_GetDelta(TGrid* restrict const Grid,int Invert,float* DX,float* DY,float* DA);
 int    EZGrid_GetLL(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float* J,int Nb);
 int    EZGrid_GetIJ(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float* J,int Nb);
 
