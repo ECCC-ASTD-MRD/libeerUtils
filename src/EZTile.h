@@ -45,7 +45,7 @@
 #define GRID_TOP    0x8
 
 #define EZGrid_IsSame(GRID0,GRID1)     (GRID0->GID==GRID1->GID)
-#define EZGrid_IsLoaded(TILE,Z)        (TILE->Data && TILE->Data[Z])
+#define EZGrid_IsLoaded(TILE,Z)        (TILE->Data && TILE->Data[Z] && !isnan(TILE->Data[Z][0]))
 #define EZGrid_IsInside(GRID,X,Y)      (X>=0 && Y>=0 && (GRID->Wrap || (X<GRID->H.NI-1 && Y<GRID->H.NJ-1)))
 #define EZGrid_Size(GRID)              (GRID->H.NJ*GRID->H.NI)
 #define EZGrid_TileValue(TILE,X,Y,Z)   (TILE->Data[Z][((int)Y-TILE->HJ)*TILE->HNI+((int)X-TILE->HI)])
@@ -109,6 +109,7 @@ int    EZGrid_CopyDesc(const int FIdTo,TGrid* restrict const Grid);
 TGrid *EZGrid_New();
 TGrid *EZGrid_Copy(TGrid *Master,int Level);
 void   EZGrid_Free(TGrid* restrict const Grid);
+void   EZGrid_Clear(TGrid* restrict const Grid);
 TGrid* EZGrid_Get(TGrid* restrict const Grid);
 TZRef* EZGrid_GetZRef(const TGrid* restrict const Grid);
 TGrid* EZGrid_Read(int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2,int Incr);
@@ -144,7 +145,7 @@ int    EZGrid_UnTile(int FIdTo,int FId,char* Var,char* TypVar,char* Etiket,int D
 
 int    EZGrid_Interp(TGrid* restrict const To,TGrid* restrict const From);
 TGrid *EZGrid_InterpTime(const TGrid* restrict const Grid0,const TGrid* restrict const Grid1,int Date);
-TGrid *EZGrid_InterpFactor(TGrid* restrict const Grid0,TGrid* restrict const Grid1,float Factor0,float Factor1);
+TGrid *EZGrid_InterpFactor(TGrid* restrict const Grid,TGrid* restrict const Grid0,TGrid* restrict const Grid1,float Factor0,float Factor1);
 
 float* EZGrid_TileBurn(TGrid* restrict const Grid,TGridTile* restrict const Tile,int K);
 float* EZGrid_TileBurnAll(TGrid* restrict const Grid,int K);

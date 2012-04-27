@@ -592,16 +592,19 @@ void strrep(char *Str,char Tok,char Rep) {
         *Str=Rep;
 }
 
+
 void strtrim(char *Str,char Tok) {
 
    register int i=0;
    char *s;
 
    /*Clear fisrt blanks*/
-   while((*Str+i)==Tok)
+   while(*(Str+i)==Tok)
      i++;
 
-   if (i) strcpy(Str,Str+i);
+//   if (i) strcpy(Str,Str+i);
+   s=Str;
+   if (i) while(s<Str+strlen(Str)-i) { *s=*(s+i); s++; }
 
    /*Clear end blanks*/
    s=Str+strlen(Str);

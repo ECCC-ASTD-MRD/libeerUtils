@@ -450,6 +450,7 @@ static float **EZGrid_TileGetData(const TGrid* restrict const Grid,TGridTile* re
    if (!Safe) pthread_mutex_lock(&Tile->Mutex);
 
    if (!EZGrid_IsLoaded(Tile,K)) {
+
       /*Allocate Tile data if not already done*/
       if (!Tile->Data) {
          if (!(data=(float**)calloc(Grid->H.NK,sizeof(float*)))) {
@@ -1548,7 +1549,6 @@ TGrid *EZGrid_Copy(TGrid *Master,int Level) {
  *   <Grid>      : Grille
  *
  * Retour:
- *  <int>        : Code de reussite (0=erreur, 1=ok)
  *
  * Remarques :
  *----------------------------------------------------------------------------
@@ -1590,6 +1590,36 @@ void EZGrid_Free(TGrid* restrict const Grid) {
       }
 //      ZRef_Free(Grid->ZRef);
       EZGrid_CacheDel(Grid);
+   }
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <EZGrid_Clear>
+ * Creation : Avril 2012 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Marquer la memoire comme non-innitialisee en assignant NAN
+ *            au premier index
+ *
+ * Parametres :
+ *   <Grid>      : Grille
+ *
+ * Retour:
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+*/
+void EZGrid_Clear(TGrid* restrict const Grid) {
+
+   int n,k;
+
+   /*Cleanup tile data*/
+   for(n=0;n<Grid->NbTiles;n++) {
+      if (Grid->Tiles[n].Data) {
+         for(k=0;k<Grid->H.NK;k++) {
+            if (Grid->Tiles[n].Data[k])
+               Grid->Tiles[n].Data[k][0]=NAN;
+         }
+      }
    }
 }
 
@@ -1894,26 +1924,31 @@ void EZGrid_Factor(TGrid* restrict Grid,const float Factor) {
 }
 
 wordint f77name(ezgrid_interpfactor)(wordint *gdid0,wordint *gdid1,ftnfloat *f0,ftnfloat *f1) {
-   return(EZGrid_CacheIdx(EZGrid_InterpFactor(GridCache[*gdid0],GridCache[*gdid1],*f0,*f1)));
+   return(EZGrid_CacheIdx(EZGrid_InterpFactor(NULL,GridCache[*gdid0],GridCache[*gdid1],*f0,*f1)));
 }
 
-TGrid *EZGrid_InterpFactor(TGrid* restrict const Grid0,TGrid* restrict const Grid1,float Factor0,float Factor1) {
+TGrid *EZGrid_InterpFactor(TGrid* restrict const Grid,TGrid* restrict const Grid0,TGrid* restrict const Grid1,float Factor0,float Factor1) {
 
    TGrid *new;
    int    i;
 
    /*Allocate new tile*/
-   new=EZGrid_New();
-   memcpy(new,Grid0,sizeof(TGrid));
+   if (Grid) {
+      new=Grid;
+   } else {
+      new=EZGrid_New();
+      memcpy(new,Grid0,sizeof(TGrid));
 
-   new->ZRef=Grid0->ZRef;
-   new->Data=NULL;
-   new->Master=0;
-   new->H.FID=-1;
-   new->Tiles=(TGridTile*)malloc(Grid0->NbTiles*sizeof(TGridTile));
-   memcpy(new->Tiles,Grid0->Tiles,Grid0->NbTiles*sizeof(TGridTile));
-   for(i=0;i<Grid0->NbTiles;i++) {
-      new->Tiles[i].Data=NULL;
+      new->ZRef=Grid0->ZRef;
+      new->Data=NULL;
+      new->Master=0;
+      new->H.FID=-1;
+      new->Tiles=(TGridTile*)malloc(Grid0->NbTiles*sizeof(TGridTile));
+      memcpy(new->Tiles,Grid0->Tiles,Grid0->NbTiles*sizeof(TGridTile));
+      for(i=0;i<Grid0->NbTiles;i++) {
+         new->Tiles[i].Data=NULL;
+      }
+      EZGrid_CacheAdd(new);
    }
 
    new->T0=Grid0;
@@ -1921,7 +1956,6 @@ TGrid *EZGrid_InterpFactor(TGrid* restrict const Grid0,TGrid* restrict const Gri
    new->FT0=Factor0;
    new->FT1=Factor1;
 
-   EZGrid_CacheAdd(new);
    return(new);
 }
 
