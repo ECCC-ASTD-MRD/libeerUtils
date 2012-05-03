@@ -1428,9 +1428,6 @@ TZRef* EZGrid_GetZRef(const TGrid* restrict const Grid) {
    /*Decode vertical coordinate parameters*/
    ZRef_DecodeRPN(zref,Grid->H.FID);
 
-   /*Pathc SIGMA to ETA until we include PTOP in files*/
-   zref->Type=zref->Type==LVL_SIGMA?LVL_ETA:zref->Type;
-
    return(zref);
 }
 

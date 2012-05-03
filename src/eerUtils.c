@@ -602,9 +602,10 @@ void strtrim(char *Str,char Tok) {
    while(*(Str+i)==Tok)
      i++;
 
-//   if (i) strcpy(Str,Str+i);
+
+   /*Copy chars, including \0, toward beginning to remove spaces*/
    s=Str;
-   if (i) while(s<Str+strlen(Str)-i) { *s=*(s+i); s++; }
+   if (i) while(s<Str+strlen(Str)-i+1) { *s=*(s+i); s++; }
 
    /*Clear end blanks*/
    s=Str+strlen(Str);

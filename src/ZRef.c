@@ -205,6 +205,8 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
       /*There might be an HY field with coordinate sigma, in which case it really is ETA*/
       if (ZRef->Type==LVL_SIGMA) {
          ZRef->Type=LVL_ETA;
+      } else {
+         ZRef->Type=LVL_HYBRID;
       }
 
    } else {
@@ -229,11 +231,11 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
             if (cd>=0) {
                /* Read in header info*/
                switch(ZRef->Version) {
-                  case 1001: skip=2; break;
-                  case 1002: skip=2; ZRef->PTop=buf[h.NI]*0.01; break;
-                  case 2001: skip=1; break;
-                  case 5001: skip=3; ZRef->PTop=buf[h.NI]*0.01; ZRef->PRef=buf[h.NI+1]*0.01; ZRef->RCoef[0]=buf[h.NI+2]; break;
-                  case 5002: skip=3; ZRef->PTop=buf[h.NI]*0.01; ZRef->PRef=buf[h.NI+1]*0.01; ZRef->RCoef[0]=buf[h.NI+2]; ZRef->RCoef[1]=buf[h.NI+h.NI]; break;
+                  case 1001: skip=2; ZRef->Type=LVL_SIGMA;  break;
+                  case 1002: skip=2; ZRef->Type=LVL_ETA;    ZRef->PTop=buf[h.NI]*0.01; break;
+                  case 2001: skip=1; ZRef->Type=LVL_PRES;   break;
+                  case 5001: skip=3; ZRef->Type=LVL_HYBRID; ZRef->PTop=buf[h.NI]*0.01; ZRef->PRef=buf[h.NI+1]*0.01; ZRef->RCoef[0]=buf[h.NI+2]; break;
+                  case 5002: skip=3; ZRef->Type=LVL_HYBRID; ZRef->PTop=buf[h.NI]*0.01; ZRef->PRef=buf[h.NI+1]*0.01; ZRef->RCoef[0]=buf[h.NI+2]; ZRef->RCoef[1]=buf[h.NI+h.NI]; break;
                }
 
                /* Find corresponding level */
