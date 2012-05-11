@@ -245,9 +245,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
                /* Find corresponding level */
                for(k=0;k<ZRef->LevelNb;k++) {
                   for(j=skip;j<h.NJ;j++) {
-                    fprintf(stderr,"1----- %f == %i (%f %i) \n",buf[j*h.NI],ZRef_Level2IP(ZRef->Levels[k],ZRef->Type),ZRef->Levels[k],ZRef->Type);
                     if (buf[j*h.NI]==ZRef_Level2IP(ZRef->Levels[k],ZRef->Type)) {
-                    fprintf(stderr,"2----- %i == %i\n",buf[j*h.NI],ZRef_Level2IP(ZRef->Levels[k],ZRef->Type));
                          ZRef->A[k]=buf[j*h.NI+1];
                         ZRef->B[k]=buf[j*h.NI+2];
                         break;
