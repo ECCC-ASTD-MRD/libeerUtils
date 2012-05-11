@@ -229,20 +229,26 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
 
             cd=c_fstluk(buf,key,&h.NI,&h.NJ,&h.NK);
             if (cd>=0) {
+
                /* Read in header info*/
                switch(ZRef->Version) {
-                  case 1001: skip=2; ZRef->Type=LVL_SIGMA;  break;
-                  case 1002: skip=2; ZRef->Type=LVL_ETA;    ZRef->PTop=buf[h.NI]*0.01; break;
-                  case 2001: skip=1; ZRef->Type=LVL_PRES;   break;
-                  case 5001: skip=3; ZRef->Type=LVL_HYBRID; ZRef->PTop=buf[h.NI]*0.01; ZRef->PRef=buf[h.NI+1]*0.01; ZRef->RCoef[0]=buf[h.NI+2]; break;
-                  case 5002: skip=3; ZRef->Type=LVL_HYBRID; ZRef->PTop=buf[h.NI]*0.01; ZRef->PRef=buf[h.NI+1]*0.01; ZRef->RCoef[0]=buf[h.NI+2]; ZRef->RCoef[1]=buf[h.NI+h.NI]; break;
+                  case 1001: ZRef->Type=LVL_SIGMA;  break;
+                  case 1002: ZRef->Type=LVL_ETA;    ZRef->PTop=buf[h.NI]*0.01; break;
+                  case 2001: ZRef->Type=LVL_PRES;   break;
+                  case 1003: ZRef->Type=LVL_ETA;    ZRef->PTop=buf[h.NI]*0.01; ZRef->PRef=buf[h.NI+1]*0.01; ZRef->RCoef[0]=buf[h.NI+2]; break;
+                  case 5001: ZRef->Type=LVL_HYBRID; ZRef->PTop=buf[h.NI]*0.01; ZRef->PRef=buf[h.NI+1]*0.01; ZRef->RCoef[0]=buf[h.NI+2]; break;
+                  case 5002:
+                  case 5003: ZRef->Type=LVL_HYBRID; ZRef->PTop=buf[h.NI]*0.01; ZRef->PRef=buf[h.NI+1]*0.01; ZRef->RCoef[0]=buf[h.NI+2]; ZRef->RCoef[1]=buf[h.NI+h.NI]; break;
                }
+               skip=buf[2];
 
                /* Find corresponding level */
                for(k=0;k<ZRef->LevelNb;k++) {
                   for(j=skip;j<h.NJ;j++) {
-                     if (buf[j*h.NI]==ZRef_Level2IP(ZRef->Levels[k],ZRef->Type)) {
-                        ZRef->A[k]=buf[j*h.NI+1];
+                    fprintf(stderr,"1----- %f == %i (%f %i) \n",buf[j*h.NI],ZRef_Level2IP(ZRef->Levels[k],ZRef->Type),ZRef->Levels[k],ZRef->Type);
+                    if (buf[j*h.NI]==ZRef_Level2IP(ZRef->Levels[k],ZRef->Type)) {
+                    fprintf(stderr,"2----- %i == %i\n",buf[j*h.NI],ZRef_Level2IP(ZRef->Levels[k],ZRef->Type));
+                         ZRef->A[k]=buf[j*h.NI+1];
                         ZRef->B[k]=buf[j*h.NI+2];
                         break;
                      }
@@ -338,7 +344,8 @@ double ZRef_K2Pressure(TZRef* restrict const ZRef,double P0,int K) {
       case 1003:                                                                 // Hybrid normalized
       case 5001: pres=(ZRef->A[K]+ZRef->B[K]*P0*100)*0.01; break;                // Hybrid
       case 2001: pres=ZRef->A[K]*0.01; break;                                    // Pressure
-      case 5002: pres=exp(ZRef->A[K]+ZRef->B[K]*log(P0/pref))*0.01; break; // Hybrid momentum
+      case 5002:                                                                 // Hybrid momentum
+      case 5003: pres=exp(ZRef->A[K]+ZRef->B[K]*log(P0/pref))*0.01; break;       // Hybrid momentum
       default:
          fprintf(stderr,"(ERROR) ZRef_Level2Pressure: invalid level type (%i)",ZRef->Type);
    }
@@ -447,6 +454,7 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
          }
          break;
       case 5002:                                                     // Hybrid momentum
+      case 5003:                                                     // Hybrid momentum
          for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
             for (ij=0;ij<NIJ;ij++) {
                Pres[idxk+ij]=exp(ZRef->A[k]+ZRef->B[k]*log(P0[ij]/pref))*0.01;
