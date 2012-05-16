@@ -1412,6 +1412,7 @@ TZRef* EZGrid_GetZRef(const TGrid* restrict const Grid) {
             &h.UBC,&h.EX1,&h.EX2,&h.EX3);
 
       f77name(convip)(&ip1,&zref->Levels[k2],&l,&mode,&format,&flag);
+      if (k==0) zref->Type=l;
 
       /* If a list of restrictive levels is defined, check for validity*/
       if (Grid->H.NK>10 && EZGrid_Levels) {
@@ -1421,10 +1422,7 @@ TZRef* EZGrid_GetZRef(const TGrid* restrict const Grid) {
       }
 
       /*Make sure we use a single type of level, the first we get*/
-      if (k==0) {
-         zref->Type=l;
-         k2++;
-      } else if (l==zref->Type) {
+      if (l==zref->Type) {
          k2++;
       }
    }
