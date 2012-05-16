@@ -198,6 +198,8 @@ int cs_fstecr(float *Data,int NPak,int Unit, int DateO,int Deet,int NPas,int NI,
 
 static unsigned short *EZGrid_Ids=NULL;
 static unsigned int    EZGrid_IdsNb=0;
+static float          *EZGrid_Levels=NULL;
+static unsigned int    EZGrid_LevelsNb=0;
 
 /*----------------------------------------------------------------------------
  * Nom      : <EZGrid_IdNew>
@@ -1342,12 +1344,31 @@ int EZGrid_BoundaryCopy(TGrid* restrict const Grid,int Width) {
  *
  *----------------------------------------------------------------------------
 */
+int EZGrid_SetRestrictLevels(float *Levels,int NbLevels) {
+
+   EZGrid_LevelsNb=NbLevels;
+   EZGrid_Levels=(float*)realloc(EZGrid_Levels,EZGrid_LevelsNb*sizeof(float));
+
+   memcpy(EZGrid_Levels,Levels,EZGrid_LevelsNb);
+   qsort(EZGrid_Levels,EZGrid_LevelsNb,sizeof(float),QSort_Float);
+}
+
+int EZGrid_AddRestrictLevel(float Level) {
+
+   EZGrid_LevelsNb++;
+   EZGrid_Levels=(float*)realloc(EZGrid_Levels,EZGrid_LevelsNb*sizeof(float));
+   EZGrid_Levels[EZGrid_LevelsNb-1]=Level;
+
+   qsort(EZGrid_Levels,EZGrid_LevelsNb,sizeof(float),QSort_Float);
+}
+
+
 TZRef* EZGrid_GetZRef(const TGrid* restrict const Grid) {
 
    TRPNHeader h;
    TZRef     *zref;
 
-   int     l,key,kind,ip1,flag=0,mode=-1,idlst[TILEMAX];
+   int     l,key,ip1,flag=0,mode=-1,idlst[TILEMAX];
    int     j,k,k2;
    double *buf=NULL;
    float  *pt=NULL,lvl;
@@ -1390,15 +1411,21 @@ TZRef* EZGrid_GetZRef(const TGrid* restrict const Grid) {
             h.GRTYP,&h.IG1,&h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,
             &h.UBC,&h.EX1,&h.EX2,&h.EX3);
 
+      f77name(convip)(&ip1,&zref->Levels[k2],&l,&mode,&format,&flag);
+
+      /* If a list of restrictive levels is defined, check for validity*/
+      if (Grid->H.NK>10 && EZGrid_Levels) {
+         if (!bsearch(&zref->Levels[k2],EZGrid_Levels,EZGrid_LevelsNb,sizeof(float),QSort_Float)) {
+            continue;
+         }
+      }
+
       /*Make sure we use a single type of level, the first we get*/
       if (k==0) {
-         f77name(convip)(&ip1,&zref->Levels[k2],&zref->Type,&mode,&format,&flag);
+         zref->Type=l;
          k2++;
-      } else {
-         f77name(convip)(&ip1,&zref->Levels[k2],&l,&mode,&format,&flag);
-         if (l==zref->Type) {
-            k2++;
-         }
+      } else if (l==zref->Type) {
+         k2++;
       }
    }
 

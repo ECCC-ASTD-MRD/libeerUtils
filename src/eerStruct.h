@@ -31,6 +31,9 @@
 *==============================================================================
 */
 
+#ifndef _eerStruct_h
+#define _eerStruct_h
+
 #include "Vector.h"
 
 typedef struct T3DArray {
@@ -55,3 +58,5 @@ TList* TList_Add(TList *List,void *Data);
 TList* TList_Del(TList *List,void *Data);
 TList* TList_Find(TList *List,TList_FindProc *Proc,void *Data);
 void   TList_Clear(TList *List,TList_FreeProc *Proc);
+
+#endif

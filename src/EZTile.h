@@ -123,6 +123,8 @@ float  EZGrid_GetLevel(const TGrid* restrict const Grid,float Pressure,float P0)
 float  EZGrid_GetPressure(const TGrid* restrict const Grid,float Level,float P0);
 int    EZGrid_BoundaryCopy(TGrid* restrict const Grid,int Width);
 int    EZGrid_Write(int FId,TGrid* restrict const Grid,int NBits,int Overwrite);
+int    EZGrid_SetRestrictLevels(float *Levels,int NbLevels);
+int    EZGrid_AddRestrictLevel(float Level);
 
 int    EZGrid_Wrap(TGrid* restrict const Grid);
 void   EZGrid_Factor(TGrid* restrict Grid,float Factor);
