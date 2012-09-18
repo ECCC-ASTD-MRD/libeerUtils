@@ -54,8 +54,8 @@
 #define LVL_GALCHEN      8  /* Original Gal-Chen -not in convip */
 #define LVL_ANGLE        9  /* Radar angles */
 
-#define PRESS2METER(LVL) (-8409.1*log((LVL==0?1e-31:LVL)/1200.0))
-#define SIGMA2METER(LVL) (-8409.1*log(LVL==0?1e-31:LVL))
+#define PRESS2METER(LVL) (LVL>0?-8409.1*log(LVL)/1200.0:0)
+#define SIGMA2METER(LVL) (LVL>0?-8409.1*log(LVL):0)
 
 static const char *LVL_NAMES[]  = { "MASL","SIGMA","PRESSURE","UNDEFINED","MAGL","HYBRID","THETA","ETA","GALCHEN","ANGLE",NULL };
 

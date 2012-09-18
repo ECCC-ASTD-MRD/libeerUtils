@@ -201,14 +201,9 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
       } else {
          fprintf(stdout,"(WARNING) ZRef_DecodeRPN: Could not get info on HY field (c_fstprm).\n");
       }
-
-      /*There might be an HY field with coordinate sigma, in which case it really is ETA*/
       if (ZRef->Type==LVL_SIGMA) {
          ZRef->Type=LVL_ETA;
-      } else {
-         ZRef->Type=LVL_HYBRID;
       }
-
    } else {
 
       key=c_fstinf(Unit,&h.NI,&h.NJ,&h.NK,-1,"",-1,-1,-1,"X","!!");
@@ -421,6 +416,13 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
                }
                break;
 
+            case LVL_UNDEF:
+               for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
+                  for (ij=0;ij<NIJ;ij++) {
+                     Pres[idxk+ij]=P0[idxk+ij];
+                  }
+               }
+               break;
             default:
                fprintf(stderr,"(ERROR) ZRef_KCube2Pressure: invalid level type (%i)",ZRef->Type);
          }

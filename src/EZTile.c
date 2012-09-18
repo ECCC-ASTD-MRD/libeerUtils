@@ -657,8 +657,8 @@ static TGrid* EZGrid_CacheFind(TGrid *Grid) {
             if (type!=GridCache[n]->ZRef->Type) {
                continue;
             }
-//            if (GridCache[n]->H.NK!=Grid->H.NK || GridCache[n]->ZRef->Levels[0]!=level) {
-            if (GridCache[n]->H.NK!=Grid->H.NK) {
+            if (GridCache[n]->H.NK!=Grid->H.NK || GridCache[n]->ZRef->Levels[0]!=level) {
+//            if (GridCache[n]->H.NK!=Grid->H.NK) {
                continue;
             }
 
@@ -1585,33 +1585,35 @@ void EZGrid_Free(TGrid* restrict const Grid) {
 
    int n,k;
 
-   /*Cleanup tile data*/
-   for(n=0;n<Grid->NbTiles;n++) {
-      if (Grid->Tiles[n].Data) {
-         for(k=0;k<Grid->H.NK;k++) {
-            if (Grid->Tiles[n].Data[k])
-               free(Grid->Tiles[n].Data[k]);
+   if (Grid) {
+      /*Cleanup tile data*/
+      for(n=0;n<Grid->NbTiles;n++) {
+         if (Grid->Tiles[n].Data) {
+            for(k=0;k<Grid->H.NK;k++) {
+               if (Grid->Tiles[n].Data[k])
+                  free(Grid->Tiles[n].Data[k]);
+            }
+            pthread_mutex_destroy(&Grid->Tiles[n].Mutex);
+            free(Grid->Tiles[n].Data);
+            Grid->Tiles[n].Data=NULL;
          }
-         pthread_mutex_destroy(&Grid->Tiles[n].Mutex);
-         free(Grid->Tiles[n].Data);
-         Grid->Tiles[n].Data=NULL;
       }
-   }
-   if (Grid->Data) {
-      free(Grid->Data);
-      Grid->Data=NULL;
-   }
-
-   pthread_mutex_destroy(&Grid->Mutex);
-
-   /*If this is a master, keep in memory*/
-   if (!Grid->Master) {
-      if (Grid->Tiles) {
-         free(Grid->Tiles);
-         Grid->Tiles=NULL;
+      if (Grid->Data) {
+         free(Grid->Data);
+         Grid->Data=NULL;
       }
-//      ZRef_Free(Grid->ZRef);
-      EZGrid_CacheDel(Grid);
+
+      pthread_mutex_destroy(&Grid->Mutex);
+
+      /*If this is a master, keep in memory*/
+      if (!Grid->Master) {
+         if (Grid->Tiles) {
+            free(Grid->Tiles);
+            Grid->Tiles=NULL;
+         }
+   //      ZRef_Free(Grid->ZRef);
+         EZGrid_CacheDel(Grid);
+      }
    }
 }
 
@@ -1740,8 +1742,12 @@ TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr) {
          new->H.GRTYP,&new->H.IG1,&new->H.IG2,&new->H.IG3,&new->H.IG4,&new->H.SWA,&new->H.LNG,&new->H.DLTF,
          &new->H.UBC,&new->H.EX1,&new->H.EX2,&new->H.EX3);
 
-   nh=(new->H.NPAS*new->H.DEET)/3600.0;
-   f77name(incdatr)(&new->H.DATEV,&new->H.DATEO,&nh);
+   if (new->H.DATEO==0 && new->H.NPAS==0 && new->H.DEET==0) {
+      new->H.DATEV=0;
+   } else {
+      nh=(new->H.NPAS*new->H.DEET)/3600.0;
+      f77name(incdatr)(&new->H.DATEV,&new->H.DATEO,&nh);
+   }
 
    /*Get the number of levels*/
    /*In case of # grid, set IP1 to 1 to get NK just for the first tile*/

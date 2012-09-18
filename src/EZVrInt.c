@@ -158,8 +158,8 @@ viInterp* c_videfine (void) {
 int c_viundefine(viInterp *interp) {
 
    if (interp) {
-      if (interp->ZRefSrc)      free(interp->ZRefSrc);
-      if (interp->ZRefDest)     free(interp->ZRefDest);
+      if (interp->ZRefSrc)        free(interp->ZRefSrc);
+      if (interp->ZRefDest)       free(interp->ZRefDest);
       if (interp->gCubeSrc_p)     free(interp->gCubeSrc_p);
       if (interp->gCubeDest_p)    free(interp->gCubeDest_p);
       if (interp->gInterpIndex_p) free(interp->gInterpIndex_p);
@@ -327,10 +327,8 @@ int c_videfset(viInterp *interp,const int ni,const int nj,int idGrdDest,int idGr
 
    /* and convert them to ... */
 
-   if ((interp->ZRefDest->Type == LVL_GALCHEN) || (interp->ZRefDest->Type == LVL_MASL) ||
-       (interp->ZRefDest->Type == LVL_MAGL) || (interp->ZRefDest->Type == LVL_UNDEF) ||
-       (interp->ZRefSrc->Type == LVL_GALCHEN) || (interp->ZRefSrc->Type == LVL_MASL) ||
-       (interp->ZRefSrc->Type == LVL_MAGL) || (interp->ZRefSrc->Type == LVL_UNDEF)) {
+   if ((interp->ZRefDest->Type == LVL_GALCHEN) || (interp->ZRefDest->Type == LVL_MASL) || (interp->ZRefDest->Type == LVL_MAGL) ||
+       (interp->ZRefSrc->Type == LVL_GALCHEN) || (interp->ZRefSrc->Type == LVL_MASL) || (interp->ZRefSrc->Type == LVL_MAGL)) {
 
       /* ... height above sea  */
       if (!ZRef_KCube2Meter(interp->ZRefSrc,interp->ZRefSrc->P0,ni*nj,interp->gCubeSrc_p)) {
