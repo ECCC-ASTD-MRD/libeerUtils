@@ -132,7 +132,7 @@ int cs_fstfrm(int Unit) {
    return(err);
 }
 
-int cs_fstlir(float *Buf,int Unit,int *NI,int *NJ,int *NK,int DateV,char *Etiket,int IP1,int IP2,int IP3,char* TypVar,char *NomVar) {
+int cs_fstlir(void *Buf,int Unit,int *NI,int *NJ,int *NK,int DateV,char *Etiket,int IP1,int IP2,int IP3,char* TypVar,char *NomVar) {
 
    int err;
 
@@ -176,7 +176,7 @@ int cs_fstinl(int Unit,int *NI,int *NJ,int *NK,int DateO,char *Etiket,int IP1,in
    return(err);
 }
 
-int cs_fstluk(float *Data,int Idx,int *NI,int *NJ,int *NK) {
+int cs_fstluk(void *Data,int Idx,int *NI,int *NJ,int *NK) {
    int err;
 
    pthread_mutex_lock(&RPNFieldMutex);
@@ -186,7 +186,7 @@ int cs_fstluk(float *Data,int Idx,int *NI,int *NJ,int *NK) {
    return(err);
 }
 
-int cs_fstecr(float *Data,int NPak,int Unit, int DateO,int Deet,int NPas,int NI,int NJ,int NK,int IP1,int IP2,int IP3,char* TypVar,char *NomVar,char *Etiket,char *GrTyp,int IG1,int IG2,int IG3,int IG4,int DaTyp,int Over) {
+int cs_fstecr(void *Data,int NPak,int Unit, int DateO,int Deet,int NPas,int NI,int NJ,int NK,int IP1,int IP2,int IP3,char* TypVar,char *NomVar,char *Etiket,char *GrTyp,int IG1,int IG2,int IG3,int IG4,int DaTyp,int Over) {
    int err;
 
    pthread_mutex_lock(&RPNFieldMutex);

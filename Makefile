@@ -1,4 +1,4 @@
-VERSION   = 1.5
+VERSION   = 1.6
 OS        = $(shell uname -s)
 PROC      = $(shell uname -m)
 
@@ -9,12 +9,13 @@ EER_DIR     = /users/dor/afsr/005
 ifeq ($(OS),Linux)
 
    CC          = c99 
+   CC          = mpicc
    AR          = ar rv
    LD          = ld -shared -x
    LIBS        = -L$(EER_DIR)/lib/$(BASE_ARCH) -lrmn -lpgc  
    INCLUDES    = -I./src -I$(ARMNLIB)/include -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic -I$(ARMNLIB)/include/$(BASE_ARCH)
    LINK_EXEC   = -lm -lpthread -Wl,-rpath,$(EER_DIR)/lib/$(BASE_ARCH)  
-   CCOPTIONS   = -O2 -finline-functions -fomit-frame-pointer -funroll-loops
+   CCOPTIONS   = -std=c99 -O2 -finline-functions -fomit-frame-pointer -funroll-loops
    CDEBUGFLAGS =
 
    ifeq ($(PROC),x86_64)
@@ -23,6 +24,7 @@ ifeq ($(OS),Linux)
    endif
 else
    CC          = xlc
+   CC          = mpCC_r
    AR          = ar rv
    LD          = ld
    LIBS        = -L$(EER_DIR)/lib/$(BASE_ARCH) -lrmnbeta_013
@@ -32,7 +34,7 @@ else
    CDEBUGFLAGS =
 endif
 
-DEFINES     = -DVERSION=$(VERSION) -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE
+DEFINES     = -DVERSION=\"$(VERSION)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE
 CFLAGS      = $(CDEBUGFLAGS) $(CCOPTIONS) $(INCLUDES) $(DEFINES)
 
 OBJ_C = $(subst .c,.o,$(wildcard src/*.c))
@@ -41,7 +43,6 @@ OBJ_F = $(subst .f,.o,$(wildcard src/*.f))
 %.o:%.f
 #	gfortran -src $< "-o $@"
 	s.compile -src $< -optf="-o $@"
-#	r.compile -src $< -optf="-o $@"
 
 all: obj lib exec
 
@@ -55,6 +56,7 @@ lib:
 exec:
 	mkdir -p ./bin
 	$(CC) Utilities/EZTiler.c -o bin/EZTiler-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC) 
+	$(CC) Utilities/CodeInfo.c -o bin/CodeInfo-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC) 
 
 install: all
 	mkdir -p $(INSTALL_DIR)/lib/$(BASE_ARCH)
