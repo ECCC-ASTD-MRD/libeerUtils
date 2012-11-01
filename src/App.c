@@ -63,7 +63,7 @@ TApp *App_New(char *Name,char *Version) {
    app->State=STOP;
    app->Percent=0.0;
    app->NbThread=1;
-   app->NbMPI=1;
+   app->NbMPI=0;
    app->RankMPI=0;
    app->CountsMPI=NULL;
    app->DisplsMPI=NULL;
@@ -140,7 +140,7 @@ int App_Done(TApp *App) {
 void App_Start(TApp *App) {
 
    char rmn[128],*env=NULL;
-   int print=1,t;
+   int print=1,t,mpi;
 
    // RMN Lib settings
    c_fstopc("MSGLVL","WARNIN",0);
@@ -153,7 +153,9 @@ void App_Start(TApp *App) {
 
    // Initialize MPI.
 #ifdef _MPI
-   if (App->NbMPI) {
+   MPI_Initialized(&mpi);
+
+   if (mpi) {
       MPI_Comm_size(MPI_COMM_WORLD,&App->NbMPI);
       MPI_Comm_rank(MPI_COMM_WORLD,&App->RankMPI);
 

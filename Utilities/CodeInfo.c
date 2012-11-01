@@ -38,7 +38,7 @@
 
 #define NAME    "CodeInfo"
 #define DESC    "Coder/Decoder of pool information into/from RPN fields\n\n"
-#define CMDLINE "Bad option: %s\nUsage:\n\t-n, --nomvar\t variable name\n\t-p, --pool\t input pool file\n\t-f, --fstd\t RPN standard file\n\t-v, --verbose\t verbose [0-3]\n\t-l, --log\t log file\n"
+#define CMDLINE "Bad option: %s\nUsage:\n\t-n, --nomvar\t variable name\n\t-i, --info\t input pool file\n\t-f, --fstd\t RPN standard file\n\t-c, --code\t Encodage\n\t-d, --decode\t Decodage\n\t-v, --verbose\t verbose [0-3]\n\t-l, --log\t log file\n"
 
 /*----------------------------------------------------------------------------
  * Nom      : <Codec>
@@ -154,9 +154,12 @@ int main(int argc, char *argv[]) {
       } else if (strcasecmp(tok,"-n")==0 || strcasecmp(tok,"--nomvar")==0 || strcasecmp(tok,"-nomvar")==0) {   // NOMVAR to use
          val=env?strtok(str," "):argv[++i];
          var=val;
-      } else if (strcasecmp(tok,"-c")==0 || strcasecmp(tok,"--code")==0 || strcasecmp(tok,"-ckey")==0) {      // Code/decode key
+      } else if (strcasecmp(tok,"-c")==0 || strcasecmp(tok,"--code")==0 || strcasecmp(tok,"-ckey")==0) {      // Code key
          ++i;
          ckey=1;
+      } else if (strcasecmp(tok,"-d")==0 || strcasecmp(tok,"--decode")==0 ) {                                 // Decode key
+         ++i;
+         ckey=0;
       } else if (strcasecmp(tok,"-l")==0 || strcasecmp(tok,"--log")==0) {        // Log file
          val=env?strtok(str," "):argv[++i];
          app->LogFile=val;

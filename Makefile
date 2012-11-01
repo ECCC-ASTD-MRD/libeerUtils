@@ -19,7 +19,7 @@ ifeq ($(OS),Linux)
    CDEBUGFLAGS =
 
    ifeq ($(PROC),x86_64)
-        CCOPTIONS   := $(CCOPTIONS) -fPIC -m64 -DSTDC_HEADERS
+        CCOPTIONS   := $(CCOPTIONS) -fPIC -m64 -DSTDC_HEADERS -fopenmp
 	INCLUDES    := $(INCLUDES) -I$(ARMNLIB)/include/Linux_x86-64
    endif
 else
@@ -34,7 +34,7 @@ else
    CDEBUGFLAGS =
 endif
 
-DEFINES     = -DVERSION=\"$(VERSION)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE
+DEFINES     = -DVERSION=\"$(VERSION)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE -D_MPI
 CFLAGS      = $(CDEBUGFLAGS) $(CCOPTIONS) $(INCLUDES) $(DEFINES)
 
 OBJ_C = $(subst .c,.o,$(wildcard src/*.c))
@@ -56,7 +56,9 @@ lib:
 exec:
 	mkdir -p ./bin
 	$(CC) Utilities/EZTiler.c -o bin/EZTiler-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC) 
+	ln -fs EZTile-$(VERSION) bin/EZTile
 	$(CC) Utilities/CodeInfo.c -o bin/CodeInfo-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC) 
+	ln -fs CodeInfo-$(VERSION) bin/CodeInfo
 
 install: all
 	mkdir -p $(INSTALL_DIR)/lib/$(BASE_ARCH)
