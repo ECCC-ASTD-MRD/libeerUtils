@@ -112,7 +112,7 @@ void   EZGrid_Free(TGrid* restrict const Grid);
 void   EZGrid_Clear(TGrid* restrict const Grid);
 TGrid* EZGrid_Get(TGrid* restrict const Grid);
 TZRef* EZGrid_GetZRef(const TGrid* restrict const Grid);
-TGrid* EZGrid_Read(int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2,int Incr);
+TGrid* EZGrid_Read(int FId,const char* Var,const char* TypVar,const char* Etiket,int DateV,int IP1,int IP2,int Incr);
 TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr);
 int    EZGrid_Load(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1,int J1,int K1);
 int    EZGrid_LoadAll(const TGrid* restrict const Grid);

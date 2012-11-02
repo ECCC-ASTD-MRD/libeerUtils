@@ -29,11 +29,8 @@
  *==============================================================================
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include "EZTile.h"
 #include "App.h"
+#include "EZTile.h"
 
 #define NAME    "EZTiler"
 #define DESC    "RPN fstd field tiler\n\n"
@@ -168,8 +165,6 @@ int Tile(TApp *App,char *In,char *Out,int Size,char *Vars) {
    c_fclos(10);
    c_fstfrm(11);
    c_fclos(11);
-
-   exit(0);
 }
 
 int main(int argc, char *argv[]) {
@@ -185,7 +180,7 @@ int main(int argc, char *argv[]) {
    if (argc==1 && !env) {
       printf(DESC,CMDLINE,"");
       printf(CMDLINE,"");
-      exit(-1);
+      exit(EXIT_FAILURE);
    }
 
    app=App_New(NAME,VERSION);
@@ -211,22 +206,10 @@ int main(int argc, char *argv[]) {
          app->LogFile=val;
       } else if (strcasecmp(tok,"-v")==0 || strcasecmp(tok,"--verbose")==0) {    // Verbose degree
          val=env?strtok(str," "):argv[++i];
-         if (strcasecmp(val,"ERROR")==0) {
-            app->LogLevel=0;
-         } else if (strcasecmp(val,"WARNING")==0) {
-            app->LogLevel=1;
-         } else if (strcasecmp(val,"INFO")==0) {
-            app->LogLevel=2;
-         } else if (strcasecmp(val,"DEBUG")==0) {
-            app->LogLevel=3;
-         } else if (strcasecmp(val,"EXTRA")==0) {
-            app->LogLevel=4;
-         } else {
-            app->LogLevel=(TLogLevel)atoi(val);
-         }
+         App_LogLevel(app,val);
       } else {
          printf(CMDLINE,tok);
-         exit(-1);
+         exit(EXIT_FAILURE);
       }
       ++i;
    }
@@ -234,15 +217,15 @@ int main(int argc, char *argv[]) {
    /*Error checking*/
    if (in==NULL) {
       App_Log(app,ERROR,"No input standard file specified\n");
-      exit(-1);
+      exit(EXIT_FAILURE);
    }
    if (out==NULL) {
       App_Log(app,ERROR,"No output standard file specified\n");
-      exit(-1);
+      exit(EXIT_FAILURE);
    }
    if (!size) {
       App_Log(app,ERROR,"No tile size specified\n");
-      exit(-1);
+      exit(EXIT_FAILURE);
    }
 
    /*Launch the app*/
@@ -252,8 +235,8 @@ int main(int argc, char *argv[]) {
    App_Free(app);
 
    if (!i) {
-      exit(-1);
+      exit(EXIT_FAILURE);
    } else {
-      exit(0);
+      exit(EXIT_SUCCESS);
    }
 }

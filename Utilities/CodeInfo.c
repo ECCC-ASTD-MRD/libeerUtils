@@ -29,12 +29,9 @@
  *==============================================================================
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include "App.h"
 #include "eerUtils.h"
 #include "EZTile.h"
-#include "App.h"
 
 #define NAME    "CodeInfo"
 #define DESC    "Coder/Decoder of pool information into/from RPN fields\n\n"
@@ -135,7 +132,7 @@ int main(int argc, char *argv[]) {
    if (argc==1 && !env) {
       printf(DESC,CMDLINE,"");
       printf(CMDLINE,"");
-      exit(-1);
+      exit(EXIT_FAILURE);
    }
 
    app=App_New(NAME,VERSION);
@@ -165,22 +162,10 @@ int main(int argc, char *argv[]) {
          app->LogFile=val;
       } else if (strcasecmp(tok,"-v")==0 || strcasecmp(tok,"--verbose")==0) {    // Verbose degree
          val=env?strtok(str," "):argv[++i];
-         if (strcasecmp(val,"ERROR")==0) {
-            app->LogLevel=0;
-         } else if (strcasecmp(val,"WARNING")==0) {
-            app->LogLevel=1;
-         } else if (strcasecmp(val,"INFO")==0) {
-            app->LogLevel=2;
-         } else if (strcasecmp(val,"DEBUG")==0) {
-            app->LogLevel=3;
-         } else if (strcasecmp(val,"EXTRA")==0) {
-            app->LogLevel=4;
-         } else {
-            app->LogLevel=(TLogLevel)atoi(val);
-         }
+         App_LogLevel(app,val);
       } else {
          printf(CMDLINE,tok);
-         exit(-1);
+         exit(EXIT_FAILURE);
       }
       ++i;
    }
@@ -188,7 +173,7 @@ int main(int argc, char *argv[]) {
    /*Error checking*/
    if (fst==NULL) {
       App_Log(app,ERROR,"No standard file specified\n");
-      exit(-1);
+      exit(EXIT_FAILURE);
    }
    if (var==NULL) {
       var=strdup("INFO");
@@ -201,8 +186,8 @@ int main(int argc, char *argv[]) {
    App_Free(app);
 
    if (!i) {
-      exit(-1);
+      exit(EXIT_FAILURE);
    } else {
-      exit(0);
+      exit(EXIT_SUCCESS);
    }
 }

@@ -84,6 +84,7 @@ void  App_Start(TApp *App);
 void  App_End(TApp *App,int Status);
 int   App_Done(TApp *App);
 void  App_Log(TApp *App,TLogLevel Level,const char *Format,...);
+int   App_LogLevel(TApp *App,char *Val);
 int   App_InputParse(TApp *App,void *Def,char *File,TApp_InputParseProc *ParseProc);
 void  App_SeedInit(TApp *App);
 

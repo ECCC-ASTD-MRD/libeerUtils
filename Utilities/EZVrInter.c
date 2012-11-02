@@ -1,26 +1,39 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sysexits.h>
+/*==============================================================================
+ * Environnement Canada
+ * Centre Meteorologique Canadian
+ * 2100 Trans-Canadienne
+ * Dorval, Quebec
+ *
+ * Projet    : Librairie de fonctions utiles
+ * Creation  : Janvier 2008
+ * Auteur    : Jean-Philippe Gauthier
+ *
+ * Description: RPN fstd field tiler
+ *
+ * License:
+ *    This library is free software; you can redistribute it and/or
+ *    modify it under the terms of the GNU Lesser General Public
+ *    License as published by the Free Software Foundation,
+ *    version 2.1 of the License.
+ *
+ *    This library is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *    Lesser General Public License for more details.
+ *
+ *    You should have received a copy of the GNU Lesser General Public
+ *    License along with this library; if not, write to the
+ *    Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ *    Boston, MA 02111-1307, USA.
+ *
+ *==============================================================================
+ */
 
+#include "App.h"
+#include "eerUtils.h"
 #include "EZVrInt.h"
 
-
-extern int c_fnom ();
-extern int c_fstouv (int, char *);
-extern int c_fstfrm (int);
-extern int c_fclos (int);
-extern int c_fstprm ();
-extern int c_fstnbr ();
-extern int c_fstlir ();
-
-extern int c_fstecr (float *, float *, int, int, int, int, int, int, int, int,
-                     int, int, int, char *, char *, char *, char *, int, int,
-                     int, int, int, int);
-
-
-int main (int argc, char **argv)
-{
+int main (int argc, char **argv) {
 
    float ip1Pression[40] = {
       100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 630, 660,

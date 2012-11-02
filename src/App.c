@@ -43,7 +43,7 @@
  * Parametres :
  *
  * Retour     :
- *  <...>     : Structure Model initialisee
+ *  <App>     : Parametres de l'application initialisee
  *
  * Remarques  :
  *----------------------------------------------------------------------------
@@ -80,7 +80,7 @@ TApp *App_New(char *Name,char *Version) {
  * But      : Liberer une structure App
  *
  * Parametres :
- *  <Model>   : Parametres du modele
+ *  <App>     : Parametres de l'application
  *
  * Retour     :
  *
@@ -107,7 +107,7 @@ void App_Free(TApp *App) {
  * But      : Check if the application has finished.
  *
  * Parametres  :
- *  <Model>    : Parametres du modele
+ *  <App>     : Parametres de l'application
  *
  * Retour:
  *  <Done>     : Finished (0,1)
@@ -130,7 +130,7 @@ int App_Done(TApp *App) {
  * But      : Initialiser l'execution de l'application et afficher l'entete
  *
  * Parametres :
- *  <App>     : Application parameters.
+ *  <App>     : Parametres de l'application
  *
  * Retour     :
  *
@@ -215,7 +215,7 @@ void App_Start(TApp *App) {
  * But      : Finaliser l'execution du modele et afficher le footer
  *
  * Parametres :
- *  <Model>   : Parametres du modele
+ *  <App>     : Parametres de l'application
  *
  * Retour     :
  *
@@ -265,7 +265,7 @@ void App_End(TApp *App,int Status) {
  * But      : Imprimer un message de manière standard
  *
  * Parametres :
- *  <Model>   : Parametres du modele
+ *  <App>     : Parametres de l'application
  *  <Level>   : Niveau d'importance du message (MUST,ERROR,WARNING,INFO,DEBUG,EXTRA)
  *  <Format>  : Format d'affichage du message
  *  <...>     : Liste des variables du message
@@ -276,7 +276,7 @@ void App_End(TApp *App,int Status) {
  *   - Cette fonctions s'utilise comme printf sauf qu'il y a un argument de plus,
  *     le niveau d'importance du message.
  *   - le niveau ERROR s'affichera sur de stderr alors que tout les autres seront
- *     sur stdout
+ *     sur stdout ou le fichier log
  *----------------------------------------------------------------------------
 */
 void App_Log(TApp *App,TLogLevel Level,const char *Format,...) {
@@ -315,13 +315,46 @@ void App_Log(TApp *App,TLogLevel Level,const char *Format,...) {
 }
 
 /*----------------------------------------------------------------------------
+ * Nom      : <App_Log>
+ * Creation : Septembre 2008 - J.P. Gauthier
+ *
+ * But      : Imprimer un message de manière standard
+ *
+ * Parametres :
+ *  <App>     : Parametres de l'application
+ *  <Val>     : Niveau de log a traiter
+ *
+ * Retour:
+ *
+ * Remarques  :
+ *----------------------------------------------------------------------------
+*/
+int App_LogLevel(TApp *App,char *Val) {
+
+   if (strcasecmp(Val,"ERROR")==0) {
+      App->LogLevel=0;
+   } else if (strcasecmp(Val,"WARNING")==0) {
+      App->LogLevel=1;
+   } else if (strcasecmp(Val,"INFO")==0) {
+      App->LogLevel=2;
+   } else if (strcasecmp(Val,"DEBUG")==0) {
+      App->LogLevel=3;
+   } else if (strcasecmp(Val,"EXTRA")==0) {
+      App->LogLevel=4;
+   } else {
+      App->LogLevel=(TLogLevel)atoi(Val);
+   }
+   return(1);
+}
+
+/*----------------------------------------------------------------------------
  * Nom      : <App_InputParse>
  * Creation : Avril 2010 - J.P. Gauthier
  *
  * But      : Parse an imput file.
  *
  * Parametres  :
- *  <Model>    : Parametres du modele
+ *  <App>     : Parametres de l'application
  *  <Def>      : Model definitions
  *  <File>     : Input file to parse
  *  <ParseProc>: Model specific token parsing proc
@@ -348,6 +381,7 @@ int App_InputParse(TApp *App,void *Def,char *File,TApp_InputParseProc *ParseProc
 
    if (!(buf=(char*)malloc(APP_BUFMAX))) {
       App_Log(App,ERROR,"Unable to allocate input parsing buffer\n");
+      return(0);
    }
 
    while(fgets(buf,APP_BUFMAX,fp)) {
@@ -409,7 +443,7 @@ int App_InputParse(TApp *App,void *Def,char *File,TApp_InputParseProc *ParseProc
  * But      : Initialise seeds for MPI/OpenMP.
  *
  * Parametres  :
- *  <Model>    : Parametres du modele
+ *  <App>     : Parametres de l'application
  *
  * Retour:
  *
