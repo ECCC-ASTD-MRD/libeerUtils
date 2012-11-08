@@ -63,7 +63,7 @@ TApp *App_New(char *Name,char *Version) {
    app->State=STOP;
    app->Percent=0.0;
    app->NbThread=1;
-   app->NbMPI=0;
+   app->NbMPI=1;
    app->RankMPI=0;
    app->CountsMPI=NULL;
    app->DisplsMPI=NULL;
@@ -101,7 +101,7 @@ void App_Free(TApp *App) {
 }
 
 /*----------------------------------------------------------------------------
- * Nom      : <App_Done>
+ * Nom      : <App_IsDone>
  * Creation : Aout 2011 - J.P. Gauthier
  *
  * But      : Check if the application has finished.
@@ -115,7 +115,7 @@ void App_Free(TApp *App) {
  * Remarques :
  *----------------------------------------------------------------------------
  */
-int App_Done(TApp *App) {
+int App_IsDone(TApp *App) {
 
    if (App->State==DONE) {
       return(1);
@@ -279,7 +279,7 @@ void App_End(TApp *App,int Status) {
  *     sur stdout ou le fichier log
  *----------------------------------------------------------------------------
 */
-void App_Log(TApp *App,TLogLevel Level,const char *Format,...) {
+void App_Log(TApp *App,TApp_LogLevel Level,const char *Format,...) {
 
    static char *levels[] = { "ERROR","WARNING","INFO","DEBUG","EXTRA" };
    va_list args;
@@ -342,7 +342,7 @@ int App_LogLevel(TApp *App,char *Val) {
    } else if (strcasecmp(Val,"EXTRA")==0) {
       App->LogLevel=4;
    } else {
-      App->LogLevel=(TLogLevel)atoi(Val);
+      App->LogLevel=(TApp_LogLevel)atoi(Val);
    }
    return(1);
 }

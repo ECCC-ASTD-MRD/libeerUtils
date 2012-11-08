@@ -54,8 +54,8 @@
 #define APP_BUFMAX   32768      // Maximum input buffer length
 #define APP_SEED     1049731793 // Initial FIXED seed
 
-typedef enum { MUST=-1,ERROR=0,WARNING=1,INFO=2,DEBUG=3,EXTRA=4 } TLogLevel;
-typedef enum { STOP,RUN,DONE } TAppState;
+typedef enum { MUST=-1,ERROR=0,WARNING=1,INFO=2,DEBUG=3,EXTRA=4 } TApp_LogLevel;
+typedef enum { STOP,RUN,DONE } TApp_State;
 
 /*Application controller definition*/
 typedef struct TApp {
@@ -65,8 +65,8 @@ typedef struct TApp {
     int            LogWarning;           // Number of warnings
     char*          Tag;                  // Identificateur
     FILE*          LogStream;            // Log file associated stream
-    TLogLevel      LogLevel;             // Level of log
-    TAppState      State;                // State of application
+    TApp_LogLevel  LogLevel;             // Level of log
+    TApp_State     State;                // State of application
     double         Percent;              // Percentage of execution done (0=not started, 100=finished)
     struct timeval Time;                 // Timer for execution time
 
@@ -82,8 +82,8 @@ TApp *App_New(char* Name,char* Version);
 void  App_Free(TApp *App);
 void  App_Start(TApp *App);
 void  App_End(TApp *App,int Status);
-int   App_Done(TApp *App);
-void  App_Log(TApp *App,TLogLevel Level,const char *Format,...);
+int   App_IsDone(TApp *App);
+void  App_Log(TApp *App,TApp_LogLevel Level,const char *Format,...);
 int   App_LogLevel(TApp *App,char *Val);
 int   App_InputParse(TApp *App,void *Def,char *File,TApp_InputParseProc *ParseProc);
 void  App_SeedInit(TApp *App);

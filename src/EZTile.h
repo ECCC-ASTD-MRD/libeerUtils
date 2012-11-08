@@ -60,11 +60,11 @@
          Y=-Y; \
          X=X<(GRID->H.NI>>1)?X+(GRID->H.NI>>1):X-(GRID->H.NI>>1); \
       } \
-      if (X>=GRID->H.NI) { \
-         X-=GRID->H.NI; \
+      if (X>GRID->H.NI-1) { \
+         X-=GRID->H.NI-GRID->Wrap; \
       } else if (X<0) { \
-         X+=GRID->H.NI;\
-         if (X==GRID->H.NI) X-=1e-4;\
+         X+=GRID->H.NI-GRID->Wrap; \
+         if (X==GRID->H.NI) X-=1e-4; \
       } \
    } \
 }
