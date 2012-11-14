@@ -53,11 +53,13 @@
 #define LVL_ETA          7  /* (Pt-P)/(Pt-Ps) -not in convip */
 #define LVL_GALCHEN      8  /* Original Gal-Chen -not in convip */
 #define LVL_ANGLE        9  /* Radar angles */
+#define LVL_HOUR        10  /* Hours */
 
 #define PRESS2METER(LVL) (LVL>0?-8409.1*log(LVL)/1200.0:0)
 #define SIGMA2METER(LVL) (LVL>0?-8409.1*log(LVL):0)
 
-static const char *LVL_NAMES[]  = { "MASL","SIGMA","PRESSURE","UNDEFINED","MAGL","HYBRID","THETA","ETA","GALCHEN","ANGLE",NULL };
+static const char *LVL_NAMES[]  = { "MASL","SIGMA","PRESSURE","UNDEFINED","MAGL","HYBRID","THETA","ETA","GALCHEN","ANGLE","HOUR",NULL };
+static const char *LVL_UNITS[]  = { "m","sg","mb","-","m","hy","th","sg","m","dg","hr",NULL };
 
 /*Vertical referential definition*/
 typedef struct TZRef {
