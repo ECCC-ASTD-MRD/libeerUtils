@@ -827,7 +827,7 @@ int ZRef_Level2IP(float Level,int Type) {
    char   format;
 
    if (Type<0) {
-      return(-1);
+      return(Level);
    } else {
       /*ETA | THETA -> SIGMA*/
       if (Type==LVL_ETA || Type==LVL_THETA) {

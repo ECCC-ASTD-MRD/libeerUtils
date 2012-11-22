@@ -43,6 +43,7 @@
 #include <malloc.h>
 
 /*Level related constants and functions*/
+#define LVL_NIL         -1  /* No conversion */
 #define LVL_MASL         0  /* Meters above sea level */
 #define LVL_SIGMA        1  /* P/Ps */
 #define LVL_PRES         2  /* Pressure mb */
@@ -58,8 +59,8 @@
 #define PRESS2METER(LVL) (LVL>0?-8409.1*log(LVL)/1200.0:0)
 #define SIGMA2METER(LVL) (LVL>0?-8409.1*log(LVL):0)
 
-static const char *LVL_NAMES[]  = { "MASL","SIGMA","PRESSURE","UNDEFINED","MAGL","HYBRID","THETA","ETA","GALCHEN","ANGLE","HOUR",NULL };
-static const char *LVL_UNITS[]  = { "m","sg","mb","-","m","hy","th","sg","m","dg","hr",NULL };
+static const char *LVL_NAMES[]  = { "NIL","MASL","SIGMA","PRESSURE","UNDEFINED","MAGL","HYBRID","THETA","ETA","GALCHEN","ANGLE","HOUR",NULL };
+static const char *LVL_UNITS[]  = { "-", "m","sg","mb","-","m","hy","th","sg","m","dg","hr",NULL };
 
 /*Vertical referential definition*/
 typedef struct TZRef {
