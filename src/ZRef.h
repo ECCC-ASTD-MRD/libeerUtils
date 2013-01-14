@@ -52,15 +52,19 @@
 #define LVL_HYBRID       5  /* Hybrid levels*/
 #define LVL_THETA        6  /* ? */
 #define LVL_ETA          7  /* (Pt-P)/(Pt-Ps) -not in convip */
-#define LVL_GALCHEN      8  /* Original Gal-Chen -not in convip */
-#define LVL_ANGLE        9  /* Radar angles */
+#define LVL_GALCHEN      8  /* Original Gal-Chen -not in convip (JP Defined)*/
+#define LVL_NBR          9  /* Nombre d'elements*/
 #define LVL_HOUR        10  /* Hours */
+#define LVL_ANGLE       11  /* Radar angles (JP defined)*/
+#define LVL_INT         15  /* Entiers (reserve)*/
+#define LVL_IDX         17  /* Index de matrice*/
+#define LVL_MPRES       21  /* Metres-pression*/
 
 #define PRESS2METER(LVL) (LVL>0?-8409.1*log(LVL)/1200.0:0)
 #define SIGMA2METER(LVL) (LVL>0?-8409.1*log(LVL):0)
 
-static const char *LVL_NAMES[]  = { "NIL","MASL","SIGMA","PRESSURE","UNDEFINED","MAGL","HYBRID","THETA","ETA","GALCHEN","ANGLE","HOUR",NULL };
-static const char *LVL_UNITS[]  = { "-", "m","sg","mb","-","m","hy","th","sg","m","dg","hr",NULL };
+static const char *LVL_NAMES[]  = { "MASL","SIGMA","PRESSURE","UNDEFINED","MAGL","HYBRID","THETA","ETA","GALCHEN","COUNT","HOUR","ANGLE",NULL };
+static const char *LVL_UNITS[]  = { "m","sg","mb","-","m","hy","th","sg","m","nb","hr","dg",NULL };
 
 /*Vertical referential definition*/
 typedef struct TZRef {

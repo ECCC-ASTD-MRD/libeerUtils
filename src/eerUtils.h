@@ -102,7 +102,7 @@
 #define ILVIN(VAL,A,B)                    ((A!=B) && ((VAL>=A && VAL<=B) || (VAL<=A && VAL>=B)))
 #define ILADD(SIDE,F)                     (SIDE?1.0f-F:F)
 #define FARENOUGH(DT,X0,Y0,X1,Y1)         (hypot((Y1-Y0),(X1-X0))>DT)
-#define LOG2(V)                           (log10(V)/log10(2))
+#define LOG2(V)                           (log10(V)/0.3010299956639811)
 
 #define DSIZE(D)                          (D[0]?(D[1]?(D[2]?3:2):1):0)
 #define FSIZE2D(D)                        ((unsigned long)(D->NI)*D->NJ)

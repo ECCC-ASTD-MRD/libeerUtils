@@ -71,7 +71,7 @@ typedef struct TApp {
     struct timeval Time;                 // Timer for execution time
 
     int            Seed,*OMPSeed;        // Random number generator seed
-    int           *CountsMPI,*DisplsMPI; // MPI couting and gathering arrays
+    int           *CountsMPI,*DisplsMPI; // MPI counting and gathering arrays
     int            NbMPI,RankMPI;        // Number of MPI process
     int            NbThread;             // Number of OpenMP threads
 } TApp;

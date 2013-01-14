@@ -59,7 +59,7 @@ TApp *App_New(char *Name,char *Version) {
    app->LogStream=(FILE*)NULL;
    app->LogWarning=0;
    app->Tag=NULL;
-   app->LogLevel=0;
+   app->LogLevel=2;
    app->State=STOP;
    app->Percent=0.0;
    app->NbThread=1;
@@ -68,7 +68,7 @@ TApp *App_New(char *Name,char *Version) {
    app->CountsMPI=NULL;
    app->DisplsMPI=NULL;
    app->OMPSeed=NULL;
-   app->Seed=APP_SEED;
+   app->Seed=time(NULL);
 
    return(app);
 }
@@ -290,7 +290,11 @@ void App_Log(TApp *App,TApp_LogLevel Level,const char *Format,...) {
       } else if (strcmp(App->LogFile,"stderr")==0) {
          App->LogStream=stderr;
       } else {
-         App->LogStream=fopen(App->LogFile,"w");
+         if (!App->RankMPI) {
+            App->LogStream=fopen(App->LogFile,"w");
+         } else {
+            App->LogStream=fopen(App->LogFile,"a+");
+         }
       }
    }
 

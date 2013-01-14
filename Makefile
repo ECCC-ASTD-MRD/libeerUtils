@@ -16,7 +16,7 @@ ifeq ($(OS),Linux)
    LIBS        = -L${MPICH_PATH}/lib -L$(EER_DIR)/lib/$(BASE_ARCH) -lrmn -lpgc  
    INCLUDES    = -I${MPICH_PATH}/include -I./src -I$(ARMNLIB)/include -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic -I$(ARMNLIB)/include/$(BASE_ARCH)
    LINK_EXEC   = -lm -lpthread -Wl,-rpath,$(EER_DIR)/lib/$(BASE_ARCH)  
-   CCOPTIONS   = -std=c99 -O2 -finline-functions -fomit-frame-pointer -funroll-loops
+   CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops
    CDEBUGFLAGS =
 
    ifeq ($(PROC),x86_64)
