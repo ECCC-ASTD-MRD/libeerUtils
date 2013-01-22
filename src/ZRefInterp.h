@@ -41,46 +41,42 @@
  *==============================================================================
  */
 
-#ifndef _EZVrInt_h
-#define _EZVrInt_h
+#ifndef _ZRefInterp_h
+#define _ZRefInterp_h
 
 #include "eerUtils.h"
+#include "ZRef.h"
 
 /* Interpolation */
-#define VINEAREST_NEIGHBOUR 0x001
-#define VILINEAR            0x002
-#define VICUBIC_WITH_DERIV  0x004
-#define VICUBIC_LAGRANGE    0x008
+#define ZRNEAREST_NEIGHBOUR 0x001
+#define ZRLINEAR            0x002
+#define ZRCUBIC_WITH_DERIV  0x004
+#define ZRCUBIC_LAGRANGE    0x008
 
 /* Extrapolation */
-#define VICLAMPED    0x010
-#define VILAPSERATE  0x020
+#define ZRCLAMPED    0x010
+#define ZRLAPSERATE  0x020
 
 /* Other options */
-#define VIVERBOSE    0x040
+#define ZRVERBOSE    0x040
 
 /* check for float exception (will do nothing on SX6) */
-#define VICHECKFLOAT 0x080
+#define ZRCHECKFLOAT 0x080
 
-#define VIGRIDLENGTH 256
+typedef struct TZRefInterp {
+   TZRef         *ZRefSrc,*ZRefDest;       // Source and destination vertical references
+   int           *Indexes;                 // Interpolation array indices
+   int           NIJ;                      // 2D dimensions
+   int           Same;                     // Flag indicating source and destination are the same
+} TZRefInterp;
 
-typedef struct viInterp {
-   TZRef          ZRefs[VIGRIDLENGTH];
-   TZRef         *ZRefSrc,*ZRefDest;
-   float         *gCubeSrc_p,*gCubeDest_p;
-   int           *gInterpIndex_p;
-   unsigned char gViOption;
-   int           gNi, gNj;
-   int           index,last,same;
-} viInterp;
 
-viInterp* c_videfine (void);
-int c_viundefine(viInterp *interp);
-int c_viqkdef(viInterp *interp,TZRef *ZRef);
-int c_videfset(viInterp *interp,const int ni,const int nj,int idGrdDest,int idGrdSrc);
-int c_visetopt (viInterp *interp,const char *option, const char *value);
-int c_visetopti (viInterp *interp,const unsigned char option);
-int c_visint(viInterp *interp,float *stateOut,float *stateIn,float *derivOut,float *derivIn,float extrapGuideDown,float extrapGuideUp);
+int          ZRefInterp_Free(TZRefInterp *Interp);
+void         ZRefInterp_Clear(TZRefInterp *Interp);
+TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const int NJ);
+int          ZRefInterp(TZRefInterp *Interp,float *stateOut,float *stateIn,float *derivOut,float *derivIn,float extrapGuideDown,float extrapGuideUp);
+int          ZRefInterp_SetOption(const char *Option,const char *Value);
+int          ZRefInterp_SetOptioni(const unsigned char option);
 
 /*Interface Fortran*/
 wordint f77name (videfine)   ();

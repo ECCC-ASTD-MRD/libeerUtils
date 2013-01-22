@@ -34,6 +34,9 @@
 #include "ZRef.h"
 #include "eerUtils.h"
 
+static float       *ZRef_Levels=NULL;
+static unsigned int ZRef_LevelsNb=0;
+
 int ZREF_IP1MODE=3;
 
 /*----------------------------------------------------------------------------
@@ -59,8 +62,9 @@ int ZRef_Init(TZRef *ZRef) {
    ZRef->LevelNb=0;
    ZRef->PTop=ZRef->PRef=ZRef->ETop=0.0;
    ZRef->RCoef[0]=ZRef->RCoef[1]=1.0;
-   ZRef->P0=ZRef->A=ZRef->B=NULL;
+   ZRef->P0=ZRef->PCube=ZRef->A=ZRef->B=NULL;
    ZRef->Version=0;
+   ZRef->Count=1;
 
    return(1);
 }
@@ -83,12 +87,16 @@ int ZRef_Init(TZRef *ZRef) {
  */
 int ZRef_Free(TZRef *ZRef) {
 
-   if (ZRef->Levels) free(ZRef->Levels); ZRef->Levels=NULL;
-   if (ZRef->A)      free(ZRef->A);      ZRef->A=NULL;
-   if (ZRef->B)      free(ZRef->B);      ZRef->B=NULL;
-   if (ZRef->P0)     free(ZRef->P0);     ZRef->P0=NULL;
+   if (ZRef && --ZRef->Count<=0) {
 
-   ZRef->Version=0;
+      if (ZRef->Levels) free(ZRef->Levels); ZRef->Levels=NULL;
+      if (ZRef->A)      free(ZRef->A);      ZRef->A=NULL;
+      if (ZRef->B)      free(ZRef->B);      ZRef->B=NULL;
+      if (ZRef->P0)     free(ZRef->P0);     ZRef->P0=NULL;
+      if (ZRef->PCube)  free(ZRef->PCube);  ZRef->PCube=NULL;
+
+      ZRef->Version=0;
+   }
    return(1);
 }
 
@@ -154,6 +162,7 @@ int ZRef_Copy(TZRef *ZRef0,TZRef *ZRef1,int Level) {
    ZRef0->RCoef[0]=ZRef0->RCoef[1]=1.0;
    ZRef0->P0=ZRef0->A=ZRef0->B=NULL;
    ZRef0->Version=0;
+   ZRef0->Count=1;
 
    return(TRUE);
 }
@@ -187,73 +196,77 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
      return(1);
    }
 
-   // Check fo regular hybrid (field HY)
-   key = c_fstinf(Unit,&h.NI,&h.NJ,&h.NK,-1,"",-1,-1,-1,"X","HY");
+   // Check for toctoc (field !!)
+   key=c_fstinf(Unit,&h.NI,&h.NJ,&h.NK,-1,"",-1,-1,-1,"X","!!");
    if (key>=0) {
       cd=c_fstprm(key,&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&h.NK,&h.NBITS,&h.DATYP,&h.IP1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,h.GRTYP,&h.IG1,
-                   &h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,&h.UBC,&h.EX1,&h.EX2,&h.EX3);
+                     &h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,&h.UBC,&h.EX1,&h.EX2,&h.EX3);
       if (cd>=0) {
-         f77name(convip)(&h.IP1,&ZRef->PTop,&kind,&mode,&format,&flag);
-         ZRef->RCoef[0]=h.IG2/1000.0f;
+         ZRef->Version=h.IG1;
+         ZRef->PRef=10.0;
+         ZRef->PTop=h.IG2/10.0;
+         ZRef->ETop=0.0;
+         ZRef->RCoef[0]=0.0f;
          ZRef->RCoef[1]=0.0f;
-         ZRef->PRef=h.IG1;
-         ZRef->Version=0;
-      } else {
-         fprintf(stdout,"(WARNING) ZRef_DecodeRPN: Could not get info on HY field (c_fstprm).\n");
-      }
-      if (ZRef->Type==LVL_SIGMA) {
-         ZRef->Type=LVL_ETA;
-      }
-   } else {
 
-      key=c_fstinf(Unit,&h.NI,&h.NJ,&h.NK,-1,"",-1,-1,-1,"X","!!");
-      if (key>=0) {
-         cd=c_fstprm(key,&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&h.NK,&h.NBITS,&h.DATYP,&h.IP1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,h.GRTYP,&h.IG1,
-                      &h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,&h.UBC,&h.EX1,&h.EX2,&h.EX3);
+         buf=(double*)malloc(h.NI*h.NJ*sizeof(double));
+         if (!ZRef->A) ZRef->A=(float*)malloc(ZRef->LevelNb*sizeof(float));
+         if (!ZRef->B) ZRef->B=(float*)malloc(ZRef->LevelNb*sizeof(float));
+
+         cd=c_fstluk(buf,key,&h.NI,&h.NJ,&h.NK);
          if (cd>=0) {
-            ZRef->Version=h.IG1;
-            ZRef->PRef=10.0;
-            ZRef->PTop=h.IG2/10.0;
-            ZRef->ETop=0.0;
-            ZRef->RCoef[0]=0.0f;
-            ZRef->RCoef[1]=0.0f;
 
-            buf=(double*)malloc(h.NI*h.NJ*sizeof(double));
-            if (!ZRef->A) ZRef->A=(float*)malloc(ZRef->LevelNb*sizeof(float));
-            if (!ZRef->B) ZRef->B=(float*)malloc(ZRef->LevelNb*sizeof(float));
+            /* Read in header info*/
+            switch(ZRef->Version) {
+               case 1001: ZRef->Type=LVL_SIGMA;  break;
+               case 1002: ZRef->Type=LVL_ETA;    ZRef->PTop=buf[h.NI]*0.01; break;
+               case 2001: ZRef->Type=LVL_PRES;   break;
+               case 1003: ZRef->Type=LVL_ETA;    ZRef->PTop=buf[h.NI]*0.01; ZRef->PRef=buf[h.NI+1]*0.01; ZRef->RCoef[0]=buf[h.NI+2]; break;
+               case 5001: ZRef->Type=LVL_HYBRID; ZRef->PTop=buf[h.NI]*0.01; ZRef->PRef=buf[h.NI+1]*0.01; ZRef->RCoef[0]=buf[h.NI+2]; break;
+               case 5002:
+               case 5003: ZRef->Type=LVL_HYBRID; ZRef->PTop=buf[h.NI]*0.01; ZRef->PRef=buf[h.NI+1]*0.01; ZRef->RCoef[0]=buf[h.NI+2]; ZRef->RCoef[1]=buf[h.NI+h.NI]; break;
+            }
+            skip=buf[2];
 
-            cd=c_fstluk(buf,key,&h.NI,&h.NJ,&h.NK);
-            if (cd>=0) {
-
-               /* Read in header info*/
-               switch(ZRef->Version) {
-                  case 1001: ZRef->Type=LVL_SIGMA;  break;
-                  case 1002: ZRef->Type=LVL_ETA;    ZRef->PTop=buf[h.NI]*0.01; break;
-                  case 2001: ZRef->Type=LVL_PRES;   break;
-                  case 1003: ZRef->Type=LVL_ETA;    ZRef->PTop=buf[h.NI]*0.01; ZRef->PRef=buf[h.NI+1]*0.01; ZRef->RCoef[0]=buf[h.NI+2]; break;
-                  case 5001: ZRef->Type=LVL_HYBRID; ZRef->PTop=buf[h.NI]*0.01; ZRef->PRef=buf[h.NI+1]*0.01; ZRef->RCoef[0]=buf[h.NI+2]; break;
-                  case 5002:
-                  case 5003: ZRef->Type=LVL_HYBRID; ZRef->PTop=buf[h.NI]*0.01; ZRef->PRef=buf[h.NI+1]*0.01; ZRef->RCoef[0]=buf[h.NI+2]; ZRef->RCoef[1]=buf[h.NI+h.NI]; break;
-               }
-               skip=buf[2];
-
-               /* Find corresponding level */
-               for(k=0;k<ZRef->LevelNb;k++) {
-                  for(j=skip;j<h.NJ;j++) {
-                    if (buf[j*h.NI]==ZRef_Level2IP(ZRef->Levels[k],ZRef->Type)) {
-                         ZRef->A[k]=buf[j*h.NI+1];
-                        ZRef->B[k]=buf[j*h.NI+2];
-                        break;
-                     }
+            /* Find corresponding level */
+            for(k=0;k<ZRef->LevelNb;k++) {
+               for(j=skip;j<h.NJ;j++) {
+                  if (buf[j*h.NI]==ZRef_Level2IP(ZRef->Levels[k],ZRef->Type)) {
+                     ZRef->A[k]=buf[j*h.NI+1];
+                     ZRef->B[k]=buf[j*h.NI+2];
+                     break;
                   }
                }
-            } else {
-               fprintf(stdout,"(WARNING) ZRef_DecodeRPN: Could not read !! field (c_fstluk).\n");
             }
          } else {
-            fprintf(stdout,"(WARNING) ZRef_DecodeRPN: Could not get info on !! field (c_fstprm).\n");
+            fprintf(stdout,"(WARNING) ZRef_DecodeRPN: Could not read !! field (c_fstluk).\n");
          }
       } else {
+         fprintf(stdout,"(WARNING) ZRef_DecodeRPN: Could not get info on !! field (c_fstprm).\n");
+      }
+   } else {
+      
+      // Check fo regular hybrid (field HY)
+      key = c_fstinf(Unit,&h.NI,&h.NJ,&h.NK,-1,"",-1,-1,-1,"X","HY");
+      if (key>=0) {
+         cd=c_fstprm(key,&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&h.NK,&h.NBITS,&h.DATYP,&h.IP1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,h.GRTYP,&h.IG1,
+                     &h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,&h.UBC,&h.EX1,&h.EX2,&h.EX3);
+         if (cd>=0) {
+            f77name(convip)(&h.IP1,&ZRef->PTop,&kind,&mode,&format,&flag);
+            ZRef->RCoef[0]=h.IG2/1000.0f;
+            ZRef->RCoef[1]=0.0f;
+            ZRef->PRef=h.IG1;
+            ZRef->Version=0;
+         } else {
+            fprintf(stdout,"(WARNING) ZRef_DecodeRPN: Could not get info on HY field (c_fstprm).\n");
+         }
+         // It might be ETA
+         if (ZRef->Type==LVL_SIGMA) {
+            ZRef->Type=LVL_ETA;
+         }
+
+      } else {
+         
          // Try to figure out if it's SIGMA or ETA
          if (ZRef->Type==LVL_SIGMA || (ZRef->Type==LVL_ETA && ZRef->PTop==0.0)) {
             /*If we find a PT field, we have ETA coordinate otherwise, its'SIGMA*/
@@ -280,6 +293,145 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
    if (pt)  free(pt);
 
    return(key>=0);
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <ZRef_SetRestrictLevels>
+ * Creation : Janvier 2012 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Definir une liste de restriction de niveaux
+ *
+ * Parametres   :
+ *  <Levels>    : Liste des niveaux
+ *  <NbLevels>  : Nombre de niveaux
+ * 
+ * Retour:
+ *  <Ok>        : (Index du champs <0=erreur).
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
+int ZRef_SetRestrictLevels(float *Levels,int NbLevels) {
+
+   ZRef_LevelsNb=NbLevels;
+   ZRef_Levels=(float*)realloc(ZRef_Levels,ZRef_LevelsNb*sizeof(float));
+
+   memcpy(ZRef_Levels,Levels,ZRef_LevelsNb);
+   qsort(ZRef_Levels,ZRef_LevelsNb,sizeof(float),QSort_Float);
+   
+   return(ZRef_LevelsNb);
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <ZRef_AddRestrictLevel>
+ * Creation : Janvier 2012 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Definir une liste de restriction de niveaux
+ *
+ * Parametres   :
+ *  <Level>     : Niveaux
+ * 
+ * Retour:
+ *  <Ok>        : (Index du champs <0=erreur).
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
+int ZRef_AddRestrictLevel(float Level) {
+
+   ZRef_LevelsNb++;
+   ZRef_Levels=(float*)realloc(ZRef_Levels,ZRef_LevelsNb*sizeof(float));
+   ZRef_Levels[ZRef_LevelsNb-1]=Level;
+
+   qsort(ZRef_Levels,ZRef_LevelsNb,sizeof(float),QSort_Float);
+
+   return(ZRef_LevelsNb);
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <ZRef_GetLevels>
+ * Creation : Janvier 2012 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Lire la liste des niveaux disponibles
+   return(NbLevels);
+ *
+ * Parametres   :
+ *  <ZRef>      : Vertical referencer
+ *  <H>         : RPN header
+ * 
+ * Retour:
+ *  <Ok>        : (Index du champs <0=erreur).
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
+int ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Invert) {
+
+   TRPNHeader h;
+   int        l,key,ip1,flag=0,mode=-1,idlst[RPNMAX];
+   int        k,k2,kx;
+   float      lvl;
+   char       format;
+
+   /*Get the number of levels*/
+   /*In case of # grid, set IP3 to 1 to get NK just for the first tile*/
+   memcpy(&h,H,sizeof(TRPNHeader));
+   h.IP3=H->GRTYP[0]=='#'?1:-1;
+   c_fstinl(h.FID,&h.NI,&h.NJ,&h.NK,h.DATEV,h.ETIKET,-1,h.IP2,h.IP3,h.TYPVAR,h.NOMVAR,idlst,&h.NK,RPNMAX);
+   if (!(ZRef->Levels=(float*)malloc(h.NK*sizeof(float)))) {
+      return(0);
+   }
+
+   /*Get the levels*/
+   for(k=k2=0;k<h.NK;k++) {
+      key=c_fstprm(idlst[k],&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&kx,&h.NBITS,
+            &h.DATYP,&ip1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,
+            h.GRTYP,&h.IG1,&h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,
+            &h.UBC,&h.EX1,&h.EX2,&h.EX3);
+
+      f77name(convip)(&ip1,&ZRef->Levels[k2],&l,&mode,&format,&flag);
+      if (k==0) ZRef->Type=l;
+
+      /* If a list of restrictive levels is defined, check for validity*/
+      if (h.NK>10 && ZRef_Levels) {
+         if (!bsearch(&ZRef->Levels[k2],ZRef_Levels,ZRef_LevelsNb,sizeof(float),QSort_Float)) {
+            continue;
+         }
+      }
+
+      /*Make sure we use a single type of level, the first we get*/
+      if (l==ZRef->Type) {
+         k2++;
+      }
+   }
+
+   ZRef->LevelNb=k2;
+
+   /*Sort the levels from ground up*/
+   qsort(ZRef->Levels,ZRef->LevelNb,sizeof(float),QSort_Float);
+
+   /*Remove duplicates*/
+   for(k=1;k<ZRef->LevelNb;k++) {
+      if (ZRef->Levels[k]==ZRef->Levels[k-1]) {
+         memcpy(&ZRef->Levels[k-1],&ZRef->Levels[k],(ZRef->LevelNb-k)*sizeof(float));
+         k--;
+         ZRef->LevelNb--;
+      }
+   }
+
+   /*Invert the list if requested*/
+   if (Invert) {
+      for(k=0;k<ZRef->LevelNb/2;k++) {
+         lvl=ZRef->Levels[k];
+         ZRef->Levels[k]=ZRef->Levels[ZRef->LevelNb-1-k];
+         ZRef->Levels[ZRef->LevelNb-1-k]=lvl;
+      }
+   }
+   
+   return(ZRef->LevelNb);
 }
 
 /*----------------------------------------------------------------------------
@@ -328,7 +480,7 @@ double ZRef_K2Pressure(TZRef* restrict const ZRef,double P0,int K) {
                break;
 
             default:
-               fprintf(stderr,"(ERROR) ZRef_Level2Pressure: invalid level type (%i)",ZRef->Type);
+               fprintf(stderr,"(ERROR) ZRef_K2Pressure: invalid level type (%i)",ZRef->Type);
          }
          break;
 
@@ -340,7 +492,7 @@ double ZRef_K2Pressure(TZRef* restrict const ZRef,double P0,int K) {
       case 5002:                                                                 // Hybrid momentum
       case 5003: pres=exp(ZRef->A[K]+ZRef->B[K]*log(P0/pref))*0.01; break;       // Hybrid momentum
       default:
-         fprintf(stderr,"(ERROR) ZRef_Level2Pressure: invalid level type (%i)",ZRef->Type);
+         fprintf(stderr,"(ERROR) ZRef_K2Pressure: invalid level type (%i)",ZRef->Type);
    }
 
    return(pres);
@@ -457,13 +609,13 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
       case 5003:                                                     // Hybrid momentum
          for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
             for (ij=0;ij<NIJ;ij++) {
-               Pres[idxk+ij]=exp(ZRef->A[k]+ZRef->B[k]*log(P0[ij]/pref))*0.01;
+               Pres[idxk+ij]=exp(ZRef->A[k]+ZRef->B[k]*logf(P0[ij]/pref))*0.01;
             }
          }
          break;
 
       default:
-         fprintf(stderr,"(ERROR) ZRef_Level2Pressure: invalid level type (%i)",ZRef->Type);
+         fprintf(stderr,"(ERROR) ZRef_KCube2Pressure: invalid level type (%i)",ZRef->Type);
    }
 
    if (Log) for (ij=0;ij<NIJ*ZRef->LevelNb;ij++) Pres[ij]=logf(Pres[ij]);

@@ -49,7 +49,6 @@
 #include <malloc.h>
 
 #include "rpnmacros.h"
-#include "ZRef.h"
 
 /*System related constants and functions*/
 #define SYS_BIG_ENDIAN     0
@@ -102,7 +101,7 @@
 #define ILVIN(VAL,A,B)                    ((A!=B) && ((VAL>=A && VAL<=B) || (VAL<=A && VAL>=B)))
 #define ILADD(SIDE,F)                     (SIDE?1.0f-F:F)
 #define FARENOUGH(DT,X0,Y0,X1,Y1)         (hypot((Y1-Y0),(X1-X0))>DT)
-#define LOG2(V)                           (log10(V)/0.3010299956639811)
+#define LOG2(V)                           (log10(V)/0.301029995663981198017)
 
 #define DSIZE(D)                          (D[0]?(D[1]?(D[2]?3:2):1):0)
 #define FSIZE2D(D)                        ((unsigned long)(D->NI)*D->NJ)
@@ -138,6 +137,8 @@
 #define RAD2M(R)             ((double)(R)*6.36670701949370745569e+06)
 #define CLAMPLAT(LAT)        (LAT=LAT>90.0?90.0:(LAT<-90.0?-90.0:LAT))
 #define CLAMPLON(LON)        (LON=LON>180?LON-360:(LON<-180?LON+360:LON))
+
+#define RPNMAX 1024
 
 /*Structure pour les coordonees latlon*/
 typedef struct TGridCoord {
@@ -177,9 +178,9 @@ typedef struct TRPNHeader {
    int  EX1,EX2,EX3;
 }  TRPNHeader;
 
-int   QSort_Double(const void *A,const void *B);
-int   QSort_Float(const void *A,const void *B);
-int   QSort_Int(const void *A,const void *B);
+int QSort_Double(const void *A,const void *B);
+int QSort_Float(const void *A,const void *B);
+int QSort_Int(const void *A,const void *B);
 
 double InterpCubic(double X0,double X1,double X2, double X3,double F);
 double InterpHermite(double X0,double X1,double X2, double X3,double F,double T,double B);

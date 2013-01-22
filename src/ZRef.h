@@ -41,6 +41,7 @@
 #define _ZRef_h
 
 #include <malloc.h>
+#include "eerUtils.h"
 
 /*Level related constants and functions*/
 #define LVL_NIL         -1  /* No conversion */
@@ -68,6 +69,7 @@ static const char *LVL_UNITS[]  = { "m","sg","mb","-","m","hy","th","sg","m","nb
 
 /*Vertical referential definition*/
 typedef struct TZRef {
+   int    Count;        /*Reference count*/
    int    Version;      /*Version*/
    int    Type;         /*Type of levels*/
    float *Levels;       /*Levels list*/
@@ -78,13 +80,19 @@ typedef struct TZRef {
    float  ETop;         /*Eta coordinate a top*/
    float  *A,*B;        /*Pressure calculation factors*/
    float  *P0;          /*Pressure at surface*/
+   float  *PCube;       /*3D Pressure cube*/
 } TZRef;
+
+#define ZRef_Incr(ZREF) ZREF->Count++;
 
 int    ZRef_Init(TZRef *ZRef);
 int    ZRef_Free(TZRef *ZRef);
 int    ZRef_Equal(TZRef *Zref0,TZRef *ZRef1);
 int    ZRef_Copy(TZRef *ZRef0,TZRef *ZRef1,int Level);
 int    ZRef_DecodeRPN(TZRef *ZRef,int Unit);
+int    ZRef_SetRestrictLevels(float *Levels,int NbLevels);
+int    ZRef_AddRestrictLevel(float Level);
+int    ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Invert);
 double ZRef_K2Pressure(TZRef* restrict const ZRef,double P0,int K);
 int    ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,float *Pres);
 int    ZRef_KCube2Meter(TZRef* restrict const ZRef,float *GZ,const int NIJ,float *Height);
