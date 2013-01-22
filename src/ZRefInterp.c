@@ -394,7 +394,7 @@ int ZRefInterp(TZRefInterp *Interp,float *stateOut,float *stateIn,float *derivOu
 
    if (Interp->Same) {
       memcpy(stateOut,stateIn,surf*Interp->ZRefSrc->LevelNb);
-      printf ("(INFO) ZRefInterp: Same vertical reference, copying data\n");
+      if (ZRefInterp_Options & ZRVERBOSE) printf ("(INFO) ZRefInterp: Same vertical reference, copying data\n");
       return(1);
    }
 
