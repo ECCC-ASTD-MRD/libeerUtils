@@ -171,7 +171,7 @@ int main(int argc, char *argv[]) {
 
    TApp     *app;
    int       i=-1,size=0;
-   char     *tok,*env=NULL,*str,*in,*out,*val,*vars;
+   char     *tok,*ptok=NULL,*env=NULL,*str,*in,*out,*val,*vars;
 
    in=out=NULL;
 
@@ -189,6 +189,12 @@ int main(int argc, char *argv[]) {
    i=1;
    while((i<argc && (tok=argv[i])) || (env && (tok=strtok(str," ")))) {
       str=NULL;
+
+      // Check if token is a flag or a value (for multi-value parameters)
+      if (tok[0]!='-') {
+         tok=ptok;
+         --i;
+      }
 
       if (strcasecmp(tok,"-i")==0 || strcasecmp(tok,"--input")==0) {             // Input file
          val=env?strtok(str," "):argv[++i];
@@ -212,6 +218,7 @@ int main(int argc, char *argv[]) {
          exit(EXIT_FAILURE);
       }
       ++i;
+      ptok=tok;
    }
 
    /*Error checking*/

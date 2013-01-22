@@ -90,7 +90,7 @@ wordint f77name (visint)(ftnfloat *stateOut,ftnfloat *stateIn,ftnfloat *derivOut
 }
 */
 /*----------------------------------------------------------------------------
- * Nom      : <ZRefInterp_Clear>
+ * Nom      : <ZRefInterp_Free>
  * Creation : Janvier 2013 - J.P. Gauthier - CMC/CMOE
  *
  * But      : Free internal memory arrays
@@ -104,18 +104,10 @@ wordint f77name (visint)(ftnfloat *stateOut,ftnfloat *stateIn,ftnfloat *derivOut
  *
  *----------------------------------------------------------------------------
 */
-void ZRefInterp_Clear(TZRefInterp *Interp) {
-
-   
-   if (Interp->ZRefSrc  && Interp->ZRefSrc->PCube)  free(Interp->ZRefSrc->PCube);   Interp->ZRefSrc->PCube=NULL;
-   if (Interp->ZRefDest && Interp->ZRefDest->PCube) free(Interp->ZRefDest->PCube);  Interp->ZRefDest->PCube=NULL;
-   if (Interp->Indexes)                             free(Interp->Indexes);          Interp->Indexes=NULL;
-}
-
 int ZRefInterp_Free(TZRefInterp *Interp) {
 
    if (Interp) {
-      ZRefInterp_Clear(Interp);
+      if (Interp->Indexes) free(Interp->Indexes); Interp->Indexes=NULL;
       
       ZRef_Free(Interp->ZRefSrc);
       ZRef_Free(Interp->ZRefDest);
@@ -151,6 +143,7 @@ int ZRefInterp_Free(TZRefInterp *Interp) {
 TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const int NJ) {
 
    TZRefInterp *interp;
+   int          magl=0;
 #if defined(_AIX)
    fpflag_t flag;
 #endif
@@ -165,7 +158,7 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
       return(NULL);
    }
    
-   // Incremern ZRef's reference count
+   // Increment ZRef's reference count
    ZRef_Incr(ZRefSrc);
    ZRef_Incr(ZRefDest);
 
@@ -195,52 +188,55 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
 #endif
    }
 
-   // Clear previous index
-   ZRefInterp_Clear(interp);
+   // Figure out the type of vertical reference (magl or log(p))
+   magl=((ZRefDest->Type == LVL_GALCHEN) || (ZRefDest->Type == LVL_MASL) || (ZRefDest->Type == LVL_MAGL) ||
+       (ZRefSrc->Type == LVL_GALCHEN)  || (ZRefSrc->Type == LVL_MASL)  || (ZRefSrc->Type == LVL_MAGL));
 
    // Create cubes of vertical levels ...
-   ZRefSrc->PCube=(float*)malloc(interp->NIJ*ZRefSrc->LevelNb*sizeof(float));
    if (!ZRefSrc->PCube) {
-      fprintf(stderr,"(ERROR) ZRefInterp_Define: malloc failed for ZRefSrc->PCube\n");
-      ZRefInterp_Free(interp);
-      return(NULL);
+      ZRefSrc->PCube=(float*)malloc(interp->NIJ*ZRefSrc->LevelNb*sizeof(float));
+      if (!ZRefSrc->PCube) {
+         fprintf(stderr,"(ERROR) ZRefInterp_Define: malloc failed for ZRefSrc->PCube\n");
+         ZRefInterp_Free(interp);
+         return(NULL);
+      }
+      if (magl) {
+         if (ZRefInterp_Options & ZRVERBOSE) printf ("(INFO) ZRefInterp_Define: Calculating meter cube for ZRefSrc\n");
+         if (!ZRef_KCube2Meter(ZRefSrc,ZRefSrc->P0,interp->NIJ,ZRefSrc->PCube)) {
+            ZRefInterp_Free(interp);
+            return(NULL);
+         }
+      } else {
+         if (ZRefInterp_Options & ZRVERBOSE) printf ("(INFO) ZRefInterp_Define: Calculating pressure cube for ZRefSrc\n");
+         if (!ZRef_KCube2Pressure(ZRefSrc,ZRefSrc->P0,interp->NIJ,TRUE,ZRefSrc->PCube)) {
+            ZRefInterp_Free(interp);
+            return(NULL);
+         }
+      }
    }
-   ZRefDest->PCube=(float*)malloc(interp->NIJ*ZRefDest->LevelNb*sizeof(float));
+   
    if (!ZRefDest->PCube) {
-      fprintf(stderr,"(ERROR) ZRefInterp_Define: malloc failed for ZRefDest->PCube\n");
-      ZRefInterp_Free(interp);
-      return(NULL);
-   }
-
-   // and convert them to ...
-   if ((ZRefDest->Type == LVL_GALCHEN) || (ZRefDest->Type == LVL_MASL) || (ZRefDest->Type == LVL_MAGL) ||
-       (ZRefSrc->Type == LVL_GALCHEN)  || (ZRefSrc->Type == LVL_MASL)  || (ZRefSrc->Type == LVL_MAGL)) {
-
-      // ... height above sea 
-      if (ZRefInterp_Options & ZRVERBOSE) printf ("(INFO) ZRefInterp_Define: Calculating meter cube\n");
-      
-      if (!ZRef_KCube2Meter(ZRefSrc,ZRefSrc->P0,interp->NIJ,ZRefSrc->PCube)) {
+      ZRefDest->PCube=(float*)malloc(interp->NIJ*ZRefDest->LevelNb*sizeof(float));
+      if (!ZRefDest->PCube) {
+         fprintf(stderr,"(ERROR) ZRefInterp_Define: malloc failed for ZRefDest->PCube\n");
          ZRefInterp_Free(interp);
          return(NULL);
       }
-      if (!ZRef_KCube2Meter(ZRefDest,ZRefDest->P0,interp->NIJ,ZRefDest->PCube)) {
-         ZRefInterp_Free(interp);
-         return(NULL);
-      }
-   } else {
-      // ... or ln(P) 
-      if (ZRefInterp_Options & ZRVERBOSE) printf ("(INFO) ZRefInterp_Define: Calculating pressure cube\n");
-      
-      if (!ZRef_KCube2Pressure(ZRefSrc,ZRefSrc->P0,interp->NIJ,TRUE,ZRefSrc->PCube)) {
-         ZRefInterp_Free(interp);
-         return(NULL);
-      }
-      if (!ZRef_KCube2Pressure(ZRefDest,ZRefDest->P0,interp->NIJ,TRUE,ZRefDest->PCube)) {
-         ZRefInterp_Free(interp);
-         return(NULL);
+      if (magl) {
+         if (ZRefInterp_Options & ZRVERBOSE) printf ("(INFO) ZRefInterp_Define: Calculating meter cube for ZRefDest\n");
+         if (!ZRef_KCube2Meter(ZRefDest,ZRefDest->P0,interp->NIJ,ZRefDest->PCube)) {
+            ZRefInterp_Free(interp);
+            return(NULL);
+         }
+      } else {
+         if (ZRefInterp_Options & ZRVERBOSE) printf ("(INFO) ZRefInterp_Define: Calculating pressure cube for ZRefDest\n");
+         if (!ZRef_KCube2Pressure(ZRefDest,ZRefDest->P0,interp->NIJ,TRUE,ZRefDest->PCube)) {
+            ZRefInterp_Free(interp);
+            return(NULL);
+         }
       }
    }
-
+   
    if (ZRefInterp_Options & ZRCHECKFLOAT) {
       // Check for exception in the conversion (plateforme specific)
 #if defined(__GNUC__)  || defined(SGI)
@@ -275,6 +271,7 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
 #endif
    }
 
+   // Calculate interpolation indexes
    interp->Indexes=(int*)malloc(interp->NIJ*ZRefDest->LevelNb*sizeof(int));
    if (!interp->Indexes) {
       fprintf (stderr, "(ERROR) ZRefInterp_Define: malloc failed for Indexes\n");
@@ -287,7 +284,7 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
     * routines. The output is in Indexes.
     */
    (void)f77name(interp1d_findpos)(&interp->NIJ,&ZRefSrc->LevelNb,&ZRefDest->LevelNb,&interp->NIJ,&interp->NIJ,ZRefSrc->PCube,interp->Indexes,ZRefDest->PCube);
-   
+ 
    return(interp);
 }
 
@@ -395,15 +392,15 @@ int ZRefInterp(TZRefInterp *Interp,float *stateOut,float *stateIn,float *derivOu
    int surf = Interp->NIJ;
    int extrapEnable = 0;
 
+   if (Interp->Same) {
+      memcpy(stateOut,stateIn,surf*Interp->ZRefSrc->LevelNb);
+      printf ("(INFO) ZRefInterp: Same vertical reference, copying data\n");
+      return(1);
+   }
+
    /* Assume that everything is set correctly */
    if (!Interp->ZRefSrc || !Interp->ZRefDest || !Interp->ZRefSrc->PCube || !Interp->ZRefDest->PCube || !Interp->Indexes || (ZRefInterp_Options == 0x000)) {
       return(0);
-   }
-
-   if (Interp->Same) {
-      memcpy(stateOut,stateIn,surf*Interp->ZRefSrc->LevelNb);
-      printf ("(INFO) ZRefInterp: Grids are the same\n");
-      return(1);
    }
 
    /*

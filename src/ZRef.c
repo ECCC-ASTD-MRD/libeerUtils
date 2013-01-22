@@ -92,7 +92,8 @@ int ZRef_Free(TZRef *ZRef) {
       if (ZRef->Levels) free(ZRef->Levels); ZRef->Levels=NULL;
       if (ZRef->A)      free(ZRef->A);      ZRef->A=NULL;
       if (ZRef->B)      free(ZRef->B);      ZRef->B=NULL;
-      if (ZRef->P0)     free(ZRef->P0);     ZRef->P0=NULL;
+// P0 is owned by other packages
+//      if (ZRef->P0)     free(ZRef->P0);     ZRef->P0=NULL;
       if (ZRef->PCube)  free(ZRef->PCube);  ZRef->PCube=NULL;
 
       ZRef->Version=0;
@@ -289,6 +290,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
       }
    }
 
+   if (ZRef->PCube)  free(ZRef->PCube);  ZRef->PCube=NULL;
    if (buf) free(buf);
    if (pt)  free(pt);
 
@@ -430,6 +432,8 @@ int ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Invert) {
          ZRef->Levels[ZRef->LevelNb-1-k]=lvl;
       }
    }
+   
+   if (ZRef->PCube)  free(ZRef->PCube);  ZRef->PCube=NULL;
    
    return(ZRef->LevelNb);
 }
