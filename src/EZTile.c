@@ -219,7 +219,7 @@ int RPN_CopyDesc(int FIdTo,TRPNHeader* restrict const H) {
    TRPNHeader h;
    char      *data=NULL;
    char      *desc;
-   int        d=0,ni,nj,nk;
+   int        d=0,ni,nj,nk,ip1,ip2;
    int        key;
    
    if (H->FID>-1) {
@@ -232,9 +232,15 @@ int RPN_CopyDesc(int FIdTo,TRPNHeader* restrict const H) {
       data=(char*)malloc(H->NI*H->NJ*sizeof(float));
 
       while(desc=RPN_Desc[d++]) {
-         key=c_fstinf(FIdTo,&ni,&nj,&nk,-1,"",H->IG1,H->IG2,-1,"",desc);
+         if (strncmp(desc,"HY",2)==0) {
+            ip1=-1;ip2=-1;
+         } else {
+            ip1=H->IG1;
+            ip2=H->IG2;
+         }
+         key=c_fstinf(FIdTo,&ni,&nj,&nk,-1,"",ip1,ip2,-1,"",desc);
          if (key<0) {
-            key=c_fstinf(H->FID,&ni,&nj,&nk,-1,"",H->IG1,H->IG2,-1,"",desc);
+            key=c_fstinf(H->FID,&ni,&nj,&nk,-1,"",ip1,ip2,-1,"",desc);
             if (key>=0) {
                c_fstluk(data,key,&ni,&nj,&nk);
 

@@ -819,7 +819,6 @@ double ZRef_Pressure2Level(TZRef* restrict const ZRef,double P0,double Pressure)
          if (ZRef->Version==5002) {
             // Interpolate in log(p)
             pres=log(Pressure*100.0);
-
             // Find enclosing levels
             for(z=0;z<ZRef->LevelNb;z++) {
                pres1=pres0;
@@ -841,6 +840,7 @@ double ZRef_Pressure2Level(TZRef* restrict const ZRef,double P0,double Pressure)
             c=(ZRef->PTop/ZRef->PRef)*100.0;
             d=Pressure*100.0;
             r=ZRef->RCoef[0];
+fprintf(stderr,"1------ %f     %f %f %f %f %f\n",ZRef->PRef,a,b,c,d,r);
 
             /*Use iterative method Newton-Raphson (developped by Alain Malo)*/
             level=0.5;

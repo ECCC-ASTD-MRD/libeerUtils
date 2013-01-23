@@ -173,7 +173,7 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
    // Check if source and destination are the same
    if (ZRefSrc->Type==ZRefDest->Type && ZRefSrc->LevelNb==ZRefDest->LevelNb && memcmp(ZRefSrc->Levels,ZRefDest->Levels,ZRefSrc->LevelNb*sizeof(float))==0) {
       interp->Same=1;
-      if (ZRefInterp_Options & ZRVERBOSE) printf ("(INFO) ZRefInterp_Define: Levels are the same\n");
+      if (ZRefInterp_Options & ZRVERBOSE) printf ("(INFO) ZRefInterp_Define: Same vertical reference\n");
 
       return(interp);
    }
@@ -393,8 +393,8 @@ int ZRefInterp(TZRefInterp *Interp,float *stateOut,float *stateIn,float *derivOu
    int extrapEnable = 0;
 
    if (Interp->Same) {
-      memcpy(stateOut,stateIn,surf*Interp->ZRefSrc->LevelNb);
-      if (ZRefInterp_Options & ZRVERBOSE) printf ("(INFO) ZRefInterp: Same vertical reference, copying data\n");
+      memcpy(stateOut,stateIn,Interp->NIJ*Interp->ZRefDest->LevelNb*sizeof(float));
+      if (ZRefInterp_Options & ZRVERBOSE) printf ("(INFO) ZRefInterp: Same vertical reference, copying data (%ix%i)\n",Interp->NIJ,Interp->ZRefDest->LevelNb);
       return(1);
    }
 
