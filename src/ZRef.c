@@ -193,7 +193,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
    double    *buf=NULL;
    float     *pt=NULL;
 
-   if (ZRef->Type==LVL_PRES) {
+   if (ZRef->Type==LVL_PRES || ZRef->Type==LVL_UNDEF) {
      return(1);
    }
 
@@ -409,7 +409,6 @@ int ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Invert) {
          k2++;
       }
    }
-
    ZRef->LevelNb=k2;
 
    /*Sort the levels from ground up*/
@@ -432,9 +431,9 @@ int ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Invert) {
          ZRef->Levels[ZRef->LevelNb-1-k]=lvl;
       }
    }
-   
+
    if (ZRef->PCube)  free(ZRef->PCube);  ZRef->PCube=NULL;
-   
+  
    return(ZRef->LevelNb);
 }
 
@@ -840,7 +839,6 @@ double ZRef_Pressure2Level(TZRef* restrict const ZRef,double P0,double Pressure)
             c=(ZRef->PTop/ZRef->PRef)*100.0;
             d=Pressure*100.0;
             r=ZRef->RCoef[0];
-fprintf(stderr,"1------ %f     %f %f %f %f %f\n",ZRef->PRef,a,b,c,d,r);
 
             /*Use iterative method Newton-Raphson (developped by Alain Malo)*/
             level=0.5;

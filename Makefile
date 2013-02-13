@@ -3,9 +3,11 @@ OS        = $(shell uname -s)
 PROC      = $(shell uname -m)
 
 INSTALL_DIR = /users/dor/afsr/005
-TCL_DIR     = /cnfs/ops/cmoe/afsr005/Archive/tcl8.5.7
+TCL_DIR     = /cnfs/ops/cmoe/afsr005/Archive/tcl8.6.0
 EER_DIR     = /users/dor/afsr/005
 MPICH_PATH  = /ssm/net/hpcs/ext/master/mpich2_1.5_ubuntu-10.04-amd64-64
+
+INCLUDES    = -I./src -I$(EER_DIR)/include -I$(ARMNLIB)/include 
 
 ifeq ($(OS),Linux)
 
@@ -14,13 +16,13 @@ ifeq ($(OS),Linux)
    AR          = ar rv
    LD          = ld -shared -x
    LIBS        = -L${MPICH_PATH}/lib -L$(EER_DIR)/lib/$(BASE_ARCH) -lrmn -lpgc  
-   INCLUDES    = -I${MPICH_PATH}/include -I./src -I$(ARMNLIB)/include -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic -I$(ARMNLIB)/include/$(BASE_ARCH)
+   INCLUDES   := $(INCLUDES) -I${MPICH_PATH}/include -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic -I$(ARMNLIB)/include/$(BASE_ARCH)
    LINK_EXEC   = -lm -lpthread -Wl,-rpath,$(EER_DIR)/lib/$(BASE_ARCH)  
    CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops
    CDEBUGFLAGS =
 
    ifeq ($(PROC),x86_64)
-        CCOPTIONS   := $(CCOPTIONS) -fPIC -m64 -DSTDC_HEADERS -fopenmp
+        CCOPTIONS   := $(CCOPTIONS) -fPIC -m64 -DSTDC_HEADERS
 	INCLUDES    := $(INCLUDES) -I$(ARMNLIB)/include/Linux_x86-64
    endif
 else
@@ -29,13 +31,13 @@ else
    AR          = ar rv
    LD          = ld
    LIBS        = -L$(EER_DIR)/lib/$(BASE_ARCH) -lrmnbeta_013
-   INCLUDES    = -I./src -I$(ARMNLIB)/include -I$(ARMNLIB)/include/AIX
+   INCLUDES   := $(INCLUDES) -I$(ARMNLIB)/include/AIX
    LINK_EXEC   = -lxlf90 -lxlsmp -lc -lpthread -lmass -lm
    CCOPTIONS   = -O3 -qnohot -qstrict -Q -v  -qkeyword=restrict -qsmp=omp -qcache=auto -qtune=auto -qarch=auto 
    CDEBUGFLAGS =
 endif
 
-DEFINES     = -DVERSION=\"$(VERSION)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE -D_MPI
+DEFINES     = -DVERSION=\"$(VERSION)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE 
 CFLAGS      = $(CDEBUGFLAGS) $(CCOPTIONS) $(INCLUDES) $(DEFINES)
 
 OBJ_C = $(subst .c,.o,$(wildcard src/*.c))
