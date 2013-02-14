@@ -372,7 +372,7 @@ int App_LogLevel(TApp *App,char *Val) {
  *   - It also allows for multiline definitions
  *----------------------------------------------------------------------------
 */
-int App_InputParse(TApp *App,void *Def,char *File,TApp_InputParseProc *ParseProc) {
+int App_ParseInput(TApp *App,void *Def,char *File,TApp_InputParseProc *ParseProc) {
 
    FILE *fp;
    int   n=0,seq;
@@ -439,6 +439,38 @@ int App_InputParse(TApp *App,void *Def,char *File,TApp_InputParseProc *ParseProc
    free(buf);
    return(n);
 }
+
+/*----------------------------------------------------------------------------
+ * Nom      : <App_ParseBool>
+ * Creation : Fevrier 2013 - J.P. Gauthier
+ *
+ * But      : Parse a boolean value.
+ *
+ * Parametres :
+ *  <App>     : Parametres de l'application
+ *  <Param>   : Nom du parametre
+ *  <Value>   : Value to parse
+ *  <Var>     : Variable to put result into
+ *
+ * Retour:
+ *  <ok>     : 1 = ok or 0 = failed
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+*/
+int App_ParseBool(TApp *App,char *Param,char *Value,char *Var) {
+   
+  if (strcasecmp(Value,"true")==0 || strcmp(Value,"1")==0) {
+      *Var=1;
+   } else if (strcasecmp(Value,"false")==0 || strcmp(Value,"0")==0) {
+      *Var=0;
+   } else {
+      App_Log(App,ERROR,"Invalid value for %s, must be TRUE(1) or FALSE(0): %s\n",Param,Value);
+      return(0);
+   }
+   return(1);
+}   
+
 
 /*----------------------------------------------------------------------------
  * Nom      : <Model_SeedInit>
