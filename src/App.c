@@ -142,11 +142,13 @@ void App_Start(TApp *App) {
    char rmn[128],*env=NULL;
    int print=1,t,mpi;
 
+#ifdef HAVE_RMN
    // RMN Lib settings
    c_fstopc("MSGLVL","WARNIN",0);
    c_fstopc("TOLRNC","SYSTEM",0);
    c_ezsetopt("INTERP_DEGREE","LINEAR");
-
+#endif
+   
    App->State=RUN;
 
    gettimeofday(&App->Time,NULL);
@@ -186,14 +188,16 @@ void App_Start(TApp *App) {
 
    if (!App->RankMPI) {
 
-      // Extract RMNLIB version
-      f77name(rmnlib_version)(rmn,&print,127);
-      rmn[89]='\0';
-
       App_Log(App,MUST,"-------------------------------------------------------------------------------\n");
       App_Log(App,MUST,"Model          : %s (%s)\n",App->Name,App->Version);
       App_Log(App,MUST,"Lib Utils      : %s\n",VERSION);
+
+#ifdef HAVE_RMN
+      // Extract RMNLIB version
+      f77name(rmnlib_version)(rmn,&print,127);
+      rmn[89]='\0';
       App_Log(App,MUST,"Lib RMN        : %s\n",&rmn[13]);
+#endif
       App_Log(App,MUST,"Start time     : (UTC) %s",ctime(&App->Time.tv_sec));
 
       if (App->NbThread>1) {

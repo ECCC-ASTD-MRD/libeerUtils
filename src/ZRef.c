@@ -188,7 +188,7 @@ int ZRef_Copy(TZRef *ZRef0,TZRef *ZRef1,int Level) {
 int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
 
    TRPNHeader h;
-   int        cd,key,skip,j,k,kind,flag=0,mode=-1;
+   int        cd,key=0,skip,j,k,kind,flag=0,mode=-1;
    char       format;
    double    *buf=NULL;
    float     *pt=NULL;
@@ -196,6 +196,8 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
    if (ZRef->Type==LVL_PRES || ZRef->Type==LVL_UNDEF) {
      return(1);
    }
+
+#ifdef HAVE_RMN
 
    // Check for toctoc (field !!)
    key=c_fstinf(Unit,&h.NI,&h.NJ,&h.NK,-1,"",-1,-1,-1,"X","!!");
@@ -293,7 +295,10 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
    if (ZRef->PCube)  free(ZRef->PCube);  ZRef->PCube=NULL;
    if (buf) free(buf);
    if (pt)  free(pt);
-
+#else
+   fprintf(stderr,"(ERROR) Need RMNLIB to process vertical coordinate");
+#endif
+   
    return(key>=0);
 }
 
@@ -378,6 +383,8 @@ int ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Invert) {
    float      lvl;
    char       format;
 
+#ifdef HAVE_RMN
+   
    /*Get the number of levels*/
    /*In case of # grid, set IP3 to 1 to get NK just for the first tile*/
    memcpy(&h,H,sizeof(TRPNHeader));
@@ -433,7 +440,10 @@ int ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Invert) {
    }
 
    if (ZRef->PCube)  free(ZRef->PCube);  ZRef->PCube=NULL;
-  
+#else
+   fprintf(stderr,"(ERROR) Need RMNLIB to process vertical coordinate");
+#endif
+   
    return(ZRef->LevelNb);
 }
 
@@ -915,7 +925,7 @@ double ZRef_Level2Meter(double Level,int Type) {
  */
 double ZRef_IP2Meter(int IP) {
 
-   int   mode=-1,flag=0,kind;
+   int   mode=-1,flag=0,kind=LVL_MASL;
    float level=0.0;
    char  format;
 
@@ -923,9 +933,13 @@ double ZRef_IP2Meter(int IP) {
    if (IP==0)
       return(0);
 
+#ifdef HAVE_RMN
    /*Convertir en niveau reel*/
    f77name(convip)(&IP,&level,&kind,&mode,&format,&flag);
-
+#else
+   fprintf(stderr,"(ERROR) Need RMNLIB to process vertical coordinate");
+#endif
+   
    return(ZRef_Level2Meter(level,kind));
 }
 
@@ -952,9 +966,13 @@ double ZRef_IP2Level(int IP,int *Type) {
    float  level=0.0;
    char   format;
 
+#ifdef HAVE_RMN
    /*Convertir en niveau reel*/
    f77name(convip)(&IP,&level,Type,&mode,&format,&flag);
-
+#else
+   fprintf(stderr,"(ERROR) Need RMNLIB to process vertical coordinate");
+#endif
+   
    return(level);
 }
 
@@ -1000,8 +1018,12 @@ int ZRef_Level2IP(float Level,int Type) {
          mode=ZREF_IP1MODE;
       }
 
+#ifdef HAVE_RMN
       f77name(convip)(&ip,&Level,&Type,&mode,&format,&flag);
-
+#else
+      fprintf(stderr,"(ERROR) Need RMNLIB to process vertical coordinate");
+#endif
+      
       return(ip);
    }
 }

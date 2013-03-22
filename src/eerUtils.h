@@ -48,8 +48,6 @@
 #include <math.h>
 #include <malloc.h>
 
-#include "rpnmacros.h"
-
 /*System related constants and functions*/
 #define SYS_BIG_ENDIAN     0
 #define SYS_LITTLE_ENDIAN  1
@@ -212,7 +210,11 @@ int    System_TimeValSubtract(struct timeval *Result,struct timeval *T0,struct t
 void Astro_SunPos(time_t Sec,double *Lat,double *Lon);
 void Astro_MoonPos(time_t ssue,float *lat,float *lon);
 
+#ifdef HAVE_RMN
+#include "rpnmacros.h"
+
 /*EER external Fortran functions*/
+extern int f77name(rmnlib_version)(char *rmn,wordint *print,wordint len);
 extern int f77name(r8ipsort)(wordint *ip,double *a,wordint *n);
 extern int f77name(binarysearchfindlevel2)(ftnfloat *hybvl,ftnfloat *hyb,wordint *size,wordint *ikk,wordint *ikn);
 
@@ -233,7 +235,13 @@ extern wordint f77name(cxgaig) (char *igtyp,wordint *ig1,wordint *ig2,wordint *i
 extern wordint f77name(mscale) (ftnfloat *r,ftnfloat *d60,ftnfloat *pi,ftnfloat *pj,wordint *ni,wordint *nj);
 extern wordint f77name(wkoffit)(char *filename,int size);
 
-extern int f77name(rmnlib_version) (char *rmn,wordint *print,wordint len);
+/*RPN 1d interpolation functions*/
+extern void f77name (interp1d_findpos) ();
+extern void f77name (interp1d_nearestneighbour) ();
+extern void f77name (interp1d_linear) ();
+extern void f77name (interp1d_cubicwithderivs) ();
+extern void f77name (interp1d_cubiclagrange) ();
+extern void f77name (extrap1d_lapserate) ();
 
 extern int c_fnom();
 extern int c_fclos();
@@ -313,8 +321,6 @@ extern int c_mrbprm();
 extern int c_mrbxtr();
 extern int c_mrbcvt();
 extern int c_mrbdcl();
-
-/*RPN date functions*/
-extern int difdatr();
+#endif
 
 #endif

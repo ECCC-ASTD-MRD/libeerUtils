@@ -47,20 +47,12 @@
 static TZRefInterp *FInterp;
 static unsigned char ZRefInterp_Options=0x0000;
 
-/* 1D Interpolation functions */
-extern void f77name (interp1d_findpos) ();
-extern void f77name (interp1d_nearestneighbour) ();
-extern void f77name (interp1d_linear) ();
-extern void f77name (interp1d_cubicwithderivs) ();
-extern void f77name (interp1d_cubiclagrange) ();
-extern void f77name (extrap1d_lapserate) ();
-
 /* Fortran Interface */
+/*
 wordint f77name(zrefinterp_free)(void) {
    return(ZRefInterp_Free(FInterp));
 }
 
-/*
 wordint f77name(viqkdef)(wordint *numLevel,wordint *gridType,ftnfloat *levelList,ftnfloat *top,ftnfloat *pRef,ftnfloat *rCoef,ftnfloat *zcoord,ftnfloat *a,ftnfloat *b) {
    TZRef zref;
 
@@ -147,6 +139,7 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
 #if defined(_AIX)
    fpflag_t flag;
 #endif
+   
    if (!ZRefDest || !ZRefSrc) {
       fprintf(stderr,"(ERROR) ZRefInterp_Define: Invalid vertical reference\n");
       return(NULL);
@@ -283,8 +276,12 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
     * output of this routine is input for each of the interpolation
     * routines. The output is in Indexes.
     */
+#ifdef HAVE_RMN=1
    (void)f77name(interp1d_findpos)(&interp->NIJ,&ZRefSrc->LevelNb,&ZRefDest->LevelNb,&interp->NIJ,&interp->NIJ,ZRefSrc->PCube,interp->Indexes,ZRefDest->PCube);
- 
+#else
+      fprintf(stderr,"(ERROR) Need RMNLIB to process 3D interpolations");
+#endif
+   
    return(interp);
 }
 
@@ -403,6 +400,7 @@ int ZRefInterp(TZRefInterp *Interp,float *stateOut,float *stateIn,float *derivOu
       return(0);
    }
 
+#ifdef HAVE_RMN
    /*
     * Interpolation
     * Setting extrapEnableDown andextrapEnableUp to .false.
@@ -456,6 +454,9 @@ int ZRefInterp(TZRefInterp *Interp,float *stateOut,float *stateIn,float *derivOu
 
       if (ZRefInterp_Options & ZRVERBOSE) printf ("(INFO) ZRefInterp: Lapserate extrapolation completed\n");
    }
-
+#else
+      fprintf(stderr,"(ERROR) Need RMNLIB to process 3D interpolations");
+#endif
+      
    return(1);
 }

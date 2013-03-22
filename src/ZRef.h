@@ -40,7 +40,6 @@
 #ifndef _ZRef_h
 #define _ZRef_h
 
-#include <malloc.h>
 #include "eerUtils.h"
 
 /*Level related constants and functions*/

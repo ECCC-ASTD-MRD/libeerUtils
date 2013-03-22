@@ -1,6 +1,7 @@
 VERSION   = 1.6
 OS        = $(shell uname -s)
 PROC      = $(shell uname -m)
+RMN       = HAVE_RMN
 
 INSTALL_DIR = /users/dor/afsr/005
 TCL_DIR     = /cnfs/ops/cmoe/afsr005/Archive/tcl8.6.0
@@ -37,7 +38,7 @@ else
    CDEBUGFLAGS =
 endif
 
-DEFINES     = -DVERSION=\"$(VERSION)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE -D_MPI
+DEFINES     = -DVERSION=\"$(VERSION)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE -D_MPI -D$(RMN)
 CFLAGS      = $(CDEBUGFLAGS) $(CCOPTIONS) $(INCLUDES) $(DEFINES)
 
 OBJ_C = $(subst .c,.o,$(wildcard src/*.c))
@@ -57,11 +58,13 @@ lib:
 	ln -fs libeerUtils-$(VERSION).a lib/libeerUtils.a
 
 exec:
-	mkdir -p ./bin
-	$(CC) Utilities/EZTiler.c -o bin/EZTiler-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC) 
-	ln -fs EZTile-$(VERSION) bin/EZTile
-	$(CC) Utilities/CodeInfo.c -o bin/CodeInfo-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC) 
-	ln -fs CodeInfo-$(VERSION) bin/CodeInfo
+	@if test "$(RMN)" = "HAVE_RMN"; then \
+	   mkdir -p ./bin; \
+	   $(CC) Utilities/EZTiler.c -o bin/EZTiler-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC); \
+	   ln -fs EZTile-$(VERSION) bin/EZTile; \
+	   $(CC) Utilities/CodeInfo.c -o bin/CodeInfo-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC);  \
+	   ln -fs CodeInfo-$(VERSION) bin/CodeInfo; \
+	fi
 
 install: all
 	mkdir -p $(INSTALL_DIR)/lib/$(BASE_ARCH)

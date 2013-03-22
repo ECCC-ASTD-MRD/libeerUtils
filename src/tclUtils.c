@@ -126,7 +126,7 @@ void TclY_UnlockHash(){
    Tcl_MutexUnlock(&MUTEX_HASH);
 }
 
-Tcl_HashEntry* TclY_CreateHashEntry(Tcl_HashTable *Table,char *Name,int *new) {
+Tcl_HashEntry* TclY_CreateHashEntry(Tcl_HashTable *Table,const char *Name,int *new) {
 
    Tcl_HashEntry *entry;
 
@@ -137,7 +137,7 @@ Tcl_HashEntry* TclY_CreateHashEntry(Tcl_HashTable *Table,char *Name,int *new) {
    return(entry);
 }
 
-Tcl_HashEntry* TclY_FindHashEntry(Tcl_HashTable *Table,char *Name) {
+Tcl_HashEntry* TclY_FindHashEntry(Tcl_HashTable *Table,const char *Name) {
 
    Tcl_HashEntry *entry;
 
@@ -176,7 +176,7 @@ int TclY_HashAll(Tcl_Interp *Interp,Tcl_HashTable *Table) {
    return(TCL_OK);
 }
 
-void* TclY_HashGet(Tcl_HashTable *Table,char *Name) {
+void* TclY_HashGet(Tcl_HashTable *Table,const char *Name) {
 
    Tcl_HashEntry *entry;
 
@@ -189,7 +189,7 @@ void* TclY_HashGet(Tcl_HashTable *Table,char *Name) {
    return(NULL);
 }
 
-int TclY_HashSet(Tcl_Interp *Interp,Tcl_HashTable *Table,char *Name,void *Data) {
+int TclY_HashSet(Tcl_Interp *Interp,Tcl_HashTable *Table,const char *Name,void *Data) {
 
    Tcl_HashEntry *entry;
    int            new;
@@ -204,7 +204,7 @@ int TclY_HashSet(Tcl_Interp *Interp,Tcl_HashTable *Table,char *Name,void *Data) 
    return(TCL_OK);
 }
 
-void* TclY_HashPut(Tcl_Interp *Interp,Tcl_HashTable *Table,char *Name,unsigned int Size) {
+void* TclY_HashPut(Tcl_Interp *Interp,Tcl_HashTable *Table,const char *Name,unsigned int Size) {
 
    void           *data=NULL;
    Tcl_HashEntry  *entry;
@@ -230,7 +230,7 @@ void* TclY_HashPut(Tcl_Interp *Interp,Tcl_HashTable *Table,char *Name,unsigned i
    return(data);
 }
 
-void* TclY_HashReplace(Tcl_Interp *Interp,Tcl_HashTable *Table,char *Name,void *Data) {
+void* TclY_HashReplace(Tcl_Interp *Interp,Tcl_HashTable *Table,const char *Name,void *Data) {
 
    void           *data=NULL;
    Tcl_HashEntry  *entry;
@@ -249,7 +249,7 @@ void* TclY_HashReplace(Tcl_Interp *Interp,Tcl_HashTable *Table,char *Name,void *
    return(data);
 }
 
-void* TclY_HashDel(Tcl_HashTable *Table,char *Name) {
+void* TclY_HashDel(Tcl_HashTable *Table,const char *Name) {
 
    Tcl_HashEntry *entry;
    void          *item=NULL;

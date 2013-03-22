@@ -28,9 +28,9 @@
  *
  *==============================================================================
  */
+#ifdef HAVE_RMN
 
 #include "EZTile.h"
-
 #include "rpn_macros_arch.h"
 #include "fnom.h"
 
@@ -2763,3 +2763,5 @@ int EZGrid_GetIJ(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float
       J[i]-=1.0;
    }
 }
+
+#endif

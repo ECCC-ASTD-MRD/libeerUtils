@@ -78,12 +78,4 @@ int          ZRefInterp(TZRefInterp *Interp,float *stateOut,float *stateIn,float
 int          ZRefInterp_SetOption(const char *Option,const char *Value);
 int          ZRefInterp_SetOptioni(const unsigned char option);
 
-/*Interface Fortran*/
-wordint f77name (videfine)   ();
-wordint f77name (viundefine) ();
-wordint f77name (viqkdef)    (wordint *, wordint *, ftnfloat *, ftnfloat *, ftnfloat *, ftnfloat *, ftnfloat *, ftnfloat *, ftnfloat *);
-wordint f77name (viqkdefset) (wordint *, wordint *, wordint *, wordint *);
-wordint f77name (visetopt)   (wordint *, wordint *);
-wordint f77name (visint)     (ftnfloat *, ftnfloat *, ftnfloat *, ftnfloat *, ftnfloat *, ftnfloat *);
-
 #endif
