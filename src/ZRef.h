@@ -62,6 +62,7 @@
 
 #define PRESS2METER(LVL) (LVL>0?-8409.1*log(LVL)/1200.0:0)
 #define SIGMA2METER(LVL) (LVL>0?-8409.1*log(LVL):0)
+#define ETA2METER(LVL)   (-8409.1*log(LVL+1e-32))
 
 static const char *LVL_NAMES[]  = { "MASL","SIGMA","PRESSURE","UNDEFINED","MAGL","HYBRID","THETA","ETA","GALCHEN","COUNT","HOUR","ANGLE","NIL","NIL","NIL","INT","NIL","IDX","NIL","NIL","NIL","MPRES",NULL };
 static const char *LVL_UNITS[]  = { "m","sg","mb","-","m","hy","th","sg","m","nb","hr","dg","--","--","--","i","--","x","--","--","--","mp",NULL };

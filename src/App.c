@@ -300,6 +300,10 @@ void App_Log(TApp *App,TApp_LogLevel Level,const char *Format,...) {
             App->LogStream=fopen(App->LogFile,"a+");
          }
       }
+      if (!App->LogStream) {
+         App->LogStream=stdout;
+         fprintf(stderr,"(WARNING) Unable to open log stream (%s), will use stdout instead\n",App->LogFile);
+      }
    }
 
    if (Level==WARNING) App->LogWarning++;
@@ -407,6 +411,7 @@ int App_ParseInput(TApp *App,void *Def,char *File,TApp_InputParseProc *ParseProc
 
       if (parse) {
          // If we find a token, remove spaces and get the associated value
+         strrep(parse,'\t',' ');
          strtrim(parse,' ');
          strncpy(token,parse,256);
          values=strtok_r(NULL,"=",&tokensave);

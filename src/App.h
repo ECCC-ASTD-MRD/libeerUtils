@@ -51,8 +51,9 @@
 #   include <mpi.h>
 #endif
 
-#define APP_BUFMAX   32768      // Maximum input buffer length
-#define APP_SEED     1049731793 // Initial FIXED seed
+#define APP_BUFMAX    32768               // Maximum input buffer length
+#define APP_SEED      1049731793          // Initial FIXED seed
+#define APP_BADOPTION "Bad option: %s\n"
 
 typedef enum { MUST=-1,ERROR=0,WARNING=1,INFO=2,DEBUG=3,EXTRA=4 } TApp_LogLevel;
 typedef enum { STOP,RUN,DONE } TApp_State;

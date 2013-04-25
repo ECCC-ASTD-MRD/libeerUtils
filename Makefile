@@ -54,8 +54,10 @@ obj: $(OBJ_C) $(OBJ_F)
 
 lib:
 	mkdir -p ./lib
+	mkdir -p ./include
 	$(AR) lib/libeerUtils-$(VERSION).a $(OBJ_C) $(OBJ_F)
 	ln -fs libeerUtils-$(VERSION).a lib/libeerUtils.a
+	cp -d ./src/*.h ./include
 
 exec:
 	@if test "$(RMN)" = "HAVE_RMN"; then \
@@ -71,10 +73,10 @@ install: all
 	mkdir -p $(INSTALL_DIR)/include
 	cp -d ./lib/* $(INSTALL_DIR)/lib/$(BASE_ARCH)
 	cp -d ./bin/* $(INSTALL_DIR)/bin/$(BASE_ARCH)
-	cp -d ./src/*.h $(INSTALL_DIR)/include
+	cp -d ./include/* $(INSTALL_DIR)/include
 
 clean:
 	rm -f src/*.o src/*~
 
 clear:	clean
-	rm -fr bin lib
+	rm -fr bin lib include

@@ -894,13 +894,13 @@ double ZRef_Level2Meter(double Level,int Type) {
 
    switch(Type) {
       case LVL_MASL    : return (Level); break;
-      case LVL_ETA     :
+      case LVL_ETA     : return (ETA2METER(Level)); break;
       case LVL_SIGMA   : return (SIGMA2METER(Level)); break;
       case LVL_PRES    : return (PRESS2METER(Level)); break;
       case LVL_UNDEF   : return (Level); break;
       case LVL_MAGL    : return (Level); break;
-      case LVL_HYBRID  : return (SIGMA2METER(Level)); break;
-      case LVL_THETA   : return (SIGMA2METER(Level)); break;
+      case LVL_HYBRID  : return (ETA2METER(Level)); break;
+      case LVL_THETA   : return (ETA2METER(Level)); break;
       case LVL_GALCHEN : return (Level); break;
       case LVL_ANGLE   : return (Level); break;
    }

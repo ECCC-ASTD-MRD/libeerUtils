@@ -576,20 +576,24 @@ char* strpath(char *Path,char *File) {
 
 char* strcatalloc(char *StrTo,char *StrFrom) {
 
-   if (StrTo) {
-      StrTo=(char*)realloc(StrTo,strlen(StrTo)+strlen(StrFrom)+1);
-      strcat(StrTo,StrFrom);
-   } else {
-      StrTo=strdup(StrFrom);
+   if (StrFrom) {
+      if (StrTo) {
+         StrTo=(char*)realloc(StrTo,strlen(StrTo)+strlen(StrFrom)+1);
+         strcat(StrTo,StrFrom);
+      } else {
+         StrTo=strdup(StrFrom);
+      }
    }
    return(StrTo);
 }
 
 void strrep(char *Str,char Tok,char Rep) {
 
-   while(*Str++!='\0')
-     if (*Str==Tok)
-        *Str=Rep;
+   if (Str) {
+      while(*Str++!='\0')
+      if (*Str==Tok)
+         *Str=Rep;
+   }
 }
 
 
@@ -598,52 +602,55 @@ void strtrim(char *Str,char Tok) {
    register int i=0;
    char *s;
 
-   /*Clear fisrt blanks*/
-   while(*(Str+i)==Tok)
-     i++;
+   if (Str && Str[0]!='\0') {
+      /*Clear fisrt blanks*/
+      while(*(Str+i)==Tok)
+      i++;
 
 
-   /*Copy chars, including \0, toward beginning to remove spaces*/
-   s=Str;
-   if (i) while(s<Str+strlen(Str)-i+1) { *s=*(s+i); s++; }
+      /*Copy chars, including \0, toward beginning to remove spaces*/
+      s=Str;
+      if (i) while(s<Str+strlen(Str)-i+1) { *s=*(s+i); s++; }
 
-   /*Clear end blanks*/
-   s=Str+strlen(Str);
-   while(*--s==Tok)
-      *s='\0';
+      /*Clear end blanks*/
+      s=Str+strlen(Str);
+      while(*--s==Tok)
+         *s='\0';
+   }
 }
 
 int strrindex(char *Str) {
 
    char *l,*r,*s;
-   int   n,k=0,t=1;
+   int   n=-1,k=0,t=1;
 
-   s=strdup(Str);
-   l=index(s,'(');
-   r=index(s,')');
+   if (Str) {
+      s=strdup(Str);
+      l=index(s,'(');
+      r=index(s,')');
 
-   if (!l || !r) {
-      free(s);
-      return(-1);
-   }
-
-   sscanf(l,"(%i)",&n);
-
-   l=s;
-   while(*s!='\0') {
-      if (*s=='(') {
-         t=0;
+      if (!l || !r) {
+         free(s);
+         return(-1);
       }
 
-      if (t) Str[k++]=*s;
+      sscanf(l,"(%i)",&n);
 
-      if (*s==')') {
-         t=1;
+      l=s;
+      while(*s!='\0') {
+         if (*s=='(') {
+            t=0;
+         }
+
+         if (t) Str[k++]=*s;
+
+         if (*s==')') {
+            t=1;
+         }
+         s++;
       }
-      s++;
+      Str[k]='\0';
+      free(l);
    }
-   Str[k]='\0';
-   free(l);
-
    return(n);
 }
