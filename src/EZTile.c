@@ -668,7 +668,7 @@ float* EZGrid_TileBurnAll(TGrid* restrict const Grid,int K) {
    if (Grid) {
       if (Grid->NbTiles>1) {
          for(t=0;t<Grid->NbTiles;t++) {
-            if (!Grid->Tiles[t].Data) {
+            if (!Grid->Tiles[t].Data || Grid->Tiles[t].Data[K][0]==NAN) {
                EZGrid_TileGetData(Grid,&Grid->Tiles[t],K,0);
             }
             if (!EZGrid_TileBurn(Grid,&Grid->Tiles[t],K)) {
@@ -1570,6 +1570,7 @@ void EZGrid_Clear(TGrid* restrict const Grid) {
          }
       }
    }
+   Grid->T0=Grid->T1=0;
 }
 
 /*----------------------------------------------------------------------------
