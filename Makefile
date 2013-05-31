@@ -21,6 +21,7 @@ ifeq ($(OS),Linux)
    LINK_EXEC   = -lm -lpthread -Wl,-rpath,$(EER_DIR)/lib/$(BASE_ARCH)  
    CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fopenmp
    CDEBUGFLAGS =
+   CPFLAGS     = -d
 
    ifeq ($(PROC),x86_64)
         CCOPTIONS   := $(CCOPTIONS) -fPIC -m64 -DSTDC_HEADERS
@@ -36,6 +37,7 @@ else
    LINK_EXEC   = -lxlf90 -lxlsmp -lc -lpthread -lmass -lm
    CCOPTIONS   = -O3 -qnohot -qstrict -Q -v  -qkeyword=restrict -qsmp=omp -qcache=auto -qtune=auto -qarch=auto 
    CDEBUGFLAGS =
+   CPFLAGS     = -h
 endif
 
 DEFINES     = -DVERSION=\"$(VERSION)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE -D_MPI -D$(RMN)
@@ -57,7 +59,7 @@ lib:
 	mkdir -p ./include
 	$(AR) lib/libeerUtils-$(VERSION).a $(OBJ_C) $(OBJ_F)
 	ln -fs libeerUtils-$(VERSION).a lib/libeerUtils.a
-	cp -d ./src/*.h ./include
+	cp $(CPFLAGS) ./src/*.h ./include
 
 exec:
 	@if test "$(RMN)" = "HAVE_RMN"; then \
@@ -71,9 +73,9 @@ exec:
 install: all
 	mkdir -p $(INSTALL_DIR)/lib/$(BASE_ARCH)
 	mkdir -p $(INSTALL_DIR)/include
-	cp -d ./lib/* $(INSTALL_DIR)/lib/$(BASE_ARCH)
-	cp -d ./bin/* $(INSTALL_DIR)/bin/$(BASE_ARCH)
-	cp -d ./include/* $(INSTALL_DIR)/include
+	cp $(CPFLAGS) ./lib/* $(INSTALL_DIR)/lib/$(BASE_ARCH)
+	cp $(CPFLAGS) ./bin/* $(INSTALL_DIR)/bin/$(BASE_ARCH)
+	cp $(CPFLAGS) ./include/* $(INSTALL_DIR)/include
 
 clean:
 	rm -f src/*.o src/*~

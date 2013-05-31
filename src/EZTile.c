@@ -2295,12 +2295,27 @@ int EZGrid_Interp(TGrid* restrict const To, TGrid* restrict const From) {
       return(0);
    }
 
-   from=EZGrid_TileBurnAll(From,0);
-   to=EZGrid_TileBurnAll(To,0);
+   if (!(from=EZGrid_TileBurnAll(From,0))) {
+      fprintf(stderr,"(ERROR) EZGrid_Interp: Problems with input grid\n");
+      return(0);
+   }
+   if (!(to=EZGrid_TileBurnAll(To,0))) {
+      fprintf(stderr,"(ERROR) EZGrid_Interp: Problems with output grid\n");
+      return(0);
+   }
 
    pthread_mutex_lock(&RPNIntMutex);
    ok=c_ezdefset(To->GID,From->GID);
+   if (ok<=0)  {
+      fprintf(stderr,"(ERROR) EZGrid_Interp: Unable to define interpolation set (c_ezdefset)\n");
+      return(0);
+   }
+   
    ok=c_ezsint(to,from);
+   if (ok<=0)  {
+      fprintf(stderr,"(ERROR) EZGrid_Interp: Unable to do interpolation (c_ezscint)\n");
+      return(0);
+   }
    pthread_mutex_unlock(&RPNIntMutex);
 
    return(1);
