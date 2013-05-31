@@ -58,6 +58,7 @@ TApp *App_New(char *Name,char *Version) {
    app->LogFile=strdup("stdout");
    app->LogStream=(FILE*)NULL;
    app->LogWarning=0;
+   app->LogError=0;
    app->Tag=NULL;
    app->LogLevel=2;
    app->State=STOP;
@@ -147,6 +148,7 @@ void App_Start(TApp *App) {
    c_fstopc("MSGLVL","WARNIN",0);
    c_fstopc("TOLRNC","SYSTEM",0);
    c_ezsetopt("INTERP_DEGREE","LINEAR");
+   c_ezsetopt("VERBOSE","NO");
 #endif
    
    App->State=RUN;
@@ -229,12 +231,14 @@ void App_Start(TApp *App) {
 void App_End(TApp *App,int Status) {
 
    struct timeval end;
-   int            wrng;
+   int            nb;
 
 #ifdef _MPI
    if (App->NbMPI>1) {
-      MPI_Reduce(&App->LogWarning,&wrng,1,MPI_INT,MPI_SUM,0,MPI_COMM_WORLD);
-      App->LogWarning=wrng;
+      MPI_Reduce(&App->LogWarning,&nb,1,MPI_INT,MPI_SUM,0,MPI_COMM_WORLD);
+      App->LogWarning=nb;
+      MPI_Reduce(&App->LogError,&nb,1,MPI_INT,MPI_SUM,0,MPI_COMM_WORLD);
+      App->LogError=nb;
    }
 #endif
 
@@ -247,7 +251,7 @@ void App_End(TApp *App,int Status) {
       App_Log(App,MUST,"Execution time : %li seconds\n",end.tv_sec-App->Time.tv_sec);
 
       if (Status<1) {
-         App_Log(App,MUST,"Status         : Error (%i)\n",Status);
+         App_Log(App,MUST,"Status         : Error %i (%i Errors)\n",Status,App->LogError);
       } else {
          App_Log(App,MUST,"Status         : Ok (%i Warnings)\n",App->LogWarning);
       }
@@ -307,6 +311,7 @@ void App_Log(TApp *App,TApp_LogLevel Level,const char *Format,...) {
    }
 
    if (Level==WARNING) App->LogWarning++;
+   if (Level==ERROR)   App->LogError++;
 
    if (Level<=App->LogLevel) {
       if (Level>=0) {

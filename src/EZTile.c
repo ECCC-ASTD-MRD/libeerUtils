@@ -668,7 +668,7 @@ float* EZGrid_TileBurnAll(TGrid* restrict const Grid,int K) {
    if (Grid) {
       if (Grid->NbTiles>1) {
          for(t=0;t<Grid->NbTiles;t++) {
-            if (!Grid->Tiles[t].Data || Grid->Tiles[t].Data[K][0]==NAN) {
+            if (!Grid->Tiles[t].Data || isnan(Grid->Tiles[t].Data[K][0])) {
                EZGrid_TileGetData(Grid,&Grid->Tiles[t],K,0);
             }
             if (!EZGrid_TileBurn(Grid,&Grid->Tiles[t],K)) {
@@ -1560,15 +1560,17 @@ void EZGrid_Free(TGrid* restrict const Grid) {
 void EZGrid_Clear(TGrid* restrict const Grid) {
 
    int n,k;
-
+   float f=nanf("NaN");
+   
    /*Cleanup tile data*/
    for(n=0;n<Grid->NbTiles;n++) {
       if (Grid->Tiles[n].Data) {
          for(k=0;k<Grid->H.NK;k++) {
             if (Grid->Tiles[n].Data[k])
-               Grid->Tiles[n].Data[k][0]=NAN;
+               Grid->Tiles[n].Data[k][0]=f;
          }
       }
+      Grid->Tiles[n].KBurn=-1;
    }
    Grid->T0=Grid->T1=0;
 }
@@ -2306,17 +2308,12 @@ int EZGrid_Interp(TGrid* restrict const To, TGrid* restrict const From) {
 
    pthread_mutex_lock(&RPNIntMutex);
    ok=c_ezdefset(To->GID,From->GID);
-   if (ok<=0)  {
-      fprintf(stderr,"(ERROR) EZGrid_Interp: Unable to define interpolation set (c_ezdefset)\n");
-      return(0);
-   }
-   
    ok=c_ezsint(to,from);
-   if (ok<=0)  {
-      fprintf(stderr,"(ERROR) EZGrid_Interp: Unable to do interpolation (c_ezscint)\n");
+   pthread_mutex_unlock(&RPNIntMutex);
+   if (ok<0)  {
+      fprintf(stderr,"(ERROR) EZGrid_Interp: Unable to do interpolation (c_ezscint (%i))\n",ok);
       return(0);
    }
-   pthread_mutex_unlock(&RPNIntMutex);
 
    return(1);
 }

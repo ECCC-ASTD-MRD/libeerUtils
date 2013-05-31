@@ -64,6 +64,7 @@ typedef struct TApp {
     char*          Version;              // Version
     char*          LogFile;              // Log file
     int            LogWarning;           // Number of warnings
+    int            LogError;             // Number of errors
     char*          Tag;                  // Identificateur
     FILE*          LogStream;            // Log file associated stream
     TApp_LogLevel  LogLevel;             // Level of log
