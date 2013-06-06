@@ -405,6 +405,7 @@ int App_ParseInput(TApp *App,void *Def,char *File,TApp_InputParseProc *ParseProc
 
       //Check for comments
       strtrim(buf,'\n');
+      strrep(buf,'\t',' ');
       if (idx=index(buf,'#')) *idx='\0';
 
       //Parse the token
@@ -416,7 +417,6 @@ int App_ParseInput(TApp *App,void *Def,char *File,TApp_InputParseProc *ParseProc
 
       if (parse) {
          // If we find a token, remove spaces and get the associated value
-         strrep(parse,'\t',' ');
          strtrim(parse,' ');
          strncpy(token,parse,256);
          values=strtok_r(NULL,"=",&tokensave);
