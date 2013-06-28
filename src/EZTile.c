@@ -383,7 +383,7 @@ int EZGrid_Wrap(TGrid* restrict const Grid) {
    Grid->Wrap=0;
    Grid->Pole[0]=Grid->Pole[1]=0.0f;
 
-//   pthread_mutex_lock(&RPNIntMutex);
+   pthread_mutex_lock(&RPNIntMutex);
    // Check for south pole coverage
    i=1.0;j=1.0;
    c_gdllfxy(Grid->GID,&lat,&lon,&i,&j,1);
@@ -405,7 +405,7 @@ int EZGrid_Wrap(TGrid* restrict const Grid) {
    c_gdllfxy(Grid->GID,&lat,&lon,&i,&j,1);
    c_gdxyfll(Grid->GID,&i,&j,&lat,&lon,1);
 
-//   pthread_mutex_unlock(&RPNIntMutex);
+   pthread_mutex_unlock(&RPNIntMutex);
 
    // If the grid wraps
    if (i<Grid->H.NI) {
@@ -439,46 +439,20 @@ int EZGrid_Wrap(TGrid* restrict const Grid) {
 */
 static inline TGridTile* EZGrid_TileGet(const TGrid* restrict const Grid,int I,int J) {
 
-    TGridTile *tile=NULL;
+   TGridTile *tile=NULL;
 
-    if (Grid->NbTiles>1) {
-       I/=Grid->Tiles[0].NI;
-       J/=Grid->Tiles[0].NJ;
+   if (Grid->NbTiles>1) {
+      I/=Grid->Tiles[0].NI;
+      J/=Grid->Tiles[0].NJ;
 
-       if (I<Grid->NTI && J<Grid->NTJ) {
-          tile=&Grid->Tiles[J*Grid->NTI+I];
-       }
-    } else {
-       tile=&Grid->Tiles[0];
-    }
-    return(tile);
+      if (I<Grid->NTI && J<Grid->NTJ) {
+         tile=&Grid->Tiles[J*Grid->NTI+I];
+      }
+   } else {
+      tile=&Grid->Tiles[0];
+   }
+   return(tile);
 }
-
-// static inline TGridTile* EZGrid_TileGet(const TGrid* restrict const Grid,int I,int J) {
-//
-//    TGridTile    *tile=NULL;
-//    int           nb;
-//    register int  idx=0;
-//
-//    nb=Grid->NTI*Grid->NTJ;
-//
-//    while(idx<nb && (tile=&Grid->Tiles[idx])) {
-//       if (I>=tile->I+tile->NI) {
-//          idx++;
-//          continue;
-//       }
-//       if (J>=tile->J+tile->NJ) {
-//          idx+=Grid->NTI;
-//          continue;
-//       }
-//       break;
-//    }
-//
-//    if (!tile)
-//       fprintf(stderr,"(WARNING) EZGrid_TileGet: Tile not found (%s) I(%i) J(%i)\n",Grid->H.NOMVAR,I,J);
-//
-//    return(tile);
-// }
 
 /*----------------------------------------------------------------------------
  * Nom      : <EZGrid_TileGetData>
@@ -2101,9 +2075,9 @@ int EZGrid_LLGetValue(TGrid* restrict const Grid,float Lat,float Lon,int K0,int 
       return(0);
    }
 
-//   pthread_mutex_lock(&RPNIntMutex);
+   pthread_mutex_lock(&RPNIntMutex);
    c_gdxyfll(Grid->GID,&i,&j,&Lat,&Lon,1);
-//   pthread_mutex_unlock(&RPNIntMutex);
+   pthread_mutex_unlock(&RPNIntMutex);
 
    return(EZGrid_IJGetValue(Grid,i-1.0f,j-1.0f,K0,K1,Value));
 }
@@ -2144,9 +2118,9 @@ int EZGrid_LLGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
       return(0);
    }
 
-//   pthread_mutex_lock(&RPNIntMutex);
+   pthread_mutex_lock(&RPNIntMutex);
    c_gdxyfll(GridU->GID,&i,&j,&Lat,&Lon,1);
-//   pthread_mutex_unlock(&RPNIntMutex);
+   pthread_mutex_unlock(&RPNIntMutex);
 
    return(EZGrid_IJGetUVValue(GridU,GridV,i-1.0f,j-1.0f,K0,K1,UU,VV));
 }
@@ -2675,7 +2649,7 @@ int EZGrid_GetDelta(TGrid* restrict const Grid,int Invert,float* DX,float* DY,fl
       return(0);
    }
 
-//   pthread_mutex_lock(&RPNIntMutex);
+   pthread_mutex_lock(&RPNIntMutex);
 
    for(j=0,gj=1;j<Grid->H.NJ;j++,gj++) {
       idx=j*Grid->H.NI;
@@ -2706,7 +2680,7 @@ int EZGrid_GetDelta(TGrid* restrict const Grid,int Invert,float* DX,float* DY,fl
          if (DA) DA[idx]=(Invert?1.0/(fx*fy):(fx*fy));
       }
    }
-//   pthread_mutex_unlock(&RPNIntdMutex);
+   pthread_mutex_unlock(&RPNIntMutex);
 }
 
 /*----------------------------------------------------------------------------
@@ -2734,13 +2708,13 @@ int EZGrid_GetLL(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float
    int i;
    float fi,fj;
 
-//   pthread_mutex_lock(&RPNIntMutex);
+   pthread_mutex_lock(&RPNIntMutex);
    for(i=0;i<Nb;i++) {
       fi=I[i]+1.0;
       fj=J[i]+1.0;
       c_gdllfxy(Grid->GID,Lat,Lon,&fi,&fj,1);
    }
-//   pthread_mutex_unlock(&RPNIntMutex);
+   pthread_mutex_unlock(&RPNIntMutex);
 }
 
 /*----------------------------------------------------------------------------
@@ -2767,9 +2741,9 @@ int EZGrid_GetIJ(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float
 
    int i;
 
-//   pthread_mutex_lock(&RPNIntMutex);
+   pthread_mutex_lock(&RPNIntMutex);
    c_gdxyfll(Grid->GID,I,J,Lat,Lon,Nb);
-//   pthread_mutex_unlock(&RPNIntMutex);
+   pthread_mutex_unlock(&RPNIntMutex);
 
    for(i=0;i<Nb;i++) {
       I[i]-=1.0;

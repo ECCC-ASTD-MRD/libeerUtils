@@ -64,9 +64,6 @@
 #define SIGMA2METER(LVL) (LVL>0?-8409.1*log(LVL):0)
 #define ETA2METER(LVL)   (-8409.1*log(LVL+1e-32))
 
-static const char *LVL_NAMES[]  = { "MASL","SIGMA","PRESSURE","UNDEFINED","MAGL","HYBRID","THETA","ETA","GALCHEN","COUNT","HOUR","ANGLE","NIL","NIL","NIL","INT","NIL","IDX","NIL","NIL","NIL","MPRES",NULL };
-static const char *LVL_UNITS[]  = { "m","sg","mb","-","m","hy","th","sg","m","nb","hr","dg","--","--","--","i","--","x","--","--","--","mp",NULL };
-
 /*Vertical referential definition*/
 typedef struct TZRef {
    int    Count;        /*Reference count*/
@@ -102,5 +99,8 @@ double ZRef_IP2Meter(int IP);
 double ZRef_Level2Meter(double Level,int Type);
 double ZRef_IP2Level(int IP,int *Type);
 int    ZRef_Level2IP(float Level,int Type);
+
+const char** ZRef_LevelNames();
+const char** ZRef_LevelUnits();
 
 #endif

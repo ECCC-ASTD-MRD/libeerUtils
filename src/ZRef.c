@@ -36,8 +36,19 @@
 
 static float       *ZRef_Levels=NULL;
 static unsigned int ZRef_LevelsNb=0;
+static const char  *ZRef_Names[]  = { "MASL","SIGMA","PRESSURE","UNDEFINED","MAGL","HYBRID","THETA","ETA","GALCHEN","COUNT","HOUR","ANGLE","NIL","NIL","NIL","INT","NIL","IDX","NIL","NIL","NIL","MPRES",NULL };
+static const char  *ZRef_Units[]  = { "m","sg","mb","-","m","hy","th","sg","m","nb","hr","dg","--","--","--","i","--","x","--","--","--","mp",NULL };
+
 
 int ZREF_IP1MODE=3;
+
+const char **ZRef_LevelNames() {
+   return(ZRef_Names);
+}
+
+const char **ZRef_LevelUnits() {
+   return(ZRef_Units);
+}
 
 /*----------------------------------------------------------------------------
  * Nom      : <ZRef_Init>
