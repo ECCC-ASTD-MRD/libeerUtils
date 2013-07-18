@@ -34,7 +34,7 @@ else
    LD          = ld
    LIBS        = -L$(EER_DIR)/lib/$(BASE_ARCH) -lrmnbeta_013
    INCLUDES   := $(INCLUDES) -I$(ARMNLIB)/include/AIX
-   LINK_EXEC   = -lxlf90 -lxlsmp -lc -lpthread -lmass -lm
+   LINK_EXEC   = -lxlf90 -lxlsmp -lc -lpthread -lmass -lm 
    CCOPTIONS   = -O3 -qnohot -qstrict -Q -v  -qkeyword=restrict -qsmp=omp -qcache=auto -qtune=auto -qarch=auto 
    CDEBUGFLAGS =
    CPFLAGS     = -h

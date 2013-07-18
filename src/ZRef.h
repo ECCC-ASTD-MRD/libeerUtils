@@ -101,6 +101,8 @@ double ZRef_IP2Level(int IP,int *Type);
 int    ZRef_Level2IP(float Level,int Type);
 
 const char** ZRef_LevelNames();
+const char*  ZRef_LevelName(int Type);
 const char** ZRef_LevelUnits();
+const char*  ZRef_LevelUnit(int Type);
 
 #endif

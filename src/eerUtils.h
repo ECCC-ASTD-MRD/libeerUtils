@@ -135,7 +135,7 @@
 #define CLAMPLAT(LAT)        (LAT=LAT>90.0?90.0:(LAT<-90.0?-90.0:LAT))
 #define CLAMPLON(LON)        (LON=LON>180?LON-360:(LON<-180?LON+360:LON))
 
-#define RPNMAX 1024
+#define RPNMAX 2048
 #define COORD_CLEAR(C)       (C.Lat=C.Lon=C.Elev=-999.0)
 
 /*Structure pour les coordonees latlon*/

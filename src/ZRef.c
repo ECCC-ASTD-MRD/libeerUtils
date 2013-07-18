@@ -34,11 +34,10 @@
 #include "ZRef.h"
 #include "eerUtils.h"
 
-static float       *ZRef_Levels=NULL;
-static unsigned int ZRef_LevelsNb=0;
+static float       *ZRef_Levels   = NULL;
+static unsigned int ZRef_LevelsNb = 0;
 static const char  *ZRef_Names[]  = { "MASL","SIGMA","PRESSURE","UNDEFINED","MAGL","HYBRID","THETA","ETA","GALCHEN","COUNT","HOUR","ANGLE","NIL","NIL","NIL","INT","NIL","IDX","NIL","NIL","NIL","MPRES",NULL };
 static const char  *ZRef_Units[]  = { "m","sg","mb","-","m","hy","th","sg","m","nb","hr","dg","--","--","--","i","--","x","--","--","--","mp",NULL };
-
 
 int ZREF_IP1MODE=3;
 
@@ -46,8 +45,16 @@ const char **ZRef_LevelNames() {
    return(ZRef_Names);
 }
 
+const char *ZRef_LevelName(int Type) {
+   return(ZRef_Names[Type]);
+}
+
 const char **ZRef_LevelUnits() {
    return(ZRef_Units);
+}
+
+const char *ZRef_LevelUnit(int Type) {
+   return(ZRef_Units[Type]);
 }
 
 /*----------------------------------------------------------------------------
@@ -842,7 +849,7 @@ double ZRef_Pressure2Level(TZRef* restrict const ZRef,double P0,double Pressure)
             // Find enclosing levels
             for(z=0;z<ZRef->LevelNb;z++) {
                pres1=pres0;
-               pres0=ZRef->A[z]+ZRef->B[z]*log(P0/ZRef->PRef*100.0);
+               pres0=ZRef->A[z]+ZRef->B[z]*log(P0/ZRef->PRef);
                if (pres>=pres0 && pres<=pres1) {
                   level=(pres1-pres)/(pres1-pres0);
                   level=ILIN(ZRef->Levels[z],ZRef->Levels[z-1],level);
