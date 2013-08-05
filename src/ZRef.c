@@ -748,7 +748,7 @@ int ZRef_KCube2Meter(TZRef* restrict const ZRef,float *GZ,const int NIJ,float *H
  */
 double ZRef_Level2Pressure(TZRef* restrict const ZRef,double P0,double Level) {
 
-   double pres=-1.0,pref,ptop,rtop;
+   double pres=-1.0,pref,ptop,rtop,f,f0,f1;
    int    z,z0,z1,o;
 
    pref=ZRef->PRef;
@@ -771,25 +771,29 @@ double ZRef_Level2Pressure(TZRef* restrict const ZRef,double P0,double Level) {
          //TODO need to add analytical function for GEM4 type
          if (ZRef->Version==5002) {
             // Check for level ordering
-            o=(ZRef->Levels[0]<ZRef->Levels[ZRef->LevelNb]);
+            o=(ZRef->Levels[0]<ZRef->Levels[ZRef->LevelNb-1]);
 
             // Find enclosing levels
             for(z=0;z<ZRef->LevelNb;z++) {
-               if ((o && Level<ZRef->Levels[z]) || (!o && Level>ZRef->Levels[z])) {
-                  z1=o?z:z-1;
-                  z0=o?z-1:z;
+               if ((o && Level<=ZRef->Levels[z]) || (!o && Level>=ZRef->Levels[z])) {
+                  z1=o?z:(z>0?z-1:z);
+                  z0=o?(z>0?z-1:z):z;
                   break;
                }
             }
+            if (z==ZRef->LevelNb) {
+               fprintf(stderr,"(ERROR) ZRef_Level2Pressure: level not in range ([%f,%f])",ZRef->Levels[0],ZRef->Levels[ZRef->LevelNb-1]);
+            }
 
-            // if we are within the vertical limits
-            if (z>0 || z<ZRef->LevelNb) {
-
-               // Interpolate between levels (in log(p))
-               z=(z1-z);
-               z0=ZRef->A[z0]+ZRef->B[z0]*log(P0/pref);
-               z1=ZRef->A[z1]+ZRef->B[z1]*log(P0/pref);
-               pres=exp(ILIN(z0,z1,z))*0.01;
+            // Interpolate between levels (in log(p))
+            pref=log(P0/pref);
+            if (z0==z1) {
+               pres=exp(ZRef->A[z0]+ZRef->B[z0]*pref)*0.01;
+            } else {
+               f=ZRef->Levels[z1]-Level;
+               f0=ZRef->A[z0]+ZRef->B[z0]*pref;
+               f1=ZRef->A[z1]+ZRef->B[z1]*pref;
+               pres=exp(ILIN(f0,f1,f))*0.01;
             }
          } else {
             rtop=ptop/pref;

@@ -89,6 +89,8 @@ void  App_Log(TApp *App,TApp_LogLevel Level,const char *Format,...);
 int   App_LogLevel(TApp *App,char *Val);
 int   App_ParseInput(TApp *App,void *Def,char *File,TApp_InputParseProc *ParseProc);
 int   App_ParseBool(TApp *App,char *Param,char *Value,char *Var);
+int   App_ParseDate(TApp *App,char *Param,char *Value,time_t *Var);
+int   App_ParseCoords(TApp *App,char *Param,char *Value,double *Lat,double *Lon,int Index);
 void  App_SeedInit(TApp *App);
 
 #endif

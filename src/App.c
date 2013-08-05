@@ -485,7 +485,85 @@ int App_ParseBool(TApp *App,char *Param,char *Value,char *Var) {
    return(1);
 }   
 
+/*----------------------------------------------------------------------------
+ * Nom      : <App_ParseDate>
+ * Creation : Fevrier 2013 - J.P. Gauthier
+ *
+ * But      : Parse a date value (YYYMMDDhhmm.
+ *
+ * Parametres :
+ *  <App>     : Parametres de l'application
+ *  <Param>   : Nom du parametre
+ *  <Value>   : Value to parse
+ *  <Var>     : Variable to put result into
+ *
+ * Retour:
+ *  <ok>     : 1 = ok or 0 = failed
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+*/
+int App_ParseDate(TApp *App,char *Param,char *Value,time_t *Var) {
+   
+   long long t;
+   char    **ptr;
 
+   if (strlen(Value)!=12 || (t=strtoll(Value,ptr,10))<=0) {
+       App_Log(App,ERROR,"Invalid value for %s, must be YYYYMMDDHHMM: %s\n",Param,Value);
+      return(0);
+   }
+   *Var=System_DateTime2Seconds(t/10000,(t-(t/10000*10000))*100,1);
+
+   return(1);
+}   
+
+/*----------------------------------------------------------------------------
+ * Nom      : <App_ParseCoord>
+ * Creation : Aout 2013 - J.P. Gauthier
+ *
+ * But      : Parse a coordinate  value.
+ *
+ * Parametres :
+ *  <App>     : Parametres de l'application
+ *  <Param>   : Nom du parametre
+ *  <Value>   : Value to parse
+ *  <Var>     : Variable to put result into
+ *  <Index>   : Coordinate index (0:Lat, 1:Lon, 2:Height, 3:Speed)
+ *
+ * Retour:
+ *  <ok>     : 1 = ok or 0 = failed
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+*/
+int App_ParseCoords(TApp *App,char *Param,char *Value,double *Lat,double *Lon,int Index) {
+   
+   double coord;
+   char **ptr;
+   
+   coord=strtod(Value,ptr);
+
+   switch(Index) {
+      case 0: 
+         if (coord<-90.0 || coord>90.0) {
+            App_Log(App,ERROR,"Invalid latitude coordinate: %s\n",Value);
+            return(0);
+         }
+         *Lat=coord;
+         break;
+      case 1:
+         if (coord<0.0) coord+=360.0;
+         if (coord<0.0 || coord>360.0) {
+            App_Log(App,ERROR,"Invalid longitude coordinate: %s\n",Value);
+            return(0);
+         }
+         *Lon=coord;
+         break;
+   }
+
+   return(1);
+}
+      
 /*----------------------------------------------------------------------------
  * Nom      : <Model_SeedInit>
  * Creation : Aout 2011 - J.P. Gauthier

@@ -85,6 +85,7 @@ int Codec(TApp *App,char *Pool,char *FST,char *Var,int Code) {
          App_Log(App,ERROR,"Problems opening output file %s\n",FST);
          return(0);
       }
+      App_Log(App,INFO,"Encoding into %s\n",FST);
 
       err=cs_fstecr(fld,-8,fstid,0,0,0,len,1,1,0,0,0,"X",Var,"DESCRIPTION","X",0,0,0,0,2,TRUE);
       if (err<0) {

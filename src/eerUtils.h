@@ -71,10 +71,13 @@
 #define M_PI        3.141592653589793115997963468544        /*Pi*/
 #endif
 #ifndef M_2PI
-#define M_2PI       6.283185307179586231995926937088        /*Deux fois Pix*/
+#define M_2PI       6.283185307179586231995926937088        /*Deux fois Pi*/
 #endif
 #ifndef M_PI2
 #define M_PI2       1.570796326794896557998981734272        /*Pi sur deux*/
+#endif
+#ifndef M_4PI
+#define M_4PI       12.566370614359172463991853874176       /*Quatre foir Pi*/
 #endif
 #ifndef M_PI4
 #define M_PI4       0.785398163397448278999490867136        /*Pi sur quatre*/

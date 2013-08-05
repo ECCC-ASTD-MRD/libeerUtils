@@ -276,7 +276,7 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
     * output of this routine is input for each of the interpolation
     * routines. The output is in Indexes.
     */
-#ifdef HAVE_RMN=1
+#ifdef HAVE_RMN
    (void)f77name(interp1d_findpos)(&interp->NIJ,&ZRefSrc->LevelNb,&ZRefDest->LevelNb,&interp->NIJ,&interp->NIJ,ZRefSrc->PCube,interp->Indexes,ZRefDest->PCube);
 #else
       fprintf(stderr,"(ERROR) Need RMNLIB to process 3D interpolations");
