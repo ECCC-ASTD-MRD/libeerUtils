@@ -1,0 +1,6 @@
+Package: NAME
+Version: VERSION
+Platform: PLATFORM
+Maintainer: MAINTAINER
+BuildInfo: From SVN $Id$
+Description:  DESC

@@ -396,7 +396,7 @@ int App_ParseInput(TApp *App,void *Def,char *File,TApp_InputParseProc *ParseProc
       return(0);
    }
 
-   if (!(buf=(char*)malloc(APP_BUFMAX))) {
+   if (!(buf=(char*)alloca(APP_BUFMAX))) {
       App_Log(App,ERROR,"Unable to allocate input parsing buffer\n");
       return(0);
    }
@@ -441,7 +441,6 @@ int App_ParseInput(TApp *App,void *Def,char *File,TApp_InputParseProc *ParseProc
             // Call mode specific imput parser
             if (!ParseProc(App,Def,token,value,seq)) {
                fclose(fp);
-               free(buf);
                return(0);
             }
             seq++;
@@ -450,7 +449,6 @@ int App_ParseInput(TApp *App,void *Def,char *File,TApp_InputParseProc *ParseProc
       }
    }
 
-   free(buf);
    return(n);
 }
 

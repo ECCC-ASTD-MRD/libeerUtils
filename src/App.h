@@ -42,6 +42,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <malloc.h>
+#include <alloca.h>
 
 #ifdef _OPENMP
 #   include <omp.h>
