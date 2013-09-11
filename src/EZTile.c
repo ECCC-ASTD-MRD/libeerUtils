@@ -1636,7 +1636,7 @@ TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr) {
    strcpy(new->H.NOMVAR,"    ");
    strcpy(new->H.TYPVAR,"  ");
    strcpy(new->H.ETIKET,"            ");
-   strcpy(new->H.GRTYP,"  ");
+   strcpy(new->H.GRTYP," ");
 
    pthread_mutex_lock(&RPNFieldMutex);
    Key=c_fstprm(Key,&new->H.DATEO,&new->H.DEET,&new->H.NPAS,&new->H.NI,&new->H.NJ,&new->H.NK,&new->H.NBITS,
