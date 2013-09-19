@@ -2208,9 +2208,10 @@ int EZGrid_IJGetValue(TGrid* restrict const Grid,float I,float J,int K0,int K1,f
 
    k=K0;
    do {
-      if (!EZGrid_IsLoaded(t,k))
+      if (!EZGrid_IsLoaded(t,k)) {
          EZGrid_TileGetData(Grid,t,k,0);
-
+      }
+      
       d[0]=t->Data[k][idx];
       d[2]=t->Data[k][idxj];
 

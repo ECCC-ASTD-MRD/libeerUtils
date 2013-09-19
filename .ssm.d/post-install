@@ -11,7 +11,6 @@ profileDirPath=${packageHome}/etc/profile.d
 profilePath=${profileDirPath}/${packageName}.sh
 loginPath=${profileDirPath}/${packageName}.csh
 
-# expect default to point to the real ezinterpv dir
 rm -f ${profilePath} ${loginPath}
 mkdir -p ${profileDirPath}
 

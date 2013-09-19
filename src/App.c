@@ -504,9 +504,9 @@ int App_ParseBool(TApp *App,char *Param,char *Value,char *Var) {
 int App_ParseDate(TApp *App,char *Param,char *Value,time_t *Var) {
    
    long long t;
-   char    **ptr;
+   char     *ptr;
 
-   if (strlen(Value)!=12 || (t=strtoll(Value,ptr,10))<=0) {
+   if (strlen(Value)!=12 || (t=strtoll(Value,&ptr,10))<=0) {
        App_Log(App,ERROR,"Invalid value for %s, must be YYYYMMDDHHMM: %s\n",Param,Value);
       return(0);
    }
@@ -537,9 +537,9 @@ int App_ParseDate(TApp *App,char *Param,char *Value,time_t *Var) {
 int App_ParseCoords(TApp *App,char *Param,char *Value,double *Lat,double *Lon,int Index) {
    
    double coord;
-   char **ptr;
+   char *ptr;
    
-   coord=strtod(Value,ptr);
+   coord=strtod(Value,&ptr);
 
    switch(Index) {
       case 0: 
