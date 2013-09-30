@@ -278,6 +278,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
             ZRef->RCoef[1]=0.0f;
             ZRef->PRef=h.IG1;
             ZRef->Version=0;
+            
          } else {
             fprintf(stdout,"(WARNING) ZRef_DecodeRPN: Could not get info on HY field (c_fstprm).\n");
          }
@@ -909,9 +910,9 @@ double ZRef_Pressure2Level(TZRef* restrict const ZRef,double P0,double Pressure)
  */
 double ZRef_Level2Meter(double Level,int Type) {
 
-   /* Dans le cas d'un niveau 0 (Mauvaise habitude premise pour sigma et eta a 0)*/
-   if (Type==LVL_PRES && Level==0) {
-      return(0);
+   /* Dans le cas d'un niveau 0 et type SIGMA, on force a ETA*/
+   if (Level==0 && Type==LVL_SIGMA) {
+      Type=LVL_ETA;
    }
 
    switch(Type) {

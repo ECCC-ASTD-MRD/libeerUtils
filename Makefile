@@ -23,7 +23,8 @@ ifeq ($(OS),Linux)
 #   CC          = s.cc
    AR          = ar rv
    LD          = ld -shared -x
-   LIBS       := $(LIBS) -lrmne -lpgc  
+#   LIBS       := $(LIBS) -lrmne -lpgc  
+   LIBS       := $(LIBS) -lrmne
    INCLUDES   := $(INCLUDES) -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic
    LINK_EXEC   = -lm -lpthread  
    CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fopenmp
@@ -37,18 +38,18 @@ ifeq ($(OS),Linux)
    endif
 else
    CC          = xlc
-   CC          = mpCC_r
+#   CC          = mpCC_r
    AR          = ar rv
    LD          = ld
    LIBS       := $(LIBS) -lrmne
    INCLUDES   := $(INCLUDES)
    LINK_EXEC   = -lxlf90 -lxlsmp -lc -lpthread -lmass -lm 
-   CCOPTIONS   = -O3 -qnohot -qstrict -Q -v  -qkeyword=restrict -qsmp=omp -qcache=auto -qtune=auto -qarch=auto 
+   CCOPTIONS   = -O3 -qnohot -qstrict -Q -v -qkeyword=restrict -qsmp=omp -qcache=auto -qtune=auto -qarch=auto 
    CDEBUGFLAGS =
    CPFLAGS     = -h
 endif
 
-DEFINES     = -DVERSION=\"$(VERSION)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE -D$(RMN) -D_MPI
+DEFINES     = -DVERSION=\"$(VERSION)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE -D$(RMN) 
 CFLAGS      = $(CDEBUGFLAGS) $(CCOPTIONS) $(INCLUDES) $(DEFINES)
 
 OBJ_C = $(subst .c,.o,$(wildcard src/*.c))
@@ -73,7 +74,7 @@ exec:
 	@if test "$(RMN)" = "HAVE_RMN"; then \
 	   mkdir -p ./bin; \
 	   $(CC) Utilities/EZTiler.c -o bin/EZTiler-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC); \
-	   ln -fs EZTile-$(VERSION) bin/EZTile; \
+	   ln -fs EZTiler-$(VERSION) bin/EZTiler; \
 	   $(CC) Utilities/CodeInfo.c -o bin/CodeInfo-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC);  \
 	   ln -fs CodeInfo-$(VERSION) bin/CodeInfo; \
 	fi

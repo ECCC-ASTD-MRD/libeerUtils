@@ -134,6 +134,7 @@
 #define RAD2DEG(R)           ((double)(R)*57.295779513082322864647721871734)
 #define DEG2RAD(D)           ((double)(D)*0.017453292519943295474371680598)
 #define M2RAD(M)             ((double)(M)*0.00000015706707756635)
+#define M2DEG(M)             ((double)(M)*8.9992806450057884399546578634955e-06)
 #define RAD2M(R)             ((double)(R)*6.36670701949370745569e+06)
 #define CLAMPLAT(LAT)        (LAT=LAT>90.0?90.0:(LAT<-90.0?-90.0:LAT))
 #define CLAMPLON(LON)        (LON=LON>180?LON-360:(LON<-180?LON+360:LON))
