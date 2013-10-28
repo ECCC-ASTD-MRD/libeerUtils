@@ -386,6 +386,7 @@ int ZRef_AddRestrictLevel(float Level) {
  * Parametres   :
  *  <ZRef>      : Vertical referencer
  *  <H>         : RPN header
+ *  <Order>     : Ordre de tri des niveaux (IP1) (-1=decroissant, 0=1 seul niveau, 1=croissant)
  * 
  * Retour:
  *  <Ok>        : (Index du champs <0=erreur).
@@ -394,7 +395,7 @@ int ZRef_AddRestrictLevel(float Level) {
  *
  *----------------------------------------------------------------------------
  */
-int ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Invert) {
+int ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Order) {
 
    TRPNHeader h;
    int        l,key,ip1,flag=0,mode=-1,idlst[RPNMAX];
@@ -404,53 +405,62 @@ int ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Invert) {
 
 #ifdef HAVE_RMN
    
-   /*Get the number of levels*/
-   /*In case of # grid, set IP3 to 1 to get NK just for the first tile*/
-   memcpy(&h,H,sizeof(TRPNHeader));
-   h.IP3=H->GRTYP[0]=='#'?1:-1;
-   c_fstinl(h.FID,&h.NI,&h.NJ,&h.NK,h.DATEV,h.ETIKET,-1,h.IP2,h.IP3,h.TYPVAR,h.NOMVAR,idlst,&h.NK,RPNMAX);
-   if (!(ZRef->Levels=(float*)malloc(h.NK*sizeof(float)))) {
-      return(0);
-   }
+   if (Order) {
+      /*Get the number of levels*/
+      /*In case of # grid, set IP3 to 1 to get NK just for the first tile*/
+      memcpy(&h,H,sizeof(TRPNHeader));
+      h.IP3=H->GRTYP[0]=='#'?1:-1;
+      c_fstinl(h.FID,&h.NI,&h.NJ,&h.NK,h.DATEV,h.ETIKET,-1,h.IP2,h.IP3,h.TYPVAR,h.NOMVAR,idlst,&h.NK,RPNMAX);
+      if (!(ZRef->Levels=(float*)malloc(h.NK*sizeof(float)))) {
+         return(0);
+      }
 
-   /*Get the levels*/
-   for(k=k2=0;k<h.NK;k++) {
-      key=c_fstprm(idlst[k],&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&kx,&h.NBITS,
-            &h.DATYP,&ip1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,
-            h.GRTYP,&h.IG1,&h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,
-            &h.UBC,&h.EX1,&h.EX2,&h.EX3);
+      /*Get the levels*/
+      for(k=k2=0;k<h.NK;k++) {
+         key=c_fstprm(idlst[k],&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&kx,&h.NBITS,
+               &h.DATYP,&ip1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,
+               h.GRTYP,&h.IG1,&h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,
+               &h.UBC,&h.EX1,&h.EX2,&h.EX3);
 
-      f77name(convip)(&ip1,&ZRef->Levels[k2],&l,&mode,&format,&flag);
-      if (k==0) ZRef->Type=l;
+         f77name(convip)(&ip1,&ZRef->Levels[k2],&l,&mode,&format,&flag);
+         if (k==0) ZRef->Type=l;
 
-      /* If a list of restrictive levels is defined, check for validity*/
-      if (h.NK>10 && ZRef_Levels) {
-         if (!bsearch(&ZRef->Levels[k2],ZRef_Levels,ZRef_LevelsNb,sizeof(float),QSort_Float)) {
-            continue;
+         /* If a list of restrictive levels is defined, check for validity*/
+         if (h.NK>10 && ZRef_Levels) {
+            if (!bsearch(&ZRef->Levels[k2],ZRef_Levels,ZRef_LevelsNb,sizeof(float),QSort_Float)) {
+               continue;
+            }
+         }
+
+         /*Make sure we use a single type of level, the first we get*/
+         if (l==ZRef->Type) {
+            k2++;
          }
       }
+      ZRef->LevelNb=k2;
 
-      /*Make sure we use a single type of level, the first we get*/
-      if (l==ZRef->Type) {
-         k2++;
+      /*Sort the levels from ground up*/
+      qsort(ZRef->Levels,ZRef->LevelNb,sizeof(float),QSort_Float);
+
+      /*Remove duplicates*/
+      for(k=1;k<ZRef->LevelNb;k++) {
+         if (ZRef->Levels[k]==ZRef->Levels[k-1]) {
+            memcpy(&ZRef->Levels[k-1],&ZRef->Levels[k],(ZRef->LevelNb-k)*sizeof(float));
+            k--;
+            ZRef->LevelNb--;
+         }
       }
-   }
-   ZRef->LevelNb=k2;
-
-   /*Sort the levels from ground up*/
-   qsort(ZRef->Levels,ZRef->LevelNb,sizeof(float),QSort_Float);
-
-   /*Remove duplicates*/
-   for(k=1;k<ZRef->LevelNb;k++) {
-      if (ZRef->Levels[k]==ZRef->Levels[k-1]) {
-         memcpy(&ZRef->Levels[k-1],&ZRef->Levels[k],(ZRef->LevelNb-k)*sizeof(float));
-         k--;
-         ZRef->LevelNb--;
+   } else {
+      if (!(ZRef->Levels=(float*)malloc(sizeof(float)))) {
+         return(0);
       }
+      ZRef->LevelNb=1;
+      ip1=H->IP1;
+      f77name(convip)(&ip1,&ZRef->Levels[0],&ZRef->Type,&mode,&format,&flag);
    }
-
+   
    /*Invert the list if requested*/
-   if (Invert) {
+   if (Order==-1) {
       for(k=0;k<ZRef->LevelNb/2;k++) {
          lvl=ZRef->Levels[k];
          ZRef->Levels[k]=ZRef->Levels[ZRef->LevelNb-1-k];

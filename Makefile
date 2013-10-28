@@ -37,19 +37,19 @@ ifeq ($(OS),Linux)
 	INCLUDES    := $(INCLUDES)
    endif
 else
-   CC          = xlc
-#   CC          = mpCC_r
+#   CC          = xlc
+   CC          = mpCC_r
    AR          = ar rv
    LD          = ld
    LIBS       := $(LIBS) -lrmne
    INCLUDES   := $(INCLUDES)
    LINK_EXEC   = -lxlf90 -lxlsmp -lc -lpthread -lmass -lm 
-   CCOPTIONS   = -O3 -qnohot -qstrict -Q -v -qkeyword=restrict -qsmp=omp -qcache=auto -qtune=auto -qarch=auto 
+   CCOPTIONS   = -O3 -qnohot -qstrict -Q -v -qkeyword=restrict -qsmp=omp -qthreaded -qcache=auto -qtune=auto -qarch=auto -qlibmpi -qinline
    CDEBUGFLAGS =
    CPFLAGS     = -h
 endif
 
-DEFINES     = -DVERSION=\"$(VERSION)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE -D$(RMN) 
+DEFINES     = -DVERSION=\"$(VERSION)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE -D$(RMN) -D_MPI
 CFLAGS      = $(CDEBUGFLAGS) $(CCOPTIONS) $(INCLUDES) $(DEFINES)
 
 OBJ_C = $(subst .c,.o,$(wildcard src/*.c))
