@@ -238,6 +238,8 @@ extern int f77name(cigaxg) (char *igtyp,ftnfloat *xg1,ftnfloat *xg2,ftnfloat *xg
 extern int f77name(cxgaig) (char *igtyp,int *ig1,int *ig2,int *ig3,int *ig4,ftnfloat *xg1,ftnfloat *xg2,ftnfloat *xg3,ftnfloat *xg4);
 extern int f77name(mscale) (ftnfloat *r,ftnfloat *d60,ftnfloat *pi,ftnfloat *pj,int *ni,int *nj);
 extern int f77name(wkoffit)(char *filename,int size);
+extern int f77name(fstlnk) (int *list,int *size);
+extern int f77name(fstunl) (int *list,int *size);
 
 /*RPN 1d interpolation functions*/
 extern void f77name (interp1d_findpos) ();
