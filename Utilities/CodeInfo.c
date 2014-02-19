@@ -76,11 +76,14 @@ int Codec(TApp *App,char *Pool,char *FST,char *Var,int Code) {
       strtrim(buf,' ');
       len=strlen(buf);
 
+      // Get rid of trailing \n
+      if (buf[len-1]=='\n') len--;
+      
       App_Log(App,INFO,"Encoding %i character\n",len);
       for(i=0;i<len;i++) {
          fld[i]=buf[i];
       }
-
+      
       if ((fstid=cs_fstouv(FST,"STD+RND+R/W"))<0) {
          App_Log(App,ERROR,"Problems opening output file %s\n",FST);
          return(0);

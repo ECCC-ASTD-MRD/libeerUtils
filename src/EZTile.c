@@ -543,6 +543,7 @@ static float **EZGrid_TileGetData(const TGrid* restrict const Grid,TGridTile* re
          type=Grid->ZRef->Type==LVL_ETA?LVL_SIGMA:Grid->ZRef->Type;
          f77name(convip)(&ip1,&Grid->ZRef->Levels[k],&type,&mode,&format,&flag);
          key=c_fstinf(Grid->H.FID,&ni,&nj,&nk,Grid->H.DATEV,Grid->H.ETIKET,ip1,Grid->H.IP2,Tile->NO,Grid->H.TYPVAR,Grid->H.NOMVAR);
+//         c_fst_data_length((Grid->H.DATYP==1 || Grid->H.DATYP==5)?Grid->H.NBITS>32?8:4)?(Grid->H.NBITS>8?(Grid->H.NBITS>16?(Grid->H.NBITS>32?8:4):2):1));
          if (key<0) {
             mode=3;
             f77name(convip)(&ip1,&Grid->ZRef->Levels[k],&type,&mode,&format,&flag);

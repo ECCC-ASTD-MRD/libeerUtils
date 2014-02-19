@@ -28,11 +28,11 @@
 #define VMID(A,B)                 (A+B)*0.5
 #define VMIN(A,B)                 (A<B?A:B)
 
-#define Vect_Add(V1,V2,V3)       V1[0]=V2[0]+V3[0];V1[1]=V2[1]+V3[1];V1[2]=V2[2]+V3[2]
-#define Vect_Assign(V1,V2)       V1[0]=V2[0];V1[1]=V2[1];V1[2]=V2[2]
-#define Vect_Clear(V)            V[0]=0.0;V[1]=0.0;V[2]=0.0
+#define Vect_Add(V1,V2,V3)       V1[0]=V2[0]+V3[0];V1[1]=V2[1]+V3[1];V1[2]=V2[2]+V3[2];
+#define Vect_Assign(V1,V2)       V1[0]=V2[0];V1[1]=V2[1];V1[2]=V2[2];
+#define Vect_Clear(V)            V[0]=0.0;V[1]=0.0;V[2]=0.0;
 #define Vect_DotProduct(V1,V2)   (V1[0]*V2[0]+V1[1]*V2[1]+V1[2]*V2[2])
-#define Vect_Init(V,I,J,K)       V[0]=I;V[1]=J;V[2]=K
+#define Vect_Init(V,I,J,K)       V[0]=I;V[1]=J;V[2]=K;
 #define Vect_Max(V1,V2,V3)       V1[0]=VMAX(V2[0],V3[0]);V1[1]=VMAX(V2[1],V3[1]);V1[2]=VMAX(V2[2],V3[2])
 #define Vect_Mid(V1,V2,V3)       V1[0]=VMID(V2[0],V3[0]);V1[1]=VMID(V2[1],V3[1]);V1[2]=VMID(V2[2],V3[2])
 #define Vect_Min(V1,V2,V3)       V1[0]=VMIN(V2[0],V3[0]);V1[1]=VMIN(V2[1],V3[1]);V1[2]=VMIN(V2[2],V3[2])
@@ -48,10 +48,10 @@
 #define Vect_Interp(V,V1,V2,R)   Vect_Substract(V,V2,V1);Vect_SMul(V,V,R);Vect_Add(V,V1,V)
 #define Vect_InterpC(V,V1,V2,R)  Vect_Substract(V,V2,V1);V[0]=V[0]>2?-(4-V[0]):(V[0]<-2?4+V[0]:V[0]);Vect_SMul(V,V,R);Vect_Add(V,V1,V)
 
-#define Vect_SAdd(V1,V2,SC)      V1[0]=V2[0]+SC;V1[1]=V2[1]+SC;V1[2]=V2[2]+SC
-#define Vect_SSubstrac(V1,V2,SC) V1[0]=V2[0]-SC;V1[1]=V2[1]-SC;V1[2]=V2[2]-SC
-#define Vect_SMul(V1,V2,SC)      V1[0]=V2[0]*SC;V1[1]=V2[1]*SC;V1[2]=V2[2]*SC
-#define Vect_SDiv(V1,V2,SC)      V1[0]=V2[0]/SC;V1[1]=V2[1]/SC;V1[2]=V2[2]/SC
+#define Vect_SAdd(V1,V2,SC)      V1[0]=V2[0]+SC;V1[1]=V2[1]+SC;V1[2]=V2[2]+SC;
+#define Vect_SSubstrac(V1,V2,SC) V1[0]=V2[0]-SC;V1[1]=V2[1]-SC;V1[2]=V2[2]-SC;
+#define Vect_SMul(V1,V2,SC)      V1[0]=V2[0]*SC;V1[1]=V2[1]*SC;V1[2]=V2[2]*SC;
+#define Vect_SDiv(V1,V2,SC)      V1[0]=V2[0]/SC;V1[1]=V2[1]/SC;V1[2]=V2[2]/SC;
 
 typedef double Vect4d[4];
 typedef double Vect3d[3];
