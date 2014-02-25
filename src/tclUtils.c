@@ -44,13 +44,40 @@
 
 TCL_DECLARE_MUTEX(MUTEX_HASH)
 
-typedef struct TcpState {
-    Tcl_Channel channel;           /* Channel associated with this file. */
-    int fd;                        /* The socket itself. */
-    int flags;                     /* ORed combination of the bitfields defined below. */
-    Tcl_TcpAcceptProc *acceptProc; /* Proc to call on accept. */
-    ClientData acceptProcData;     /* The data for the accept proc. */
-} TcpState;
+typedef struct TcpState TcpState;
+
+typedef struct TcpFdList {
+    TcpState *statePtr;
+    int fd;
+    struct TcpFdList *next;
+} TcpFdList;
+
+struct TcpState {
+    Tcl_Channel channel;        /* Channel associated with this file. */
+    TcpFdList fds;              /* The file descriptors of the sockets. */
+    int flags;                  /* ORed combination of the bitfields defined
+                                 * below. */
+    /*
+     * Only needed for server sockets
+     */
+
+    Tcl_TcpAcceptProc *acceptProc;
+                                /* Proc to call on accept. */
+    ClientData acceptProcData;  /* The data for the accept proc. */
+
+    /*
+     * Only needed for client sockets
+     */
+
+    struct addrinfo *addrlist;  /* Addresses to connect to. */
+    struct addrinfo *addr;      /* Iterator over addrlist. */
+    struct addrinfo *myaddrlist;/* Local address. */
+    struct addrinfo *myaddr;    /* Iterator over myaddrlist. */
+    int filehandlers;           /* Caches FileHandlers that get set up while
+                                 * an async socket is not yet connected. */
+    int status;                 /* Cache status of async socket. */
+    int cachedBlocking;         /* Cache blocking mode of async socket. */
+};
 
 int TclY_Get0IntFromObj(Tcl_Interp *Interp,Tcl_Obj *Obj,int *Var) {
 
@@ -89,7 +116,7 @@ FILE* TclY_ChannelOrSocketOpen(Tcl_Interp *Interp,Tcl_Obj *Obj,char *Mode) {
    int          mode;
 
    if ((sock=Tcl_GetChannel(Interp,Tcl_GetString(Obj),&mode))) {
-      if (!(fid=fdopen(((TcpState*)((Channel*)sock)->instanceData)->fd,Mode))) {
+      if (!(fid=fdopen(((TcpState*)((Channel*)sock)->instanceData)->fds.fd,Mode))) {
          Tcl_AppendResult(Interp,"TclY_ChannelOrSocketOpen : Unable to open socket \"",Tcl_GetString(Obj),"\"",(char*)NULL);
          return(NULL);
       }
@@ -100,6 +127,55 @@ FILE* TclY_ChannelOrSocketOpen(Tcl_Interp *Interp,Tcl_Obj *Obj,char *Mode) {
       }
    }
    return(fid);
+}
+
+int TclY_SocketTimeOut(Tcl_Interp *Interp,Tcl_Obj *Obj,int *Receive,int *Send) {
+
+   Tcl_Channel    sock=NULL;
+   int            mode;
+   struct timeval timeout;      
+
+   timeout.tv_usec = 0;
+
+   if ((sock=Tcl_GetChannel(Interp,Tcl_GetString(Obj),&mode))) {
+      mode=sizeof(timeout);
+      
+      if (*Receive==0) {
+         if (getsockopt(((TcpState*)((Channel*)sock)->instanceData)->fds.fd,SOL_SOCKET,SO_RCVTIMEO,(void * restrict)&timeout,&mode)<0) {
+            Tcl_AppendResult(Interp,"TclY_SocketTimeOut: Unable to get receive timeout, getsockopt failed",(char*)NULL);
+            return(TCL_ERROR);
+         }
+         *Receive=timeout.tv_sec;
+         
+      } else {
+         timeout.tv_sec = *Receive;
+         if (setsockopt(((TcpState*)((Channel*)sock)->instanceData)->fds.fd,SOL_SOCKET,SO_RCVTIMEO,(char*)&timeout,mode)<0) {
+            Tcl_AppendResult(Interp,"TclY_SocketTimeOut: Unable to change receive timeout, setsockopt failed",(char*)NULL);
+            return(TCL_ERROR);
+         }
+      }
+
+      if (*Send==0) {
+         if (getsockopt(((TcpState*)((Channel*)sock)->instanceData)->fds.fd,SOL_SOCKET,SO_SNDTIMEO,(char*)&timeout,&mode)<0) {
+            Tcl_AppendResult(Interp,"TclY_SocketTimeOut: Unable to get send timeout, getsockopt failed",(char*)NULL);
+            return(TCL_ERROR);
+         }
+         *Send=timeout.tv_sec;
+         
+      } else {
+         timeout.tv_sec = *Send;
+
+         if (setsockopt(((TcpState*)((Channel*)sock)->instanceData)->fds.fd,SOL_SOCKET,SO_SNDTIMEO,(char*)&timeout,mode)<0) {
+            Tcl_AppendResult(Interp,"TclY_SocketTimeOut: Unable to change send timeout, setsockopt failed",(char*)NULL);
+            return(TCL_ERROR);
+         }
+      }
+   } else {
+      Tcl_AppendResult(Interp,"TclY_SocketTimeOut: Invalid socket/channel \"",Tcl_GetString(Obj),"\"",(char*)NULL);
+      return(TCL_ERROR);    
+   }
+
+   return(TCL_OK);
 }
 
 int TclY_ListObjFind(Tcl_Interp *Interp,Tcl_Obj *List,Tcl_Obj *Item) {

@@ -43,6 +43,7 @@ int   TclY_Get0IntFromObj(Tcl_Interp *Interp,Tcl_Obj *Obj,int *Var);
 int   TclY_Get0LongFromObj(Tcl_Interp *Interp,Tcl_Obj *Obj,long *Var);
 int   TclY_Get0DoubleFromObj(Tcl_Interp *Interp,Tcl_Obj *Obj,double *Var);
 FILE* TclY_ChannelOrSocketOpen(Tcl_Interp *Interp,Tcl_Obj *Obj,char *Mode);
+int   TclY_SocketTimeOut(Tcl_Interp *Interp,Tcl_Obj *Obj,int *Receive,int *Send);
 int   TclY_ListObjFind(Tcl_Interp *Interp,Tcl_Obj *List,Tcl_Obj *Item);
 
 Tcl_HashEntry* TclY_CreateHashEntry(Tcl_HashTable *Table,const char *Name,int *new);
