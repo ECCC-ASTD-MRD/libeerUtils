@@ -6,29 +6,32 @@ OS         = $(shell uname -s)
 PROC       = $(shell uname -m | tr _ -)
 RMN        = HAVE_RMN
 
-SSM_NAME    = ${NAME}_${VERSION}_${ORDENV_PLAT}
+ifdef COMP_ARCH
+COMP=-${COMP_ARCH}
+endif
+
+SSM_NAME    = ${NAME}_${VERSION}${COMP}_${ORDENV_PLAT}
 
 INSTALL_DIR = $(HOME)
 TCL_DIR     = /cnfs/ops/cmoe/afsr005/Archive/tcl8.6.0
 LIB_DIR     = /cnfs/ops/cmoe/afsr005/Lib/${ORDENV_PLAT}
 
-LIBS        = -L$(LIB_DIR)/librmn-14/lib -L$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g')
-INCLUDES    = -Isrc -I$(shell echo $(EC_INCLUDE_PATH) | sed 's/\s* / -I/g')
 
 ifeq ($(OS),Linux)
 
-#   CC          = c99 
+   LIBS        = -L$(LIB_DIR)/librmn-14/lib
+   INCLUDES    = -Isrc
+
 #   CC          = mpicc
    CC          = /usr/bin/mpicc.openmpi
-#   CC          = s.cc
+   CC          = s.cc
    AR          = ar rv
    LD          = ld -shared -x
-#   LIBS       := $(LIBS) -lrmne -lpgc  
    LIBS       := $(LIBS) -lrmne
    INCLUDES   := $(INCLUDES) -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic
-   LINK_EXEC   = -lm -lpthread  
-   CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fopenmp
-#phi   CCOPTIONS   = -c99 -O2 -Mmpi=mpich2
+   LINK_EXEC   = -lm -lpthread
+#   CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer -fopenmp
+   CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer -fopenmp -mpi
    CDEBUGFLAGS =
    CPFLAGS     = -d
 
@@ -36,9 +39,15 @@ ifeq ($(OS),Linux)
         CCOPTIONS   := $(CCOPTIONS) -fPIC -m64 -DSTDC_HEADERS
 	INCLUDES    := $(INCLUDES)
    endif
+
 else
+
+   LIBS        = -L$(LIB_DIR)/librmn-14/lib -L$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g')
+   INCLUDES    = -Isrc -I$(shell echo $(EC_INCLUDE_PATH) | sed 's/\s* / -I/g')
+
 #   CC          = xlc
    CC          = mpCC_r
+#   CC          = s.cc
    AR          = ar rv
    LD          = ld
    LIBS       := $(LIBS) -lrmne
@@ -68,6 +77,11 @@ lib:
 	mkdir -p ./include
 	$(AR) lib/libeerUtils-$(VERSION).a $(OBJ_C) $(OBJ_F)
 	ln -fs libeerUtils-$(VERSION).a lib/libeerUtils.a
+
+#	@if test "$(OS)" != "AIX"; then \
+#	   $(CC) -shared -Wl,-soname,libeerUtils-$(VERSION).so -o lib/libeerUtils-$(VERSION).so $(OBJ_C) $(OBJ_T) $(CFLAGS) $(LIBS) $(LINK_EXEC); \
+#	   ln -fs  libeerUtils-$(VERSION).so lib/libeerUtils.so; \
+#	fi
 	cp $(CPFLAGS) ./src/*.h ./include
 
 exec:

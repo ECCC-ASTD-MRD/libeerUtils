@@ -584,6 +584,7 @@ static float **EZGrid_TileGetData(const TGrid* restrict const Grid,TGridTile* re
       data[k]=datak;
       Tile->Data=data;
    }
+
    if (!Safe) pthread_mutex_unlock(&Tile->Mutex);
 
    return(Tile->Data);
@@ -1617,7 +1618,7 @@ wordint f77name(ezgrid_read)(wordint *fid,char *var,char *typvar,char *etiket,wo
    return(EZGrid_CacheIdx(EZGrid_Read(*fid,cvar,ctypvar,cetiket,*datev,*ip1,*ip2,*incr)));
 }
 
-TGrid *EZGrid_Read(int FId,const char* Var,const char* TypVar,const char* Etiket,int DateV,int IP1,int IP2,int Incr) {
+TGrid *EZGrid_Read(int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2,int Incr) {
 
    int    key;
    int    ni,nj,nk;

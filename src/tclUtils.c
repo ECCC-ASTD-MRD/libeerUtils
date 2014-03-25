@@ -38,12 +38,13 @@
 
 #include "tclUtils.h"
 
-#include "tclInt.h"
 #include "tclPort.h"
+#include "tclInt.h"
 #include "tclIO.h"
 
 TCL_DECLARE_MUTEX(MUTEX_HASH)
 
+// Tcl Internal stucture needed for some extension functions
 typedef struct TcpState TcpState;
 
 typedef struct TcpFdList {

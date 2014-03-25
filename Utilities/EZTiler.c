@@ -34,7 +34,7 @@
 
 #define NAME    "EZTiler"
 #define DESC    "RPN fstd field tiler\n\n"
-#define CMDLINE "Bad option: %s\nUsage:\n\t-v, --verbose\t verbose [0-3]\n\t-i, --input\t input file\n\t-o, --output\t output file\n\t-l, --log\t log file\n"
+#define CMDLINE "Usage:\n\t-v, --verbose\t verbose [0-3]\n\t-i, --input\t input file\n\t-o, --output\t output file\n\t-l, --log\t log file\n"
 
 int Tile(TApp *App,char *In,char *Out,int Size,char *Vars) {
 
@@ -82,8 +82,8 @@ int main(int argc, char *argv[]) {
    str=env=getenv("APP_PARAMS");
 
    if (argc==1 && !env) {
-      printf(DESC,CMDLINE,"");
-      printf(CMDLINE,"");
+      printf(DESC);
+      printf(CMDLINE);
       exit(EXIT_FAILURE);
    }
 
@@ -118,7 +118,8 @@ int main(int argc, char *argv[]) {
          val=env?strtok(str," "):argv[++i];
          App_LogLevel(app,val);
       } else {
-         printf(CMDLINE,tok);
+         printf(APP_BADOPTION,tok);
+         printf(CMDLINE);
          exit(EXIT_FAILURE);
       }
       ++i;
