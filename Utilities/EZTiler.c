@@ -32,9 +32,8 @@
 #include "App.h"
 #include "EZTile.h"
 
-#define NAME    "EZTiler"
-#define DESC    "RPN fstd field tiler\n\n"
-#define CMDLINE "Usage:\n\t-v, --verbose\t verbose [0-3]\n\t-i, --input\t input file\n\t-o, --output\t output file\n\t-l, --log\t log file\n"
+#define APP_NAME "EZTiler"
+#define APP_DESC "SMC/CMC/EERS RPN fstd field tiler."
 
 int Tile(TApp *App,char *In,char *Out,int Size,char *Vars) {
 
@@ -70,62 +69,25 @@ int Tile(TApp *App,char *In,char *Out,int Size,char *Vars) {
    return(1);
 }
 
-
 int main(int argc, char *argv[]) {
 
    TApp     *app;
-   int       i=-1,size=0;
-   char     *tok,*ptok=NULL,*env=NULL,*str,*in,*out,*val,*vars;
+   int      ok=0,size=0;
+   char     *in=NULL,*out=NULL,*val=NULL,*vars=NULL;
 
-   in=out=NULL;
+   TApp_Arg appargs[]=
+      { { APP_CHAR,  (void**)&in,   "i", "input",  "Input file" },
+        { APP_CHAR,  (void**)&out,  "o", "output", "Output file" },
+        { APP_INT32, (void**)&size, "s", "size",   "Tile size in gridpoint" },
+        { APP_CHAR,  (void**)&vars, "n", "nomvar", "List of variable to process" },
+        { 0 } };
 
-   str=env=getenv("APP_PARAMS");
+   app=App_New(APP_NAME,VERSION,APP_DESC);
 
-   if (argc==1 && !env) {
-      printf(DESC);
-      printf(CMDLINE);
-      exit(EXIT_FAILURE);
+   if (!App_ParseArgs(app,appargs,argc,argv)) {
+      exit(EXIT_FAILURE);      
    }
-
-   app=App_New(NAME,VERSION);
-
-   // Parse parameters either on command line or through environment variable
-   i=1;
-   while((i<argc && (tok=argv[i])) || (env && (tok=strtok(str," ")))) {
-      str=NULL;
-
-      // Check if token is a flag or a value (for multi-value parameters)
-      if (tok[0]!='-') {
-         tok=ptok;
-         --i;
-      }
-
-      if (strcasecmp(tok,"-i")==0 || strcasecmp(tok,"--input")==0) {             // Input file
-         val=env?strtok(str," "):argv[++i];
-         in=val;
-      } else if (strcasecmp(tok,"-o")==0 || strcasecmp(tok,"--output")==0) {     // Output file
-         val=env?strtok(str," "):argv[++i];
-         out=val;
-      } else if (strcasecmp(tok,"-s")==0 || strcasecmp(tok,"--size")==0) {       // Tile size
-         val=env?strtok(str," "):argv[++i];
-         size=atoi(val);
-      } else if (strcasecmp(tok,"-n")==0 || strcasecmp(tok,"--nomvar")==0) {     // variables
-         vars=env?strtok(str," "):argv[++i];
-      } else if (strcasecmp(tok,"-l")==0 || strcasecmp(tok,"--log")==0) {        // Log file
-         val=env?strtok(str," "):argv[++i];
-         app->LogFile=val;
-      } else if (strcasecmp(tok,"-v")==0 || strcasecmp(tok,"--verbose")==0) {    // Verbose degree
-         val=env?strtok(str," "):argv[++i];
-         App_LogLevel(app,val);
-      } else {
-         printf(APP_BADOPTION,tok);
-         printf(CMDLINE);
-         exit(EXIT_FAILURE);
-      }
-      ++i;
-      ptok=tok;
-   }
-
+   
    /*Error checking*/
    if (in==NULL) {
       App_Log(app,ERROR,"No input standard file specified\n");
@@ -142,11 +104,11 @@ int main(int argc, char *argv[]) {
 
    /*Launch the app*/
    App_Start(app);
-   i=Tile(app,in,out,size,vars);
-   App_End(app,i==1);
+   ok=Tile(app,in,out,size,vars);
+   App_End(app,ok==1);
    App_Free(app);
 
-   if (!i) {
+   if (!ok) {
       exit(EXIT_FAILURE);
    } else {
       exit(EXIT_SUCCESS);

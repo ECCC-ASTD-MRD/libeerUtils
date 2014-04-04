@@ -33,9 +33,8 @@
 #include "eerUtils.h"
 #include "EZTile.h"
 
-#define NAME    "CodeInfo"
-#define DESC    "Coder/Decoder of pool information into/from RPN fields\n\n"
-#define CMDLINE "Usage:\n\t-n, --nomvar\t variable name\n\t-i, --info\t input pool file\n\t-f, --fstd\t RPN standard file\n\t-c, --code\t Encodage\n\t-d, --decode\t Decodage\n\t-v, --verbose\t verbose [0-3]\n\t-l, --log\t log file\n"
+#define APP_NAME "CodeInfo"
+#define APP_DESC "SMC/CMC/EERS Coder/Decoder of pool information into/from RPN fields."
 
 /*----------------------------------------------------------------------------
  * Nom      : <Codec>
@@ -125,64 +124,29 @@ int Codec(TApp *App,char *Pool,char *FST,char *Var,int Code) {
 int main(int argc, char *argv[]) {
 
    TApp     *app;
-   int       i=-1,ckey;
-   char     *tok,*ptok=NULL,*env=NULL,*str,*pool,*val,*fst,*var;
+   int       ok=0,code,decode,ckey;
+   char     *pool,*val,*fst,*var;
+
+   TApp_Arg appargs[]=
+      { { APP_CHAR,  (void**)&pool,   "i", "info",   "Information file" },
+        { APP_CHAR,  (void**)&fst,    "f", "fstd",   "RPN standard file file" },
+        { APP_FLAG,  (void**)&code,   "c", "code",   "Code information into RPN record" },
+        { APP_FLAG,  (void**)&decode, "d", "decode", "Decode information from RPN record" },
+        { APP_CHAR,  (void**)&var,    "n", "nomvar", "Name of information variable" },
+        { 0 } };
 
    pool=val=fst=var=NULL;
-   ckey=0;
+   code=decode=ckey=0;
 
-   str=env=getenv("APP_PARAMS");
+   app=App_New(APP_NAME,VERSION,APP_DESC);
 
-   if (argc==1 && !env) {
-      printf(DESC);
-      printf(CMDLINE);
-      exit(EXIT_FAILURE);
-   }
-
-   app=App_New(NAME,VERSION);
-
-   // Parse parameters either on command line or through environment variable
-   i=1;
-   while((i<argc && (tok=argv[i])) || (env && (tok=strtok(str," ")))) {
-      str=NULL;
-
-      // Check if token is a flag or a value (for multi-value parameters)
-      if (tok[0]!='-') {
-         tok=ptok;
-         --i;
-      }
-
-      if (strcasecmp(tok,"-i")==0 || strcasecmp(tok,"--info")==0 || strcasecmp(tok,"-info")==0) {              // Pool file
-         val=env?strtok(str," "):argv[++i];
-         pool=val;
-      } else if (strcasecmp(tok,"-f")==0 || strcasecmp(tok,"--fstd")==0 || strcasecmp(tok,"-fstd")==0) {       // FSTD file
-         val=env?strtok(str," "):argv[++i];
-         fst=val;
-      } else if (strcasecmp(tok,"-n")==0 || strcasecmp(tok,"--nomvar")==0 || strcasecmp(tok,"-nomvar")==0) {   // NOMVAR to use
-         val=env?strtok(str," "):argv[++i];
-         var=val;
-      } else if (strcasecmp(tok,"-c")==0 || strcasecmp(tok,"--code")==0 || strcasecmp(tok,"-ckey")==0) {      // Code key
-         ++i;
-         ckey=1;
-      } else if (strcasecmp(tok,"-d")==0 || strcasecmp(tok,"--decode")==0 ) {                                 // Decode key
-         ++i;
-         ckey=0;
-      } else if (strcasecmp(tok,"-l")==0 || strcasecmp(tok,"--log")==0) {        // Log file
-         val=env?strtok(str," "):argv[++i];
-         app->LogFile=val;
-      } else if (strcasecmp(tok,"-v")==0 || strcasecmp(tok,"--verbose")==0) {    // Verbose degree
-         val=env?strtok(str," "):argv[++i];
-         App_LogLevel(app,val);
-      } else {
-         printf(APP_BADOPTION,tok);
-         printf(CMDLINE);
-         exit(EXIT_FAILURE);
-      }
-      ++i;
-      ptok=tok;
+   if (!App_ParseArgs(app,appargs,argc,argv)) {
+      exit(EXIT_FAILURE);      
    }
 
    /*Error checking*/
+   ckey=code?1:0;
+   
    if (fst==NULL) {
       App_Log(app,ERROR,"No standard file specified\n");
       exit(EXIT_FAILURE);
@@ -193,11 +157,11 @@ int main(int argc, char *argv[]) {
 
    /*Launch the app*/
    App_Start(app);
-   i=Codec(app,pool,fst,var,ckey);
-   App_End(app,i==1);
+   ok=Codec(app,pool,fst,var,ckey);
+   App_End(app,ok==1);
    App_Free(app);
 
-   if (!i) {
+   if (!ok) {
       exit(EXIT_FAILURE);
    } else {
       exit(EXIT_SUCCESS);

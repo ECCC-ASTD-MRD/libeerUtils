@@ -43,6 +43,7 @@
 #include <time.h>
 #include <malloc.h>
 #include <alloca.h>
+#include <errno.h>
 
 #ifdef _OPENMP
 #   include <omp.h>
@@ -54,15 +55,23 @@
 
 #define APP_BUFMAX    32768               // Maximum input buffer length
 #define APP_SEED      1049731793          // Initial FIXED seed
-#define APP_BADOPTION "Bad option: %s\n"
 
 typedef enum { MUST=-1,ERROR=0,WARNING=1,INFO=2,DEBUG=3,EXTRA=4 } TApp_LogLevel;
 typedef enum { STOP,RUN,DONE } TApp_State;
+typedef enum { APP_NIL,APP_FLAG,APP_LIST,APP_CHAR,APP_UINT32,APP_INT32,APP_UINT64,APP_INT64,APP_FLOAT32,APP_FLOAT64 } TApp_Type;
+
+// Argument definitions
+typedef struct TApp_Arg {
+   TApp_Type Type;
+   void    **Var;
+   char    *Short,*Long,*Info;
+} TApp_Arg;
 
 /*Application controller definition*/
 typedef struct TApp {
     char*          Name;                 // Name
     char*          Version;              // Version
+    char*          Desc;                 // Description
     char*          LogFile;              // Log file
     int            LogWarning;           // Number of warnings
     int            LogError;             // Number of errors
@@ -81,13 +90,14 @@ typedef struct TApp {
 
 typedef int (TApp_InputParseProc) (TApp *App,void *Def,char *Token,char *Value,int Index);
 
-TApp *App_New(char* Name,char* Version);
+TApp *App_New(char* Name,char* Version,char* Desc);
 void  App_Free(TApp *App);
 void  App_Start(TApp *App);
 void  App_End(TApp *App,int Status);
 int   App_IsDone(TApp *App);
 void  App_Log(TApp *App,TApp_LogLevel Level,const char *Format,...);
 int   App_LogLevel(TApp *App,char *Val);
+int   App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[]);
 int   App_ParseInput(TApp *App,void *Def,char *File,TApp_InputParseProc *ParseProc);
 int   App_ParseBool(TApp *App,char *Param,char *Value,char *Var);
 int   App_ParseDate(TApp *App,char *Param,char *Value,time_t *Var);

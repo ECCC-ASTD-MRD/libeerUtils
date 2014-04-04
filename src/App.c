@@ -48,13 +48,14 @@
  * Remarques  :
  *----------------------------------------------------------------------------
 */
-TApp *App_New(char *Name,char *Version) {
+TApp *App_New(char *Name,char *Version,char *Desc) {
 
    TApp *app;
 
    app=(TApp*)malloc(sizeof(TApp));
    app->Name=strdup(Name);
    app->Version=strdup(Version);
+   app->Desc=strdup(Desc);
    app->LogFile=strdup("stdout");
    app->LogStream=(FILE*)NULL;
    app->LogWarning=0;
@@ -92,6 +93,7 @@ void App_Free(TApp *App) {
 
    free(App->Name);
    free(App->Version);
+   free(App->Desc);
    free(App->LogFile);
 
    if (App->Tag) free(App->Tag);
@@ -362,6 +364,164 @@ int App_LogLevel(TApp *App,char *Val) {
       App->LogLevel=(TApp_LogLevel)atoi(Val);
    }
    return(1);
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <App_PrintArgs>
+ * Creation : Mars 2014 - J.P. Gauthier
+ *
+ * But      : Print arguments information.
+ *
+ * Parametres  :
+ *  <App>     : Parametres de l'application
+ *  <AArgs>   : Arguments definition
+ *  <Token>   : Invalid token if any, NULL otherwiseC
+ *
+ * Retour:
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+*/
+void App_PrintArgs(TApp *App,TApp_Arg *AArgs,char *Token) {
+   
+   TApp_Arg *aarg=NULL;
+
+   printf("%s %s:\n\t%s\n\n",App->Name,App->Version,App->Desc);
+
+   if (Token)
+      printf("Bad option: %s\n\n",Token);
+   
+   printf("Usage:");
+
+   // Process app specific argument
+   aarg=AArgs;
+   while(aarg && aarg->Short) {
+      printf("\n\t-%s, --%s\t%s",aarg->Short,aarg->Long,aarg->Info);
+      aarg++;
+   }
+
+   // Process default argument
+   printf("\n\t-%s, --%s\t%s","l", "log",     "Log file (default: stdout)");
+   printf("\n\t-%s, --%s\t%s","v", "verbose", "Verbose level (ERROR,WARNING,INFO,DEBUG,EXTRA or 0-3)");
+   printf("\n\t-%s, --%s\t%s","h", "help",    "Help info");   
+   printf("\n");
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <App_GetArgs>
+ * Creation : Mars 2014 - J.P. Gauthier
+ *
+ * But      : Extract argument value
+ *
+ * Parametres  :
+ *  <App>      : Parametres de l'application
+ *  <AArg>     : Argument definition
+ *  <Value>    : Value to extract
+ *
+ * Retour:
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+*/
+inline int App_GetArgs(TApp *App,TApp_Arg *AArg,char *Value) {
+   
+   char *endptr=NULL;
+   errno=0;
+
+   if (Value) {   
+      switch(AArg->Type) {
+         case APP_LIST :  (*AArg->Var++)=Value;                 break;
+         case APP_CHAR :  (*AArg->Var)=Value;                                     break;
+         case APP_UINT32: (*(unsigned int*)AArg->Var)=strtol(Value,&endptr,10);   break;
+         case APP_INT32:  (*(int*)AArg->Var)=strtol(Value,&endptr,10);            break;
+         case APP_UINT64: (*(unsigned long*)AArg->Var)=strtol(Value,&endptr,10);  break;
+         case APP_INT64:  (*(long*)AArg->Var)=strtol(Value,&endptr,10);           break;
+         case APP_FLOAT32:(*(float*)AArg->Var)=strtof(Value,&endptr);             break;
+         case APP_FLOAT64:(*(double*)AArg->Var)=strtod(Value,&endptr);            break;
+      }
+   }   
+   if (!Value || (endptr && endptr==Value)) {
+      printf("Invalid value for parametre -%s, --%s: %s\n",AArg->Short,AArg->Long,Value);
+      exit(EXIT_FAILURE);
+   }
+   return(!errno);
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <App_ParseArgs>
+ * Creation : Mars 2014 - J.P. Gauthier
+ *
+ * But      : Parse default arguments.
+ *
+ * Parametres  :
+ *  <App>      : Parametres de l'application
+ *  <AArgs>    : Arguments definition
+ *  <argc>     : Number of argument
+ *  <argv>     : Arguments
+ *
+ * Retour:
+ *  <ok>       : 1 or 0 if failed
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+*/
+int App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[]) {
+
+   int       i=-1,ok=TRUE;
+   char     *tok,*ptok=NULL,*env=NULL,*str;
+   TApp_Arg *aarg=NULL;
+   
+   str=env=getenv("APP_PARAMS");
+
+   if (argc==1 && !env) {
+      App_PrintArgs(App,AArgs,NULL) ;
+      ok=FALSE;
+   } else {
+
+      // Parse parameters either on command line or through environment variable
+      i=1;
+      while((i<argc && (tok=argv[i])) || (env && (tok=strtok(str," ")))) {
+         str=NULL;
+
+         // Check if token is a flag or a value (for multi-value parameters)
+         if (tok[0]!='-' && ptok) {
+            tok=ptok;
+            --i;
+         }
+
+         // Process default argument
+         if (strcasecmp(tok,"-l")==0 || strcasecmp(tok,"--log")==0) {               // Log file
+            App->LogFile=env?strtok(str," "):argv[++i];
+         } else if (strcasecmp(tok,"-v")==0 || strcasecmp(tok,"--verbose")==0) {    // Verbose degree
+            App_LogLevel(App,env?strtok(str," "):argv[++i]);
+         } else if (strcasecmp(tok,"-h")==0 || strcasecmp(tok,"--help")==0) {       // Help
+            App_PrintArgs(App,AArgs,NULL) ;
+            exit(EXIT_SUCCESS);
+         } else {
+            // Process specific argument
+            aarg=AArgs;
+            while(aarg->Short) {        
+               if ((aarg->Short && tok[1]==aarg->Short[0] && tok[2]=='\0') || (aarg->Long && strcasecmp(&tok[2],aarg->Long)==0)) {
+                  ok=(aarg->Type==APP_FLAG?(*(int*)aarg->Var)=TRUE:App_GetArgs(App,aarg,env?strtok(str," "):argv[++i]));
+                  break;
+               }
+               aarg++;
+            }
+         }
+         
+         // Argument not found
+         if (aarg && (!ok || !aarg->Short)) {
+            App_PrintArgs(App,AArgs,tok) ;
+            ok=FALSE;
+            break;
+         }
+         
+         ++i;
+         ptok=tok;
+      }
+   }
+   
+   return(ok);
 }
 
 /*----------------------------------------------------------------------------
