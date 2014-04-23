@@ -138,6 +138,7 @@
 #define RAD2M(R)             ((double)(R)*6.36670701949370745569e+06)
 #define CLAMPLAT(LAT)        (LAT=LAT>90.0?90.0:(LAT<-90.0?-90.0:LAT))
 #define CLAMPLON(LON)        (LON=LON>180?LON-360:(LON<-180?LON+360:LON))
+#define CLAMPLONRAD(LON)     (LON=(LON>M_PI?(fmod(LON+M_PI,M_2PI)-M_PI):(LON<=-M_PI?(fmod(LON-M_PI,M_2PI)+M_PI):LON)))
 
 #define RPNMAX 2048
 #define COORD_CLEAR(C)       (C.Lat=C.Lon=C.Elev=-999.0)
@@ -209,7 +210,7 @@ long   System_Stamp2Seconds(int Stamp);
 int    System_Seconds2Stamp(long Sec);
 void   System_StampDecode(int Stamp,int *YYYY,int *MM,int *DD,int *H,int *M,int *S);
 void   System_StampEncode(int *Stamp,int YYYY,int MM,int DD,int H,int M,int S);
-int    System_TimeValSubtract(struct timeval *Result,struct timeval *T0,struct timeval *T1);
+double System_TimeValSubtract(struct timeval *Result,struct timeval *T0,struct timeval *T1);
 
 void Astro_SunPos(time_t Sec,double *Lat,double *Lon);
 void Astro_MoonPos(time_t ssue,float *lat,float *lon);

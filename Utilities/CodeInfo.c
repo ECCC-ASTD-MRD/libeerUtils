@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
    pool=val=fst=var=NULL;
    code=decode=ckey=0;
 
-   app=App_New(APP_NAME,VERSION,APP_DESC);
+   app=App_New(APP_NAME,VERSION,APP_DESC,__TIMESTAMP__);
 
    if (!App_ParseArgs(app,appargs,argc,argv)) {
       exit(EXIT_FAILURE);      

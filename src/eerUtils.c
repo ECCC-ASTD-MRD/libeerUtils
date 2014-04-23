@@ -124,7 +124,7 @@ int System_BitCount(unsigned int N) {
  *
  *----------------------------------------------------------------------------
  */
-int System_TimeValSubtract(struct timeval *Result,struct timeval *T0,struct timeval *T1) {
+double System_TimeValSubtract(struct timeval *Result,struct timeval *T0,struct timeval *T1) {
 
    int nsec;
 
@@ -144,7 +144,7 @@ int System_TimeValSubtract(struct timeval *Result,struct timeval *T0,struct time
    Result->tv_usec=T0->tv_usec-T1->tv_usec;
 
    /* Return 1 if result is negative. */
-   return(T0->tv_sec<T1->tv_sec);
+   return(Result->tv_sec+((double)Result->tv_usec)*1e-6);
 }
 
 /*----------------------------------------------------------------------------

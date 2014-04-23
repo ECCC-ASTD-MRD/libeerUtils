@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
         { APP_CHAR,  (void**)&vars, "n", "nomvar", "List of variable to process" },
         { 0 } };
 
-   app=App_New(APP_NAME,VERSION,APP_DESC);
+   app=App_New(APP_NAME,VERSION,APP_DESC,__TIMESTAMP__);
 
    if (!App_ParseArgs(app,appargs,argc,argv)) {
       exit(EXIT_FAILURE);      

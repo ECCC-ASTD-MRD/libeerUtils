@@ -72,6 +72,7 @@ typedef struct TApp {
     char*          Name;                 // Name
     char*          Version;              // Version
     char*          Desc;                 // Description
+    char*          TimeStamp;            // Compilation timestamp
     char*          LogFile;              // Log file
     int            LogWarning;           // Number of warnings
     int            LogError;             // Number of errors
@@ -90,7 +91,7 @@ typedef struct TApp {
 
 typedef int (TApp_InputParseProc) (TApp *App,void *Def,char *Token,char *Value,int Index);
 
-TApp *App_New(char* Name,char* Version,char* Desc);
+TApp *App_New(char* Name,char* Version,char* Desc,char* Stamp);
 void  App_Free(TApp *App);
 void  App_Start(TApp *App);
 void  App_End(TApp *App,int Status);
@@ -101,6 +102,7 @@ int   App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[]);
 int   App_ParseInput(TApp *App,void *Def,char *File,TApp_InputParseProc *ParseProc);
 int   App_ParseBool(TApp *App,char *Param,char *Value,char *Var);
 int   App_ParseDate(TApp *App,char *Param,char *Value,time_t *Var);
+int   App_ParseDateSplit(TApp *App,char *Param,char *Value,int *Year,int *Month,int *Day,int *Hour,int *Min);
 int   App_ParseCoords(TApp *App,char *Param,char *Value,double *Lat,double *Lon,int Index);
 void  App_SeedInit(TApp *App);
 

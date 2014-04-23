@@ -41,14 +41,18 @@
  * But      : Creer une nouvelle structure App
  *
  * Parametres :
- *
+ *    <Name>    : Application name
+ *    <Version> : Version
+ *    <Desc>    : Description
+ *    <Stamp>   : TimeStamp
+ * 
  * Retour     :
  *  <App>     : Parametres de l'application initialisee
  *
  * Remarques  :
  *----------------------------------------------------------------------------
 */
-TApp *App_New(char *Name,char *Version,char *Desc) {
+TApp *App_New(char *Name,char *Version,char *Desc,char* Stamp) {
 
    TApp *app;
 
@@ -56,6 +60,7 @@ TApp *App_New(char *Name,char *Version,char *Desc) {
    app->Name=strdup(Name);
    app->Version=strdup(Version);
    app->Desc=strdup(Desc);
+   app->TimeStamp=strdup(Stamp);
    app->LogFile=strdup("stdout");
    app->LogStream=(FILE*)NULL;
    app->LogWarning=0;
@@ -143,7 +148,7 @@ int App_IsDone(TApp *App) {
 void App_Start(TApp *App) {
 
    char rmn[128],*env=NULL;
-   int print=1,t,mpi;
+   int print=0,t,mpi;
 
 #ifdef HAVE_RMN
    // RMN Lib settings
@@ -193,16 +198,16 @@ void App_Start(TApp *App) {
    if (!App->RankMPI) {
 
       App_Log(App,MUST,"-------------------------------------------------------------------------------\n");
-      App_Log(App,MUST,"Model          : %s (%s)\n",App->Name,App->Version);
-      App_Log(App,MUST,"Lib Utils      : %s\n",VERSION);
+      App_Log(App,MUST,"Application    : %s %s (%s)\n",App->Name,App->Version,App->TimeStamp);
+      App_Log(App,MUST,"Lib eerUtils   : %s (%s)\n",VERSION,__TIMESTAMP__);
 
 #ifdef HAVE_RMN
       // Extract RMNLIB version
       f77name(rmnlib_version)(rmn,&print,127);
-      rmn[89]='\0';
-      App_Log(App,MUST,"Lib RMN        : %s\n",&rmn[13]);
+      rmn[126]='\0';
+      App_Log(App,MUST,"Lib RMN        : %s\n",&rmn[22]);
 #endif
-      App_Log(App,MUST,"Start time     : (UTC) %s",ctime(&App->Time.tv_sec));
+      App_Log(App,MUST,"\nStart time     : (UTC) %s",ctime(&App->Time.tv_sec));
 
       if (App->NbThread>1) {
          App_Log(App,MUST,"OpenMP threads : %i\n",App->NbThread);
@@ -386,7 +391,7 @@ void App_PrintArgs(TApp *App,TApp_Arg *AArgs,char *Token) {
    
    TApp_Arg *aarg=NULL;
 
-   printf("%s %s:\n\t%s\n\n",App->Name,App->Version,App->Desc);
+   printf("%s (%s):\n\t%s\n\n",App->Name,App->Version,App->Desc);
 
    if (Token)
       printf("Bad option: %s\n\n",Token);
@@ -396,7 +401,11 @@ void App_PrintArgs(TApp *App,TApp_Arg *AArgs,char *Token) {
    // Process app specific argument
    aarg=AArgs;
    while(aarg && aarg->Short) {
-      printf("\n\t-%s, --%s\t%s",aarg->Short,aarg->Long,aarg->Info);
+      if (aarg->Short[0]=='\0') {
+         printf("\n\t    --%s\t%s",aarg->Long,aarg->Info);
+      } else {
+         printf("\n\t-%s, --%s\t%s",aarg->Short,aarg->Long,aarg->Info);
+      }
       aarg++;
    }
 
@@ -525,7 +534,7 @@ int App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[]) {
 }
 
 /*----------------------------------------------------------------------------
- * Nom      : <App_InputParse>
+ * Nom      : <App_ParseInput>
  * Creation : Avril 2010 - J.P. Gauthier
  *
  * But      : Parse an imput file.
@@ -675,6 +684,24 @@ int App_ParseDate(TApp *App,char *Param,char *Value,time_t *Var) {
    return(1);
 }   
 
+int App_ParseDateSplit(TApp *App,char *Param,char *Value,int *Year,int *Month,int *Day,int *Hour,int *Min) {
+   
+   long long t;
+   char     *ptr;
+
+   if (strlen(Value)!=12 || (t=strtoll(Value,&ptr,10))<=0) {
+      App_Log(App,ERROR,"Invalid value for %s, must be YYYYMMDDHHMM: %s\n",Param,Value);
+      return(0);
+   }
+   *Year=t/100000000;  t-=(long long)(*Year)*100000000;
+   *Month=t/1000000;   t-=(*Month)*1000000;
+   *Day=t/10000;       t-=(*Day)*10000;
+   *Hour=t/100;        t-=(*Hour)*100;
+   *Min=t;
+   
+   return(1);
+}   
+
 /*----------------------------------------------------------------------------
  * Nom      : <App_ParseCoord>
  * Creation : Aout 2013 - J.P. Gauthier
@@ -723,7 +750,7 @@ int App_ParseCoords(TApp *App,char *Param,char *Value,double *Lat,double *Lon,in
 }
       
 /*----------------------------------------------------------------------------
- * Nom      : <Model_SeedInit>
+ * Nom      : <App_SeedInit>
  * Creation : Aout 2011 - J.P. Gauthier
  *
  * But      : Initialise seeds for MPI/OpenMP.
