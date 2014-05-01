@@ -57,10 +57,10 @@ TApp *App_New(char *Name,char *Version,char *Desc,char* Stamp) {
    TApp *app;
 
    app=(TApp*)malloc(sizeof(TApp));
-   app->Name=strdup(Name);
-   app->Version=strdup(Version);
-   app->Desc=strdup(Desc);
-   app->TimeStamp=strdup(Stamp);
+   app->Name=Name?strdup(Name):NULL;
+   app->Version=Version?strdup(Version):NULL;
+   app->Desc=Desc?strdup(Desc):NULL;
+   app->TimeStamp=Stamp?strdup(Stamp):NULL;
    app->LogFile=strdup("stdout");
    app->LogStream=(FILE*)NULL;
    app->LogWarning=0;
