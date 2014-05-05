@@ -36,7 +36,7 @@
 #include "eerUtils.h"
 #include "ZRef.h"
 
-#define GRIDCACHEMAX 4096
+#define GRIDCACHEMAX 2048
 
 #define GRID_CENTER 0x0
 #define GRID_LEFT   0x1

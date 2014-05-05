@@ -717,13 +717,14 @@ static TGrid* EZGrid_CacheFind(TGrid *Grid) {
       pthread_mutex_lock(&CacheMutex);
       for(n=0;n<GRIDCACHEMAX;n++) {
          if (GridCache[n]) {
+
             // Check for same level type and definitions
             f77name(convip)(&Grid->H.IP1,&level,&type,&mode,&format,&flag);
             type=type==LVL_SIGMA?LVL_ETA:type;
             if (type!=GridCache[n]->ZRef->Type) {
                continue;
             }
-            if (GridCache[n]->H.NK!=Grid->H.NK || GridCache[n]->ZRef->Levels[0]!=level) {
+            if (GridCache[n]->H.NK!=Grid->H.NK || GridCache[n]->ZRef->Levels[GridCache[n]->Incr<0?Grid->H.NK-1:0]!=level) {
 //            if (GridCache[n]->H.NK!=Grid->H.NK) {
                continue;
             }
