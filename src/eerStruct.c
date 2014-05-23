@@ -124,7 +124,65 @@ TList* TList_Add(TList *List,void *Data) {
       if (List)
          List->Prev=node;
    }
+   
    return(node);
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <TList_AddSorted>
+ * Creation : Mai 2014 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Ajout d'un noeud a une liste doublement chainee de maniere ordonnee
+ *
+ * Parametres :
+ *  <List>    : List a laquelle ajouter un noeud.
+ *  <Proc>    : Procedure de comparaison
+ *  <Data>    : Pointeur sur la donnee associe au noeud
+ *
+ * Retour     :
+ *  <TList*>  : Pointeur sur la tete de la liste (nouveau noeud)
+ *
+ * Remarques :
+ *   - La liste est doublement chainee
+ *   - Les ajouts se font selon l'ordre obtenue par la fonction Proc
+ *----------------------------------------------------------------------------
+*/
+TList* TList_AddSorted(TList *List,TList_CompareProc *Proc,void *Data) {
+
+   TList *insert,*prev=NULL,*node=(TList*)calloc(1,sizeof(TList));
+
+   if (node) {
+      node->Data=Data;      
+      
+      insert=List;
+      
+      while (insert) {
+         if (Proc(insert->Data,Data)>0) {
+            node->Next=insert;
+            node->Prev=insert->Prev;
+            if (insert->Prev) {
+               insert->Prev->Next=node;
+            } else {
+               List=node;               
+            }  
+            insert->Prev=node;
+            break;
+         }
+         prev=insert;
+         insert=insert->Next;
+      }
+
+      if (!insert) {
+         if (prev) {
+            prev->Next=node;
+            node->Prev=prev;           
+         } else {
+            List=node;
+         }
+      }
+   }
+   
+   return(List);
 }
 
 /*----------------------------------------------------------------------------
@@ -185,7 +243,7 @@ TList* TList_Del(TList *List,void *Data) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-TList* TList_Find(TList *List,TList_FindProc *Proc,void *Data) {
+TList* TList_Find(TList *List,TList_CompareProc *Proc,void *Data) {
 
    while(List) {
       if (Proc(List->Data,Data)) {

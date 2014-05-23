@@ -15,23 +15,28 @@ SSM_NAME    = ${NAME}_${VERSION}${COMP}_${ORDENV_PLAT}
 INSTALL_DIR = $(HOME)
 TCL_DIR     = /cnfs/ops/cmoe/afsr005/Archive/tcl8.6.0
 LIB_DIR     = /cnfs/ops/cmoe/afsr005/Lib/${ORDENV_PLAT}
-
+#MULTI       = -ompi
 
 ifeq ($(OS),Linux)
 
-   LIBS        = -L$(LIB_DIR)/librmn-14/lib
-   INCLUDES    = -Isrc
+   LIBS        = -L$(LIB_DIR)/librmn-14/lib -L$(LIB_DIR)/libxml2-2.9.1/lib
+   INCLUDES    = -Isrc  -I$(LIB_DIR)/libxml2-2.9.1/include/libxml2
 
 #   CC          = mpicc
    CC          = /usr/bin/mpicc.openmpi
    CC          = s.cc
    AR          = ar rv
    LD          = ld -shared -x
-   LIBS       := $(LIBS) -lrmne
+   LIBS       := $(LIBS) -lrmne -lxml2 -lz 
    INCLUDES   := $(INCLUDES) -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic
-   LINK_EXEC   = -lm -lpthread
-#   CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer -fopenmp
-   CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer -fopenmp -mpi
+   LINK_EXEC   = -lm -lpthread -Wl,-rpath=$(LIB_DIR)/librmn-14/lib -Wl,-rpath=$(LIB_DIR)/libxml2-2.9.1/lib
+
+   ifdef MULTI
+      CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer -fopenmp -mpi
+   else
+      CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer
+   endif
+
    CDEBUGFLAGS =
    CPFLAGS     = -d
 
@@ -53,12 +58,23 @@ else
    LIBS       := $(LIBS) -lrmne
    INCLUDES   := $(INCLUDES)
    LINK_EXEC   = -lxlf90 -lxlsmp -lc -lpthread -lmass -lm 
-   CCOPTIONS   = -O3 -qnohot -qstrict -Q -v -qkeyword=restrict -qsmp=omp -qthreaded -qcache=auto -qtune=auto -qarch=auto -qlibmpi -qinline
+
+   ifdef MULTI
+      CCOPTIONS   = -O3 -qnohot -qstrict -Q -v -qkeyword=restrict -qsmp=omp -qthreaded -qcache=auto -qtune=auto -qarch=auto -qlibmpi -qinline
+   else
+      CCOPTIONS   = -O3 -qnohot -qstrict -Q -v -qkeyword=restrict -qcache=auto -qtune=auto -qarch=auto -qinline
+   endif
+
    CDEBUGFLAGS =
    CPFLAGS     = -h
 endif
 
-DEFINES     = -DVERSION=\"$(VERSION)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE -D$(RMN) -D_MPI
+ifdef MULTI
+   DEFINES     = -DVERSION=\"$(VERSION)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE -D$(RMN) -D_MPI
+else 
+   DEFINES     = -DVERSION=\"$(VERSION)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE -D$(RMN)
+endif
+
 CFLAGS      = $(CDEBUGFLAGS) $(CCOPTIONS) $(INCLUDES) $(DEFINES)
 
 OBJ_C = $(subst .c,.o,$(wildcard src/*.c))
@@ -72,25 +88,27 @@ all: obj lib exec
 
 obj: $(OBJ_C) $(OBJ_F)
 
-lib:
+lib: obj
 	mkdir -p ./lib
 	mkdir -p ./include
-	$(AR) lib/libeerUtils-$(VERSION).a $(OBJ_C) $(OBJ_F)
-	ln -fs libeerUtils-$(VERSION).a lib/libeerUtils.a
+	$(AR) lib/libeerUtils$(MULTI)-$(VERSION).a $(OBJ_C) $(OBJ_F)
+	ln -fs libeerUtils$(MULTI)-$(VERSION).a lib/libeerUtils$(MULTI).a
 
 #	@if test "$(OS)" != "AIX"; then \
-#	   $(CC) -shared -Wl,-soname,libeerUtils-$(VERSION).so -o lib/libeerUtils-$(VERSION).so $(OBJ_C) $(OBJ_T) $(CFLAGS) $(LIBS) $(LINK_EXEC); \
-#	   ln -fs  libeerUtils-$(VERSION).so lib/libeerUtils.so; \
+#	   $(CC) -shared -Wl,-soname,libeerUtils-$(VERSION).so -o lib/libeerUtils$(MULTI)-$(VERSION).so $(OBJ_C) $(OBJ_T) $(CFLAGS) $(LIBS) $(LINK_EXEC); \
+#	   ln -fs  libeerUtils$(MULTI)-$(VERSION).so lib/libeerUtils.so; \
 #	fi
 	cp $(CPFLAGS) ./src/*.h ./include
 
-exec:
+exec: obj 
 	@if test "$(RMN)" = "HAVE_RMN"; then \
 	   mkdir -p ./bin; \
 	   $(CC) Utilities/EZTiler.c -o bin/EZTiler-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC); \
 	   ln -fs EZTiler-$(VERSION) bin/EZTiler; \
 	   $(CC) Utilities/CodeInfo.c -o bin/CodeInfo-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC);  \
 	   ln -fs CodeInfo-$(VERSION) bin/CodeInfo; \
+	   $(CC) Utilities/Dict.c -o bin/Dict-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC);  \
+	   ln -fs Dict-$(VERSION) bin/Dict; \
 	fi
 
 install: all

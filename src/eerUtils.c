@@ -31,6 +31,7 @@
  *=========================================================
  */
 
+#include </usr/include/regex.h>
 #include "eerUtils.h"
 #include "rpnmacros.h"
 
@@ -653,4 +654,17 @@ int strrindex(char *Str) {
       free(l);
    }
    return(n);
+}
+
+int strmatch(const char *Str,char *Pattern) {
+   
+   int     status=1;
+   regex_t re;
+   
+   if (regcomp(&re,Pattern,REG_EXTENDED|REG_NOSUB|REG_ICASE)==0)  {
+      status=regexec(&re,Str,(size_t)0,NULL,0);
+      regfree(&re);
+   }
+
+   return(status);
 }

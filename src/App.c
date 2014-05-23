@@ -2,7 +2,7 @@
  * Environnement Canada
  * Centre Meteorologique Canadian
  * 2121 Trans-Canadienne
-//  * Dorval, Quebec
+  * Dorval, Quebec
  *
  * Projet    : Librairie de fonctions utiles
  * Fichier   : App.c
@@ -65,8 +65,9 @@ TApp *App_New(char *Name,char *Version,char *Desc,char* Stamp) {
    app->LogStream=(FILE*)NULL;
    app->LogWarning=0;
    app->LogError=0;
+   app->LogColor=FALSE;
    app->Tag=NULL;
-   app->LogLevel=2;
+   app->LogLevel=INFO;
    app->State=STOP;
    app->Percent=0.0;
    app->NbThread=1;
@@ -297,8 +298,12 @@ void App_End(TApp *App,int Status) {
 void App_Log(TApp *App,TApp_LogLevel Level,const char *Format,...) {
 
    static char *levels[] = { "ERROR","WARNING","INFO","DEBUG","EXTRA" };
-   va_list args;
+   static char *colors[] = { APP_COLOR_RED, APP_COLOR_BLUE, "", APP_COLOR_CYAN, APP_COLOR_CYAN };
+   char        *color;
+   va_list      args;
 
+   color=App->LogColor?colors[Level]:colors[INFO];
+      
    if (!App->LogStream) {
       if (strcmp(App->LogFile,"stdout")==0) {
          App->LogStream=stdout;
@@ -322,7 +327,7 @@ void App_Log(TApp *App,TApp_LogLevel Level,const char *Format,...) {
 
    if (Level<=App->LogLevel) {
       if (Level>=0) {
-         fprintf(App->LogStream,"(%s) ",levels[Level]);
+         fprintf(App->LogStream,"%s(%s) ",color,levels[Level]);
       }
       va_start(args,Format);
       if (Level==ERROR) {
@@ -334,6 +339,9 @@ void App_Log(TApp *App,TApp_LogLevel Level,const char *Format,...) {
       vfprintf(App->LogStream,Format,args);
       va_end(args);
 
+      if (App->LogColor)
+         fprintf(App->LogStream,APP_COLOR_RESET);
+      
       fflush(App->LogStream);
    }
 }
@@ -380,14 +388,16 @@ int App_LogLevel(TApp *App,char *Val) {
  * Parametres  :
  *  <App>     : Parametres de l'application
  *  <AArgs>   : Arguments definition
- *  <Token>   : Invalid token if any, NULL otherwiseC
+ *  <Token>   : Invalid token if any, NULL otherwise
+ *  <Flags>    : configuration flags
  *
  * Retour:
  *
  * Remarques :
  *----------------------------------------------------------------------------
 */
-void App_PrintArgs(TApp *App,TApp_Arg *AArgs,char *Token) {
+
+void App_PrintArgs(TApp *App,TApp_Arg *AArgs,char *Token,int Flags) {
    
    TApp_Arg *aarg=NULL;
 
@@ -402,17 +412,21 @@ void App_PrintArgs(TApp *App,TApp_Arg *AArgs,char *Token) {
    aarg=AArgs;
    while(aarg && aarg->Short) {
       if (aarg->Short[0]=='\0') {
-         printf("\n\t    --%s\t%s",aarg->Long,aarg->Info);
+         printf("\n\t    --%-15s %s",aarg->Long,aarg->Info);
       } else {
-         printf("\n\t-%s, --%s\t%s",aarg->Short,aarg->Long,aarg->Info);
+         printf("\n\t-%s, --%-15s %s",aarg->Short,aarg->Long,aarg->Info);
       }
       aarg++;
    }
 
    // Process default argument
-   printf("\n\t-%s, --%s\t%s","l", "log",     "Log file (default: stdout)");
-   printf("\n\t-%s, --%s\t%s","v", "verbose", "Verbose level (ERROR,WARNING,INFO,DEBUG,EXTRA or 0-3)");
-   printf("\n\t-%s, --%s\t%s","h", "help",    "Help info");   
+   printf("\n");
+   if (!(Flags&APP_NOARGSLOG)) {
+      printf("\n\t-%s, --%-15s %s","l", "log",     "Log file ("APP_COLOR_GREEN"stdout"APP_COLOR_RESET",stderr,file)");
+   }
+   printf("\n\t-%s, --%-15s %s","v", "verbose",      "Verbose level (ERROR,WARNING,"APP_COLOR_GREEN"INFO"APP_COLOR_RESET",DEBUG,EXTRA or 0-3)");
+   printf("\n\t    --%-15s %s",      "verbosecolor", "Use color for log messages");
+   printf("\n\t-%s, --%-15s %s","h", "help",         "Help info");   
    printf("\n");
 }
 
@@ -439,7 +453,7 @@ inline int App_GetArgs(TApp *App,TApp_Arg *AArg,char *Value) {
 
    if (Value) {   
       switch(AArg->Type) {
-         case APP_LIST :  (*AArg->Var++)=Value;                 break;
+         case APP_LIST :  (*AArg->Var++)=Value;                                   break;
          case APP_CHAR :  (*AArg->Var)=Value;                                     break;
          case APP_UINT32: (*(unsigned int*)AArg->Var)=strtol(Value,&endptr,10);   break;
          case APP_INT32:  (*(int*)AArg->Var)=strtol(Value,&endptr,10);            break;
@@ -467,6 +481,7 @@ inline int App_GetArgs(TApp *App,TApp_Arg *AArg,char *Value) {
  *  <AArgs>    : Arguments definition
  *  <argc>     : Number of argument
  *  <argv>     : Arguments
+ *  <Flags>    : configuration flags
  *
  * Retour:
  *  <ok>       : 1 or 0 if failed
@@ -474,7 +489,7 @@ inline int App_GetArgs(TApp *App,TApp_Arg *AArg,char *Value) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-int App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[]) {
+int App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[],int Flags) {
 
    int       i=-1,ok=TRUE;
    char     *tok,*ptok=NULL,*env=NULL,*str;
@@ -482,8 +497,8 @@ int App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[]) {
    
    str=env=getenv("APP_PARAMS");
 
-   if (argc==1 && !env) {
-      App_PrintArgs(App,AArgs,NULL) ;
+   if (argc==1 && !env && Flags&APP_NOARGSFAIL) {
+      App_PrintArgs(App,AArgs,NULL,Flags) ;
       ok=FALSE;
    } else {
 
@@ -499,12 +514,14 @@ int App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[]) {
          }
 
          // Process default argument
-         if (strcasecmp(tok,"-l")==0 || strcasecmp(tok,"--log")==0) {               // Log file
+         if (!(Flags&APP_NOARGSLOG) && (strcasecmp(tok,"-l")==0 || strcasecmp(tok,"--log")==0)) {               // Log file
             App->LogFile=env?strtok(str," "):argv[++i];
          } else if (strcasecmp(tok,"-v")==0 || strcasecmp(tok,"--verbose")==0) {    // Verbose degree
             App_LogLevel(App,env?strtok(str," "):argv[++i]);
+         } else if (strcasecmp(tok,"--verbosecolor")==0) {                          // Use color in log messages
+            App->LogColor=TRUE;
          } else if (strcasecmp(tok,"-h")==0 || strcasecmp(tok,"--help")==0) {       // Help
-            App_PrintArgs(App,AArgs,NULL) ;
+            App_PrintArgs(App,AArgs,NULL,Flags) ;
             exit(EXIT_SUCCESS);
          } else {
             // Process specific argument
@@ -520,7 +537,7 @@ int App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[]) {
          
          // Argument not found
          if (aarg && (!ok || !aarg->Short)) {
-            App_PrintArgs(App,AArgs,tok) ;
+            App_PrintArgs(App,AArgs,tok,Flags) ;
             ok=FALSE;
             break;
          }

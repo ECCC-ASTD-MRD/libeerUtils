@@ -53,8 +53,20 @@
 #   include <mpi.h>
 #endif
 
+#define APP_COLOR_RED     "\x1b[31m"
+#define APP_COLOR_GREEN   "\x1b[32m"
+#define APP_COLOR_YELLOW  "\x1b[33m"
+#define APP_COLOR_BLUE    "\x1b[34m"
+#define APP_COLOR_MAGENTA "\x1b[35m"
+#define APP_COLOR_CYAN    "\x1b[36m"
+#define APP_COLOR_RESET   "\x1b[0m"
+
 #define APP_BUFMAX    32768               // Maximum input buffer length
 #define APP_SEED      1049731793          // Initial FIXED seed
+
+#define APP_NOARGSFLAG 0x00               // No flag specified
+#define APP_NOARGSFAIL 0x01               // Fail if no arguments are specified
+#define APP_NOARGSLOG  0x02               // Do not use log flag
 
 typedef enum { MUST=-1,ERROR=0,WARNING=1,INFO=2,DEBUG=3,EXTRA=4 } TApp_LogLevel;
 typedef enum { STOP,RUN,DONE } TApp_State;
@@ -76,6 +88,7 @@ typedef struct TApp {
     char*          LogFile;              // Log file
     int            LogWarning;           // Number of warnings
     int            LogError;             // Number of errors
+    int            LogColor;             // Use coloring in the logs
     char*          Tag;                  // Identificateur
     FILE*          LogStream;            // Log file associated stream
     TApp_LogLevel  LogLevel;             // Level of log
@@ -98,7 +111,7 @@ void  App_End(TApp *App,int Status);
 int   App_IsDone(TApp *App);
 void  App_Log(TApp *App,TApp_LogLevel Level,const char *Format,...);
 int   App_LogLevel(TApp *App,char *Val);
-int   App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[]);
+int   App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[],int Flags);
 int   App_ParseInput(TApp *App,void *Def,char *File,TApp_InputParseProc *ParseProc);
 int   App_ParseBool(TApp *App,char *Param,char *Value,char *Var);
 int   App_ParseDate(TApp *App,char *Param,char *Value,time_t *Var);

@@ -140,7 +140,7 @@ int main(int argc, char *argv[]) {
 
    app=App_New(APP_NAME,VERSION,APP_DESC,__TIMESTAMP__);
 
-   if (!App_ParseArgs(app,appargs,argc,argv)) {
+   if (!App_ParseArgs(app,appargs,argc,argv,APP_NOARGSFAIL)) {
       exit(EXIT_FAILURE);      
    }
 

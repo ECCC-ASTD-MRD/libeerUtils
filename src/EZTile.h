@@ -147,8 +147,8 @@ int    EZGrid_Interp(TGrid* restrict const To,TGrid* restrict const From);
 TGrid *EZGrid_InterpTime(const TGrid* restrict const Grid0,const TGrid* restrict const Grid1,int Date);
 TGrid *EZGrid_InterpFactor(TGrid* restrict const Grid,TGrid* restrict const Grid0,TGrid* restrict const Grid1,float Factor0,float Factor1);
 
-float* EZGrid_TileBurn(TGrid* restrict const Grid,TGridTile* restrict const Tile,int K,float *Data);
-float* EZGrid_TileBurnAll(TGrid* restrict const Grid,int K,float *Data);
+float* EZGrid_TileBurn(TGrid* restrict const Grid,TGridTile* restrict const Tile,int K,float* restrict Data);
+float* EZGrid_TileBurnAll(TGrid* restrict const Grid,int K,float* restrict Data);
 
 void EZLock_RPNFile();
 void EZUnLock_RPNFile();

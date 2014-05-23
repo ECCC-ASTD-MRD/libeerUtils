@@ -51,12 +51,13 @@ typedef struct TList {
 T3DArray *T3DArray_Alloc(double Value,int Size);
 void      T3DArray_Free(T3DArray *Array);
 
-typedef int (TList_FindProc)(void *Data0,void *Data1);
+typedef int (TList_CompareProc)(void *Data0,void *Data1);
 typedef int (TList_FreeProc)(void *Data0);
 
 TList* TList_Add(TList *List,void *Data);
+TList* TList_AddSorted(TList *List,TList_CompareProc *Proc,void *Data);
 TList* TList_Del(TList *List,void *Data);
-TList* TList_Find(TList *List,TList_FindProc *Proc,void *Data);
+TList* TList_Find(TList *List,TList_CompareProc *Proc,void *Data);
 void   TList_Clear(TList *List,TList_FreeProc *Proc);
 
 #endif

@@ -608,7 +608,7 @@ static float **EZGrid_TileGetData(const TGrid* restrict const Grid,TGridTile* re
  * Remarques :
  *----------------------------------------------------------------------------
 */
-float* EZGrid_TileBurn(TGrid* restrict const Grid,TGridTile* restrict const Tile,int K,float *Data) {
+float* EZGrid_TileBurn(TGrid* restrict const Grid,TGridTile* restrict const Tile,int K,float* restrict Data) {
 
    int j,dj;
 
@@ -665,7 +665,7 @@ float* EZGrid_TileBurn(TGrid* restrict const Grid,TGridTile* restrict const Tile
  * Remarques :
  *----------------------------------------------------------------------------
 */
-float* EZGrid_TileBurnAll(TGrid* restrict const Grid,int K,float *Data) {
+float* EZGrid_TileBurnAll(TGrid* restrict const Grid,int K,float* restrict Data) {
 
    int t;
 

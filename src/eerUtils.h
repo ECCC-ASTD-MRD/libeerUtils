@@ -41,6 +41,7 @@
 
 #include <time.h>
 #include <sys/time.h>
+#include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -196,6 +197,7 @@ void  strtrim(char* Str,char Tok);
 void  strrep(char *Str,char Tok,char Rep);
 int   strfind(char *Str,char Tok);
 int   strrindex(char *Str);
+int   strmatch(const char *Str,char *Pattern);
 
 #define System_IsStamp(S) (S<999999999)
 
