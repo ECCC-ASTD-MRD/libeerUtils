@@ -4,10 +4,10 @@ VERSION    = 1.8.0
 MAINTAINER = $(USER)
 OS         = $(shell uname -s)
 PROC       = $(shell uname -m | tr _ -)
-RMN        = HAVE_RMN
+MULTI      = -ompi
 
 ifdef COMP_ARCH
-COMP=-${COMP_ARCH}
+   COMP=-${COMP_ARCH}
 endif
 
 SSM_NAME    = ${NAME}_${VERSION}${COMP}_${ORDENV_PLAT}
@@ -15,7 +15,6 @@ SSM_NAME    = ${NAME}_${VERSION}${COMP}_${ORDENV_PLAT}
 INSTALL_DIR = $(HOME)
 TCL_DIR     = /cnfs/ops/cmoe/afsr005/Archive/tcl8.6.0
 LIB_DIR     = /cnfs/ops/cmoe/afsr005/Lib/${ORDENV_PLAT}
-#MULTI       = -ompi
 
 ifeq ($(OS),Linux)
 
@@ -30,11 +29,10 @@ ifeq ($(OS),Linux)
    LIBS       := $(LIBS) -lrmne -lxml2 -lz 
    INCLUDES   := $(INCLUDES) -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic
    LINK_EXEC   = -lm -lpthread -Wl,-rpath=$(LIB_DIR)/librmn-14/lib -Wl,-rpath=$(LIB_DIR)/libxml2-2.9.1/lib
-
+ 
+   CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer
    ifdef MULTI
-      CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer -fopenmp -mpi
-   else
-      CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer
+      CCOPTIONS   := $(CCOPTIONS) -fopenmp -mpi
    endif
 
    CDEBUGFLAGS =
@@ -59,20 +57,18 @@ else
    INCLUDES   := $(INCLUDES)
    LINK_EXEC   = -lxlf90 -lxlsmp -lc -lpthread -lmass -lm 
 
+   CCOPTIONS   = -O3 -qnohot -qstrict -Q -v -qkeyword=restrict -qcache=auto -qtune=auto -qarch=auto -qinline
    ifdef MULTI
-      CCOPTIONS   = -O3 -qnohot -qstrict -Q -v -qkeyword=restrict -qsmp=omp -qthreaded -qcache=auto -qtune=auto -qarch=auto -qlibmpi -qinline
-   else
-      CCOPTIONS   = -O3 -qnohot -qstrict -Q -v -qkeyword=restrict -qcache=auto -qtune=auto -qarch=auto -qinline
+      CCOPTIONS  := $(CCOPTIONS) -qsmp=omp -qthreaded -qlibmpi -qinline
    endif
 
    CDEBUGFLAGS =
    CPFLAGS     = -h
 endif
 
+DEFINES     = -DVERSION=\"$(VERSION)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE -DHAVE_RMN
 ifdef MULTI
-   DEFINES     = -DVERSION=\"$(VERSION)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE -D$(RMN) -D_MPI
-else 
-   DEFINES     = -DVERSION=\"$(VERSION)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE -D$(RMN)
+   DEFINES    := $(DEFINES) -D_MPI
 endif
 
 CFLAGS      = $(CDEBUGFLAGS) $(CCOPTIONS) $(INCLUDES) $(DEFINES)
