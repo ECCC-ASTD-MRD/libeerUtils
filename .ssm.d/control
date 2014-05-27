@@ -2,5 +2,5 @@ Package: NAME
 Version: VERSION
 Platform: PLATFORM
 Maintainer: MAINTAINER
-BuildInfo: From SVN $Id
+BuildInfo: From SVN $Id$s
 Description:  DESC
