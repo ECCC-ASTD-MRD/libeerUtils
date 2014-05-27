@@ -4,7 +4,11 @@ VERSION    = 1.8.0
 MAINTAINER = $(USER)
 OS         = $(shell uname -s)
 PROC       = $(shell uname -m | tr _ -)
+RMN        = HAVE_RMN
 MULTI      = -ompi
+
+#nomulti: make clear; make all
+#multi  : make clean; make lib; make ssm
 
 ifdef COMP_ARCH
    COMP=-${COMP_ARCH}
@@ -18,7 +22,7 @@ LIB_DIR     = /cnfs/ops/cmoe/afsr005/Lib/${ORDENV_PLAT}
 
 ifeq ($(OS),Linux)
 
-   LIBS        = -L$(LIB_DIR)/librmn-14/lib -L$(LIB_DIR)/libxml2-2.9.1/lib
+   LIBS        = -L$(LIB_DIR)/libxml2-2.9.1/lib
    INCLUDES    = -Isrc  -I$(LIB_DIR)/libxml2-2.9.1/include/libxml2
 
 #   CC          = mpicc
@@ -26,9 +30,10 @@ ifeq ($(OS),Linux)
    CC          = s.cc
    AR          = ar rv
    LD          = ld -shared -x
-   LIBS       := $(LIBS) -lrmne -lxml2 -lz 
+   LIBS       := $(LIBS) -lxml2 -lz -lrmnshared_014
    INCLUDES   := $(INCLUDES) -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic
-   LINK_EXEC   = -lm -lpthread -Wl,-rpath=$(LIB_DIR)/librmn-14/lib -Wl,-rpath=$(LIB_DIR)/libxml2-2.9.1/lib
+#   LINK_EXEC   = -lm -lpthread -Wl,-rpath=$(LIB_DIR)/librmn-14/lib -Wl,-rpath=$(LIB_DIR)/libxml2-2.9.1/lib
+   LINK_EXEC   = -lm -lpthread -Wl,-rpath=$(LIB_DIR)/libxml2-2.9.1/lib
  
    CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer
    ifdef MULTI
@@ -42,18 +47,17 @@ ifeq ($(OS),Linux)
         CCOPTIONS   := $(CCOPTIONS) -fPIC -m64 -DSTDC_HEADERS
 	INCLUDES    := $(INCLUDES)
    endif
-
 else
 
    LIBS        = -L$(LIB_DIR)/librmn-14/lib -L$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g')
-   INCLUDES    = -Isrc -I$(shell echo $(EC_INCLUDE_PATH) | sed 's/\s* / -I/g')
+   INCLUDES    = -Isrc -I$(shell echo $(EC_INCLUDE_PATH) | sed 's/\s* / -I/g')  -I/usr/include/libxml2
 
 #   CC          = xlc
    CC          = mpCC_r
 #   CC          = s.cc
    AR          = ar rv
    LD          = ld
-   LIBS       := $(LIBS) -lrmne
+   LIBS       := $(LIBS) -lrmne -lxml2 -lz
    INCLUDES   := $(INCLUDES)
    LINK_EXEC   = -lxlf90 -lxlsmp -lc -lpthread -lmass -lm 
 
@@ -66,7 +70,7 @@ else
    CPFLAGS     = -h
 endif
 
-DEFINES     = -DVERSION=\"$(VERSION)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE -DHAVE_RMN
+DEFINES     = -DVERSION=\"$(VERSION)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE -D$(RMN)
 ifdef MULTI
    DEFINES    := $(DEFINES) -D_MPI
 endif
@@ -114,7 +118,7 @@ install: all
 	cp $(CPFLAGS) ./bin/* $(INSTALL_DIR)/bin/$(ORDENV_PLAT)
 	cp $(CPFLAGS) ./include/* $(INSTALL_DIR)/include
 
-ssm: all
+ssm:
 	rm -f -r  $(SSM_DEV)/workspace/$(SSM_NAME) $(SSM_DEV)/package/$(SSM_NAME).ssm 
 	mkdir -p $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d  $(SSM_DEV)/workspace/$(SSM_NAME)/etc/profile.d $(SSM_DEV)/workspace/$(SSM_NAME)/lib $(SSM_DEV)/workspace/$(SSM_NAME)/include $(SSM_DEV)/workspace/$(SSM_NAME)/bin
 	cp $(CPFLAGS) ./bin/* $(SSM_DEV)/workspace/$(SSM_NAME)/bin

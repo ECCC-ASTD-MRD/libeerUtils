@@ -33,9 +33,10 @@
 #ifndef _tclUtils_h
 #define _tclUtils_h
 
+#include "tcl.h"
+
 #ifndef _AIX_
 
-#include "tcl.h"
 //#include "tclPort.h"
 
 typedef int (TclY_HashFreeEntryDataFunc) (ClientData EntryData);
