@@ -34,8 +34,9 @@
 #include "eerUtils.h"
 #include "eerStruct.h"
 
-#define DICT_SHORT 0
-#define DICT_LONG  1
+#define DICT_SHORT  0
+#define DICT_LONG   1
+#define DICT_NOTSET 1e+300
 
 #define DICT_ALL      0x00
 #define DICT_OBSOLETE 0x01
@@ -49,6 +50,10 @@
 
 #define DICT_EXACT    0
 #define DICT_GLOB     1
+
+#define DICT_ASCII     0
+#define DICT_UTF8      1 
+#define DICT_ISO8859_1 2
 
 typedef struct {
    char   Origin[32];           // Origin ot the variable
@@ -76,8 +81,8 @@ void       Dict_SetEncoding(int Encoding);
 void       Dict_SetSearch(int SearchMode,int SearchState,char *SearchOrigin,int SearchIP1,int SearchIP2,int SearchIP3);
 TDictVar  *Dict_GetVar(char *Var);
 TDictType *Dict_GetType(char *Type);
-TDictVar  *Dict_IterateVar(TList **Iterator);
-TDictType *Dict_IterateType(TList **Iterator);
+TDictVar  *Dict_IterateVar(TList **Iterator,char *Var);
+TDictType *Dict_IterateType(TList **Iterator,char *Type);
 void       Dict_PrintVar(TDictVar *DVar,int Format,char *Language);
 void       Dict_PrintVars(char *Var,int Format,char *Language);
 void       Dict_PrintType(TDictType *DType,int Format,char *Language);

@@ -58,8 +58,8 @@ int main(int argc, char *argv[]) {
         { APP_FLAG,  (void**)&desc,     "l", "long"        , "use long description" },
         { APP_FLAG,  (void**)&search,   "g", "glob"        , "use glob search pattern" },
         { APP_CHAR,  (void**)&lang,     "a", "language"    , "language ("APP_COLOR_GREEN"english"APP_COLOR_RESET",francais)" },
-        { APP_CHAR,  (void**)&encoding, "e", "encoding"    , "encoding type ("APP_COLOR_GREEN"iso8859-1"APP_COLOR_RESET",utf8,ascii)" },
-        { APP_CHAR,  (void**)&dicfile,  "d", "dictionnary" , "dictionnary file ("APP_COLOR_GREEN"$AFSISIO/..."APP_COLOR_RESET")" },
+        { APP_CHAR,  (void**)&encoding, "e", "encoding"    , "encoding type (iso8859-1,utf8,"APP_COLOR_GREEN"ascii"APP_COLOR_RESET")" },
+        { APP_CHAR,  (void**)&dicfile,  "d", "dictionnary" , "dictionnary file ("APP_COLOR_GREEN"$AFSISIO/datafiles/constants/stdf.variable_dictionary.xml"APP_COLOR_RESET")" },
         { APP_CHAR,  (void**)&rpnfile,  "f", "fstd"        , "Check an RPN standard file for unknow variables" },
         { 0 } };
         
@@ -98,17 +98,21 @@ int main(int argc, char *argv[]) {
    // Apply search method
    Dict_SetSearch(search,st,origin,ip1,ip2,ip3);
 
-   /*
+   // Apply encoding type
+   Dict_SetEncoding(DICT_ASCII);   
+
    if (encoding) {
       if (!strcmp(encoding,"iso8859-1")) {
-         Dict_SetEncoding(XML_CHAR_ENCODING_8859_1);
+         Dict_SetEncoding(DICT_ISO8859_1);
       } else if (!strcmp(encoding,"utf8")) {
-         Dict_SetEncoding(XML_CHAR_ENCODING_UTF8);
+         Dict_SetEncoding(DICT_UTF8);
+      } else if (!strcmp(encoding,"ascii")) {
       } else {
-         Dict_SetEncoding(XML_CHAR_ENCODING_ASCII);   
+         App_Log(app,ERROR,"Invalid encoding, must me iso8859-1, utf8 or ascii\n");
+         exit(EXIT_FAILURE);
       }
    }
-*/
+   
    // Launch the app
 //   App_Start(app);
    
@@ -133,6 +137,22 @@ int main(int argc, char *argv[]) {
    }
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <Dict_CheckRPN>
+ * Creation : Mai 2014 - J.P. Gauthier
+ *
+ * But      : Check an RPN file for unknow variables
+ *
+ * Parametres  :
+ *  <App>      : Application parameters
+ *  <RPNFile>  : RPN FST file
+ *
+ * Retour:
+ *  <Err>      : Error code (0=Bad,1=Ok)
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+ */
 int Dict_CheckRPN(TApp *App,char *RPNFile){
 
    TRPNHeader head;
@@ -150,7 +170,7 @@ int Dict_CheckRPN(TApp *App,char *RPNFile){
    
    head.KEY=c_fstinf(fid,&ni,&nj,&nk,-1,"",-1,-1,-1,"","");
 
-   /* Boucel sur tout les enregistrements */
+   // Boucle sur tout les enregistrements
    while (head.KEY>=0) {
 
       strcpy(head.NOMVAR,"    ");
@@ -159,6 +179,7 @@ int Dict_CheckRPN(TApp *App,char *RPNFile){
       c_fstprm(head.KEY,&head.DATEO,&head.DEET,&head.NPAS,&ni,&nj,&nk,&head.NBITS,&head.DATYP,&head.IP1,&head.IP2,&head.IP3,head.TYPVAR,head.NOMVAR,
                head.ETIKET,head.GRTYP,&head.IG1,&head.IG2,&head.IG3,&head.IG4,&head.SWA,&head.LNG,&head.DLTF,&head.UBC,&head.EX1,&head.EX2,&head.EX3);
 
+      // Calculer la date de validite
       nhour=((double)head.NPAS*head.DEET)/3600.0;
       if (head.DATEO==0) {
          head.DATEV=0;
@@ -171,9 +192,9 @@ int Dict_CheckRPN(TApp *App,char *RPNFile){
       strtrim(head.TYPVAR,' ');
       strtrim(head.ETIKET,' ');
 
+      // Si la variable n'existe pas
       if (!(var=Dict_GetVar(head.NOMVAR))) {
-//         printf("%-4s \n",head.NOMVAR);
-         
+         // Si pas encore dans la liste des inconnus
          if (!TList_Find(vars,Dict_CheckVar,head.NOMVAR)) {
             nb++;
             metvar=(TDictVar*)calloc(1,sizeof(TDictVar));
@@ -190,10 +211,10 @@ int Dict_CheckRPN(TApp *App,char *RPNFile){
       while(list=TList_Find(list,Dict_CheckVar,"")) {
          var=(TDictVar*)(list->Data);
          
-         /*Recuperer les indexes de tout les niveaux*/
+         // Recuperer les indexes de tout les niveaux
          cs_fstinl(fid,&ni,&nj,&nk,head.DATEV,"",-1,-1,-1,"",var->Name,idxs,&nidx,11);
 
-         
+         // Afficiher la variable et les 10 premiers IP1
          printf("%-4s  ",var->Name);
          for(n=0;n<(nidx>10?10:nidx);n++) {
             c_fstprm(idxs[n],&head.DATEO,&head.DEET,&head.NPAS,&ni,&nj,&nk,&head.NBITS,&head.DATYP,&head.IP1,&head.IP2,&head.IP3,head.TYPVAR,head.NOMVAR,

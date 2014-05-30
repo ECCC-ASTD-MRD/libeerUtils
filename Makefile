@@ -5,7 +5,7 @@ MAINTAINER = $(USER)
 OS         = $(shell uname -s)
 PROC       = $(shell uname -m | tr _ -)
 RMN        = HAVE_RMN
-MULTI      = -ompi
+#MULTI      = -ompi
 
 #nomulti: make clear; make all
 #multi  : make clean; make lib; make ssm
@@ -109,6 +109,7 @@ exec: obj
 	   ln -fs CodeInfo-$(VERSION) bin/CodeInfo; \
 	   $(CC) util/Dict.c -o bin/Dict-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC);  \
 	   ln -fs Dict-$(VERSION) bin/Dict; \
+	   ln -fs bin/Dict bin/o.dict; \
 	fi
 
 install: all

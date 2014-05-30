@@ -84,8 +84,8 @@
 #define M_PI4       0.785398163397448278999490867136        /*Pi sur quatre*/
 #endif
 
-#define TINY_VALUE 1e-25
-#define HUGE_VALUE 1e-300
+#define TINY_VALUE 1e-300
+#define HUGE_VALUE 1e+300
 
 #define TRUE   1
 #define FALSE  0

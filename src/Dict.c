@@ -58,88 +58,103 @@ int changeEncoding(char *string, int encoding) {
    int  tmplenout, tmplenin;
    int  i,i2;
   
-  tmplenin = strlen(string);
-  tmplenout = tmplenin;
-  memset(tmpString,'\0',256);
-  switch (encoding)
-    {
-    case XML_CHAR_ENCODING_ASCII:
-    i = 0;
-    i2 = 0;
-    while (i < tmplenout && i2 < 255)
-      {
-      switch ((unsigned char)string[i])
-        {        
-        case 0xC3:
-        i++;
-        switch ((unsigned char) string[i])
-          {
-          case 0x82:
-          tmpString[i2] = 'A';
-          break;
-          
-          case 0x89:
-          tmpString[i2] = 'E';
-          break;
-          
-          case 0xA0:
-          case 0xA1:
-          case 0xA2:
-          tmpString[i2] = 'a';
-          break;
-          
-          case 0xA7:
-          tmpString[i2] = 'c';
-          break;
-          
-          case 0xA8:
-          case 0xA9:
-          case 0xAA:
-          case 0xAB:
-          tmpString[i2] = 'e';
-          break;
-          
-          case 0xEE:
-          tmpString[i2] = 'i';
-          break;
-          
-          case 0xB4:
-          tmpString[i2] = 'o';
-          break;
-          
-          case 0xF9:
-          case 0xFB:
-          tmpString[i2] = 'u';
-          break;
-          
-          default:
-          break;
-          }
-        break;
-               
-        default:
-        tmpString[i2] = string[i];
-        break;
-        }
-        i++;
-        i2++;
-      }
-    strcpy(string, tmpString);
-    break;
-    
-    case XML_CHAR_ENCODING_8859_1:
-    tmplenout = tmplenin;
-    UTF8Toisolat1(tmpString, &tmplenout, string, &tmplenin);
-    strcpy(string, tmpString);
-    break;
-    
-    case XML_CHAR_ENCODING_UTF8:
-    break;
+   tmplenin = strlen(string);
+   tmplenout = tmplenin;
+   memset(tmpString,'\0',256);
+   
+   switch (encoding) {
+     
+      case DICT_ASCII:
+         i= i2=0;
+         while (i < tmplenout && i2 < 255) {
+            
+            switch ((unsigned char)string[i]) {        
+               case 0xC3:
+                  i++;
+                  switch ((unsigned char) string[i]) {
+                     case 0x82:
+                        tmpString[i2] = 'A';
+                        break;
+                     
+                     case 0x89:
+                        tmpString[i2] = 'E';
+                        break;
+                     
+                     case 0xA0:
+                     case 0xA1:
+                     case 0xA2:
+                        tmpString[i2] = 'a';
+                        break;
+                     
+                     case 0xA7:
+                        tmpString[i2] = 'c';
+                        break;
+                     
+                     case 0xA8:
+                     case 0xA9:
+                     case 0xAA:
+                     case 0xAB:
+                        tmpString[i2] = 'e';
+                        break;
+                     
+                     case 0xEE:
+                        tmpString[i2] = 'i';
+                        break;
+                     
+                     case 0xB4:
+                        tmpString[i2] = 'o';
+                        break;
+                     
+                     case 0xF9:
+                     case 0xFB:
+                        tmpString[i2] = 'u';
+                        break;
+                     
+                     default:
+                        break;
+                  }
+                  break;
+                     
+               default:
+                  tmpString[i2] = string[i];
+                  break;
+            }
+            i++;
+            i2++;
+         }
+         strcpy(string, tmpString);
+         break;
+      
+      case DICT_ISO8859_1:
+         tmplenout = tmplenin;
+         UTF8Toisolat1(tmpString, &tmplenout, string, &tmplenin);
+         strcpy(string, tmpString);
+         break;
+      
+      case DICT_UTF8:
+      break;
     }
 }
 
-void Dict_SetEncoding(int Encoding)           { Dict.Encoding=Encoding; }
-
+/*----------------------------------------------------------------------------
+ * Nom      : <Dict_SetSearch>
+ * Creation : Mai 2014 - J.P. Gauthier
+ *
+ * But      : Define search params
+ *
+ * Parametres  :
+ *  <SearchMode>   :
+ *  <SearchState>  :
+ *  <SearchOrigin> :
+ *  <SearchIP1>    :
+ *  <SearchIP2>    :
+ *  <SearchIP3>    :
+ *
+ * Retour:
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+*/
 void Dict_SetSearch(int SearchMode,int SearchState,char *SearchOrigin,int SearchIP1,int SearchIP2,int SearchIP3) { 
    Dict.SearchState=SearchState;
    Dict.SearchMode=SearchMode;
@@ -149,6 +164,23 @@ void Dict_SetSearch(int SearchMode,int SearchState,char *SearchOrigin,int Search
    Dict.SearchIP3=SearchIP3;
 }
 
+void Dict_SetEncoding(int Encoding)           { Dict.Encoding=Encoding; }
+
+/*----------------------------------------------------------------------------
+ * Nom      : <Dict_Parse>
+ * Creation : Mai 2014 - J.P. Gauthier
+ *
+ * But      : Read and parse an XML dictionnary file.
+ *
+ * Parametres  :
+ *  <Filename> : XML dictionnary file
+ *
+ * Retour:
+ *
+ * Remarques :
+ *    - Based heavily on r.dict code
+ *----------------------------------------------------------------------------
+*/
 int Dict_Parse(char *Filename) {
    
    xmlDocPtr    doc;
@@ -222,6 +254,23 @@ int Dict_Parse(char *Filename) {
     return(1);
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <Dict_ParseVar>
+ * Creation : Mai 2014 - J.P. Gauthier
+ *
+ * But      : Read and parse an XML node nofr NOMVAR info.
+ *
+ * Parametres  :
+ *  <Doc>      : XML document
+ *  <NS>       : 
+ *  <Node>     : XML node to parse
+ *
+ * Retour:
+ *
+ * Remarques :
+ *    - Based heavily on r.dict code
+ *----------------------------------------------------------------------------
+*/
 static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node) {
    
    TDictVar  *metvar;
@@ -231,7 +280,8 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node) {
  
    metvar=(TDictVar*)calloc(1,sizeof(TDictVar));
    metvar->IP1=metvar->IP2=metvar->IP3=-1;
-
+   metvar->Min=metvar->Max=metvar->Magnitude=DICT_NOTSET;
+   
    if ((tmpc=(char*)xmlGetProp(Node,"Originator"))) {
       strncpy(metvar->Origin,tmpc,32);
    }
@@ -394,6 +444,23 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node) {
    return(1);
 }
  
+/*----------------------------------------------------------------------------
+ * Nom      : <Dict_ParseType>
+ * Creation : Mai 2014 - J.P. Gauthier
+ *
+ * But      : Read and parse an XML node for TYPVAR info.
+ *
+ * Parametres  :
+ *  <Doc>      : XML document
+ *  <NS>       :
+ *  <Node>     : XML node to parse
+ *
+ * Retour:
+ *
+ * Remarques :
+ *    - Based heavily on r.dict code
+ *----------------------------------------------------------------------------
+*/
 static int Dict_ParseType(xmlDocPtr Doc, xmlNsPtr NS, xmlNodePtr Node) {
 
    TDictType *type;
@@ -447,11 +514,43 @@ static int Dict_ParseType(xmlDocPtr Doc, xmlNsPtr NS, xmlNodePtr Node) {
    return(1);
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <Dict_SortVar>
+ * Creation : Mai 2014 - J.P. Gauthier
+ *
+ * But      : Order two variables.
+ *
+ * Parametres  :
+ *  <Data0>    : Metvar to compare to
+ *  <Data1>    : Metvar to compare
+ *
+ * Retour:
+ *   0 si egal, -1 si plus petit 1 si plus grand
+ * 
+ * Remarques :
+ *----------------------------------------------------------------------------
+*/
 int Dict_SortVar(void *Data0,void *Data1){
 
    return(strcasecmp(((TDictVar*)Data0)->Name,((TDictVar*)Data1)->Name));
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <Dict_CheckVar>
+ * Creation : Mai 2014 - J.P. Gauthier
+ *
+ * But      : Check if a var satisfies search parameters
+ *
+ * Parametres  :
+ *  <Data0>    : Metvar to compare to
+ *  <Data1>    : Metvar to compare
+ *
+ * Retour:
+ *   0 = no, 1 = yes
+ * 
+ * Remarques :
+ *----------------------------------------------------------------------------
+*/
 int Dict_CheckVar(void *Data0,void *Data1){
 
    if (!Data0 || !Data1) {
@@ -485,6 +584,21 @@ int Dict_CheckVar(void *Data0,void *Data1){
    }
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <Dict_GetVar>
+ * Creation : Mai 2014 - J.P. Gauthier
+ *
+ * But      : Search for a var
+ *
+ * Parametres  :
+ *  <Var>      : Variable name
+ *
+ * Retour:
+ *  <TDictVar> : Variable info
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+*/
 TDictVar *Dict_GetVar(char *Var) {
    
    TList *list;
@@ -493,25 +607,86 @@ TDictVar *Dict_GetVar(char *Var) {
    return(list?(TDictVar*)(list->Data):NULL);
 }
 
-TDictVar *Dict_IterateVar(TList **Iterator) {
+/*----------------------------------------------------------------------------
+ * Nom      : <Dict_IterateVar>
+ * Creation : Mai 2014 - J.P. Gauthier
+ *
+ * But      : Iterator over a list of TDictVar
+ *
+ * Parametres  :
+ *  <ITerator> : List pointer start (NULL for beginning of list)
+ *  <Var>      : Var to look for (if NULL, iterate over all)
+ *
+ * Retour:
+ *  <TDictVar> : Variable info
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+*/
+TDictVar *Dict_IterateVar(TList **Iterator,char *Var) {
 
+   TDictVar *var=NULL;
+   
+   // If NULL as iterator, start at beginning
    if (!(*Iterator)) {
       *Iterator=Dict.Vars;
-      return((*Iterator)?(TDictVar*)((*Iterator)->Data):NULL);
+      if (!Var) {
+         return((*Iterator)?(TDictVar*)((*Iterator)->Data):NULL);
+      }
    }
-   
-   if ((*Iterator=(*Iterator)->Next)) {
-      return((TDictVar*)((*Iterator)->Data));
+
+   if (Var) {
+      // If a search proc and var is specified
+      if ((*Iterator=TList_Find((*Iterator),Dict_CheckVar,Var))) {
+         var=(TDictVar*)((*Iterator)->Data);
+         *Iterator=(*Iterator)->Next;
+      }      
    } else {
-      return(NULL);
+      // Otherwise iterate over all
+      if ((*Iterator) && (*Iterator=(*Iterator)->Next)) {
+         var=(TDictVar*)((*Iterator)->Data);
+      }
    }
+   return(var);
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <Dict_SortType>
+ * Creation : Mai 2014 - J.P. Gauthier
+ *
+ * But      : Order two types.
+ *
+ * Parametres  :
+ *  <Data0>    : Typevar to compare to
+ *  <Data1>    : Typevar to compare
+ *
+ * Retour:
+ *   0 si egal, -1 si plus petitm 1 si plus grand
+ * 
+ * Remarques :
+ *----------------------------------------------------------------------------
+*/
 int Dict_SortType(void *Data0,void *Data1){
 
    return(strcasecmp(((TDictType*)Data0)->Name,((TDictType*)Data1)->Name));
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <Dict_CheckType>
+ * Creation : Mai 2014 - J.P. Gauthier
+ *
+ * But      : Check if a type satisfies search parameters
+ *
+ * Parametres  :
+ *  <Data0>    : Metvar to compare to
+ *  <Data1>    : Metvar to compare
+ *
+ * Retour:
+ *   0 = no, 1 = yes
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+*/
 int Dict_CheckType(void *Data0,void *Data1){
    
    if (Dict.SearchOrigin && strcasecmp(((TDictType*)Data0)->Origin,Dict.SearchOrigin)) {
@@ -525,6 +700,21 @@ int Dict_CheckType(void *Data0,void *Data1){
    }
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <Dict_GetType>
+ * Creation : Mai 2014 - J.P. Gauthier
+ *
+ * But      : Search for a type
+ *
+ * Parametres  :
+ *  <Type>     : Type name
+ *
+ * Retour:
+ *  <TDictType>: Type info
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+*/
 TDictType *Dict_GetType(char *Type) {
    
    TList *list;
@@ -533,20 +723,64 @@ TDictType *Dict_GetType(char *Type) {
    return(list?(TDictType*)(list->Data):NULL);
 }
 
-TDictType *Dict_IterateType(TList **Iterator) {
+/*----------------------------------------------------------------------------
+ * Nom      : <Dict_IterateType>
+ * Creation : Mai 2014 - J.P. Gauthier
+ *
+ * But      : Iterator over a list of TDictType
+ *
+ * Parametres  :
+ *  <ITerator> : List pointer start (NULL for beginning of list)
+ *  <Type>     : Type to look for (if NULL, iterate over all)
+ *
+ * Retour:
+ *  <TDictType> : Type info
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+*/
+TDictType *Dict_IterateType(TList **Iterator,char *Type) {
 
+   TDictType *type=NULL;
+   
    if (!(*Iterator)) {
       *Iterator=Dict.Types;
-      return((*Iterator)?(TDictType*)((*Iterator)->Data):NULL);
+      if (!Type) {
+         return((*Iterator)?(TDictType*)((*Iterator)->Data):NULL);
+      }
    }
    
-   if ((*Iterator=(*Iterator)->Next)) {
-      return((TDictType*)((*Iterator)->Data));
+   if (Type) {
+      // If a search proc and var is specified
+      if ((*Iterator=TList_Find((*Iterator),Dict_CheckType,Type))) {
+         type=(TDictType*)((*Iterator)->Data);
+         *Iterator=(*Iterator)->Next;
+      }      
    } else {
-      return(NULL);
+      if ((*Iterator) && (*Iterator=(*Iterator)->Next)) {
+         type=((TDictType*)((*Iterator)->Data));
+      }
    }
+   
+   return(type);
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <Dict_PrintVars>
+ * Creation : Mai 2014 - J.P. Gauthier
+ *
+ * But      : Print info about a list of variables
+ *
+ * Parametres  :
+ *  <Var>      : Variable to look fortement
+ *  <Format>   : Print format (DICT_SHORT,DICT_LONG)
+ *  <Language> : Language (Fr,En)
+ *
+ * Retour:
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+*/
 void Dict_PrintVars(char *Var,int Format,char *Language) {
    
    TList *list;
@@ -561,6 +795,22 @@ void Dict_PrintVars(char *Var,int Format,char *Language) {
    }
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <Dict_PrintVar>
+ * Creation : Mai 2014 - J.P. Gauthier
+ *
+ * But      : Print info about a variable
+ *
+ * Parametres  :
+ *  <Var>      : Variable to look fortement
+ *  <Format>   : Print format (DICT_SHORT,DICT_LONG)
+ *  <Language> : Language (Fr,En)
+ *
+ * Retour:
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+*/
 void Dict_PrintVar(TDictVar *DVar,int Format,char *Language) {
  
    int  i,lang;
@@ -597,15 +847,25 @@ void Dict_PrintVar(TDictVar *DVar,int Format,char *Language) {
             if (DVar->Nature & DICT_INTEGER) {
                   printf("Representation     : %-s\n",tint[lang]);
                   printf("%-s : %s\n",unites[lang],DVar->Units);
-                  if (DVar->Magnitude>1)    printf("%-s : %e\n",mag[lang],DVar->Magnitude);
-                  if (DVar->Min!=DVar->Max) printf("%-s : [%.0f %.0f]\n",range[lang],DVar->Min,DVar->Max);
+                  if (DVar->Magnitude!=DICT_NOTSET)     printf("%-s : %e\n",mag[lang],DVar->Magnitude);
+                  if (DVar->Min!=DVar->Max) {
+                     printf("%-s : ",range[lang]);
+                     if (DVar->Min!=DICT_NOTSET) printf("[%.0f ",DVar->Min);
+                     if (DVar->Max!=DICT_NOTSET) printf("%.0f]\n",DVar->Max);
+                     printf("\n");
+                  }
                   break;
                   
             } else if (DVar->Nature & DICT_REAL) {
                   printf("Representation     : %-s\n", treal[lang]);
                   printf("%-s : %s\n",unites[lang],DVar->Units);
-                  if (DVar->Magnitude>1)    printf("%-s : %e\n",mag[lang],DVar->Magnitude);
-                  if (DVar->Min!=DVar->Max) printf("%-s : [%.0f %.0f]\n",range[lang],DVar->Min,DVar->Max);
+                  if (DVar->Magnitude!=DICT_NOTSET)    printf("%-s : %e\n",mag[lang],DVar->Magnitude);
+                  if (DVar->Min!=DVar->Max) {
+                     printf("%-s : ",range[lang]);
+                     if (DVar->Min!=DICT_NOTSET) printf("[%.0f ",DVar->Min);
+                     if (DVar->Max!=DICT_NOTSET) printf("%.0f]\n",DVar->Max);
+                     printf("\n");
+                  }
                   break;
             
             } else if (DVar->Nature & DICT_LOGICAL) {
@@ -626,6 +886,22 @@ void Dict_PrintVar(TDictVar *DVar,int Format,char *Language) {
    }
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <Dict_PrintTypes>
+ * Creation : Mai 2014 - J.P. Gauthier
+ *
+ * But      : Print info about a list of Types
+ *
+ * Parametres  :
+ *  <Var>      : Variable to look fortement
+ *  <Format>   : Print format (DICT_SHORT,DICT_LONG)
+ *  <Language> : Language (Fr,En)
+ *
+ * Retour:
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+*/
 void Dict_PrintTypes(char *Type,int Format,char *Language) {
    
    TList *list;
@@ -640,6 +916,22 @@ void Dict_PrintTypes(char *Type,int Format,char *Language) {
    }
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <Dict_PrintType>
+ * Creation : Mai 2014 - J.P. Gauthier
+ *
+ * But      : Print info about a type
+ *
+ * Parametres  :
+ *  <Var>      : Variable to look fortement
+ *  <Format>   : Print format (DICT_SHORT,DICT_LONG)
+ *  <Language> : Language (Fr,En)
+ *
+ * Retour:
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+*/
 void Dict_PrintType(TDictType *DType,int Format,char *Language) {
  
    int  i,lang;

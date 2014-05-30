@@ -64,7 +64,7 @@ int Codec(TApp *App,char *Pool,char *FST,char *Var,int Code) {
 
    if (Code) {
       if (!(fid=fopen(Pool,"r"))) {
-         App_Log(App,ERROR,"Unable to open input file (%s)\n",Pool);
+         App_Log(App,ERROR,"Unable to open information file (%s)\n",Pool);
          return(0);
       }
 
@@ -132,7 +132,7 @@ int main(int argc, char *argv[]) {
         { APP_CHAR,  (void**)&fst,    "f", "fstd",   "RPN standard file file" },
         { APP_FLAG,  (void**)&code,   "c", "code",   "Code information into RPN record" },
         { APP_FLAG,  (void**)&decode, "d", "decode", "Decode information from RPN record" },
-        { APP_CHAR,  (void**)&var,    "n", "nomvar", "Name of information variable" },
+        { APP_CHAR,  (void**)&var,    "n", "nomvar", "Name of information variable ("APP_COLOR_GREEN"INFO"APP_COLOR_RESET")" },
         { 0 } };
 
    pool=val=fst=var=NULL;
