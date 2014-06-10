@@ -74,7 +74,8 @@ int main(int argc, char *argv[]) {
 
    // Check for default dicfile
    if (!dicfile) {
-      sprintf(dicdef, "%s%s",getenv("AFSISIO"),"/datafiles/constants/stdf.variable_dictionary.xml");
+//      sprintf(dicdef, "%s%s",getenv("AFSISIO"),"/datafiles/constants/stdf.variable_dictionary.xml");
+      sprintf(dicdef, "/home/afsr/005/Projects/libeerUtils/data/stdf.variable_dictionary.xml");
       dicfile=dicdef;
    }
    

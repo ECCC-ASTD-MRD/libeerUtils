@@ -109,7 +109,7 @@ exec: obj
 	   ln -fs CodeInfo-$(VERSION) bin/CodeInfo; \
 	   $(CC) util/Dict.c -o bin/Dict-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC);  \
 	   ln -fs Dict-$(VERSION) bin/Dict; \
-	   ln -fs bin/Dict bin/o.dict; \
+	   ln -fs Dict bin/o.dict; \
 	fi
 
 install: all

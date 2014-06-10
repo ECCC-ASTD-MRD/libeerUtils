@@ -409,12 +409,14 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node) {
 
          // Logical
          if (!strcmp((char*)trotteur->name,"logical")) {
+            strcpy(metvar->Units,"bool");   
             metvar->Nature|=DICT_LOGICAL;       
 
          } else 
         
          // Code
          if (!strcmp((char*)trotteur->name,"code")) {
+            strcpy(metvar->Units,"code");   
             metvar->Nature|=DICT_CODE;
           
             trotteur1=trotteur->children;
