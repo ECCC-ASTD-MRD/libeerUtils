@@ -37,14 +37,14 @@
 #include "Dict.h"
 
 typedef struct {
-   TList *Vars;                          // List of dictionnary variables
-   TList *Types;                         // List of dictionnary types
-   int   SearchMode;                     // Search mode (DICT_EXACT,DICT_GLOB)
-   int   SearchState;                    // Search state (DICT_OBSOLETE,DICT_CURRENT,DICT_FUTURE)
-   char *SearchOrigin;                   // Search origin
-   int   SearchIP1,SearchIP2,SearchIP3;  // Ip to look for
-   int   Encoding;                       // Encoding mode
-   char  *Name,*Date,*Version;           // Dictionnary metadata
+   TList *Vars;                           // List of dictionnary variables
+   TList *Types;                          // List of dictionnary types
+   int   SearchMode;                      // Search mode (DICT_EXACT,DICT_GLOB)
+   int   SearchState;                     // Search state (DICT_OBSOLETE,DICT_CURRENT,DICT_FUTURE)
+   char *SearchOrigin;                    // Search origin
+   int   SearchIP1,SearchIP2,SearchIP3;   // Ip to look for
+   int   Encoding;                        // Encoding mode
+   char  *Name,*Date,*Version,String[64]; // Dictionnary metadata
 } TDict;
 
 static TDict Dict;
@@ -62,6 +62,19 @@ int changeEncoding(char *string, int encoding) {
    tmplenout = tmplenin;
    memset(tmpString,'\0',256);
    
+ /* TODO
+      <!ENTITY  amp      '&#38;'  >
+     <!ENTITY  lt       '&#60;'  >
+     <!ENTITY  gt       '&#62;'  >
+     <!ENTITY  amp      '&#38;'  >
+     <!ENTITY  quot     '&#34;'  >
+     <!ENTITY  nbsp     '&#160;' >
+     <!ENTITY  deg      '&#176;' >
+     <!ENTITY  sup2     '&#178;' >
+     <!ENTITY  sup3     '&#179;' >
+     <!ENTITY  micro    '&#181;' >
+   */
+ 
    switch (encoding) {
      
       case DICT_ASCII:
@@ -69,14 +82,43 @@ int changeEncoding(char *string, int encoding) {
          while (i < tmplenout && i2 < 255) {
             
             switch ((unsigned char)string[i]) {        
+               case 0xC2:
+                  i++;
+                  switch ((unsigned char) string[i]) {
+                     case 0xB0:
+                        tmpString[i2] = ' ';
+                        break;
+
+                     case 0xB2:
+                        tmpString[i2] = '2';
+                        break;
+                        
+                     case 0xB3:
+                        tmpString[i2] = '3';
+                        break;
+                        
+                     case 0xB5:
+                        tmpString[i2] = 'u';
+                        break;
+                  }
+                  break;
+                  
                case 0xC3:
                   i++;
                   switch ((unsigned char) string[i]) {
+                     case 0xB5:
+                        tmpString[i2] = 'u';
+                        break;
+
+                     case 0x80:
+                     case 0x81:
                      case 0x82:
                         tmpString[i2] = 'A';
                         break;
                      
+                     case 0x88:
                      case 0x89:
+                     case 0x90:
                         tmpString[i2] = 'E';
                         break;
                      
@@ -98,14 +140,17 @@ int changeEncoding(char *string, int encoding) {
                         break;
                      
                      case 0xEE:
+                     case 0xAF:
                         tmpString[i2] = 'i';
                         break;
                      
                      case 0xB4:
+                     case 0xB6:
                         tmpString[i2] = 'o';
                         break;
                      
                      case 0xF9:
+                     case 0xFA:
                      case 0xFB:
                         tmpString[i2] = 'u';
                         break;
@@ -122,18 +167,22 @@ int changeEncoding(char *string, int encoding) {
             i++;
             i2++;
          }
-         strcpy(string, tmpString);
+         strcpy(string,tmpString);
          break;
       
       case DICT_ISO8859_1:
-         tmplenout = tmplenin;
-         UTF8Toisolat1(tmpString, &tmplenout, string, &tmplenin);
-         strcpy(string, tmpString);
+         tmplenout=tmplenin;
+         UTF8Toisolat1(tmpString,&tmplenout,string,&tmplenin);
+         strcpy(string,tmpString);
          break;
       
       case DICT_UTF8:
-      break;
+         break;
     }
+}
+
+char* Dict_Version(void) {  
+   return(Dict.String);
 }
 
 /*----------------------------------------------------------------------------
@@ -210,6 +259,8 @@ int Dict_Parse(char *Filename) {
    Dict.Name=strdup(node->name);
    Dict.Date=strdup(xmlGetProp(node,"date"));
    Dict.Version=strdup(xmlGetProp(node,"version_number"));
+
+   sprintf(Dict.String,"%s %s version %s",Dict.Name,Dict.Date,Dict.Version);
 //   Dict.Encoding=XML_CHAR_ENCODING_ASCII;
    
   // Parse the DTD
@@ -349,6 +400,7 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node) {
             while (trotteur1) {
                if (!strcmp((char*)trotteur1->name,"units")) {
                   strncpy(metvar->Units, xmlNodeListGetString(Doc,trotteur1->children,1),32);   
+                  changeEncoding(metvar->Units,Dict.Encoding);
                }            
 
                if (!strcmp((char*)trotteur1->name,"magnitude")) { 
@@ -382,6 +434,7 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node) {
                if (!strcmp((char*)trotteur1->name,"units")) {
                   if ((tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {   
                      strncpy(metvar->Units,tmpc,32);
+                     changeEncoding(metvar->Units,Dict.Encoding);
                   }
                }
 
@@ -473,6 +526,16 @@ static int Dict_ParseType(xmlDocPtr Doc, xmlNsPtr NS, xmlNodePtr Node) {
      
    if (tmpc=(char*)xmlGetProp(Node,"Originator")) {
       strncpy(type->Origin,tmpc,32);
+   }
+   
+   if ((tmpc=(char*)xmlGetProp(Node,"usage"))) {
+      if (!strcmp(tmpc,"obsolete")) {
+         type->Nature|=DICT_OBSOLETE;
+      } else if (!strcmp(tmpc,"current")) {
+         type->Nature|=DICT_CURRENT;
+      } else if (!strcmp(tmpc,"future")) {
+         type->Nature|=DICT_FUTURE;
+      }
    }
    
    Node=Node->children;  
@@ -691,6 +754,10 @@ int Dict_SortType(void *Data0,void *Data1){
 */
 int Dict_CheckType(void *Data0,void *Data1){
    
+   if (Dict.SearchState && !(((TDictType*)Data0)->Nature&Dict.SearchState)) {
+      return(0);
+   }
+   
    if (Dict.SearchOrigin && strcasecmp(((TDictType*)Data0)->Origin,Dict.SearchOrigin)) {
       return(0);
    }
@@ -788,8 +855,6 @@ void Dict_PrintVars(char *Var,int Format,char *Language) {
    TList *list;
    
    list=Dict.Vars;
-   
-   fprintf(stderr,"%s %s version %s\n\n",Dict.Name,Dict.Date,Dict.Version);
 
    while(list=TList_Find(list,Dict_CheckVar,Var)) {
        Dict_PrintVar((TDictVar*)list->Data,Format,Language);

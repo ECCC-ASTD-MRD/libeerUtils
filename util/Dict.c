@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
         { APP_CHAR,  (void**)&state,    "s", "state"       , "Search state ("APP_COLOR_GREEN"all"APP_COLOR_RESET",obsolete,current,future)" },
         { APP_FLAG,  (void**)&desc,     "l", "long"        , "use long description" },
         { APP_FLAG,  (void**)&search,   "g", "glob"        , "use glob search pattern" },
-        { APP_CHAR,  (void**)&lang,     "a", "language"    , "language ("APP_COLOR_GREEN"english"APP_COLOR_RESET",francais)" },
+        { APP_CHAR,  (void**)&lang,     "a", "language"    , "language ("APP_COLOR_GREEN"$CMCLNG,english"APP_COLOR_RESET",francais)" },
         { APP_CHAR,  (void**)&encoding, "e", "encoding"    , "encoding type (iso8859-1,utf8,"APP_COLOR_GREEN"ascii"APP_COLOR_RESET")" },
         { APP_CHAR,  (void**)&dicfile,  "d", "dictionnary" , "dictionnary file ("APP_COLOR_GREEN"$AFSISIO/datafiles/constants/stdf.variable_dictionary.xml"APP_COLOR_RESET")" },
         { APP_CHAR,  (void**)&rpnfile,  "f", "fstd"        , "Check an RPN standard file for unknow variables" },
@@ -120,6 +120,8 @@ int main(int argc, char *argv[]) {
    if (!(ok=Dict_Parse(dicfile))) {
      App_Log(app,ERROR,"Invalid file\n");
    } else {
+      fprintf(stderr,"%s\n\n",Dict_Version());
+      
       if (rpnfile) {
          ok=Dict_CheckRPN(app,rpnfile);
       } else {

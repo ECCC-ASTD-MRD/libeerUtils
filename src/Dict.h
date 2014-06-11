@@ -72,10 +72,12 @@ typedef struct {
 typedef struct {
    char Origin[32];             // Origin ot the variable
    char Name[3];                // TYPVAR
+   int  Nature;                 // Mask for state and nature of variable
    char Short[2][128];          // Short description in both language
    char Long[2][128];           // Long description in both language 
 } TDictType;
 
+char*      Dict_Version(void);
 int        Dict_Parse(char *Filename);
 void       Dict_SetEncoding(int Encoding);
 void       Dict_SetSearch(int SearchMode,int SearchState,char *SearchOrigin,int SearchIP1,int SearchIP2,int SearchIP3);
