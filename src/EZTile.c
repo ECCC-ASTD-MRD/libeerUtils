@@ -2391,7 +2391,9 @@ int EZGrid_IJGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
       if (!EZGrid_IsLoaded(tv,k))
          EZGrid_TileGetData(GridV,tv,k,0);
 
+      pthread_mutex_lock(&RPNIntMutex);
       c_gdxywdval(tu->GID,&UU[ik],&VV[ik],tu->Data[k],tv->Data[k],&I,&J,1);
+      pthread_mutex_unlock(&RPNIntMutex);
 
       d=DEG2RAD(VV[ik]);
       v=UU[ik]*0.515f;

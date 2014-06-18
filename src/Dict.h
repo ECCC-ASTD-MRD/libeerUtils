@@ -38,31 +38,31 @@
 #define DICT_LONG   1
 #define DICT_NOTSET 1e+300
 
-#define DICT_ALL      0x00
-#define DICT_OBSOLETE 0x01
-#define DICT_CURRENT  0x02
-#define DICT_FUTURE   0x04
+#define DICT_ALL        0x00
+#define DICT_OBSOLETE   0x01
+#define DICT_CURRENT    0x02
+#define DICT_FUTURE     0x04
+#define DICT_INCOMPLETE 0x08
 
-#define DICT_INTEGER  0x08
-#define DICT_REAL     0x10
-#define DICT_LOGICAL  0x20
-#define DICT_CODE     0x40
+#define DICT_INTEGER  0x10
+#define DICT_REAL     0x20
+#define DICT_LOGICAL  0x40
+#define DICT_CODE     0x80
 
 #define DICT_EXACT    0
 #define DICT_GLOB     1
 
-#define DICT_ASCII     0
-#define DICT_UTF8      1 
-#define DICT_ISO8859_1 2
+typedef enum { DICT_ASCII=0,DICT_UTF8=1,DICT_ISO8859_1=2 } TDict_Encoding;
 
 typedef struct {
-   char   Origin[32];           // Origin ot the variable
+   char   Origin[32];           // Origin of the variable
+   time_t Date;                 // Date of creation
    char   Name[8];              // NOMVAR
    int    Nature;               // Mask for state and nature of variable
    char   Short[2][128];        // Short description in both language
    char   Long[2][128];         // Long description in both language
    char   Units[32];            // Units
-   double Min,Max,Magnitude;    // Range of values and applied factor
+   double Min,Max,Magnitude,Factor,Delta;    // Range of values and applied factor
    int    Codes[64];            // List of codes for coded variable
    char   Meanings[64][64];     // List of associated meanings
    int    NCodes;               // Number of codes
@@ -71,6 +71,7 @@ typedef struct {
 
 typedef struct {
    char Origin[32];             // Origin ot the variable
+   time_t Date;                 // Date of creation
    char Name[3];                // TYPVAR
    int  Nature;                 // Mask for state and nature of variable
    char Short[2][128];          // Short description in both language
@@ -79,8 +80,10 @@ typedef struct {
 
 char*      Dict_Version(void);
 int        Dict_Parse(char *Filename);
-void       Dict_SetEncoding(int Encoding);
+void       Dict_SetEncoding(TDict_Encoding Encoding);
 void       Dict_SetSearch(int SearchMode,int SearchState,char *SearchOrigin,int SearchIP1,int SearchIP2,int SearchIP3);
+void       Dict_AddVar(TDictVar *Var);
+void       Dict_AddType(TDictType *Type);
 TDictVar  *Dict_GetVar(char *Var);
 TDictType *Dict_GetType(char *Type);
 TDictVar  *Dict_IterateVar(TList **Iterator,char *Var);
