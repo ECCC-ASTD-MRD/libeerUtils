@@ -78,6 +78,11 @@ TApp *App_New(char *Name,char *Version,char *Desc,char* Stamp) {
    app->OMPSeed=NULL;
    app->Seed=time(NULL);
 
+   // Check the language in the environment
+   if (!(app->Language=getenv("CMCLNG"))) {
+      app->Language=strdup("english");
+   }
+
    return(app);
 }
 

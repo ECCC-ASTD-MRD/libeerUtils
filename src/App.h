@@ -85,6 +85,7 @@ typedef struct TApp {
     char*          Version;              // Version
     char*          Desc;                 // Description
     char*          TimeStamp;            // Compilation timestamp
+    char*          Language;             // Language (default: $CMCLNG or english)
     char*          LogFile;              // Log file
     int            LogWarning;           // Number of warnings
     int            LogError;             // Number of errors

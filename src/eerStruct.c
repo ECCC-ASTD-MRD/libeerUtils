@@ -246,7 +246,7 @@ TList* TList_Del(TList *List,void *Data) {
 TList* TList_Find(TList *List,TList_CompareProc *Proc,void *Data) {
 
    while(List) {
-      if (Proc(List->Data,Data)) {
+      if (!Proc || Proc(List->Data,Data)) {
          return(List);
       }
       List=List->Next;

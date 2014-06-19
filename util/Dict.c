@@ -82,11 +82,11 @@ int main(int argc, char *argv[]) {
    }
    
    // Check the language in the environment
-   if (!lang && !(lang=getenv("CMCLNG"))) {
-      lang=strdup("english");
+   if (lang) {
+      app->Language=lang;
    }
   
-   if (!var && !type) {
+   if (!var && !type && !rpnfile && !cfgfile) {
       var=strdup("");
       type=strdup("");
       search=DICT_GLOB;
@@ -130,8 +130,8 @@ int main(int argc, char *argv[]) {
       } else if (cfgfile) {
          ok=Dict_CheckCFG(app,cfgfile);
       } else {
-         if (var)  Dict_PrintVars(var,desc,lang); 
-         if (type) Dict_PrintTypes(type,desc,lang);
+         if (var)  Dict_PrintVars(var,desc,app->Language); 
+         if (type) Dict_PrintTypes(type,desc,app->Language);
       }
    }
 
@@ -164,19 +164,19 @@ int main(int argc, char *argv[]) {
 int Dict_CheckCFG(TApp *App,char *CFGFile){
 
    FILE     *fp;
-   TDictVar *var,*metvar;
-   TList    *vars,*list;
+   TDictVar *var;
+   TList    *unknown,*known;
    char      buf[APP_BUFMAX],*idx,*values,*value,*valuesave;
    char     *directives[]={ "sortie(","sortie_p(",NULL };
-   int       d,nb=0;
+   int       d,nb_unknown=0,nb_known=0;
    
    if (!(fp=fopen(CFGFile,"r"))) {
       App_Log(App,ERROR,"Unable to open config file: %s\n",CFGFile);
       return(0);
    }
    
-   vars=NULL;
-
+   unknown=known=NULL;
+   
    // Parse GEM cfg file
    while(fgets(buf,APP_BUFMAX,fp)) {
       
@@ -201,11 +201,16 @@ int Dict_CheckCFG(TApp *App,char *CFGFile){
                if (!(var=Dict_GetVar(value))) {
                   
                   // Si pas encore dans la liste des inconnus
-                  if (!TList_Find(vars,Dict_CheckVar,value)) {
-                     nb++;
-                     metvar=(TDictVar*)calloc(1,sizeof(TDictVar));
-                     strncpy(metvar->Name,value,8);
-                     vars=TList_AddSorted(vars,Dict_SortVar,metvar);
+                  if (!TList_Find(unknown,Dict_CheckVar,value)) {
+                     nb_unknown++;
+                     var=(TDictVar*)calloc(1,sizeof(TDictVar));
+                     strncpy(var->Name,value,8);
+                     unknown=TList_AddSorted(unknown,Dict_SortVar,var);
+                  }
+               } else {
+                  if (!TList_Find(known,Dict_CheckVar,var->Name)) {
+                     nb_known++;
+                     known=TList_AddSorted(known,Dict_SortVar,var);
                   }
                }
                values=NULL;           
@@ -215,18 +220,26 @@ int Dict_CheckCFG(TApp *App,char *CFGFile){
       }
    }  
       
-   if (vars) {
-      printf("Var\n----\n");
-      list=vars;
-      while(list=TList_Find(list,Dict_CheckVar,"")) {
-         var=(TDictVar*)(list->Data);
-         
-         printf("%-4s\n",var->Name);
-         
-         list=list->Next;
+   if (known) {
+      printf("Known variables (%i)\n-------------------------------------------------------------------------------------\n",nb_known);
+      while(known=TList_Find(known,NULL,"")) {
+         var=(TDictVar*)(known->Data);        
+         Dict_PrintVar(var,DICT_SHORT,App->Language);
+         known=known->Next;
       }
    }
-   printf("\nFound %i unknown variables\n",nb);
+   
+   if (unknown) {
+      printf("\nUnknown variables (%i)\n-------------------------------------------------------------------------------------\n",nb_unknown);
+      while(unknown=TList_Find(unknown,NULL,"")) {
+         var=(TDictVar*)(unknown->Data);       
+         printf("%-4s\n",var->Name);        
+         unknown=unknown->Next;
+      }
+   }
+   printf("\n");
+   
+   App_Log(App,WARNING,"Found %i unknown variables\n",nb_unknown);
     
    return(1);
 }
@@ -250,9 +263,9 @@ int Dict_CheckCFG(TApp *App,char *CFGFile){
 int Dict_CheckRPN(TApp *App,char *RPNFile){
 
    TRPNHeader head;
-   TDictVar  *var,*metvar;
-   TList     *vars,*list;
-   int        fid,ni,nj,nk,n,nb=0,nidx,idxs[11];
+   TDictVar  *var;
+   TList     *unknown,*known;
+   int        fid,ni,nj,nk,n,nb_unknown=0,nb_known=0,nidx,idxs[11];
    double     nhour;
    
    if  ((fid=cs_fstouv(RPNFile,"STD+RND+R/O"))<0) {
@@ -260,7 +273,7 @@ int Dict_CheckRPN(TApp *App,char *RPNFile){
       return(0);
    }
    
-   vars=NULL;
+   unknown=known=NULL;
    
    head.KEY=c_fstinf(fid,&ni,&nj,&nk,-1,"",-1,-1,-1,"","");
 
@@ -289,21 +302,34 @@ int Dict_CheckRPN(TApp *App,char *RPNFile){
       // Si la variable n'existe pas
       if (!(var=Dict_GetVar(head.NOMVAR))) {
          // Si pas encore dans la liste des inconnus
-         if (!TList_Find(vars,Dict_CheckVar,head.NOMVAR)) {
-            nb++;
-            metvar=(TDictVar*)calloc(1,sizeof(TDictVar));
-            strncpy(metvar->Name,head.NOMVAR,4);
-            vars=TList_AddSorted(vars,Dict_SortVar,metvar);
+         if (!TList_Find(unknown,Dict_CheckVar,head.NOMVAR)) {
+            nb_unknown++;
+            var=(TDictVar*)calloc(1,sizeof(TDictVar));
+            strncpy(var->Name,head.NOMVAR,4);
+            unknown=TList_AddSorted(unknown,Dict_SortVar,var);
+         }
+      } else {
+         if (!TList_Find(known,Dict_CheckVar,var->Name)) {
+            nb_known++;
+            known=TList_AddSorted(known,Dict_SortVar,var);
          }
       }
       head.KEY=c_fstsui(fid,&ni,&nj,&nk);
    }
    
-   if (vars) {
-      printf("Var   IP1s (10 first)\n----  ---------------------------------------------------------------------\n");
-      list=vars;
-      while(list=TList_Find(list,Dict_CheckVar,"")) {
-         var=(TDictVar*)(list->Data);
+   if (known) {
+      printf("Known variables (%i)\n-------------------------------------------------------------------------------------\n",nb_known);
+      while(known=TList_Find(known,NULL,"")) {
+         var=(TDictVar*)(known->Data);        
+         Dict_PrintVar(var,DICT_SHORT,App->Language);
+         known=known->Next;
+      }
+   }
+   
+   if (unknown) {
+      printf("\nUnknown variables (%i) with 10 first IP1s\n-------------------------------------------------------------------------------------\n",nb_unknown);
+      while(unknown=TList_Find(unknown,NULL,"")) {
+         var=(TDictVar*)(unknown->Data);
          
          // Recuperer les indexes de tout les niveaux
          cs_fstinl(fid,&ni,&nj,&nk,head.DATEV,"",-1,-1,-1,"",var->Name,idxs,&nidx,11);
@@ -319,10 +345,12 @@ int Dict_CheckRPN(TApp *App,char *RPNFile){
          if (nidx>9) printf ("...");
          printf("\n");
       
-         list=list->Next;
+         unknown=unknown->Next;
       }
    }
-   printf("\nFound %i unknown variables\n",nb);
+   printf("\n");
+   
+   App_Log(App,WARNING,"Found %i unknown variables\n",nb_unknown);
    
    cs_fstfrm(fid);
    
