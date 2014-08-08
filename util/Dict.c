@@ -36,7 +36,6 @@
 #include "EZTile.h"
 #include "Dict.h"
 
-#define APP_VERSION "2.0"
 #define APP_NAME    "Dict"
 #define APP_DESC    "CMC/RPN dictionary variable information."
 
@@ -50,25 +49,25 @@ int main(int argc, char *argv[]) {
    char      *var,*type,*lang,*encoding,*origin,*state,*dicfile,*rpnfile,*cfgfile,dicdef[4096];
    
    TApp_Arg appargs[]=
-      { { APP_CHAR,  (void**)&var,      "n", "nomvar"      , "Search variable name ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
-        { APP_CHAR,  (void**)&type,     "t", "typvar"      , "Search variable type ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
-        { APP_INT32, (void**)&ip1,      "1",  "ip1"        , "Search IP1 ("APP_COLOR_GREEN"-1"APP_COLOR_RESET")" },
-        { APP_INT32, (void**)&ip3,      "3",  "ip3"        , "Search IP3 ("APP_COLOR_GREEN"-1"APP_COLOR_RESET")" },
-        { APP_CHAR,  (void**)&origin,   "o", "origin"      , "Search originator ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
-        { APP_CHAR,  (void**)&state,    "s", "state"       , "Search state ("APP_COLOR_GREEN"all"APP_COLOR_RESET",obsolete,current,future,incomplete)" },
-        { APP_FLAG,  (void**)&desc,     "l", "long"        , "use long description" },
-        { APP_FLAG,  (void**)&search,   "g", "glob"        , "use glob search pattern" },
-        { APP_CHAR,  (void**)&lang,     "a", "language"    , "language ("APP_COLOR_GREEN"$CMCLNG,english"APP_COLOR_RESET",francais)" },
-        { APP_CHAR,  (void**)&encoding, "e", "encoding"    , "encoding type (iso8859-1,utf8,"APP_COLOR_GREEN"ascii"APP_COLOR_RESET")" },
-        { APP_CHAR,  (void**)&dicfile,  "d", "dictionnary" , "dictionnary file ("APP_COLOR_GREEN"$AFSISIO/datafiles/constants/stdf.variable_dictionary.xml"APP_COLOR_RESET")" },
-        { APP_CHAR,  (void**)&rpnfile,  "f", "fstd"        , "Check an RPN standard file for unknow variables" },
-        { APP_CHAR,  (void**)&cfgfile,  "c", "cfg"         , "Check a GEM configuration file for unknow variables" },
+      { { APP_CHAR|APP_FLAG, (void**)&var,      "n", "nomvar"      , "Search variable name ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
+        { APP_CHAR|APP_FLAG, (void**)&type,     "t", "typvar"      , "Search variable type ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
+        { APP_INT32,         (void**)&ip1,      "1",  "ip1"        , "Search IP1 ("APP_COLOR_GREEN"-1"APP_COLOR_RESET")" },
+        { APP_INT32,         (void**)&ip3,      "3",  "ip3"        , "Search IP3 ("APP_COLOR_GREEN"-1"APP_COLOR_RESET")" },
+        { APP_CHAR,          (void**)&origin,   "o", "origin"      , "Search originator ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
+        { APP_CHAR,          (void**)&state,    "s", "state"       , "Search state ("APP_COLOR_GREEN"all"APP_COLOR_RESET",obsolete,current,future,incomplete)" },
+        { APP_FLAG,          (void**)&desc,     "l", "long"        , "use long description" },
+        { APP_FLAG,          (void**)&search,   "g", "glob"        , "use glob search pattern" },
+        { APP_CHAR,          (void**)&lang,     "a", "language"    , "language ("APP_COLOR_GREEN"$CMCLNG,english"APP_COLOR_RESET",francais)" },
+        { APP_CHAR,          (void**)&encoding, "e", "encoding"    , "encoding type (iso8859-1,utf8,"APP_COLOR_GREEN"ascii"APP_COLOR_RESET")" },
+        { APP_CHAR,          (void**)&dicfile,  "d", "dictionnary" , "dictionnary file ("APP_COLOR_GREEN"$AFSISIO/datafiles/constants/stdf.variable_dictionary.xml"APP_COLOR_RESET")" },
+        { APP_CHAR,          (void**)&rpnfile,  "f", "fstd"        , "Check an RPN standard file for unknow variables" },
+        { APP_CHAR,          (void**)&cfgfile,  "c", "cfg"         , "Check a GEM configuration file for unknow variables" },
         { 0 } };
         
-   var=type=lang=encoding=dicfile=origin=rpnfile=state=NULL;
+   var=type=lang=encoding=dicfile=cfgfile=origin=rpnfile=state=NULL;
    ip1=ip2=ip3=-1;
    
-   app=App_New(APP_NAME,APP_VERSION,APP_DESC,__TIMESTAMP__);
+   app=App_New(APP_NAME,VERSION,APP_DESC,__TIMESTAMP__);
 
    if (!App_ParseArgs(app,appargs,argc,argv,APP_NOARGSLOG)) {
       exit(EXIT_FAILURE);      
@@ -86,10 +85,20 @@ int main(int argc, char *argv[]) {
       app->Language=lang;
    }
   
+
    if (!var && !type && !rpnfile && !cfgfile) {
       var=strdup("");
       type=strdup("");
       search=DICT_GLOB;
+   } else {
+      if (var==(void*)APP_FLAG || (var && strncmp(var,"all",3)==0)) {
+         var=strdup("");
+         search=DICT_GLOB;
+      }      
+      if (type==(void*)APP_FLAG || (type && strncmp(type,"all",3)==0)) {
+         type=strdup("");
+         search=DICT_GLOB;
+      }      
    }
 
    if (state) {
@@ -167,7 +176,6 @@ int Dict_CheckCFG(TApp *App,char *CFGFile){
    TDictVar *var;
    TList    *unknown,*known;
    char      buf[APP_BUFMAX],*idx,*values,*value,*valuesave;
-   char     *directives[]={ "sortie(","sortie_p(",NULL };
    int       d,nb_unknown=0,nb_known=0;
    
    if (!(fp=fopen(CFGFile,"r"))) {
@@ -181,42 +189,38 @@ int Dict_CheckCFG(TApp *App,char *CFGFile){
    while(fgets(buf,APP_BUFMAX,fp)) {
       
       // Process directives
-      d=0;
-      while(directives[d]) {
-         if (idx=strcasestr(buf,directives[d])) {
+         if (idx=strcasestr(buf,"sortie")) {
             
-            // Locate var list within []
-            values=idx+strlen(directives[d]);
-            strrep(buf,'[',' ');
-            strrep(buf,']','\0');
+         // Locate var list within []
+         values=strcasestr(idx,"(")+1;
+         strrep(buf,'[',' ');
+         strrep(buf,']','\0');
+         
+         // Parse all var separated by ,
+         valuesave=NULL;
+         while(value=strtok_r(values,",",&valuesave)) {
+            strtrim(value,' ');
             
-            // Parse al var separated by ,
-            valuesave=NULL;
-            while(value=strtok_r(values,",",&valuesave)) {
-               strtrim(value,' ');
+            App_Log(App,DEBUG,"Found variable: %s\n",value);
+            
+            // Si la variable n'existe pas
+            if (!(var=Dict_GetVar(value))) {
                
-               App_Log(App,DEBUG,"Found variable: %s\n",value);
-               
-               // Si la variable n'existe pas
-               if (!(var=Dict_GetVar(value))) {
-                  
-                  // Si pas encore dans la liste des inconnus
-                  if (!TList_Find(unknown,Dict_CheckVar,value)) {
-                     nb_unknown++;
-                     var=(TDictVar*)calloc(1,sizeof(TDictVar));
-                     strncpy(var->Name,value,8);
-                     unknown=TList_AddSorted(unknown,Dict_SortVar,var);
-                  }
-               } else {
-                  if (!TList_Find(known,Dict_CheckVar,var->Name)) {
-                     nb_known++;
-                     known=TList_AddSorted(known,Dict_SortVar,var);
-                  }
+               // Si pas encore dans la liste des inconnus
+               if (!TList_Find(unknown,Dict_CheckVar,value)) {
+                  nb_unknown++;
+                  var=(TDictVar*)calloc(1,sizeof(TDictVar));
+                  strncpy(var->Name,value,8);
+                  unknown=TList_AddSorted(unknown,Dict_SortVar,var);
                }
-               values=NULL;           
+            } else {
+               if (!TList_Find(known,Dict_CheckVar,var->Name)) {
+                  nb_known++;
+                  known=TList_AddSorted(known,Dict_SortVar,var);
+               }
             }
+            values=NULL;           
          }
-         d++;
       }
    }  
       

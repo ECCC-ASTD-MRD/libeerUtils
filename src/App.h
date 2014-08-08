@@ -70,13 +70,25 @@
 
 typedef enum { MUST=-1,ERROR=0,WARNING=1,INFO=2,DEBUG=3,EXTRA=4 } TApp_LogLevel;
 typedef enum { STOP,RUN,DONE } TApp_State;
-typedef enum { APP_NIL,APP_FLAG,APP_LIST,APP_CHAR,APP_UINT32,APP_INT32,APP_UINT64,APP_INT64,APP_FLOAT32,APP_FLOAT64 } TApp_Type;
+typedef enum { APP_NIL=0x0,APP_FLAG=0x01,APP_LIST=0x02,APP_CHAR=0x04,APP_UINT32=0x06,APP_INT32=0x08,APP_UINT64=0x0A,APP_INT64=0x0C,APP_FLOAT32=0x0E,APP_FLOAT64=0x10 } TApp_Type;
+
+// #define APP_NIL     0x00
+// #define APP_FLAG    0x01
+// #define APP_LIST    0x02
+// #define APP_CHAR    0x04
+// #define APP_UINT32  0x06
+// #define APP_INT32   0x08
+// #define APP_UINT64  0x0A
+// #define APP_INT64   0x0C
+// #define APP_FLOAT32 0x0E
+// #define APP_FLOAT64 0x10
 
 // Argument definitions
 typedef struct TApp_Arg {
-   TApp_Type Type;
-   void    **Var;
-   char    *Short,*Long,*Info;
+//   unsigned int Type;
+   TApp_Type    Type;
+   void         **Var;
+   char         *Short,*Long,*Info;
 } TApp_Arg;
 
 /*Application controller definition*/

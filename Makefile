@@ -17,8 +17,8 @@ endif
 SSM_NAME    = ${NAME}_${VERSION}${COMP}_${ORDENV_PLAT}
 
 INSTALL_DIR = $(HOME)
-TCL_DIR     = /cnfs/ops/cmoe/afsr005/Archive/tcl8.6.0
-LIB_DIR     = /cnfs/ops/cmoe/afsr005/Lib/${ORDENV_PLAT}
+TCL_DIR     = /users/dor/afsr/005/Links/dev/Archive/tcl8.6.0
+LIB_DIR     = /users/dor/afsr/005/Links/dev/Lib/${ORDENV_PLAT}
 
 ifeq ($(OS),Linux)
 

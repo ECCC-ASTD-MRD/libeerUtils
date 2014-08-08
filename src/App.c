@@ -457,7 +457,7 @@ inline int App_GetArgs(TApp *App,TApp_Arg *AArg,char *Value) {
    errno=0;
 
    if (Value) {   
-      switch(AArg->Type) {
+      switch(AArg->Type&(~APP_FLAG)) {
          case APP_LIST :  (*AArg->Var++)=Value;                                   break;
          case APP_CHAR :  (*AArg->Var)=Value;                                     break;
          case APP_UINT32: (*(unsigned int*)AArg->Var)=strtol(Value,&endptr,10);   break;
@@ -467,8 +467,10 @@ inline int App_GetArgs(TApp *App,TApp_Arg *AArg,char *Value) {
          case APP_FLOAT32:(*(float*)AArg->Var)=strtof(Value,&endptr);             break;
          case APP_FLOAT64:(*(double*)AArg->Var)=strtod(Value,&endptr);            break;
       }
-   }   
-   if (!Value || (endptr && endptr==Value)) {
+   } else {
+      if (AArg->Type&APP_FLAG) (*AArg->Var)=(void*)0x01;
+   }
+   if (!(AArg->Type&APP_FLAG) && (!Value || (endptr && endptr==Value))) {
       printf("Invalid value for parametre -%s, --%s: %s\n",AArg->Short,AArg->Long,Value);
       exit(EXIT_FAILURE);
    }

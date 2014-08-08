@@ -48,6 +48,25 @@ typedef struct {
    char          *Name,*Date,*Version,String[64];  // Dictionnary metadata
 } TDict;
 
+char *TSHORT[]  = { "Description courte","Short Description " };
+char *TLONG[]   = { "Description longue","Long  Description " };
+char *TUNITES[] = { "Unites            ","Units             " };
+char *TDATE[]   = { "Date              ","Date              " };
+char *TORIGIN[] = { "Origine           ","Origin            " };
+char *TSTATE[]  = { "Etat              ","State             " };
+char *TMAG[]    = { "Ordre de grandeur ","Magnitude         " };
+char *TRANGE[]  = { "Amplitude         ","Range             " };
+char *TINT[]    = { "Variable entière"  ,"Integer Variable"   };
+char *TREAL[]   = { "Variable réelle"   ,"Real Variable"      };
+char *TLOGIC[]  = { "Variable logique"  ,"Logical Variable"   };
+char *TCODE[]   = { "Variable codée"    ,"Coded Variable"     };
+char *TVAL[]    = { "Valeur"            ,"Value"              };
+
+char *TOBSOLETE[]   = { "Obsolète"   ,"Obsolete"   };
+char *TFUTURE[]     = { "Futur"      ,"Future"     };
+char *TCURRENT[]    = { "Courante"   ,"Current"    };
+char *TINCOMPLETE[] = { "Incomplète" ,"Icompletee" };
+
 static TDict Dict;
 
 static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node);
@@ -374,21 +393,26 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node) {
                if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"en")) {
                   strncpy(metvar->Short[1], xmlNodeListGetString(Doc,trotteur1->children,1),128);
                   Dict_Encoding(metvar->Short[1],Dict.Encoding);
-               } else {
-                 if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"fr")) {
-                    strncpy(metvar->Short[0], xmlNodeListGetString(Doc,trotteur1->children,1),128);
-                     Dict_Encoding(metvar->Short[0],Dict.Encoding);
-                 } 
+               } else if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"fr")) {
+                  strncpy(metvar->Short[0], xmlNodeListGetString(Doc,trotteur1->children,1),128);
+                  Dict_Encoding(metvar->Short[0],Dict.Encoding); 
                }           
-            } else 
-
-            if (!strcmp((char*)trotteur1->name,"long") && xmlNodeListGetString(Doc,trotteur1->children,1)) {
-               strncpy(metvar->Long[0],xmlNodeListGetString(Doc,trotteur1->children,1),128);
-               strncpy(metvar->Long[1],xmlNodeListGetString(Doc,trotteur1->children,1),128);
-               Dict_Encoding(metvar->Long[0],Dict.Encoding);
-               Dict_Encoding(metvar->Long[1],Dict.Encoding);
+            } else if (!strcmp((char*)trotteur1->name,"long") && xmlNodeListGetString(Doc,trotteur1->children,1)) {
+               if (xmlGetProp(trotteur1,"lang")) {
+                  if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"fr")) {
+                     strncpy(metvar->Long[0],xmlNodeListGetString(Doc,trotteur1->children,1),128);
+                     Dict_Encoding(metvar->Long[0],Dict.Encoding);
+                  } else if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"en")) {                                   
+                     strncpy(metvar->Long[1],xmlNodeListGetString(Doc,trotteur1->children,1),128);
+                     Dict_Encoding(metvar->Long[1],Dict.Encoding);
+                  }
+               } else {
+                  strncpy(metvar->Long[0],xmlNodeListGetString(Doc,trotteur1->children,1),128);
+                  Dict_Encoding(metvar->Long[0],Dict.Encoding);
+                  strncpy(metvar->Long[1],xmlNodeListGetString(Doc,trotteur1->children,1),128);
+                  Dict_Encoding(metvar->Long[1],Dict.Encoding);                                    
+               }
             }
-
             trotteur1=trotteur1->next;
          }
       } else 
@@ -570,13 +594,21 @@ static int Dict_ParseType(xmlDocPtr Doc, xmlNsPtr NS, xmlNodePtr Node) {
                      Dict_Encoding(type->Short[0],Dict.Encoding);
                   }           
                }          
-            }
-
-            if (!strcmp((char*)trotteur1->name,"long") && xmlNodeListGetString(Doc,trotteur1->children,1)) {
-               strncpy(type->Long[0],xmlNodeListGetString(Doc,trotteur1->children,1),128);
-               strncpy(type->Long[1],xmlNodeListGetString(Doc,trotteur1->children,1),128);
-               Dict_Encoding(type->Long[0],Dict.Encoding);
-               Dict_Encoding(type->Long[1],Dict.Encoding);
+            } else if (!strcmp((char*)trotteur1->name,"long") && xmlNodeListGetString(Doc,trotteur1->children,1)) {
+               if (xmlGetProp(trotteur1,"lang")) {
+                  if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"fr")) {
+                     strncpy(type->Long[0],xmlNodeListGetString(Doc,trotteur1->children,1),128);
+                     Dict_Encoding(type->Long[0],Dict.Encoding);
+                  } else if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"en")) {                                   
+                     strncpy(type->Long[1],xmlNodeListGetString(Doc,trotteur1->children,1),128);
+                     Dict_Encoding(type->Long[1],Dict.Encoding);
+                  }
+               } else {
+                  strncpy(type->Long[0],xmlNodeListGetString(Doc,trotteur1->children,1),128);
+                  Dict_Encoding(type->Long[0],Dict.Encoding);
+                  strncpy(type->Long[1],xmlNodeListGetString(Doc,trotteur1->children,1),128);
+                  Dict_Encoding(type->Long[1],Dict.Encoding);                                    
+               }
             }
 
             trotteur1=trotteur1->next;
@@ -922,26 +954,8 @@ void Dict_PrintVars(char *Var,int Format,char *Language) {
 */
 void Dict_PrintVar(TDictVar *DVar,int Format,char *Language) {
  
-   int  i,lang;
+   int        i,lang;
    struct tm *tm;
-   char *tshort[] = { "Description courte","Short Description " };
-   char *tlong[]  = { "Description longue","Long  Description " };
-   char *unites[] = { "Unites            ","Units             " };
-   char *tdate[]  = { "Date              ","Date              " };
-   char *tori[]   = { "Origine           ","Origin            " };
-   char *tuse[]   = { "Etat              ","State             " };
-   char *mag[]    = { "Ordre de grandeur ","Magnitude         " };
-   char *range[]  = { "Amplitude         ","Range             " };
-   char *tint[]   = { "Variable entière"  ,"Integer Variable"   };
-   char *treal[]  = { "Variable réelle"   ,"Real Variable"      };
-   char *tlogic[] = { "Variable logique"  ,"Logical Variable"   };
-   char *tcode[]  = { "Variable codée"    ,"Coded Variable"     };
-   char *tval[]   = { "Valeur"            ,"Value"              };
-   
-   char *tobsolete[]   = { "Obsolète"   ,"Obsolete"   };
-   char *tfuture[]     = { "Futur"      ,"Future"     };
-   char *tcurrent[]    = { "Courante"   ,"Current"    };
-   char *tincomplete[] = { "Incomplète" ,"Icompletee" };
  
    if (DVar) {
       lang=(Language[0]=='f' || Language[0]=='F')?0:1;
@@ -952,7 +966,7 @@ void Dict_PrintVar(TDictVar *DVar,int Format,char *Language) {
          case DICT_SHORT:
             printf("%-4s\t%-70s\t%-s",DVar->Name,DVar->Short[lang],DVar->Units);
             if (DVar->Nature&DICT_OBSOLETE)
-               printf(" \t%s\n",tobsolete[lang]);
+               printf(" \t%s\n",TOBSOLETE[lang]);
             else 
                printf("\n");
             
@@ -965,34 +979,34 @@ void Dict_PrintVar(TDictVar *DVar,int Format,char *Language) {
             if (DVar->IP2>=0) printf(" IP2(%i)",DVar->IP2);
             if (DVar->IP3>=0) printf(" IP3(%i)",DVar->IP3);
                
-            printf("\n%-s : %-s\n", tshort[lang],DVar->Short[lang]);
-            printf("%-s : %-s\n", tlong[lang],DVar->Long[lang][0]!='\0'?DVar->Long[lang]:"-");
+            printf("\n%-s : %-s\n", TSHORT[lang],DVar->Short[lang]);
+            printf("%-s : %-s\n", TLONG[lang],DVar->Long[lang][0]!='\0'?DVar->Long[lang]:"-");
             
             if (DVar->Date) {
                tm=gmtime(&(DVar->Date));
-               printf("%-s : %04i-%02i-%02i\n", tdate[lang],1900+tm->tm_year,tm->tm_mon+1,tm->tm_mday);
+               printf("%-s : %04i-%02i-%02i\n", TDATE[lang],1900+tm->tm_year,tm->tm_mon+1,tm->tm_mday);
             } else {
-               printf("%-s : %-s\n", tdate[lang],"-");
+               printf("%-s : %-s\n", TDATE[lang],"-");
             }
             
-            printf("%-s : %-s\n", tori[lang],DVar->Origin[0]!='\0'?DVar->Origin:"-");
-            printf("%-s : ", tuse[lang]);
+            printf("%-s : %-s\n", TORIGIN[lang],DVar->Origin[0]!='\0'?DVar->Origin:"-");
+            printf("%-s : ", TSTATE[lang]);
             
             if (DVar->Nature&DICT_OBSOLETE)
-               printf("%s\n",tobsolete[lang]);
+               printf("%s\n",TOBSOLETE[lang]);
             else if (DVar->Nature&DICT_CURRENT)
-               printf("%s\n",tcurrent[lang]);
+               printf("%s\n",TCURRENT[lang]);
             else if (DVar->Nature&DICT_FUTURE)
-               printf("%s\n",tfuture[lang]);
+               printf("%s\n",TFUTURE[lang]);
              else if (DVar->Nature&DICT_INCOMPLETE)
-               printf("%s\n",tincomplete[lang]);
+               printf("%s\n",TINCOMPLETE[lang]);
                 
             if (DVar->Nature & DICT_INTEGER) {
-                  printf("Representation     : %-s\n",tint[lang]);
-                  printf("%-s : %s\n",unites[lang],DVar->Units);
-                  if (DVar->Magnitude!=DICT_NOTSET)     printf("%-s : %e\n",mag[lang],DVar->Magnitude);
+                  printf("Representation     : %-s\n",TINT[lang]);
+                  printf("%-s : %s\n",TUNITES[lang],DVar->Units);
+                  if (DVar->Magnitude!=DICT_NOTSET)     printf("%-s : %e\n",TMAG[lang],DVar->Magnitude);
                   if (DVar->Min!=DVar->Max) {
-                     printf("%-s : ",range[lang]);
+                     printf("%-s : ",TRANGE[lang]);
                      if (DVar->Min!=DICT_NOTSET) printf("[%.0f ",DVar->Min);
                      if (DVar->Max!=DICT_NOTSET) printf("%.0f]\n",DVar->Max);
                      printf("\n");
@@ -1000,11 +1014,11 @@ void Dict_PrintVar(TDictVar *DVar,int Format,char *Language) {
                   break;
                   
             } else if (DVar->Nature & DICT_REAL) {
-                  printf("Representation     : %-s\n", treal[lang]);
-                  printf("%-s : %s\n",unites[lang],DVar->Units);
-                  if (DVar->Magnitude!=DICT_NOTSET)    printf("%-s : %e\n",mag[lang],DVar->Magnitude);
+                  printf("Representation     : %-s\n", TREAL[lang]);
+                  printf("%-s : %s\n",TUNITES[lang],DVar->Units);
+                  if (DVar->Magnitude!=DICT_NOTSET)    printf("%-s : %e\n",TMAG[lang],DVar->Magnitude);
                   if (DVar->Min!=DVar->Max) {
-                     printf("%-s : ",range[lang]);
+                     printf("%-s : ",TRANGE[lang]);
                      if (DVar->Min!=DICT_NOTSET) printf("[%.0f ",DVar->Min);
                      if (DVar->Max!=DICT_NOTSET) printf("%.0f]\n",DVar->Max);
                      printf("\n");
@@ -1012,12 +1026,12 @@ void Dict_PrintVar(TDictVar *DVar,int Format,char *Language) {
                   break;
             
             } else if (DVar->Nature & DICT_LOGICAL) {
-                  printf("Representation     : %-s\n", tlogic[lang]);
+                  printf("Representation     : %-s\n", TLOGIC[lang]);
                   break;
             
             } else if (DVar->Nature & DICT_CODE) {
-                  printf("Representation     : %-s\n", tcode[lang]);
-                  printf("\tCode\t\t%s\n",tval[lang]);
+                  printf("Representation     : %-s\n", TCODE[lang]);
+                  printf("\tCode\t\t%s\n",TVAL[lang]);
                   printf("\t----\t\t----------------\n");
                   for (i=0; i < DVar->NCodes; i++) {
                      printf("\t%i\t\t%-s\n", DVar->Codes[i], DVar->Meanings[i]);
@@ -1052,7 +1066,7 @@ void Dict_PrintTypes(char *Type,int Format,char *Language) {
    
    list=Dict.Types;
    
-   printf("---TYPVAR-----------------------------------------------------------------------\n");
+   printf("\n12-TYPVAR-----------------------------------------------------------------------\n");
    
    while(list=TList_Find(list,Dict_CheckType,Type)) {
        Dict_PrintType((TDictType*)list->Data,Format,Language);
@@ -1078,16 +1092,43 @@ void Dict_PrintTypes(char *Type,int Format,char *Language) {
 */
 void Dict_PrintType(TDictType *DType,int Format,char *Language) {
  
-   int  i,lang;
+   int        i,lang;
+   struct tm *tm;
    
    if (DType) {
       lang=(Language[0]=='f' || Language[0]=='F')?0:1;
       
       switch(Format) {
          case DICT_SHORT:
-            printf("%s  %-60s\n", DType->Name, DType->Short[lang]);
+            printf("%-2s  %-60s\n", DType->Name, DType->Short[lang]);
             break;
 
+         case DICT_LONG:
+            printf("--------------------------------------------------------------------------------\n");
+            printf("Typvar             : %-s", DType->Name);               
+            printf("\n%-s : %-s\n", TSHORT[lang],DType->Short[lang]);
+            printf("%-s : %-s\n", TLONG[lang],DType->Long[lang][0]!='\0'?DType->Long[lang]:"-");
+
+            if (DType->Date) {
+               tm=gmtime(&(DType->Date));
+               printf("%-s : %04i-%02i-%02i\n", TDATE[lang],1900+tm->tm_year,tm->tm_mon+1,tm->tm_mday);
+            } else {
+               printf("%-s : %-s\n", TDATE[lang],"-");
+            }
+            
+            printf("%-s : %-s\n", TORIGIN[lang],DType->Origin[0]!='\0'?DType->Origin:"-");
+            printf("%-s : ", TSTATE[lang]);
+            
+            if (DType->Nature&DICT_OBSOLETE)
+               printf("%s\n",TOBSOLETE[lang]);
+            else if (DType->Nature&DICT_CURRENT)
+               printf("%s\n",TCURRENT[lang]);
+            else if (DType->Nature&DICT_FUTURE)
+               printf("%s\n",TFUTURE[lang]);
+            else if (DType->Nature&DICT_INCOMPLETE)
+               printf("%s\n",TINCOMPLETE[lang]);
+            
+            break;
       }  
    }
 }
