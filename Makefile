@@ -113,6 +113,7 @@ exec: obj
 	fi
 
 install: all
+	mkdir -p $(INSTALL_DIR)/bin/$(ORDENV_PLAT)
 	mkdir -p $(INSTALL_DIR)/lib/$(ORDENV_PLAT)
 	mkdir -p $(INSTALL_DIR)/include
 	cp $(CPFLAGS) ./lib/* $(INSTALL_DIR)/lib/$(ORDENV_PLAT)

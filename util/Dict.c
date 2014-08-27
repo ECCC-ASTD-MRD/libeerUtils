@@ -39,14 +39,14 @@
 #define APP_NAME    "Dict"
 #define APP_DESC    "CMC/RPN dictionary variable information."
 
-int Dict_CheckRPN(TApp *App,char *RPNFile);
+int Dict_CheckRPN(TApp *App,char **RPNFile);
 int Dict_CheckCFG(TApp *App,char *CFGFile);
 
 int main(int argc, char *argv[]) {
 
    TApp      *app;
    int       ok=1,desc=DICT_SHORT,search=DICT_EXACT,st=DICT_ALL,ip1,ip2,ip3;
-   char      *var,*type,*lang,*encoding,*origin,*state,*dicfile,*rpnfile,*cfgfile,dicdef[4096];
+   char      *var,*type,*lang,*encoding,*origin,*state,*dicfile,*rpnfile[4096],*cfgfile,dicdef[4096];
    
    TApp_Arg appargs[]=
       { { APP_CHAR|APP_FLAG, (void**)&var,      "n", "nomvar"      , "Search variable name ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
@@ -60,11 +60,12 @@ int main(int argc, char *argv[]) {
         { APP_CHAR,          (void**)&lang,     "a", "language"    , "language ("APP_COLOR_GREEN"$CMCLNG,english"APP_COLOR_RESET",francais)" },
         { APP_CHAR,          (void**)&encoding, "e", "encoding"    , "encoding type (iso8859-1,utf8,"APP_COLOR_GREEN"ascii"APP_COLOR_RESET")" },
         { APP_CHAR,          (void**)&dicfile,  "d", "dictionnary" , "dictionnary file ("APP_COLOR_GREEN"$AFSISIO/datafiles/constants/stdf.variable_dictionary.xml"APP_COLOR_RESET")" },
-        { APP_CHAR,          (void**)&rpnfile,  "f", "fstd"        , "Check an RPN standard file for unknow variables" },
-        { APP_CHAR,          (void**)&cfgfile,  "c", "cfg"         , "Check a GEM configuration file for unknow variables" },
+        { APP_LIST,          (void**)&rpnfile,  "f", "fstd"        , "Check RPN standard file(s) for unknow variables" },
+        { APP_CHAR,          (void**)&cfgfile,  "c", "cfg"         , "Check GEM configuration file(s) for unknow variables" },
         { 0 } };
         
-   var=type=lang=encoding=dicfile=cfgfile=origin=rpnfile=state=NULL;
+   memset(rpnfile,0x0,4096);
+   var=type=lang=encoding=dicfile=cfgfile=origin=state=NULL;
    ip1=ip2=ip3=-1;
    
    app=App_New(APP_NAME,VERSION,APP_DESC,__TIMESTAMP__);
@@ -73,20 +74,24 @@ int main(int argc, char *argv[]) {
       exit(EXIT_FAILURE);      
    }
 
+   if (rpnfile[4095]) {
+      App_Log(app,ERROR,"Too many RPN files, (max=4095)");
+      exit(EXIT_FAILURE);     
+   }
+
    // Check for default dicfile
    if (!dicfile) {
-//      sprintf(dicdef, "%s%s",getenv("AFSISIO"),"/datafiles/constants/stdf.variable_dictionary.xml");
-      sprintf(dicdef, "/home/afsr/005/Projects/libeerUtils/data/stdf.variable_dictionary.xml");
+//      sprintf(dicdef, "%s%s",getenv("AFSISIO"),"/datafiles/constants/ops.variable_dictionary.xml");
+      sprintf(dicdef, "/home/afsr/005/Projects/libeerUtils/data/ops.variable_dictionary.xml");
       dicfile=dicdef;
    }
-   
+      
    // Check the language in the environment
    if (lang) {
       app->Language=lang;
    }
-  
 
-   if (!var && !type && !rpnfile && !cfgfile) {
+   if (!var && !type && !cfgfile && !rpnfile[0]) {
       var=strdup("");
       type=strdup("");
       search=DICT_GLOB;
@@ -134,7 +139,7 @@ int main(int argc, char *argv[]) {
    } else {
       fprintf(stderr,"%s\n\n",Dict_Version());
       
-      if (rpnfile) {
+      if (rpnfile[0]) {
          ok=Dict_CheckRPN(app,rpnfile);
       } else if (cfgfile) {
          ok=Dict_CheckCFG(app,cfgfile);
@@ -256,7 +261,7 @@ int Dict_CheckCFG(TApp *App,char *CFGFile){
  *
  * Parametres  :
  *  <App>      : Application parameters
- *  <RPNFile>  : RPN FST file
+ *  <RPNFile>  : RPN FST file(s)
  *
  * Retour:
  *  <Err>      : Error code (0=Bad,1=Ok)
@@ -264,61 +269,72 @@ int Dict_CheckCFG(TApp *App,char *CFGFile){
  * Remarques :
  *----------------------------------------------------------------------------
  */
-int Dict_CheckRPN(TApp *App,char *RPNFile){
+int Dict_CheckRPN(TApp *App,char **RPNFile){
 
    TRPNHeader head;
    TDictVar  *var;
    TList     *unknown,*known;
    int        fid,ni,nj,nk,n,nb_unknown=0,nb_known=0,nidx,idxs[11];
    double     nhour;
-   
-   if  ((fid=cs_fstouv(RPNFile,"STD+RND+R/O"))<0) {
-      App_Log(App,ERROR,"Unable to open RPN file: %s\n",RPNFile);
-      return(0);
-   }
-   
+
    unknown=known=NULL;
+   n=0;
    
-   head.KEY=c_fstinf(fid,&ni,&nj,&nk,-1,"",-1,-1,-1,"","");
-
-   // Boucle sur tout les enregistrements
-   while (head.KEY>=0) {
-
-      strcpy(head.NOMVAR,"    ");
-      strcpy(head.TYPVAR,"  ");
-      strcpy(head.ETIKET,"            ");
-      c_fstprm(head.KEY,&head.DATEO,&head.DEET,&head.NPAS,&ni,&nj,&nk,&head.NBITS,&head.DATYP,&head.IP1,&head.IP2,&head.IP3,head.TYPVAR,head.NOMVAR,
-               head.ETIKET,head.GRTYP,&head.IG1,&head.IG2,&head.IG3,&head.IG4,&head.SWA,&head.LNG,&head.DLTF,&head.UBC,&head.EX1,&head.EX2,&head.EX3);
-
-      // Calculer la date de validite
-      nhour=((double)head.NPAS*head.DEET)/3600.0;
-      if (head.DATEO==0) {
-         head.DATEV=0;
-      } else {
-         f77name(incdatr)(&head.DATEV,&head.DATEO,&nhour);
+   while(RPNFile[n]) {
+       App_Log(App,DEBUG,"Looking into RPN file: %s\n",RPNFile[n]);
+      
+      if  ((fid=cs_fstouv(RPNFile[n],"STD+RND+R/O"))<0) {
+         App_Log(App,ERROR,"Unable to open RPN file: %s\n",RPNFile[n]);
+         return(0);
       }
-      if (head.DATEV==101010101) head.DATEV=-1;
+           
+      head.KEY=c_fstinf(fid,&ni,&nj,&nk,-1,"",-1,-1,-1,"","");
 
-      strtrim(head.NOMVAR,' ');
-      strtrim(head.TYPVAR,' ');
-      strtrim(head.ETIKET,' ');
+      // Boucle sur tout les enregistrements
+      while (head.KEY>=0) {
 
-      // Si la variable n'existe pas
-      if (!(var=Dict_GetVar(head.NOMVAR))) {
-         // Si pas encore dans la liste des inconnus
-         if (!TList_Find(unknown,Dict_CheckVar,head.NOMVAR)) {
-            nb_unknown++;
-            var=(TDictVar*)calloc(1,sizeof(TDictVar));
-            strncpy(var->Name,head.NOMVAR,4);
-            unknown=TList_AddSorted(unknown,Dict_SortVar,var);
+         strcpy(head.NOMVAR,"    ");
+         strcpy(head.TYPVAR,"  ");
+         strcpy(head.ETIKET,"            ");
+         c_fstprm(head.KEY,&head.DATEO,&head.DEET,&head.NPAS,&ni,&nj,&nk,&head.NBITS,&head.DATYP,&head.IP1,&head.IP2,&head.IP3,head.TYPVAR,head.NOMVAR,
+                  head.ETIKET,head.GRTYP,&head.IG1,&head.IG2,&head.IG3,&head.IG4,&head.SWA,&head.LNG,&head.DLTF,&head.UBC,&head.EX1,&head.EX2,&head.EX3);
+
+         // Calculer la date de validite
+         nhour=((double)head.NPAS*head.DEET)/3600.0;
+         if (head.DATEO==0) {
+            head.DATEV=0;
+         } else {
+            f77name(incdatr)(&head.DATEV,&head.DATEO,&nhour);
          }
-      } else {
-         if (!TList_Find(known,Dict_CheckVar,var->Name)) {
-            nb_known++;
-            known=TList_AddSorted(known,Dict_SortVar,var);
+         if (head.DATEV==101010101) head.DATEV=-1;
+
+         strtrim(head.NOMVAR,' ');
+         strtrim(head.TYPVAR,' ');
+         strtrim(head.ETIKET,' ');
+
+         // Si la variable n'existe pas
+         if (!(var=Dict_GetVar(head.NOMVAR))) {
+            // Si pas encore dans la liste des inconnus
+            if (!TList_Find(unknown,Dict_CheckVar,head.NOMVAR)) {
+               nb_unknown++;
+               var=(TDictVar*)calloc(1,sizeof(TDictVar));
+               
+               // Keep the var and its date and file for later search
+               strncpy(var->Name,head.NOMVAR,4);
+               var->NCodes=n;
+               var->Nature=head.DATEV;
+               unknown=TList_AddSorted(unknown,Dict_SortVar,var);
+            }
+         } else {
+            if (!TList_Find(known,Dict_CheckVar,var->Name)) {
+               nb_known++;
+               known=TList_AddSorted(known,Dict_SortVar,var);
+            }
          }
+         head.KEY=c_fstsui(fid,&ni,&nj,&nk);
       }
-      head.KEY=c_fstsui(fid,&ni,&nj,&nk);
+      cs_fstfrm(fid);
+      n++;
    }
    
    if (known) {
@@ -335,8 +351,10 @@ int Dict_CheckRPN(TApp *App,char *RPNFile){
       while(unknown=TList_Find(unknown,NULL,"")) {
          var=(TDictVar*)(unknown->Data);
          
+         fid=cs_fstouv(RPNFile[var->NCodes],"STD+RND+R/O");
+         
          // Recuperer les indexes de tout les niveaux
-         cs_fstinl(fid,&ni,&nj,&nk,head.DATEV,"",-1,-1,-1,"",var->Name,idxs,&nidx,11);
+         cs_fstinl(fid,&ni,&nj,&nk,var->Nature,"",-1,-1,-1,"",var->Name,idxs,&nidx,11);
 
          // Afficiher la variable et les 10 premiers IP1
          printf("%-4s  ",var->Name);
@@ -350,13 +368,12 @@ int Dict_CheckRPN(TApp *App,char *RPNFile){
          printf("\n");
       
          unknown=unknown->Next;
+         cs_fstfrm(fid);
       }
    }
    printf("\n");
    
    App_Log(App,WARNING,"Found %i unknown variables\n",nb_unknown);
-   
-   cs_fstfrm(fid);
-   
+      
    return(1);
 }

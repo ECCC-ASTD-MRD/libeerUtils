@@ -263,7 +263,12 @@ void App_End(TApp *App,int Status) {
       App_Log(App,MUST,"Finish time    : (UTC) %s",ctime(&end.tv_sec));
       App_Log(App,MUST,"Execution time : %li seconds\n",end.tv_sec-App->Time.tv_sec);
 
-      if (Status<1) {
+      // Select status code based on error number
+      if (Status<0) {
+         Status=App->LogError?1:0;
+      }
+      
+      if (Status!=0) {
          App_Log(App,MUST,"Status         : Error %i (%i Errors)\n",Status,App->LogError);
       } else {
          App_Log(App,MUST,"Status         : Ok (%i Warnings)\n",App->LogWarning);

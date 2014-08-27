@@ -115,6 +115,7 @@ int ZRef_Free(TZRef *ZRef) {
       if (ZRef->PCube)  free(ZRef->PCube);  ZRef->PCube=NULL;
 
       ZRef->Version=0;
+      ZRef->LevelNb=0;
    }
    return(1);
 }

@@ -1063,12 +1063,15 @@ void Dict_PrintVar(TDictVar *DVar,int Format,char *Language) {
 void Dict_PrintTypes(char *Type,int Format,char *Language) {
    
    TList *list;
+   int   head=0;
    
    list=Dict.Types;
-   
-   printf("\n12-TYPVAR-----------------------------------------------------------------------\n");
-   
+      
    while(list=TList_Find(list,Dict_CheckType,Type)) {
+       if (!head) {
+          printf("\n12-TYPVAR-----------------------------------------------------------------------\n");
+          head++;
+       }
        Dict_PrintType((TDictType*)list->Data,Format,Language);
        list=list->Next;
    }
