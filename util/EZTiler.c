@@ -35,11 +35,11 @@
 #define APP_NAME "EZTiler"
 #define APP_DESC "SMC/CMC/EERS RPN fstd field tiler."
 
-int Tile(TApp *App,char *In,char *Out,int Size,char *Vars) {
+int Tile(TApp *App,char *In,char *Out,int Size,int Halo,char **Vars) {
 
-   int  in,out;
-   char *str,*tok;
-
+   int  in,out,v=0;
+   char *var,*tok;
+   
    App_Log(App,INFO,"Tiling file %s to %s\n",In,Out);
    if ((in=cs_fstouv(In,"STD+RND+R/O"))<0) {
       App_Log(App,ERROR,"Problems opening input file %s\n",In);
@@ -51,15 +51,13 @@ int Tile(TApp *App,char *In,char *Out,int Size,char *Vars) {
       return(0);
    }
 
-   if (!Vars) {
+   if (!Vars[0]) {
       App_Log(App,DEBUG,"Tiling everything\n");
-      EZGrid_Tile(out,Size,Size,2,in,"","","",-1,-1,-1);
+      EZGrid_Tile(out,Size,Size,Halo,in,"","","",-1,-1,-1);
    } else {
-      str=Vars;
-      while((tok=strtok(str," "))) {
-         str=NULL;
-         App_Log(App,DEBUG,"Tiling var %s\n",tok);
-         EZGrid_Tile(out,Size,Size,2,in,tok,"","",-1,-1,-1);
+      while(var=Vars[v++]) {
+         App_Log(App,DEBUG,"Tiling var %s\n",var);
+         EZGrid_Tile(out,Size,Size,Halo,in,var,"","",-1,-1,-1);
       }
    }
 
@@ -72,16 +70,18 @@ int Tile(TApp *App,char *In,char *Out,int Size,char *Vars) {
 int main(int argc, char *argv[]) {
 
    TApp     *app;
-   int      ok=0,size=0;
-   char     *in=NULL,*out=NULL,*val=NULL,*vars=NULL;
+   int      ok=0,size=0,halo=0;
+   char     *in=NULL,*out=NULL,*val=NULL,*vars[256];
 
    TApp_Arg appargs[]=
       { { APP_CHAR,  (void**)&in,   "i", "input",  "Input file" },
         { APP_CHAR,  (void**)&out,  "o", "output", "Output file" },
         { APP_INT32, (void**)&size, "s", "size",   "Tile size in gridpoint" },
-        { APP_CHAR,  (void**)&vars, "n", "nomvar", "List of variable to process" },
+        { APP_INT32, (void**)&halo, "a", "halo",   "Halo size around the tiles ("APP_COLOR_GREEN"0"APP_COLOR_RESET",1 or 2)" },
+        { APP_LIST,  (void**)&vars, "n", "nomvar", "List of variable to process" },
         { 0 } };
 
+   memset(vars,0x0,256);
    app=App_New(APP_NAME,VERSION,APP_DESC,__TIMESTAMP__);
 
    if (!App_ParseArgs(app,appargs,argc,argv,APP_NOARGSFAIL)) {
@@ -104,8 +104,8 @@ int main(int argc, char *argv[]) {
 
    /*Launch the app*/
    App_Start(app);
-   ok=Tile(app,in,out,size,vars);
-   App_End(app,ok==1);
+   ok=Tile(app,in,out,size,halo,vars);
+   App_End(app,ok!=1);
    App_Free(app);
 
    if (!ok) {

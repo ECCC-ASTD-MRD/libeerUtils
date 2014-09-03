@@ -148,7 +148,7 @@ int main(int argc, char *argv[]) {
       }
    }
 
-//   App_End(app,ok==1);
+//   App_End(app,ok!=1);
    App_Free(app);
 
    if (!ok) {

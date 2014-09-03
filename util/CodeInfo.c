@@ -158,7 +158,7 @@ int main(int argc, char *argv[]) {
    /*Launch the app*/
    App_Start(app);
    ok=Codec(app,pool,fst,var,ckey);
-   App_End(app,ok==1);
+   App_End(app,ok!=1);
    App_Free(app);
 
    if (!ok) {

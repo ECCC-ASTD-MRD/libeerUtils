@@ -5,7 +5,7 @@ MAINTAINER = $(USER)
 OS         = $(shell uname -s)
 PROC       = $(shell uname -m | tr _ -)
 RMN        = HAVE_RMN
-#MULTI      = -ompi
+MULTI      = -ompi
 
 #nomulti: make clear; make all
 #multi  : make clean; make lib; make ssm
@@ -105,8 +105,10 @@ exec: obj
 	   mkdir -p ./bin; \
 	   $(CC) util/EZTiler.c -o bin/EZTiler-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC); \
 	   ln -fs EZTiler-$(VERSION) bin/EZTiler; \
+	   ln -fs EZTiler bin/o.eztiler; \
 	   $(CC) util/CodeInfo.c -o bin/CodeInfo-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC);  \
 	   ln -fs CodeInfo-$(VERSION) bin/CodeInfo; \
+	   ln -fs CodeInfo bin/o.codeinfo; \
 	   $(CC) util/Dict.c -o bin/Dict-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC);  \
 	   ln -fs Dict-$(VERSION) bin/Dict; \
 	   ln -fs Dict bin/o.dict; \
