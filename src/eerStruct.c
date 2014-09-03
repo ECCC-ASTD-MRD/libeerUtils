@@ -157,7 +157,7 @@ TList* TList_AddSorted(TList *List,TList_CompareProc *Proc,void *Data) {
       insert=List;
       
       while (insert) {
-         if (Proc(insert->Data,Data)>0) {
+         if (Proc(insert->Data,Data)>=0) {
             node->Next=insert;
             node->Prev=insert->Prev;
             if (insert->Prev) {
