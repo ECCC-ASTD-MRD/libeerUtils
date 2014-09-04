@@ -130,8 +130,10 @@ int main(int argc, char *argv[]) {
       }
    }
    
-   // Launch the app
-//   App_Start(app);
+   // Launch the app   
+   if (rpnfile[0] || cfgfile) {
+      App_Start(app);
+   }
    
    if (!(ok=Dict_Parse(dicfile))) {
      App_Log(app,ERROR,"Invalid file\n");
@@ -148,7 +150,9 @@ int main(int argc, char *argv[]) {
       }
    }
 
-//   App_End(app,ok!=1);
+   if (rpnfile[0] || cfgfile) {
+      App_End(app,!ok);
+   }
    App_Free(app);
 
    if (!ok) {
@@ -235,21 +239,26 @@ int Dict_CheckCFG(TApp *App,char *CFGFile){
          Dict_PrintVar(var,DICT_SHORT,App->Language);
          known=known->Next;
       }
+      printf("\n");
    }
    
    if (unknown) {
-      printf("\nUnknown variables (%i)\n-------------------------------------------------------------------------------------\n",nb_unknown);
+      printf("Unknown variables (%i)\n-------------------------------------------------------------------------------------\n",nb_unknown);
       while(unknown=TList_Find(unknown,NULL,"")) {
          var=(TDictVar*)(unknown->Data);       
          printf("%-4s\n",var->Name);        
          unknown=unknown->Next;
       }
+      printf("\n");   
    }
-   printf("\n");
    
-   App_Log(App,WARNING,"Found %i unknown variables\n",nb_unknown);
+   if (nb_unknown) {
+      App_Log(App,ERROR,"Found %i unknown variables\n",nb_unknown);
+   } else {
+      App_Log(App,INFO,"No unknown variables found\n");      
+   }
     
-   return(1);
+   return(nb_unknown==0);
 }
 
 /*----------------------------------------------------------------------------
@@ -343,10 +352,11 @@ int Dict_CheckRPN(TApp *App,char **RPNFile){
          Dict_PrintVar(var,DICT_SHORT,App->Language);
          known=known->Next;
       }
+      printf("\n");
    }
    
    if (unknown) {
-      printf("\nUnknown variables (%i) with 10 first IP1s\n-------------------------------------------------------------------------------------\n",nb_unknown);
+      printf("Unknown variables (%i) with 10 first IP1s\n-------------------------------------------------------------------------------------\n",nb_unknown);
       while(unknown=TList_Find(unknown,NULL,"")) {
          var=(TDictVar*)(unknown->Data);
          
@@ -369,10 +379,14 @@ int Dict_CheckRPN(TApp *App,char **RPNFile){
          unknown=unknown->Next;
          cs_fstfrm(fid);
       }
+      printf("\n");
    }
-   printf("\n");
    
-   App_Log(App,WARNING,"Found %i unknown variables\n",nb_unknown);
+   if (nb_unknown) {
+      App_Log(App,ERROR,"Found %i unknown variables\n",nb_unknown);
+   } else {
+      App_Log(App,INFO,"No unknown variables found\n");      
+   }
       
-   return(1);
+   return(nb_unknown==0);
 }

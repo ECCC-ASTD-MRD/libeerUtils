@@ -203,7 +203,7 @@ void App_Start(TApp *App) {
 
    if (!App->RankMPI) {
 
-      App_Log(App,MUST,"-------------------------------------------------------------------------------\n");
+      App_Log(App,MUST,"-------------------------------------------------------------------------------------\n");
       App_Log(App,MUST,"Application    : %s %s (%s)\n",App->Name,App->Version,App->TimeStamp);
       App_Log(App,MUST,"Lib eerUtils   : %s (%s)\n",VERSION,__TIMESTAMP__);
 
@@ -223,7 +223,7 @@ void App_Start(TApp *App) {
          App_Log(App,MUST,"MPI processes  : %i\n",App->NbMPI);
 
       }
-      App_Log(App,MUST,"-------------------------------------------------------------------------------\n\n");
+      App_Log(App,MUST,"-------------------------------------------------------------------------------------\n\n");
    }
 }
 
@@ -259,7 +259,7 @@ void App_End(TApp *App,int Status) {
 
       gettimeofday(&end,NULL);
 
-      App_Log(App,MUST,"\n-------------------------------------------------------------------------------\n");
+      App_Log(App,MUST,"\n-------------------------------------------------------------------------------------\n");
       App_Log(App,MUST,"Finish time    : (UTC) %s",ctime(&end.tv_sec));
       App_Log(App,MUST,"Execution time : %li seconds\n",end.tv_sec-App->Time.tv_sec);
 
@@ -274,7 +274,7 @@ void App_End(TApp *App,int Status) {
          App_Log(App,MUST,"Status         : Ok (%i Warnings)\n",App->LogWarning);
       }
 
-      App_Log(App,MUST,"-------------------------------------------------------------------------------\n");
+      App_Log(App,MUST,"-------------------------------------------------------------------------------------\n");
 
       if (App->LogStream!=stdout && App->LogStream!=stderr) {
          fclose(App->LogStream);
@@ -339,12 +339,12 @@ void App_Log(TApp *App,TApp_LogLevel Level,const char *Format,...) {
       if (Level>=0) {
          fprintf(App->LogStream,"%s(%s) ",color,levels[Level]);
       }
-      va_start(args,Format);
-      if (Level==ERROR) {
-         va_start(args,Format);
-         vfprintf(stderr,Format,args);
-         va_end(args);
-      }
+//      va_start(args,Format);
+//      if (Level==ERROR) {
+//         va_start(args,Format);
+//         vfprintf(stderr,Format,args);
+//         va_end(args);
+//      }
       va_start(args,Format);
       vfprintf(App->LogStream,Format,args);
       va_end(args);
