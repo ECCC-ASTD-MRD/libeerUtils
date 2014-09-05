@@ -59,12 +59,12 @@ int main(int argc, char *argv[]) {
         { APP_FLAG,          (void**)&search,   "g", "glob"        , "use glob search pattern" },
         { APP_CHAR,          (void**)&lang,     "a", "language"    , "language ("APP_COLOR_GREEN"$CMCLNG,english"APP_COLOR_RESET",francais)" },
         { APP_CHAR,          (void**)&encoding, "e", "encoding"    , "encoding type (iso8859-1,utf8,"APP_COLOR_GREEN"ascii"APP_COLOR_RESET")" },
-        { APP_CHAR,          (void**)&dicfile,  "d", "dictionnary" , "dictionnary file ("APP_COLOR_GREEN"$AFSISIO/datafiles/constants/stdf.variable_dictionary.xml"APP_COLOR_RESET")" },
+        { APP_CHAR,          (void**)&dicfile,  "d", "dictionnary" , "dictionnary file ("APP_COLOR_GREEN"$AFSISIO/datafiles/constants/ops.variable_dictionary.xml"APP_COLOR_RESET")" },
         { APP_LIST,          (void**)&rpnfile,  "f", "fstd"        , "Check RPN standard file(s) for unknow variables" },
-        { APP_CHAR,          (void**)&cfgfile,  "c", "cfg"         , "Check GEM configuration file(s) for unknow variables" },
+        { APP_CHAR,          (void**)&cfgfile,  "c", "cfg"         , "Check GEM configuration file for unknow variables" },
         { 0 } };
         
-   memset(rpnfile,0x0,4096);
+   memset(rpnfile,0x0,4096*sizeof(char*));
    var=type=lang=encoding=dicfile=cfgfile=origin=state=NULL;
    ip1=ip2=ip3=-1;
    

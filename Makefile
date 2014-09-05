@@ -5,7 +5,7 @@ MAINTAINER = $(USER)
 OS         = $(shell uname -s)
 PROC       = $(shell uname -m | tr _ -)
 RMN        = HAVE_RMN
-MULTI      = -ompi
+#MULTI      = -ompi
 
 #nomulti: make clear; make all
 #multi  : make clean; make lib; make ssm
@@ -52,9 +52,12 @@ else
    LIBS        = -L$(LIB_DIR)/librmn-14/lib -L$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g')
    INCLUDES    = -Isrc -I$(shell echo $(EC_INCLUDE_PATH) | sed 's/\s* / -I/g')  -I/usr/include/libxml2
 
-#   CC          = xlc
-   CC          = mpCC_r
-#   CC          = s.cc
+   ifdef MULTI
+      CC          = mpCC_r
+   else
+      CC          = xlc
+   endif
+
    AR          = ar rv
    LD          = ld
    LIBS       := $(LIBS) -lrmne -lxml2 -lz

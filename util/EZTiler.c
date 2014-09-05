@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
         { APP_LIST,  (void**)&vars, "n", "nomvar", "List of variable to process" },
         { 0 } };
 
-   memset(vars,0x0,256);
+   memset(vars,0x0,256*sizeof(char*));
    app=App_New(APP_NAME,VERSION,APP_DESC,__TIMESTAMP__);
 
    if (!App_ParseArgs(app,appargs,argc,argv,APP_NOARGSFAIL)) {
