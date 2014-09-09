@@ -432,13 +432,17 @@ int EZGrid_Wrap(TGrid* restrict const Grid) {
 
    pthread_mutex_unlock(&RPNIntMutex);
 
-   // If the grid wraps
-   if (i<Grid->H.NI) {
-      // check if the last gridpoint is a repeat of the first
-      if (rintf(i)==1.0f) {
-         Grid->Wrap=1;
-      } else {
-         Grid->Wrap=2;
+   if (Grid->H.GRTYP[0]=='A' || Grid->H.GRTYP[0]=='B' || Grid->H.GRTYP[0]=='G') {
+      Grid->Wrap=1;
+   } else {    
+      // If the grid wraps
+      if (i<Grid->H.NI) {
+         // check if the last gridpoint is a repeat of the first
+         if (rintf(i)==1.0f) {
+            Grid->Wrap=1;
+         } else {
+            Grid->Wrap=2;
+         }
       }
    }
 

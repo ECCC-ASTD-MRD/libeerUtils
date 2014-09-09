@@ -5,7 +5,7 @@ MAINTAINER = $(USER)
 OS         = $(shell uname -s)
 PROC       = $(shell uname -m | tr _ -)
 RMN        = HAVE_RMN
-#MULTI      = -ompi
+MULTI      = -ompi
 
 #nomulti: make clear; make all
 #multi  : make clean; make lib; make ssm
