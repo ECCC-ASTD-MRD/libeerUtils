@@ -5,7 +5,10 @@ MAINTAINER = $(USER)
 OS         = $(shell uname -s)
 PROC       = $(shell uname -m | tr _ -)
 RMN        = HAVE_RMN
-MULTI      = -ompi
+
+ifeq ($(EER_UTILS_MULTI),true)
+    MULTI  = -ompi
+endif
 
 #nomulti: make clear; make all
 #multi  : make clean; make lib; make ssm
@@ -117,7 +120,7 @@ exec: obj
 	   ln -fs Dict bin/o.dict; \
 	fi
 
-install: all
+install: 
 	mkdir -p $(INSTALL_DIR)/bin/$(ORDENV_PLAT)
 	mkdir -p $(INSTALL_DIR)/lib/$(ORDENV_PLAT)
 	mkdir -p $(INSTALL_DIR)/include

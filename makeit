@@ -1,0 +1,16 @@
+set -e -x
+
+export EER_UTILS_MULTI=false
+make clear
+make all
+
+export EER_UTILS_MULTI=true
+make clean
+make lib
+
+if [ "$1" == "ssm" ]; then
+    make ssm
+elif [ "$1" == "install" ]; then
+    make install
+fi
+
