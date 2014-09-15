@@ -6,13 +6,6 @@ OS         = $(shell uname -s)
 PROC       = $(shell uname -m | tr _ -)
 RMN        = HAVE_RMN
 
-ifeq ($(EER_UTILS_MULTI),true)
-    MULTI  = -ompi
-endif
-
-#nomulti: make clear; make all
-#multi  : make clean; make lib; make ssm
-
 ifdef COMP_ARCH
    COMP=-${COMP_ARCH}
 endif
@@ -39,7 +32,7 @@ ifeq ($(OS),Linux)
    LINK_EXEC   = -lm -lpthread -Wl,-rpath=$(LIB_DIR)/libxml2-2.9.1/lib
  
    CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer
-   ifdef MULTI
+   ifdef OMPI
       CCOPTIONS   := $(CCOPTIONS) -fopenmp -mpi
    endif
 
@@ -55,7 +48,7 @@ else
    LIBS        = -L$(LIB_DIR)/librmn-14/lib -L$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g')
    INCLUDES    = -Isrc -I$(shell echo $(EC_INCLUDE_PATH) | sed 's/\s* / -I/g')  -I/usr/include/libxml2
 
-   ifdef MULTI
+   ifdef OMPI
       CC          = mpCC_r
    else
       CC          = xlc
@@ -68,7 +61,7 @@ else
    LINK_EXEC   = -lxlf90 -lxlsmp -lc -lpthread -lmass -lm 
 
    CCOPTIONS   = -O3 -qnohot -qstrict -Q -v -qkeyword=restrict -qcache=auto -qtune=auto -qarch=auto -qinline
-   ifdef MULTI
+   ifdef OMPI
       CCOPTIONS  := $(CCOPTIONS) -qsmp=omp -qthreaded -qlibmpi -qinline
    endif
 
@@ -77,7 +70,7 @@ else
 endif
 
 DEFINES     = -DVERSION=\"$(VERSION)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE -D$(RMN)
-ifdef MULTI
+ifdef OMPI
    DEFINES    := $(DEFINES) -D_MPI
 endif
 
@@ -97,12 +90,12 @@ obj: $(OBJ_C) $(OBJ_F)
 lib: obj
 	mkdir -p ./lib
 	mkdir -p ./include
-	$(AR) lib/libeerUtils$(MULTI)-$(VERSION).a $(OBJ_C) $(OBJ_F)
-	ln -fs libeerUtils$(MULTI)-$(VERSION).a lib/libeerUtils$(MULTI).a
+	$(AR) lib/libeerUtils$(OMPI)-$(VERSION).a $(OBJ_C) $(OBJ_F)
+	ln -fs libeerUtils$(OMPI)-$(VERSION).a lib/libeerUtils$(OMPI).a
 
 #	@if test "$(OS)" != "AIX"; then \
-#	   $(CC) -shared -Wl,-soname,libeerUtils-$(VERSION).so -o lib/libeerUtils$(MULTI)-$(VERSION).so $(OBJ_C) $(OBJ_T) $(CFLAGS) $(LIBS) $(LINK_EXEC); \
-#	   ln -fs  libeerUtils$(MULTI)-$(VERSION).so lib/libeerUtils.so; \
+#	   $(CC) -shared -Wl,-soname,libeerUtils-$(VERSION).so -o lib/libeerUtils$(OMPI)-$(VERSION).so $(OBJ_C) $(OBJ_T) $(CFLAGS) $(LIBS) $(LINK_EXEC); \
+#	   ln -fs  libeerUtils$(OMPI)-$(VERSION).so lib/libeerUtils.so; \
 #	fi
 	cp $(CPFLAGS) ./src/*.h ./include
 

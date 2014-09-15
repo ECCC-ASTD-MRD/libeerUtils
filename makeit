@@ -1,16 +1,25 @@
 set -e -x
 
-export EER_UTILS_MULTI=false
-make clear
-make all
+MAKE=make
 
-export EER_UTILS_MULTI=true
-make clean
-make lib
+#----- Need gmake on AIX
+if [[ $HOSTTYPE = "AIX" ]]; then
+   MAKE=gmake
+fi
+
+#----- Build no multi processor version first
+unset OMPI
+$MAKE clear
+$MAKE all
+
+#----- Build OpenMP/MPI lib only
+export OMPI=-ompi
+$MAKE clean
+$MAKE lib
 
 if [ "$1" == "ssm" ]; then
-    make ssm
+    $MAKE ssm
 elif [ "$1" == "install" ]; then
-    make install
+    $MAKE install
 fi
 
