@@ -176,8 +176,8 @@ void App_Start(TApp *App) {
       MPI_Comm_size(MPI_COMM_WORLD,&App->NbMPI);
       MPI_Comm_rank(MPI_COMM_WORLD,&App->RankMPI);
 
-      App->CountsMPI=(int*)malloc(App->NbMPI*sizeof(int));
-      App->DisplsMPI=(int*)malloc(App->NbMPI*sizeof(int));
+      App->CountsMPI=(int*)malloc((App->NbMPI+1)*sizeof(int));
+      App->DisplsMPI=(int*)malloc((App->NbMPI+1)*sizeof(int));
    }
 #endif
 
@@ -276,11 +276,65 @@ void App_End(TApp *App,int Status) {
 
       App_Log(App,MUST,"-------------------------------------------------------------------------------------\n");
 
-      if (App->LogStream!=stdout && App->LogStream!=stderr) {
-         fclose(App->LogStream);
-      }
+      App_LogClose(App);
 
       App->State=DONE;
+   }
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <App_LogOpen>
+ * Creation : Septembre 2014 - J.P. Gauthier
+ *
+ * But      : Ouvrir le fichier log
+ *
+ * Parametres :
+ *  <App>     : Parametres de l'application
+ *
+ * Retour:
+ *
+ * Remarques  :
+ *----------------------------------------------------------------------------
+*/
+void App_LogOpen(TApp *App) {
+   
+   if (!App->LogStream) {
+      if (strcmp(App->LogFile,"stdout")==0) {
+         App->LogStream=stdout;
+      } else if (strcmp(App->LogFile,"stderr")==0) {
+         App->LogStream=stderr;
+      } else {
+         if (!App->RankMPI) {
+            App->LogStream=fopen(App->LogFile,"w");
+         } else {
+            App->LogStream=fopen(App->LogFile,"a+");
+         }
+      }
+      if (!App->LogStream) {
+         App->LogStream=stdout;
+         fprintf(stderr,"(WARNING) Unable to open log stream (%s), will use stdout instead\n",App->LogFile);
+      }
+   }
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <App_LogClose>
+ * Creation : Septembre 2014 - J.P. Gauthier
+ *
+ * But      : Fermer le fichier log
+ *
+ * Parametres :
+ *  <App>     : Parametres de l'application
+ *
+ * Retour:
+ *
+ * Remarques  :
+ *----------------------------------------------------------------------------
+*/
+void App_LogClose(TApp *App) {
+
+   if (App->LogStream!=stdout && App->LogStream!=stderr) {
+      fclose(App->LogStream);
    }
 }
 
@@ -314,23 +368,8 @@ void App_Log(TApp *App,TApp_LogLevel Level,const char *Format,...) {
 
    color=App->LogColor?colors[Level]:colors[INFO];
       
-   if (!App->LogStream) {
-      if (strcmp(App->LogFile,"stdout")==0) {
-         App->LogStream=stdout;
-      } else if (strcmp(App->LogFile,"stderr")==0) {
-         App->LogStream=stderr;
-      } else {
-         if (!App->RankMPI) {
-            App->LogStream=fopen(App->LogFile,"w");
-         } else {
-            App->LogStream=fopen(App->LogFile,"a+");
-         }
-      }
-      if (!App->LogStream) {
-         App->LogStream=stdout;
-         fprintf(stderr,"(WARNING) Unable to open log stream (%s), will use stdout instead\n",App->LogFile);
-      }
-   }
+   if (!App->LogStream)
+      App_LogOpen(App);
 
    if (Level==WARNING) App->LogWarning++;
    if (Level==ERROR)   App->LogError++;
@@ -357,7 +396,46 @@ void App_Log(TApp *App,TApp_LogLevel Level,const char *Format,...) {
 }
 
 /*----------------------------------------------------------------------------
- * Nom      : <App_Log>
+ * Nom      : <App_Progress>
+ * Creation : Septembre 2014 - J.P. Gauthier
+ *
+ * But      : Imprimer un message d'indication d'avancement
+ *
+ * Parametres :
+ *  <App>     : Parametres de l'application
+ *  <Percent> : Pourcentage d'avancement
+ *  <Format>  : Format d'affichage du message
+ *  <...>     : Liste des variables du message
+ *
+ * Retour:
+ *
+ * Remarques  :
+ *   - Cette fonctions s'utilise comme printf sauf qu'il y a un argument de plus,
+ *     le pourcentage d'avancement
+ *----------------------------------------------------------------------------
+*/
+void App_Progress(TApp *App,float Percent,const char *Format,...) {
+
+   va_list      args;
+
+   App->Percent=Percent;
+
+   if (!App->LogStream)
+      App_LogOpen(App);
+
+   fprintf(App->LogStream,"%s(PROGRESS) [%6.2f %%] ",(App->LogColor?APP_COLOR_MAGENTA:""),App->Percent);
+   va_start(args,Format);
+   vfprintf(App->LogStream,Format,args);
+   va_end(args);
+
+   if (App->LogColor)
+      fprintf(App->LogStream,APP_COLOR_RESET);
+      
+   fflush(App->LogStream);
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <App_LogLevel>
  * Creation : Septembre 2008 - J.P. Gauthier
  *
  * But      : Imprimer un message de manière standard
