@@ -17,9 +17,12 @@ export OMPI=-ompi
 $MAKE clean
 $MAKE lib
 
-if [ "$1" == "ssm" ]; then
-    $MAKE ssm
-elif [ "$1" == "install" ]; then
-    $MAKE install
-fi
+while [ "$1" != "" ]; do
+    if [ "$1" == "ssm" ]; then
+        $MAKE ssm
+    elif [ "$1" == "install" ]; then
+        $MAKE install
+    fi
+    shift
+done
 
