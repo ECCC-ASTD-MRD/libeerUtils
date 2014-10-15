@@ -70,10 +70,10 @@ typedef struct {
 } TDictVar;
 
 typedef struct {
-   char Origin[32];             // Origin ot the variable
+   char Origin[32];             // Origin ot the type
    time_t Date;                 // Date of creation
    char Name[3];                // TYPVAR
-   int  Nature;                 // Mask for state and nature of variable
+   int  Nature;                 // Mask for state and nature of type
    char Short[2][128];          // Short description in both language
    char Long[2][128];           // Long description in both language 
 } TDictType;

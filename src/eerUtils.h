@@ -209,6 +209,7 @@ double System_Date2Julian(int Year,int Month,int Day);
 time_t System_Seconds2DateTime(time_t Sec,int *YYYYMMDD,int *HHMMSS,int GMT);
 int    System_Julian2Stamp(int Year,int Day,int Time);
 long   System_Stamp2Seconds(int Stamp);
+char*  System_StampFormat(int Stamp,char *Buf,char *Format);
 int    System_Seconds2Stamp(long Sec);
 void   System_StampDecode(int Stamp,int *YYYY,int *MM,int *DD,int *H,int *M,int *S);
 void   System_StampEncode(int *Stamp,int YYYY,int MM,int DD,int H,int M,int S);

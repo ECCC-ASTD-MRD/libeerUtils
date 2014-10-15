@@ -35,6 +35,8 @@
 #include "eerUtils.h"
 #include "rpnmacros.h"
 
+static char SYSTEM_STRING[256];
+
 /*----------------------------------------------------------------------------
  * Nom      : <System_IsBigEndian>
  * Creation : Mars 2006 - J.P. Gauthier - CMC/CMOE
@@ -418,6 +420,50 @@ long System_Stamp2Seconds(int Stamp) {
 
    /* Force GMT and set back to original TZ after*/
    return(mktime(&tdate)-timezone);
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <System_StampFormat>
+ * Creation : Mai 2006 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Formatter un datestamp RPN en chaine de data.
+ *
+ * Parametres  :
+ *  <Stamp>    : RPN Date stamp
+ *  <Buf>      : Buffer de retour contenant la date formate
+ *  <Format>   : Format de date (see strftime)
+ *
+ * Retour:
+ *  <char*>    : Pointeur sur la date formatee
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+*/
+char* System_StampFormat(int Stamp,char *Buf,char *Format) {
+
+   char         *buf;
+   int           yyyy,mm,dd,hh,nn,ss;
+   struct tm     tdate;
+
+   extern time_t timezone;
+
+   buf=Buf?Buf:SYSTEM_STRING;
+
+   System_StampDecode(Stamp,&yyyy,&mm,&dd,&hh,&nn,&ss);
+
+   tdate.tm_sec=ss-timezone;  /*seconds apres la minute [0,61]*/
+   tdate.tm_min=nn;           /*minutes apres l'heure [0,59]*/
+   tdate.tm_hour=hh;          /*heures depuis minuit [0,23]*/
+   tdate.tm_mday=dd;          /*jour du mois [1,31]*/
+   tdate.tm_mon=mm-1;         /*mois apres Janvier [0,11]*/
+   tdate.tm_year=yyyy-1900;   /*annee depuis 1900*/
+   tdate.tm_isdst=0;          /*Flag de l'heure avancee*/
+
+   mktime(&tdate);
+   strftime(buf,256,Format,&tdate);
+   
+   return(buf);
 }
 
 /*----------------------------------------------------------------------------

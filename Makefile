@@ -15,20 +15,20 @@ SSM_NAME    = ${NAME}_${VERSION}${COMP}_${ORDENV_PLAT}
 INSTALL_DIR = $(HOME)
 TCL_DIR     = /users/dor/afsr/005/Links/dev/Archive/tcl8.6.0
 LIB_DIR     = /users/dor/afsr/005/Links/dev/Lib/${ORDENV_PLAT}
+RMN_DIR     = $(LIB_DIR)/librmn-15
 
 ifeq ($(OS),Linux)
 
-   LIBS        = -L$(LIB_DIR)/libxml2-2.9.1/lib
-   INCLUDES    = -Isrc  -I$(LIB_DIR)/libxml2-2.9.1/include/libxml2
+   LIBS        = -L$(RMN_DIR)/lib -L$(LIB_DIR)/libxml2-2.9.1/lib
+   INCLUDES    = -Isrc -I$(LIB_DIR)/libxml2-2.9.1/include/libxml2
 
 #   CC          = mpicc
    CC          = /usr/bin/mpicc.openmpi
    CC          = s.cc
    AR          = ar rv
    LD          = ld -shared -x
-   LIBS       := $(LIBS) -lxml2 -lz -lrmnshared_014
+   LIBS       := $(LIBS) -lxml2 -lz -lrmn
    INCLUDES   := $(INCLUDES) -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic
-#   LINK_EXEC   = -lm -lpthread -Wl,-rpath=$(LIB_DIR)/librmn-14/lib -Wl,-rpath=$(LIB_DIR)/libxml2-2.9.1/lib
    LINK_EXEC   = -lm -lpthread -Wl,-rpath=$(LIB_DIR)/libxml2-2.9.1/lib
  
    CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer
@@ -45,8 +45,9 @@ ifeq ($(OS),Linux)
    endif
 else
 
-   LIBS        = -L$(LIB_DIR)/librmn-14/lib -L$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g')
-   INCLUDES    = -Isrc -I$(shell echo $(EC_INCLUDE_PATH) | sed 's/\s* / -I/g')  -I/usr/include/libxml2
+   LIBS        = -L$(RMN_DIR)/lib -L$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g')
+   RMN_INCLUDE = -I/ssm/net/rpn/libs/15.0/aix-7.1-ppc7-64/include -I/ssm/net/rpn/libs/15.0/all/include -I/ssm/net/rpn/libs/15.0/all/include/AIX-powerpc7/
+   INCLUDES    =  -Isrc $(RMN_INCLUDE) -I$(shell echo $(EC_INCLUDE_PATH) | sed 's/\s* / -I/g')  -I/usr/include/libxml2
 
    ifdef OMPI
       CC          = mpCC_r
@@ -56,7 +57,7 @@ else
 
    AR          = ar rv
    LD          = ld
-   LIBS       := $(LIBS) -lrmne -lxml2 -lz
+   LIBS       := $(LIBS) -lrmn -lxml2 -lz
    INCLUDES   := $(INCLUDES)
    LINK_EXEC   = -lxlf90 -lxlsmp -lc -lpthread -lmass -lm 
 
@@ -80,7 +81,7 @@ OBJ_C = $(subst .c,.o,$(wildcard src/*.c))
 OBJ_F = $(subst .f,.o,$(wildcard src/*.f))
 
 %.o:%.f
-#	gfortran $< $(CCOPTIONS) -c -o $@ -L$(LIB_DIR)/librmn-14/lib -lrmn
+#	gfortran $< $(CCOPTIONS) -c -o $@ -L$(LIB_DIR)/librmn-15/lib -lrmn
 	s.compile -src $< -optf="-o $@"
 
 all: obj lib exec
@@ -126,7 +127,7 @@ ssm:
 	mkdir -p $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d  $(SSM_DEV)/workspace/$(SSM_NAME)/etc/profile.d $(SSM_DEV)/workspace/$(SSM_NAME)/lib $(SSM_DEV)/workspace/$(SSM_NAME)/include $(SSM_DEV)/workspace/$(SSM_NAME)/bin
 	cp $(CPFLAGS) ./bin/* $(SSM_DEV)/workspace/$(SSM_NAME)/bin
 	cp $(CPFLAGS) ./lib/* $(SSM_DEV)/workspace/$(SSM_NAME)/lib
-	cp $(CPFLAGS) $(LIB_DIR)/librmn-14/lib/* $(SSM_DEV)/workspace/$(SSM_NAME)/lib
+	cp $(CPFLAGS) $(RMN_DIR)/lib/* $(SSM_DEV)/workspace/$(SSM_NAME)/lib
 	cp $(CPFLAGS) ./include/* $(SSM_DEV)/workspace/$(SSM_NAME)/include
 	cp $(CPFLAGS) .ssm.d/post-install  $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d
 	sed -e 's/NAME/$(NAME)/' -e 's/VERSION/$(VERSION)/' -e 's/PLATFORM/$(ORDENV_PLAT)/' -e 's/MAINTAINER/$(MAINTAINER)/' -e 's/DESC/$(DESC)/' .ssm.d/control >  $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d/control
