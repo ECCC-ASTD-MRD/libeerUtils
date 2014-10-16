@@ -38,14 +38,15 @@
 #include "Dict.h"
 
 typedef struct {
-   TList         *Vars;                            // List of dictionnary variables
-   TList         *Types;                           // List of dictionnary types
-   int            SearchMode;                      // Search mode (DICT_EXACT,DICT_GLOB)
-   int            SearchState;                     // Search state (DICT_OBSOLETE,DICT_CURRENT,DICT_FUTURE,DICT_INCOMPLETE)
-   char          *SearchOrigin;                    // Search origin
-   int            SearchIP1,SearchIP2,SearchIP3;   // Ip to look for
-   TDict_Encoding Encoding;                        // Encoding mode (DICT_ASCII,DICT_UTF8,DICT_ISO8859_1)
-   char          *Name,*Date,*Version,String[64];  // Dictionnary metadata
+   TList         *Vars;                                     // List of dictionnary variables
+   TList         *Types;                                    // List of dictionnary types
+   int            SearchMode;                               // Search mode (DICT_EXACT,DICT_GLOB)
+   int            SearchState;                              // Search state (DICT_OBSOLETE,DICT_CURRENT,DICT_FUTURE,DICT_INCOMPLETE)
+   char          *SearchOrigin;                             // Search origin
+   int            SearchIP1,SearchIP2,SearchIP3;            // IP to look for
+   int            SearchAltIP1,SearchAltIP2,SearchAltIP3;   // Alternate IP to look for (OLD/NEW)
+   TDict_Encoding Encoding;                                 // Encoding mode (DICT_ASCII,DICT_UTF8,DICT_ISO8859_1)
+   char          *Name,*Date,*Version,String[64];           // Dictionnary metadata
 } TDict;
 
 char *TSHORT[]  = { "Description courte","Short Description " };
@@ -221,12 +222,33 @@ char* Dict_Version(void) {
  *----------------------------------------------------------------------------
 */
 void Dict_SetSearch(int SearchMode,int SearchState,char *SearchOrigin,int SearchIP1,int SearchIP2,int SearchIP3) { 
+   int    mode=-1,flag=0,type;
+   float  level=0.0;
+   char   format;
+
    Dict.SearchState=SearchState;
    Dict.SearchMode=SearchMode;
    Dict.SearchOrigin=SearchOrigin;
    Dict.SearchIP1=SearchIP1;
    Dict.SearchIP2=SearchIP2;
    Dict.SearchIP3=SearchIP3;
+   
+   if (Dict.SearchIP1>0) {
+      // Convert to real level/value
+      f77name(convip)(&SearchIP1,&level,&type,&mode,&format,&flag);
+      // Get alternate representation (OLD/NEW)
+      mode=(SearchIP1<32000)?2:3;
+      f77name(convip)(&Dict.SearchAltIP1,&level,&type,&mode,&format,&flag);  
+   }
+
+//   f77name(convip)(&SearchIP2,&level,Type,&mode,&format,&flag);
+//   f77name(convip)(&SearchIP3,&level,Type,&mode,&format,&flag);
+   
+//   mode=(SearchIP2<32000)?2:3;
+//   f77name(convip)(&Dict.SearchAltIP2,&level,Type,&mode,&format,&flag);  
+
+//   mode=(SearchIP3<32000)?2:3;
+//   f77name(convip)(&Dict.SearchAltIP3,&level,Type,&mode,&format,&flag);  
 }
 
 void Dict_SetEncoding(TDict_Encoding Encoding)           { Dict.Encoding=Encoding; }
@@ -692,15 +714,15 @@ int Dict_CheckVar(void *Data0,void *Data1){
       return(0);
    }
    
-   if (Dict.SearchIP1>=0 && (((TDictVar*)Data0)->IP1!=Dict.SearchIP1)) {
+   if (Dict.SearchIP1>0 && ((TDictVar*)Data0)->IP1!=Dict.SearchIP1 && ((TDictVar*)Data0)->IP1!=Dict.SearchAltIP1) {
       return(0);
    }
    
-   if (Dict.SearchIP2>=0 && (((TDictVar*)Data0)->IP2!=Dict.SearchIP2)) {
+   if (Dict.SearchIP2>0 && ((TDictVar*)Data0)->IP2!=Dict.SearchIP2) {
       return(0);
    }
    
-   if (Dict.SearchIP3>=0 && (((TDictVar*)Data0)->IP3!=Dict.SearchIP3)) {
+   if (Dict.SearchIP3>0 && ((TDictVar*)Data0)->IP3!=Dict.SearchIP3) {
       return(0);
    }
    
