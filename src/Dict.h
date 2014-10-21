@@ -62,7 +62,8 @@ typedef struct {
    char   Short[2][128];        // Short description in both language
    char   Long[2][128];         // Long description in both language
    char   Units[32];            // Units
-   double Min,Max,Magnitude,Factor,Delta;    // Range of values and applied factor
+   int    Pack;                 // Optimum packing number of bits
+   double Min,Max,Magnitude,Factor,Delta,Precision;    // Range of values and applied factor
    int    Codes[64];            // List of codes for coded variable
    char   Meanings[64][64];     // List of associated meanings
    int    NCodes;               // Number of codes

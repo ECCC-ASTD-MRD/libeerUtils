@@ -49,14 +49,17 @@ typedef struct {
    char          *Name,*Date,*Version,String[64];           // Dictionnary metadata
 } TDict;
 
-char *TSHORT[]  = { "Description courte","Short Description " };
-char *TLONG[]   = { "Description longue","Long  Description " };
-char *TUNITES[] = { "Unites            ","Units             " };
-char *TDATE[]   = { "Date              ","Date              " };
-char *TORIGIN[] = { "Origine           ","Origin            " };
-char *TSTATE[]  = { "Etat              ","State             " };
-char *TMAG[]    = { "Ordre de grandeur ","Magnitude         " };
-char *TRANGE[]  = { "Amplitude         ","Range             " };
+char *TSHORT[]  = { "Description courte ","Short Description " };
+char *TLONG[]   = { "Description longue ","Long  Description " };
+char *TUNITES[] = { "Unités             ","Units             " };
+char *TDATE[]   = { "Date               ","Date              " };
+char *TORIGIN[] = { "Origine            ","Origin            " };
+char *TSTATE[]  = { "Etat               ","State             " };
+char *TTYPE[]   = { "Représentation     ","Representation    " };
+char *TMAG[]    = { "Ordre de grandeur  ","Magnitude         " };
+char *TPREC[]   = { "Précision requise  ","Required precision" };
+char *TPACK[]   = { "Compaction optimale","Optimal compaction" };
+char *TRANGE[]  = { "Amplitude          ","Range             " };
 char *TINT[]    = { "Variable entière"  ,"Integer Variable"   };
 char *TREAL[]   = { "Variable réelle"   ,"Real Variable"      };
 char *TLOGIC[]  = { "Variable logique"  ,"Logical Variable"   };
@@ -368,13 +371,17 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node) {
    int        i,y,m,d;
  
    metvar=(TDictVar*)calloc(1,sizeof(TDictVar));
-   metvar->IP1=metvar->IP2=metvar->IP3=-1;
-   metvar->Min=metvar->Max=metvar->Magnitude=DICT_NOTSET;
+   metvar->IP1=metvar->IP2=metvar->IP3=metvar->Pack=-1;
+   metvar->Min=metvar->Max=metvar->Magnitude=metvar->Precision=DICT_NOTSET;
    
    if ((tmpc=(char*)xmlGetProp(Node,"origin"))) {
       strncpy(metvar->Origin,tmpc,32);
    }
    
+   if ((tmpc=(char*)xmlGetProp(Node,"pack"))) {
+      metvar->Pack=atoi(tmpc);
+   }
+
    if ((tmpc=(char*)xmlGetProp(Node,"usage"))) {
       if (!strcmp(tmpc,"obsolete")) {
          metvar->Nature|=DICT_OBSOLETE;
@@ -491,6 +498,12 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node) {
                if (!strcmp((char*)trotteur1->name,"magnitude")) { 
                   if ((tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
                      metvar->Magnitude=atof(tmpc);
+                  } 
+               }
+
+               if (!strcmp((char*)trotteur1->name,"precision")) { 
+                  if ((tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
+                     metvar->Precision=atof(tmpc);
                   } 
                }
 
@@ -996,11 +1009,11 @@ void Dict_PrintVar(TDictVar *DVar,int Format,char *Language) {
 
          case DICT_LONG:
             printf("--------------------------------------------------------------------------------\n");
-            printf("Nomvar             : %-s", DVar->Name);
-            if (DVar->IP1>=0) printf(" IP1(%i)",DVar->IP1);
-            if (DVar->IP2>=0) printf(" IP2(%i)",DVar->IP2);
-            if (DVar->IP3>=0) printf(" IP3(%i)",DVar->IP3);
-               
+            printf("Nomvar              : %-s", DVar->Name);
+            if (DVar->IP1>=0)  printf(" IP1(%i)",DVar->IP1);
+            if (DVar->IP2>=0)  printf(" IP2(%i)",DVar->IP2);
+            if (DVar->IP3>=0)  printf(" IP3(%i)",DVar->IP3);
+            
             printf("\n%-s : %-s\n", TSHORT[lang],DVar->Short[lang]);
             printf("%-s : %-s\n", TLONG[lang],DVar->Long[lang][0]!='\0'?DVar->Long[lang]:"-");
             
@@ -1023,8 +1036,14 @@ void Dict_PrintVar(TDictVar *DVar,int Format,char *Language) {
              else if (DVar->Nature&DICT_INCOMPLETE)
                printf("%s\n",TINCOMPLETE[lang]);
                 
+            if (DVar->Pack>0)  { 
+               printf("%-s : %i\n",TPACK[lang],DVar->Pack);
+            } else {
+               printf("%-s : %-s\n",TPACK[lang],"-");
+            }
+            
             if (DVar->Nature & DICT_INTEGER) {
-                  printf("Representation     : %-s\n",TINT[lang]);
+                  printf("%-s : %-s\n",TTYPE[lang],TINT[lang]);
                   printf("%-s : %s\n",TUNITES[lang],DVar->Units);
                   if (DVar->Magnitude!=DICT_NOTSET)     printf("%-s : %e\n",TMAG[lang],DVar->Magnitude);
                   if (DVar->Min!=DVar->Max) {
@@ -1036,8 +1055,9 @@ void Dict_PrintVar(TDictVar *DVar,int Format,char *Language) {
                   break;
                   
             } else if (DVar->Nature & DICT_REAL) {
-                  printf("Representation     : %-s\n", TREAL[lang]);
+                  printf("%-s : %-s\n",TTYPE[lang],TREAL[lang]);
                   printf("%-s : %s\n",TUNITES[lang],DVar->Units);
+                  if (DVar->Precision!=DICT_NOTSET)    printf("%-s : %e\n",TPREC[lang],DVar->Precision);
                   if (DVar->Magnitude!=DICT_NOTSET)    printf("%-s : %e\n",TMAG[lang],DVar->Magnitude);
                   if (DVar->Min!=DVar->Max) {
                      printf("%-s : ",TRANGE[lang]);
@@ -1048,11 +1068,11 @@ void Dict_PrintVar(TDictVar *DVar,int Format,char *Language) {
                   break;
             
             } else if (DVar->Nature & DICT_LOGICAL) {
-                  printf("Representation     : %-s\n", TLOGIC[lang]);
+                  printf("%-s : %-s\n",TTYPE[lang],TLOGIC[lang]);
                   break;
             
             } else if (DVar->Nature & DICT_CODE) {
-                  printf("Representation     : %-s\n", TCODE[lang]);
+                  printf("%-s : %-s\n",TTYPE[lang],TCODE[lang]);
                   printf("\tCode\t\t%s\n",TVAL[lang]);
                   printf("\t----\t\t----------------\n");
                   for (i=0; i < DVar->NCodes; i++) {
