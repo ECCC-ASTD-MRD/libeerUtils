@@ -52,9 +52,9 @@ typedef struct {
 char *TSHORT[]  = { "Description courte ","Short Description " };
 char *TLONG[]   = { "Description longue ","Long  Description " };
 char *TUNITES[] = { "Unités             ","Units             " };
-char *TDATE[]   = { "Date               ","Date              " };
+char *TDATE[]   = { "Date du status     ","Date of state     " };
 char *TORIGIN[] = { "Origine            ","Origin            " };
-char *TSTATE[]  = { "Etat               ","State             " };
+char *TSTATE[]  = { "Status             ","State             " };
 char *TTYPE[]   = { "Représentation     ","Representation    " };
 char *TMAG[]    = { "Ordre de grandeur  ","Magnitude         " };
 char *TPREC[]   = { "Précision requise  ","Required precision" };
