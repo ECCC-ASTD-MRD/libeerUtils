@@ -1,6 +1,6 @@
 NAME       = eerUtils
 DESC       = SMC-CMC-CMOE Utility librairie package.
-VERSION    = 1.8.1
+VERSION    = 1.9.0
 MAINTAINER = $(USER)
 OS         = $(shell uname -s)
 PROC       = $(shell uname -m | tr _ -)
@@ -113,6 +113,13 @@ exec: obj
 	   ln -fs Dict-$(VERSION) bin/Dict; \
 	   ln -fs Dict bin/o.dict; \
 	fi
+
+test: obj 
+	@if test "$(RMN)" = "HAVE_RMN"; then \
+	   mkdir -p ./bin; \
+	   $(CC) util/Test.c -o bin/Test $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC); \
+	   $(CC) util/TestQTree.c -o bin/TestQTree $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC);  \
+        fi
 
 install: 
 	mkdir -p $(INSTALL_DIR)/bin/$(ORDENV_PLAT)

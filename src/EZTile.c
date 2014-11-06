@@ -31,8 +31,11 @@
 #ifdef HAVE_RMN
 
 #include "EZTile.h"
-#include "rpn_macros_arch.h"
+#include "RMN.h"
 #include "fnom.h"
+
+static unsigned short *EZGrid_Ids=NULL;
+static unsigned int    EZGrid_IdsNb=0;
 
 static char FGFDTLock[MAXFILES];
 static TGrid *GridCache[GRIDCACHEMAX];
@@ -284,9 +287,6 @@ int RPN_CopyDesc(int FIdTo,TRPNHeader* restrict const H) {
 
    return(TRUE);
 }
-
-static unsigned short *EZGrid_Ids=NULL;
-static unsigned int    EZGrid_IdsNb=0;
 
 /*----------------------------------------------------------------------------
  * Nom      : <EZGrid_IdNew>

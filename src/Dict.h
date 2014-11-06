@@ -32,7 +32,7 @@
  *=========================================================
  */
 #include "eerUtils.h"
-#include "eerStruct.h"
+#include "List.h"
 
 #define DICT_SHORT  0
 #define DICT_LONG   1

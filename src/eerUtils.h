@@ -141,10 +141,9 @@
 #define CLAMPLON(LON)        (LON=LON>180?LON-360:(LON<-180?LON+360:LON))
 #define CLAMPLONRAD(LON)     (LON=(LON>M_PI?(fmod(LON+M_PI,M_2PI)-M_PI):(LON<=-M_PI?(fmod(LON-M_PI,M_2PI)+M_PI):LON)))
 
-#define RPNMAX 2048
 #define COORD_CLEAR(C)       (C.Lat=C.Lon=C.Elev=-999.0)
 
-/*Structure pour les coordonees latlon*/
+/*Structure pour les coordonees*/
 typedef struct TGridCoord {
    float Lat,Lon,I,J;
 } TGridCoord;
@@ -157,30 +156,10 @@ typedef struct TCoord {
    double Lon,Lat,Elev;
 } TCoord;
 
-
-/*Standard struct to read an RPN Field*/
-typedef struct TRPNHeader {
-   int  FID;               /*Fichier dont provient le champs*/
-   int  KEY;               /*Cle du champs*/
-   int  DATEO;             /*Date d'origine du champs*/
-   int  DATEV;             /*Date de validitee du champs*/
-   int  DEET;
-   int  NPAS;
-   int  NBITS;
-   int  DATYP;             /*Type de donnees*/
-   int  IP1,IP2,IP3;       /*Specificateur du champs*/
-   int  NI,NJ,NK,NIJ;      /*Dimensions*/
-   char TYPVAR[3];         /*Type de variable*/
-   char NOMVAR[5];         /*Nom de la variable*/
-   char ETIKET[13];        /*Etiquette du champs*/
-   char GRTYP[2];          /*Type de grilles*/
-   int  IG1,IG2,IG3,IG4;   /*Descripteur de grille*/
-   int  SWA;
-   int  LNG;
-   int  DLTF;
-   int  UBC;
-   int  EX1,EX2,EX3;
-}  TRPNHeader;
+typedef struct TPoint2D {
+  double X;
+  double Y;
+} TPoint2D;
 
 int QSort_Double(const void *A,const void *B);
 int QSort_Float(const void *A,const void *B);
@@ -217,124 +196,5 @@ double System_TimeValSubtract(struct timeval *Result,struct timeval *T0,struct t
 
 void Astro_SunPos(time_t Sec,double *Lat,double *Lon);
 void Astro_MoonPos(time_t ssue,float *lat,float *lon);
-
-#ifdef HAVE_RMN
-#include "rpnmacros.h"
-
-/*EER external Fortran functions*/
-extern int f77name(rmnlib_version)(char *rmn,int *print,int len);
-extern int f77name(r8ipsort)(int *ip,double *a,int *n);
-extern int f77name(binarysearchfindlevel2)(ftnfloat *hybvl,ftnfloat *hyb,int *size,int *ikk,int *ikn);
-
-/*RPN external C && Fortran functions*/
-extern int f77name(newdate)(int *dat1,int *dat2,int *dat3,int *mode);
-extern int f77name(incdatr)(int *dat1,int *dat2,double *nhours);
-extern int f77name(difdatr)(int *dat1,int *dat2,double *nhours);
-extern int f77name(convip) (int *ip,ftnfloat *p,int *kind,int *mode,char *string,int *flag);
-extern int f77name(sort)   (ftnfloat *work,int *n);
-extern int f77name(ipsort) (int *ip,ftnfloat *a,int *n);
-extern int f77name(fd1)    (ftnfloat *gd1,ftnfloat *f,ftnfloat *h);
-extern int f77name(fdm)    (ftnfloat *gdm,ftnfloat *f,ftnfloat *h,int *m);
-extern int f77name(int1d1) (ftnfloat *fi,ftnfloat *f,ftnfloat *xi,ftnfloat *x,ftnfloat *fx,ftnfloat *h,int *m,int *mi,ftnfloat *cmu1,ftnfloat *c1,ftnfloat *clmdam,ftnfloat *cm,ftnfloat *a,ftnfloat *c,ftnfloat *d);
-extern int f77name(xyfll)  (ftnfloat *x,ftnfloat *y,ftnfloat *dlat,ftnfloat *dlon,ftnfloat *d60,ftnfloat *dgrw,int *nhem);
-extern int f77name(llfxy)  (ftnfloat *dlat,ftnfloat *dlon,ftnfloat *x,ftnfloat *y,ftnfloat *d60,ftnfloat *dgrw,int *nhem);
-extern int f77name(cigaxg) (char *igtyp,ftnfloat *xg1,ftnfloat *xg2,ftnfloat *xg3,ftnfloat *xg4,int *ig1,int *ig2,int *ig3,int *ig4);
-extern int f77name(cxgaig) (char *igtyp,int *ig1,int *ig2,int *ig3,int *ig4,ftnfloat *xg1,ftnfloat *xg2,ftnfloat *xg3,ftnfloat *xg4);
-extern int f77name(mscale) (ftnfloat *r,ftnfloat *d60,ftnfloat *pi,ftnfloat *pj,int *ni,int *nj);
-extern int f77name(wkoffit)(char *filename,int size);
-extern int f77name(fstlnk) (int *list,int *size);
-extern int f77name(fstunl) (int *list,int *size);
-
-/*RPN 1d interpolation functions*/
-extern void f77name (interp1d_findpos) ();
-extern void f77name (interp1d_nearestneighbour) ();
-extern void f77name (interp1d_linear) ();
-extern void f77name (interp1d_cubicwithderivs) ();
-extern void f77name (interp1d_cubiclagrange) ();
-extern void f77name (extrap1d_lapserate) ();
-
-extern int c_fnom();
-extern int c_fclos();
-extern int c_fstouv();
-extern int c_fstfrm();
-extern int c_fstecr();
-extern int c_fstlir();
-extern int c_fstinf();
-extern int c_fstprm();
-extern int c_fstluk();
-extern int c_fstsui();
-extern int c_fstinl();
-extern int c_fstopc();
-
-/*RPN external EZscint functions*/
-extern int  c_ezfreegridset(int gdid, int index);
-extern int  c_ezdefset(int gdout, int gdin);
-extern int  c_ezgdef(int ni, int nj, char *grtyp, char *grref,int ig1, int ig2, int ig3, int ig4, ftnfloat *ax, ftnfloat *ay);
-extern int  c_ezgdef_ffile(int ni, int nj, char *grtyp,int ig1, int ig2, int ig3, int ig4, int iunit);
-extern int  c_ezgdef_fll(int ni, int nj,ftnfloat *lat, ftnfloat *lon);
-extern int  c_ezgdef_fmem(int ni, int nj, char *grtyp, char *grref,int ig1, int ig2, int ig3, int ig4, ftnfloat *ax, ftnfloat *ay);
-extern int  c_ezgprm(int gdid, char *grtyp, int *ni, int *nj, int *ig1, int *ig2, int *ig3, int *ig4);
-extern int  c_ezgenpole(ftnfloat *vpolnor, ftnfloat *vpolsud, ftnfloat *fld,int ni, int nj, int vecteur,char *grtyp, int hem);
-extern int  c_ezgetopt(char *option, char *value);
-extern int  c_ezgetval(char *option, ftnfloat *value);
-extern int  c_ezget_nsubgrids(int id);
-extern int  c_ezget_subgridids(int id,int *subid);
-extern int  c_gdll(int gdid, ftnfloat *lat, ftnfloat *lon);
-extern int  c_ezqkdef(int ni, int nj, char *grtyp,int ig1, int ig2, int ig3, int ig4, int iunit);
-extern int  c_ezquickdef(int ni, int nj, char *grtyp,int ig1, int ig2, int ig3, int ig4, int iunit);
-extern int  c_gdrls(int gdin);
-extern int  c_ezsetopt(char *option, char *value);
-extern int  c_ezsetval(char *option, ftnfloat fvalue);
-extern int  c_ezsint(ftnfloat *zout, ftnfloat *zin);
-extern int  c_ezuvint(ftnfloat *uuout, ftnfloat *vvout, ftnfloat *uuin, ftnfloat *vvin);
-extern int  c_ezwdint(ftnfloat *uuout, ftnfloat *vvout, ftnfloat *uuin, ftnfloat *vvin);
-extern int  c_gdgaxes(int gdid, ftnfloat *ax, ftnfloat *ay);
-extern int  c_gdgxpndaxes(int gdid, ftnfloat *ax, ftnfloat *ay);
-extern int  c_gdllfxy(int gdid, ftnfloat *lat, ftnfloat *lon, ftnfloat *x, ftnfloat *y, int n);
-extern int  c_gdllfxyz(int gdid, ftnfloat *lat, ftnfloat *lon, ftnfloat *x, ftnfloat *y, int n);
-extern int  c_gdllsval(int gdid, ftnfloat *zout, ftnfloat *zin, ftnfloat *lat, ftnfloat *lon, int n);
-extern int  c_gdllvval(int gdid, ftnfloat *uuout, ftnfloat *vvout, ftnfloat *uuin, ftnfloat *vvin,ftnfloat *lat, ftnfloat *lon, int n);
-extern int  c_gdllwdval(int gdid, ftnfloat *uuout, ftnfloat *vvout, ftnfloat *uuin, ftnfloat *vvin,ftnfloat *lat, ftnfloat *lon, int n);
-extern int  c_gdxpncf(int gdin, int *i1, int *i2, int *j1, int *j2);
-extern int  c_gdxysval(int gdin, ftnfloat *zout, ftnfloat *zin, ftnfloat *x, ftnfloat *y, int n);
-extern int  c_gdxywdval(int gdin, ftnfloat *uuout, ftnfloat *vvout, ftnfloat *uuin, ftnfloat *vvin, ftnfloat *x, ftnfloat *y, int n);
-extern int  c_gdxyvval(int gdin, ftnfloat *uuout, ftnfloat *vvout, ftnfloat *uuin, ftnfloat *vvin, ftnfloat *x, ftnfloat *y, int n);
-extern int  c_gduvfwd(int gdid,  ftnfloat *uugdout, ftnfloat *vvgdout, ftnfloat *uullin, ftnfloat *vvllin,ftnfloat *latin, ftnfloat *lonin, int npts);
-extern int  c_gdwdfuv(int gdid, ftnfloat *uullout, ftnfloat *vvllout, ftnfloat *uuin, ftnfloat *vvin,ftnfloat *latin, ftnfloat *lonin, int npts);
-extern int  c_gdxpngd(int gdin, ftnfloat *zxpnded, ftnfloat *zin);
-extern int  c_gdxyfll(int gdid, ftnfloat *x, ftnfloat *y, ftnfloat *lat, ftnfloat *lon, int n);
-extern int  c_gdxyzfll(int gdid, ftnfloat *x, ftnfloat *y, ftnfloat *lat, ftnfloat *lon, int n);
-extern int  c_guval(int gdin, ftnfloat *uuout, ftnfloat *vvout, ftnfloat *uuin,  ftnfloat *vvin, ftnfloat *x, ftnfloat *y, int n);
-extern void c_ezgfllfxy(ftnfloat *lonp, ftnfloat *latp,ftnfloat *lon, ftnfloat *lat,ftnfloat *r, ftnfloat *ri, int *npts,ftnfloat *xlat1, ftnfloat *xlon1, ftnfloat *xlat2, ftnfloat *xlon2);
-extern void c_ezgfxyfll(ftnfloat *lonp, ftnfloat *latp,ftnfloat *lon, ftnfloat *lat,ftnfloat *r, ftnfloat *ri, int *npts,ftnfloat *xlat1, ftnfloat *xlon1, ftnfloat *xlat2, ftnfloat *xlon2);
-extern void c_ezgfwfllw(ftnfloat *uullout, ftnfloat *vvllout, ftnfloat *latin, ftnfloat *lonin,ftnfloat *xlatingf, ftnfloat *xloningf,int *ni, int *nj,char *grtyp, int *ig1, int *ig2, int *ig3, int *ig4);
-extern void c_ezllwfgfw(ftnfloat *uullout, ftnfloat *vvllout, ftnfloat *latin, ftnfloat *lonin,ftnfloat *xlatingf, ftnfloat *xloningf,int *ni,int *nj,char *grtyp,int *ig1,int *ig2,int *ig3,int *ig4);
-extern void c_ezdefxg(int gdid);
-extern void c_ezdefaxes(int gdid, ftnfloat *ax, ftnfloat *ay);
-extern int  c_gdinterp(ftnfloat *zout, ftnfloat *zin, int gdin, ftnfloat *x, ftnfloat *y, int npts);
-extern int  c_gdsetmask(int gdid, int *mask);
-extern int  c_gdgetmask(int gdid, int *mask);
-extern int  c_ezsint_m(float *zout, float *zin);
-extern int  c_ezuvint_m(float *uuout, float *vvout, float *uuin, float *vvin);
-extern int  c_ezsint_mdm(float *zout, int *mask_out, float *zin, int *mask_in);
-extern int  c_ezuvint_mdm(float *uuout, float *vvout, int *mask_out, float *uuin, float *vvin, int *mask_in);
-extern int  c_ezsint_mask(int *mask_out, int *mask_in);
-extern int  c_fst_data_length(int size);
-
-/*RPN external BURP functions*/
-extern int c_mrfopc();
-extern int c_mrfopr();
-extern int c_mrfopn();
-extern int c_mrfmxl();
-extern int c_mrfcls();
-extern int c_mrfloc();
-extern int c_mrfget();
-extern int c_mrbhdr();
-extern int c_mrbloc();
-extern int c_mrbprm();
-extern int c_mrbxtr();
-extern int c_mrbcvt();
-extern int c_mrbdcl();
-#endif
 
 #endif

@@ -36,6 +36,7 @@
 #include <libxml/parser.h>
 #include "App.h"
 #include "Dict.h"
+#include "RMN.h"
 
 typedef struct {
    TList         *Vars;                                     // List of dictionnary variables

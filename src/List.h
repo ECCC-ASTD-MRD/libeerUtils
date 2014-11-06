@@ -5,7 +5,7 @@
 * Dorval, Quebec
 *
 * Projet    : Projection diverses de la carte vectorielle.
-* Fichier   : eerStruct.h
+* Fichier   : List.h
 * Creation  : Janvier 2011 - J.P. Gauthier
 *
 * Description: Fichier de definition de structures de donnees
@@ -31,25 +31,14 @@
 *==============================================================================
 */
 
-#ifndef _eerStruct_h
-#define _eerStruct_h
-
-#include "Vector.h"
-
-typedef struct T3DArray {
-   double  Value;
-   int     Size;
-   Vect3d *Data;
-} T3DArray;
+#ifndef _List_h
+#define _List_h
 
 typedef struct TList {
    void         *Data;
    struct TList *Next;
    struct TList *Prev;
 } TList;
-
-T3DArray *T3DArray_Alloc(double Value,int Size);
-void      T3DArray_Free(T3DArray *Array);
 
 typedef int (TList_CompareProc)(void *Data0,void *Data1);
 typedef int (TList_FreeProc)(void *Data0);

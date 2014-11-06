@@ -41,6 +41,7 @@
 #define _ZRef_h
 
 #include "eerUtils.h"
+#include "RMN.h"
 
 /*Level related constants and functions*/
 #define LVL_NIL         -1  /* No conversion */
