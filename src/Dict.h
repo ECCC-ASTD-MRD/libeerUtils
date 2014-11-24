@@ -60,7 +60,7 @@ typedef struct {
    char   Name[8];              // NOMVAR
    int    Nature;               // Mask for state and nature of variable
    char   Short[2][128];        // Short description in both language
-   char   Long[2][128];         // Long description in both language
+   char   Long[2][1024];        // Long description in both language
    char   Units[32];            // Units
    int    Pack;                 // Optimum packing number of bits
    double Min,Max,Magnitude,Factor,Delta,Precision;    // Range of values and applied factor

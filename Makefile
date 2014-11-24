@@ -61,7 +61,7 @@ else
    INCLUDES   := $(INCLUDES)
    LINK_EXEC   = -lxlf90 -lxlsmp -lc -lpthread -lmass -lm 
 
-   CCOPTIONS   = -O3 -qnohot -qstrict -Q -v -qkeyword=restrict -qcache=auto -qtune=auto -qarch=auto -qinline
+   CCOPTIONS   = -std=c99 -O3 -qnohot -qstrict -Q -v -qkeyword=restrict -qcache=auto -qtune=auto -qarch=auto -qinline
    ifdef OMPI
       CCOPTIONS  := $(CCOPTIONS) -qsmp=omp -qthreaded -qlibmpi -qinline
    endif

@@ -207,7 +207,7 @@ int ZRef_Copy(TZRef *ZRef0,TZRef *ZRef1,int Level) {
 int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
 
    TRPNHeader h;
-   int        cd,key=0,skip,j,k,kind,flag=0,mode=-1;
+   int        cd,key=0,skip,j,k,kind,flag=0,mode=-1,ip;
    char       format;
    double    *buf=NULL;
    float     *pt=NULL;
@@ -252,12 +252,16 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
 
             /* Find corresponding level */
             for(k=0;k<ZRef->LevelNb;k++) {
-               for(j=skip;j<h.NJ;j++) {
-                  if (buf[j*h.NI]==ZRef_Level2IP(ZRef->Levels[k],ZRef->Type)) {
+               ip=ZRef_Level2IP(ZRef->Levels[k],ZRef->Type);
+               for(j=skip;j<h.NJ;j++) {                  
+                  if (buf[j*h.NI]==ip) {
                      ZRef->A[k]=buf[j*h.NI+1];
                      ZRef->B[k]=buf[j*h.NI+2];
                      break;
                   }
+               }
+               if (j==h.NJ) {
+                  fprintf(stdout,"(WARNING) ZRef_DecodeRPN: Could not find level definition for %i\n.\n",ip);
                }
             }
          } else {

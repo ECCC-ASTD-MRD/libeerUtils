@@ -39,22 +39,22 @@
 #define QTREE_INFINITE 0xFFFFFFFF
 
 typedef struct TQTreeData {
-   void    *Ptr;                       // Data pointer
-   TPoint2D Pos;                       // XY data position
+   void    *Ptr;                // Data pointer
+   TPoint2D Pos;                // XY data position
 } TQTreeData;
 
 typedef struct TQTree {
-   struct TQTree* restrict Parent;     // Pointer to parent cell
-   struct TQTree* restrict Childs[4];  // Array of the sub quad pointers, handy for iterations
+   struct TQTree* Parent;       // Pointer to parent cell
+   struct TQTree* Childs[4];    // Array of the sub quad pointers, handy for iterations
 
-   TPoint2D                 BBox[2];   // South West XY position limit of the quad bounding box
-   int                      NbData;    // Number of data in the payload
-   TQTreeData* restrict     Data;      // Data payload
+   TPoint2D       BBox[2];      // South West XY position limit of the quad bounding box
+   int            NbData;       // Number of data in the payload
+   TQTreeData*    Data;         // Data payload
 } TQTree;
 
 typedef struct TQTreeIterator {
-   struct TQTree *Node;                // Next iteration restart node
-   unsigned long long Path;            // Current node path (3 last bits are parsed childs left shifted as we go down)
+   struct TQTree *Node;         // Next iteration restart node
+   unsigned long long Path;     // Current node path (3 last bits are parsed childs left shifted as we go down)
 } TQTreeIterator;
 
 typedef void (QTree_ParseProc) (void *Data);
