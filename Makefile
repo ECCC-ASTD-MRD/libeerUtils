@@ -13,7 +13,7 @@ endif
 SSM_NAME    = ${NAME}_${VERSION}${COMP}_${ORDENV_PLAT}
 
 INSTALL_DIR = $(HOME)
-TCL_DIR     = /users/dor/afsr/005/Links/dev/Archive/tcl8.6.0
+TCL_DIR     = /users/dor/afsr/005/Links/dev/Archive/tcl8.6.2
 LIB_DIR     = /users/dor/afsr/005/Links/dev/Lib/${ORDENV_PLAT}
 RMN_DIR     = $(LIB_DIR)/librmn-15
 

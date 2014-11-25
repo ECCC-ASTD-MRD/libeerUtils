@@ -261,7 +261,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
                   }
                }
                if (j==h.NJ) {
-                  fprintf(stdout,"(WARNING) ZRef_DecodeRPN: Could not find level definition for %i\n.\n",ip);
+                  fprintf(stdout,"(WARNING) ZRef_DecodeRPN: Could not find level definition for %i.\n",ip);
                }
             }
          } else {
