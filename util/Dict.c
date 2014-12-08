@@ -46,13 +46,14 @@ int main(int argc, char *argv[]) {
 
    TApp      *app;
    int       ok=1,desc=DICT_SHORT,search=DICT_EXACT,st=DICT_ALL,ip1,ip2,ip3;
-   char      *var,*type,*lang,*encoding,*origin,*state,*dicfile,*rpnfile[4096],*cfgfile,dicdef[4096];
+   char      *var,*type,*lang,*encoding,*origin,*etiket,*state,*dicfile,*rpnfile[4096],*cfgfile,dicdef[4096];
    
    TApp_Arg appargs[]=
       { { APP_CHAR|APP_FLAG, (void**)&var,      "n", "nomvar"      , "Search variable name ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
         { APP_CHAR|APP_FLAG, (void**)&type,     "t", "typvar"      , "Search variable type ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
         { APP_INT32,         (void**)&ip1,      "1",  "ip1"        , "Search IP1 ("APP_COLOR_GREEN"-1"APP_COLOR_RESET")" },
         { APP_INT32,         (void**)&ip3,      "3",  "ip3"        , "Search IP3 ("APP_COLOR_GREEN"-1"APP_COLOR_RESET")" },
+        { APP_CHAR,          (void**)&etiket,   "k", "etiket"      , "Search ETIKET ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
         { APP_CHAR,          (void**)&origin,   "o", "origin"      , "Search originator ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
         { APP_CHAR,          (void**)&state,    "s", "state"       , "Search state ("APP_COLOR_GREEN"all"APP_COLOR_RESET",obsolete,current,future,incomplete)" },
         { APP_FLAG,          (void**)&desc,     "l", "long"        , "use long description" },
@@ -65,7 +66,7 @@ int main(int argc, char *argv[]) {
         { 0 } };
         
    memset(rpnfile,0x0,4096*sizeof(char*));
-   var=type=lang=encoding=dicfile=cfgfile=origin=state=NULL;
+   var=type=lang=encoding=dicfile=cfgfile=origin=etiket=state=NULL;
    ip1=ip2=ip3=-1;
    
    app=App_New(APP_NAME,VERSION,APP_DESC,__TIMESTAMP__);
@@ -113,7 +114,7 @@ int main(int argc, char *argv[]) {
    }
 
    // Apply search method
-   Dict_SetSearch(search,st,origin,ip1,ip2,ip3);
+   Dict_SetSearch(search,st,origin,ip1,ip2,ip3,etiket);
 
    // Apply encoding type
    Dict_SetEncoding(DICT_ASCII);   

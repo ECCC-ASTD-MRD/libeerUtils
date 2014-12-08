@@ -44,6 +44,7 @@ typedef struct {
    int            SearchMode;                               // Search mode (DICT_EXACT,DICT_GLOB)
    int            SearchState;                              // Search state (DICT_OBSOLETE,DICT_CURRENT,DICT_FUTURE,DICT_INCOMPLETE)
    char          *SearchOrigin;                             // Search origin
+   char          *SearchETIKET;                             // Search etiket
    int            SearchIP1,SearchIP2,SearchIP3;            // IP to look for
    int            SearchAltIP1,SearchAltIP2,SearchAltIP3;   // Alternate IP to look for (OLD/NEW)
    TDict_Encoding Encoding;                                 // Encoding mode (DICT_ASCII,DICT_UTF8,DICT_ISO8859_1)
@@ -225,7 +226,7 @@ char* Dict_Version(void) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-void Dict_SetSearch(int SearchMode,int SearchState,char *SearchOrigin,int SearchIP1,int SearchIP2,int SearchIP3) { 
+void Dict_SetSearch(int SearchMode,int SearchState,char *SearchOrigin,int SearchIP1,int SearchIP2,int SearchIP3,char *SearchETIKET) { 
    int    mode=-1,flag=0,type;
    float  level=0.0;
    char   format;
@@ -236,6 +237,7 @@ void Dict_SetSearch(int SearchMode,int SearchState,char *SearchOrigin,int Search
    Dict.SearchIP1=SearchIP1;
    Dict.SearchIP2=SearchIP2;
    Dict.SearchIP3=SearchIP3;
+   Dict.SearchETIKET=SearchETIKET;
    
    if (Dict.SearchIP1>0) {
       // Convert to real level/value
@@ -414,6 +416,9 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node) {
          if (tmpc=(char*)xmlGetProp(Node,"ip3")) {
             metvar->IP3=atoi(tmpc);
          }
+         if (tmpc=(char*)xmlGetProp(Node,"etiket")) {
+            strncpy(metvar->ETIKET,tmpc,13);
+         }
       } else 
 
       if (!strcmp((char*)Node->name,"description")) {
@@ -430,16 +435,16 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node) {
             } else if (!strcmp((char*)trotteur1->name,"long") && xmlNodeListGetString(Doc,trotteur1->children,1)) {
                if (xmlGetProp(trotteur1,"lang")) {
                   if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"fr")) {
-                     strncpy(metvar->Long[0],xmlNodeListGetString(Doc,trotteur1->children,1),128);
+                     strncpy(metvar->Long[0],xmlNodeListGetString(Doc,trotteur1->children,1),1024);
                      Dict_Encoding(metvar->Long[0],Dict.Encoding);
                   } else if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"en")) {                                   
-                     strncpy(metvar->Long[1],xmlNodeListGetString(Doc,trotteur1->children,1),128);
+                     strncpy(metvar->Long[1],xmlNodeListGetString(Doc,trotteur1->children,1),1024);
                      Dict_Encoding(metvar->Long[1],Dict.Encoding);
                   }
                } else {
-                  strncpy(metvar->Long[0],xmlNodeListGetString(Doc,trotteur1->children,1),128);
+                  strncpy(metvar->Long[0],xmlNodeListGetString(Doc,trotteur1->children,1),1024);
                   Dict_Encoding(metvar->Long[0],Dict.Encoding);
-                  strncpy(metvar->Long[1],xmlNodeListGetString(Doc,trotteur1->children,1),128);
+                  strncpy(metvar->Long[1],xmlNodeListGetString(Doc,trotteur1->children,1),1024);
                   Dict_Encoding(metvar->Long[1],Dict.Encoding);                                    
                }
             }
@@ -633,16 +638,16 @@ static int Dict_ParseType(xmlDocPtr Doc, xmlNsPtr NS, xmlNodePtr Node) {
             } else if (!strcmp((char*)trotteur1->name,"long") && xmlNodeListGetString(Doc,trotteur1->children,1)) {
                if (xmlGetProp(trotteur1,"lang")) {
                   if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"fr")) {
-                     strncpy(type->Long[0],xmlNodeListGetString(Doc,trotteur1->children,1),128);
+                     strncpy(type->Long[0],xmlNodeListGetString(Doc,trotteur1->children,1),1024);
                      Dict_Encoding(type->Long[0],Dict.Encoding);
                   } else if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"en")) {                                   
-                     strncpy(type->Long[1],xmlNodeListGetString(Doc,trotteur1->children,1),128);
+                     strncpy(type->Long[1],xmlNodeListGetString(Doc,trotteur1->children,1),1024);
                      Dict_Encoding(type->Long[1],Dict.Encoding);
                   }
                } else {
-                  strncpy(type->Long[0],xmlNodeListGetString(Doc,trotteur1->children,1),128);
+                  strncpy(type->Long[0],xmlNodeListGetString(Doc,trotteur1->children,1),1024);
                   Dict_Encoding(type->Long[0],Dict.Encoding);
-                  strncpy(type->Long[1],xmlNodeListGetString(Doc,trotteur1->children,1),128);
+                  strncpy(type->Long[1],xmlNodeListGetString(Doc,trotteur1->children,1),1024);
                   Dict_Encoding(type->Long[1],Dict.Encoding);                                    
                }
             }
@@ -725,6 +730,10 @@ int Dict_CheckVar(void *Data0,void *Data1){
    }
    
    if (Dict.SearchOrigin && strcasecmp(((TDictVar*)Data0)->Origin,Dict.SearchOrigin)) {
+      return(0);
+   }
+   
+   if (Dict.SearchETIKET && strcasecmp(((TDictVar*)Data0)->ETIKET,Dict.SearchETIKET)) {
       return(0);
    }
    
@@ -1011,20 +1020,13 @@ void Dict_PrintVar(TDictVar *DVar,int Format,char *Language) {
          case DICT_LONG:
             printf("--------------------------------------------------------------------------------\n");
             printf("Nomvar              : %-s", DVar->Name);
-            if (DVar->IP1>=0)  printf(" IP1(%i)",DVar->IP1);
-            if (DVar->IP2>=0)  printf(" IP2(%i)",DVar->IP2);
-            if (DVar->IP3>=0)  printf(" IP3(%i)",DVar->IP3);
+            if (DVar->IP1>=0)          printf(" IP1(%i)",DVar->IP1);
+            if (DVar->IP2>=0)          printf(" IP2(%i)",DVar->IP2);
+            if (DVar->IP3>=0)          printf(" IP3(%i)",DVar->IP3);
+            if (DVar->ETIKET[0]!='\0') printf(" ETIKET(%s)",DVar->ETIKET);
             
             printf("\n%-s : %-s\n", TSHORT[lang],DVar->Short[lang]);
-            printf("%-s : %-s\n", TLONG[lang],DVar->Long[lang][0]!='\0'?DVar->Long[lang]:"-");
-            
-            if (DVar->Date) {
-               tm=gmtime(&(DVar->Date));
-               printf("%-s : %04i-%02i-%02i\n", TDATE[lang],1900+tm->tm_year,tm->tm_mon+1,tm->tm_mday);
-            } else {
-               printf("%-s : %-s\n", TDATE[lang],"-");
-            }
-            
+            printf("%-s : %-s\n", TLONG[lang],DVar->Long[lang][0]!='\0'?DVar->Long[lang]:"-");                        
             printf("%-s : %-s\n", TORIGIN[lang],DVar->Origin[0]!='\0'?DVar->Origin:"-");
             printf("%-s : ", TSTATE[lang]);
             
@@ -1037,6 +1039,13 @@ void Dict_PrintVar(TDictVar *DVar,int Format,char *Language) {
              else if (DVar->Nature&DICT_INCOMPLETE)
                printf("%s\n",TINCOMPLETE[lang]);
                 
+            if (DVar->Date) {
+               tm=gmtime(&(DVar->Date));
+               printf("%-s : %04i-%02i-%02i\n", TDATE[lang],1900+tm->tm_year,tm->tm_mon+1,tm->tm_mday);
+            } else {
+               printf("%-s : %-s\n", TDATE[lang],"-");
+            }
+
             if (DVar->Pack>0)  { 
                printf("%-s : %i\n",TPACK[lang],DVar->Pack);
             } else {

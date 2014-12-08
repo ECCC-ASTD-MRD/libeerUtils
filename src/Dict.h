@@ -68,6 +68,7 @@ typedef struct {
    char   Meanings[64][64];     // List of associated meanings
    int    NCodes;               // Number of codes
    int    IP1,IP2,IP3;          // Specific IP values
+   char   ETIKET[13];           // Specific etiket value
 } TDictVar;
 
 typedef struct {
@@ -76,13 +77,13 @@ typedef struct {
    char Name[3];                // TYPVAR
    int  Nature;                 // Mask for state and nature of type
    char Short[2][128];          // Short description in both language
-   char Long[2][128];           // Long description in both language 
+   char Long[2][1024];           // Long description in both language 
 } TDictType;
 
 char*      Dict_Version(void);
 int        Dict_Parse(char *Filename);
 void       Dict_SetEncoding(TDict_Encoding Encoding);
-void       Dict_SetSearch(int SearchMode,int SearchState,char *SearchOrigin,int SearchIP1,int SearchIP2,int SearchIP3);
+void       Dict_SetSearch(int SearchMode,int SearchState,char *SearchOrigin,int SearchIP1,int SearchIP2,int SearchIP3,char *SearchETIKET);
 void       Dict_AddVar(TDictVar *Var);
 void       Dict_AddType(TDictType *Type);
 TDictVar  *Dict_GetVar(char *Var);
