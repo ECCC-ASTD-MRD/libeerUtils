@@ -50,17 +50,17 @@ typedef struct {
    int            SearchAltIP1,SearchAltIP2,SearchAltIP3;   // Alternate IP to look for (OLD/NEW)
 } TDict;
 
-char *TSHORT[]  = { "Description courte ","Short Description " };
-char *TLONG[]   = { "Description longue ","Long  Description " };
-char *TUNITES[] = { "Unités             ","Units             " };
-char *TDATE[]   = { "Date du status     ","Date of state     " };
-char *TORIGIN[] = { "Origine            ","Origin            " };
-char *TSTATE[]  = { "Status             ","State             " };
-char *TTYPE[]   = { "Représentation     ","Representation    " };
-char *TMAG[]    = { "Ordre de grandeur  ","Magnitude         " };
-char *TPREC[]   = { "Précision requise  ","Required precision" };
-char *TPACK[]   = { "Compaction optimale","Optimal compaction" };
-char *TRANGE[]  = { "Amplitude          ","Range             " };
+char *TSHORT[]  = { "Description courte ","Short Description  " };
+char *TLONG[]   = { "Description longue ","Long  Description  " };
+char *TUNITES[] = { "Unités             ","Units              " };
+char *TDATE[]   = { "Date du status     ","Date of state      " };
+char *TORIGIN[] = { "Origine            ","Origin             " };
+char *TSTATE[]  = { "Status             ","State              " };
+char *TTYPE[]   = { "Représentation     ","Representation     " };
+char *TMAG[]    = { "Ordre de grandeur  ","Magnitude          " };
+char *TPREC[]   = { "Précision requise  ","Required precision " };
+char *TPACK[]   = { "Compaction optimale","Optimal compaction " };
+char *TRANGE[]  = { "Amplitude          ","Range              " };
 char *TINT[]    = { "Variable entière"  ,"Integer Variable"   };
 char *TREAL[]   = { "Variable réelle"   ,"Real Variable"      };
 char *TLOGIC[]  = { "Variable logique"  ,"Logical Variable"   };

@@ -611,12 +611,7 @@ int App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[],int Flags) {
          }
 
          // Process default argument
-         if ((Flags&APP_ARGSLOG) && (!strcasecmp(tok,"-l") || !strcasecmp(tok,"--log"))) {               // Log file
-            i++;
-            if ((ner=ok=(i<argc && argv[i][0]!='-'))) {
-               App->LogFile=env?strtok(str," "):argv[i];
-            }
-         } else if ((Flags&APP_ARGSLANG) && (!strcasecmp(tok,"-g") || !strcasecmp(tok,"--language"))) {  // language (en,fr)
+         if ((Flags&APP_ARGSLANG) && (!strcasecmp(tok,"-g") || !strcasecmp(tok,"--language"))) {  // language (en,fr)
             i++;
             if ((ner=ok=(i<argc && argv[i][0]!='-'))) {
                tmp=env?strtok(str," "):argv[i];
@@ -629,14 +624,19 @@ int App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[],int Flags) {
                   exit(EXIT_FAILURE);               
                }
             }
-         } else if (!strcasecmp(tok,"-v") || !strcasecmp(tok,"--verbose")) {                             // Verbose degree
+         } else if ((Flags&APP_ARGSLOG) && (!strcasecmp(tok,"-l") || !strcasecmp(tok,"--log"))) { // Log file
+            i++;
+            if ((ner=ok=(i<argc && argv[i][0]!='-'))) {
+               App->LogFile=env?strtok(str," "):argv[i];
+            }
+         } else if (!strcasecmp(tok,"-v") || !strcasecmp(tok,"--verbose")) {                      // Verbose degree
             i++;
             if ((ner=ok=(i<argc && argv[i][0]!='-'))) {
                App_LogLevel(App,env?strtok(str," "):argv[i]);
             }
-         } else if (!strcasecmp(tok,"--verbosecolor")) {                                                 // Use color in log messages
+         } else if (!strcasecmp(tok,"--verbosecolor")) {                                          // Use color in log messages
             App->LogColor=TRUE;
-         } else if (!strcasecmp(tok,"-h") || !strcasecmp(tok,"--help")) {                                // Help
+         } else if (!strcasecmp(tok,"-h") || !strcasecmp(tok,"--help")) {                         // Help
             App_PrintArgs(App,AArgs,NULL,Flags) ;
             exit(EXIT_SUCCESS);
          } else {
