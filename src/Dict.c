@@ -34,21 +34,20 @@
 #include <libxml/xmlmemory.h>
 #include <libxml/encoding.h>
 #include <libxml/parser.h>
-#include "App.h"
 #include "Dict.h"
 #include "RMN.h"
 
 typedef struct {
+   char          *Name,*Date,*Version,String[64];           // Dictionnary metadata
    TList         *Vars;                                     // List of dictionnary variables
    TList         *Types;                                    // List of dictionnary types
+   char          *Modifier;                                 // Variable modifier (ETIKET)
    int            SearchMode;                               // Search mode (DICT_EXACT,DICT_GLOB)
    int            SearchState;                              // Search state (DICT_OBSOLETE,DICT_CURRENT,DICT_FUTURE,DICT_INCOMPLETE)
    char          *SearchOrigin;                             // Search origin
    char          *SearchETIKET;                             // Search etiket
    int            SearchIP1,SearchIP2,SearchIP3;            // IP to look for
    int            SearchAltIP1,SearchAltIP2,SearchAltIP3;   // Alternate IP to look for (OLD/NEW)
-   TDict_Encoding Encoding;                                 // Encoding mode (DICT_ASCII,DICT_UTF8,DICT_ISO8859_1)
-   char          *Name,*Date,*Version,String[64];           // Dictionnary metadata
 } TDict;
 
 char *TSHORT[]  = { "Description courte ","Short Description " };
@@ -73,10 +72,31 @@ char *TFUTURE[]     = { "Futur"      ,"Future"     };
 char *TCURRENT[]    = { "Courante"   ,"Current"    };
 char *TINCOMPLETE[] = { "Incomplète" ,"Icompletee" };
 
+char *TCENTILE[]    = { "e centile"                   ,"th percentile" };
+char *TMIN[]        = { "(minimum)"                   ,"(minimum)" };
+char *TMAX[]        = { "(maximum)"                   ,"(maximum)" };
+char *TSSTD[]       = { "(écart-type (population))"   ,"(standard deviation (population))" };
+char *TPSTD[]       = { "(écart-type (échantillon))"  ,"(standard deviation (sample))" };
+char *TMEAN[]       = { "(moyenne)"                   ,"(mean)" };
+char *TEFI[]        = { "(index de prévision extrème)","(extreme forecast index)" };
+
 static TDict Dict;
 
-static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node);
-static int Dict_ParseType(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node);
+static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encoding Encoding);
+static int Dict_ParseType(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encoding Encoding);
+
+//typdef struct {
+//   char          *Modifier;                                 // Variable modifier (ETIKET)
+//   int            SearchMode;                               // Search mode (DICT_EXACT,DICT_GLOB)
+//   int            SearchState;                              // Search state (DICT_OBSOLETE,DICT_CURRENT,DICT_FUTURE,DICT_INCOMPLETE)
+//   char          *SearchOrigin;                             // Search origin
+//   char          *SearchETIKET;                             // Search etiket
+//   int            SearchIP1,SearchIP2,SearchIP3;            // IP to look for
+//   int            SearchAltIP1,SearchAltIP2,SearchAltIP3;   // Alternate IP to look for (OLD/NEW)
+//} TDictParams;
+//TDictParams *Dict_GetParams() {  
+//   return((TDictParams *)calloc(1,sizeof(TDictParams)));/
+//}
 
 int Dict_Encoding(char *string,TDict_Encoding Encoding) {
    
@@ -257,7 +277,16 @@ void Dict_SetSearch(int SearchMode,int SearchState,char *SearchOrigin,int Search
 //   f77name(convip)(&Dict.SearchAltIP3,&level,Type,&mode,&format,&flag);  
 }
 
-void Dict_SetEncoding(TDict_Encoding Encoding)           { Dict.Encoding=Encoding; }
+void Dict_SetModifier(char *Modifier) { 
+   
+   if (Dict.Modifier) 
+      free(Dict.Modifier); 
+   
+   Dict.Modifier=NULL;
+   
+   if (Modifier) 
+      Dict.Modifier=strdup(Modifier);
+}
 
 /*----------------------------------------------------------------------------
  * Nom      : <Dict_Parse>
@@ -267,14 +296,15 @@ void Dict_SetEncoding(TDict_Encoding Encoding)           { Dict.Encoding=Encodin
  *
  * Parametres  :
  *  <Filename> : XML dictionnary file
- *
+ *  <Encoding> : Encoding mode (DICT_ASCII,DICT_UTF8,DICT_ISO8859_1)
+ * 
  * Retour:
  *
  * Remarques :
  *    - Based heavily on r.dict code
  *----------------------------------------------------------------------------
 */
-int Dict_Parse(char *Filename) {
+int Dict_Parse(char *Filename,TDict_Encoding Encoding) {
    
    xmlDocPtr    doc;
    xmlNsPtr     ns;
@@ -333,11 +363,11 @@ int Dict_Parse(char *Filename) {
    while (node) { 
 
       if (!strcmp(node->name,"metvar")) {
-         if (!Dict_ParseVar(doc,ns,node)) break;
+         if (!Dict_ParseVar(doc,ns,node,Encoding)) break;
       } 
        
       if (!strcmp(node->name,"typvar")) {
-         if (!Dict_ParseType(doc,ns,node)) break;
+         if (!Dict_ParseType(doc,ns,node,Encoding)) break;
       } 
  
       node=node->next;
@@ -359,6 +389,7 @@ int Dict_Parse(char *Filename) {
  *  <Doc>      : XML document
  *  <NS>       : 
  *  <Node>     : XML node to parse
+ *  <Encoding> : Encoding mode (DICT_ASCII,DICT_UTF8,DICT_ISO8859_1)
  *
  * Retour:
  *
@@ -366,7 +397,7 @@ int Dict_Parse(char *Filename) {
  *    - Based heavily on r.dict code
  *----------------------------------------------------------------------------
 */
-static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node) {
+static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encoding Encoding) {
    
    TDictVar  *metvar;
    xmlNodePtr trotteur,trotteur1;
@@ -427,25 +458,25 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node) {
             if (!strcmp((char*)trotteur1->name,"short")) {
                if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"en")) {
                   strncpy(metvar->Short[1], xmlNodeListGetString(Doc,trotteur1->children,1),128);
-                  Dict_Encoding(metvar->Short[1],Dict.Encoding);
+                  Dict_Encoding(metvar->Short[1],Encoding);
                } else if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"fr")) {
                   strncpy(metvar->Short[0], xmlNodeListGetString(Doc,trotteur1->children,1),128);
-                  Dict_Encoding(metvar->Short[0],Dict.Encoding); 
+                  Dict_Encoding(metvar->Short[0],Encoding); 
                }           
             } else if (!strcmp((char*)trotteur1->name,"long") && xmlNodeListGetString(Doc,trotteur1->children,1)) {
                if (xmlGetProp(trotteur1,"lang")) {
                   if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"fr")) {
                      strncpy(metvar->Long[0],xmlNodeListGetString(Doc,trotteur1->children,1),1024);
-                     Dict_Encoding(metvar->Long[0],Dict.Encoding);
+                     Dict_Encoding(metvar->Long[0],Encoding);
                   } else if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"en")) {                                   
                      strncpy(metvar->Long[1],xmlNodeListGetString(Doc,trotteur1->children,1),1024);
-                     Dict_Encoding(metvar->Long[1],Dict.Encoding);
+                     Dict_Encoding(metvar->Long[1],Encoding);
                   }
                } else {
                   strncpy(metvar->Long[0],xmlNodeListGetString(Doc,trotteur1->children,1),1024);
-                  Dict_Encoding(metvar->Long[0],Dict.Encoding);
+                  Dict_Encoding(metvar->Long[0],Encoding);
                   strncpy(metvar->Long[1],xmlNodeListGetString(Doc,trotteur1->children,1),1024);
-                  Dict_Encoding(metvar->Long[1],Dict.Encoding);                                    
+                  Dict_Encoding(metvar->Long[1],Encoding);                                    
                }
             }
             trotteur1=trotteur1->next;
@@ -463,7 +494,7 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node) {
             while (trotteur1) {
                if (!strcmp((char*)trotteur1->name,"units")) {
                   strncpy(metvar->Units, xmlNodeListGetString(Doc,trotteur1->children,1),32);   
-                  Dict_Encoding(metvar->Units,Dict.Encoding);
+                  Dict_Encoding(metvar->Units,Encoding);
                }            
 
                if (!strcmp((char*)trotteur1->name,"magnitude")) { 
@@ -497,7 +528,7 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node) {
                if (!strcmp((char*)trotteur1->name,"units")) {
                   if ((tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {   
                      strncpy(metvar->Units,tmpc,32);
-                     Dict_Encoding(metvar->Units,Dict.Encoding);
+                     Dict_Encoding(metvar->Units,Encoding);
                   }
                }
 
@@ -550,7 +581,7 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node) {
                }
                if (!strcmp((char*)trotteur1->name,"meaning")) {
                   strncpy(metvar->Meanings[i], (xmlChar *) xmlNodeListGetString(Doc,trotteur1->children,1),64);                      
-                  Dict_Encoding(metvar->Meanings[i],Dict.Encoding);
+                  Dict_Encoding(metvar->Meanings[i],Encoding);
                   i++;
                }
                trotteur1=trotteur1->next;
@@ -578,6 +609,7 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node) {
  *  <Doc>      : XML document
  *  <NS>       :
  *  <Node>     : XML node to parse
+ *  <Encoding> : Encoding mode (DICT_ASCII,DICT_UTF8,DICT_ISO8859_1)
  *
  * Retour:
  *
@@ -585,7 +617,7 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node) {
  *    - Based heavily on r.dict code
  *----------------------------------------------------------------------------
 */
-static int Dict_ParseType(xmlDocPtr Doc, xmlNsPtr NS, xmlNodePtr Node) {
+static int Dict_ParseType(xmlDocPtr Doc, xmlNsPtr NS, xmlNodePtr Node,TDict_Encoding Encoding) {
 
    TDictType *type;
    xmlNodePtr trotteur,trotteur1;
@@ -628,27 +660,27 @@ static int Dict_ParseType(xmlDocPtr Doc, xmlNsPtr NS, xmlNodePtr Node) {
             if (!strcmp((char*)trotteur1->name,"short")) {
                if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"en")) {
                   strncpy(type->Short[1],xmlNodeListGetString(Doc,trotteur1->children,1),128);
-                  Dict_Encoding(type->Short[1],Dict.Encoding);
+                  Dict_Encoding(type->Short[1],Encoding);
                } else {
                   if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"fr")) {
                      strncpy(type->Short[0],xmlNodeListGetString(Doc,trotteur1->children,1),128);
-                     Dict_Encoding(type->Short[0],Dict.Encoding);
+                     Dict_Encoding(type->Short[0],Encoding);
                   }           
                }          
             } else if (!strcmp((char*)trotteur1->name,"long") && xmlNodeListGetString(Doc,trotteur1->children,1)) {
                if (xmlGetProp(trotteur1,"lang")) {
                   if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"fr")) {
                      strncpy(type->Long[0],xmlNodeListGetString(Doc,trotteur1->children,1),1024);
-                     Dict_Encoding(type->Long[0],Dict.Encoding);
+                     Dict_Encoding(type->Long[0],Encoding);
                   } else if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"en")) {                                   
                      strncpy(type->Long[1],xmlNodeListGetString(Doc,trotteur1->children,1),1024);
-                     Dict_Encoding(type->Long[1],Dict.Encoding);
+                     Dict_Encoding(type->Long[1],Encoding);
                   }
                } else {
                   strncpy(type->Long[0],xmlNodeListGetString(Doc,trotteur1->children,1),1024);
-                  Dict_Encoding(type->Long[0],Dict.Encoding);
+                  Dict_Encoding(type->Long[0],Encoding);
                   strncpy(type->Long[1],xmlNodeListGetString(Doc,trotteur1->children,1),1024);
-                  Dict_Encoding(type->Long[1],Dict.Encoding);                                    
+                  Dict_Encoding(type->Long[1],Encoding);                                    
                }
             }
 
@@ -959,24 +991,24 @@ TDictType *Dict_IterateType(TList **Iterator,char *Type) {
  *
  * But      : Print info about a list of variables
  *
- * Parametres  :
- *  <Var>      : Variable to look fortement
- *  <Format>   : Print format (DICT_SHORT,DICT_LONG)
- *  <Language> : Language (Fr,En)
+ * Parametres :
+ *  <Var>     : Variable to look fortement
+ *  <Format>  : Print format (DICT_SHORT,DICT_LONG)
+ *  <Lang>    : Language (APP_FR,APP_EN)
  *
  * Retour:
  *
  * Remarques :
  *----------------------------------------------------------------------------
 */
-void Dict_PrintVars(char *Var,int Format,char *Language) {
+void Dict_PrintVars(char *Var,int Format,TApp_Lang Lang) {
    
    TList *list;
    
    list=Dict.Vars;
 
    while(list=TList_Find(list,Dict_CheckVar,Var)) {
-       Dict_PrintVar((TDictVar*)list->Data,Format,Language);
+       Dict_PrintVar((TDictVar*)list->Data,Format,Lang);
        list=list->Next;
    }
 }
@@ -987,31 +1019,33 @@ void Dict_PrintVars(char *Var,int Format,char *Language) {
  *
  * But      : Print info about a variable
  *
- * Parametres  :
- *  <Var>      : Variable to look fortement
- *  <Format>   : Print format (DICT_SHORT,DICT_LONG)
- *  <Language> : Language (Fr,En)
+ * Parametres :
+ *  <Var>     : Variable to look fortement
+ *  <Format>  : Print format (DICT_SHORT,DICT_LONG)
+ *  <Lang>    : Language (APP_FR,APP_EN)
  *
  * Retour:
  *
  * Remarques :
  *----------------------------------------------------------------------------
 */
-void Dict_PrintVar(TDictVar *DVar,int Format,char *Language) {
+void Dict_PrintVar(TDictVar *DVar,int Format,TApp_Lang Lang) {
  
-   int        i,lang;
+   int         i;
    struct tm *tm;
- 
-   if (DVar) {
-      lang=(Language[0]=='f' || Language[0]=='F')?0:1;
-      
-      if (DVar->Nature&DICT_OBSOLETE) printf(APP_COLOR_RED);
+   TDictVar  *var;
+   
+   if (DVar) {      
+      if (!(var=Dict_ApplyModifier(DVar,Dict.Modifier))) {
+         return;
+      }
+      if (var->Nature&DICT_OBSOLETE) printf(APP_COLOR_RED);
       
       switch(Format) {
          case DICT_SHORT:
-            printf("%-4s\t%-70s\t%-s",DVar->Name,DVar->Short[lang],DVar->Units);
-            if (DVar->Nature&DICT_OBSOLETE)
-               printf(" \t%s\n",TOBSOLETE[lang]);
+            printf("%-4s\t%-70s\t%-s",var->Name,var->Short[Lang],var->Units);
+            if (var->Nature&DICT_OBSOLETE)
+               printf(" \t%s\n",TOBSOLETE[Lang]);
             else 
                printf("\n");
             
@@ -1019,80 +1053,81 @@ void Dict_PrintVar(TDictVar *DVar,int Format,char *Language) {
 
          case DICT_LONG:
             printf("--------------------------------------------------------------------------------\n");
-            printf("Nomvar              : %-s", DVar->Name);
-            if (DVar->IP1>=0)          printf(" IP1(%i)",DVar->IP1);
-            if (DVar->IP2>=0)          printf(" IP2(%i)",DVar->IP2);
-            if (DVar->IP3>=0)          printf(" IP3(%i)",DVar->IP3);
-            if (DVar->ETIKET[0]!='\0') printf(" ETIKET(%s)",DVar->ETIKET);
+            printf("Nomvar              : %-s", var->Name);
+            if (var->IP1>=0)          printf(" IP1(%i)",var->IP1);
+            if (var->IP2>=0)          printf(" IP2(%i)",var->IP2);
+            if (var->IP3>=0)          printf(" IP3(%i)",var->IP3);
+            if (var->ETIKET[0]!='\0') printf(" ETIKET(%s)",var->ETIKET);
             
-            printf("\n%-s : %-s\n", TSHORT[lang],DVar->Short[lang]);
-            printf("%-s : %-s\n", TLONG[lang],DVar->Long[lang][0]!='\0'?DVar->Long[lang]:"-");                        
-            printf("%-s : %-s\n", TORIGIN[lang],DVar->Origin[0]!='\0'?DVar->Origin:"-");
-            printf("%-s : ", TSTATE[lang]);
+            printf("\n%-s : %-s\n", TSHORT[Lang],var->Short[Lang]);
+            printf("%-s : %-s\n", TLONG[Lang],var->Long[Lang][0]!='\0'?var->Long[Lang]:"-");                        
+            printf("%-s : %-s\n", TORIGIN[Lang],var->Origin[0]!='\0'?var->Origin:"-");
+            printf("%-s : ", TSTATE[Lang]);
             
-            if (DVar->Nature&DICT_OBSOLETE)
-               printf("%s\n",TOBSOLETE[lang]);
-            else if (DVar->Nature&DICT_CURRENT)
-               printf("%s\n",TCURRENT[lang]);
-            else if (DVar->Nature&DICT_FUTURE)
-               printf("%s\n",TFUTURE[lang]);
-             else if (DVar->Nature&DICT_INCOMPLETE)
-               printf("%s\n",TINCOMPLETE[lang]);
+            if (var->Nature&DICT_OBSOLETE)
+               printf("%s\n",TOBSOLETE[Lang]);
+            else if (var->Nature&DICT_CURRENT)
+               printf("%s\n",TCURRENT[Lang]);
+            else if (var->Nature&DICT_FUTURE)
+               printf("%s\n",TFUTURE[Lang]);
+             else if (var->Nature&DICT_INCOMPLETE)
+               printf("%s\n",TINCOMPLETE[Lang]);
                 
-            if (DVar->Date) {
-               tm=gmtime(&(DVar->Date));
-               printf("%-s : %04i-%02i-%02i\n", TDATE[lang],1900+tm->tm_year,tm->tm_mon+1,tm->tm_mday);
+            if (var->Date) {
+               tm=gmtime(&(var->Date));
+               printf("%-s : %04i-%02i-%02i\n", TDATE[Lang],1900+tm->tm_year,tm->tm_mon+1,tm->tm_mday);
             } else {
-               printf("%-s : %-s\n", TDATE[lang],"-");
+               printf("%-s : %-s\n", TDATE[Lang],"-");
             }
 
-            if (DVar->Pack>0)  { 
-               printf("%-s : %i\n",TPACK[lang],DVar->Pack);
+            if (var->Pack>0)  { 
+               printf("%-s : %i\n",TPACK[Lang],var->Pack);
             } else {
-               printf("%-s : %-s\n",TPACK[lang],"-");
+               printf("%-s : %-s\n",TPACK[Lang],"-");
             }
             
-            if (DVar->Nature & DICT_INTEGER) {
-                  printf("%-s : %-s\n",TTYPE[lang],TINT[lang]);
-                  printf("%-s : %s\n",TUNITES[lang],DVar->Units);
-                  if (DVar->Magnitude!=DICT_NOTSET)     printf("%-s : %e\n",TMAG[lang],DVar->Magnitude);
-                  if (DVar->Min!=DVar->Max) {
-                     printf("%-s : ",TRANGE[lang]);
-                     if (DVar->Min!=DICT_NOTSET) printf("[%.0f ",DVar->Min);
-                     if (DVar->Max!=DICT_NOTSET) printf("%.0f]\n",DVar->Max);
+            if (var->Nature & DICT_INTEGER) {
+                  printf("%-s : %-s\n",TTYPE[Lang],TINT[Lang]);
+                  printf("%-s : %s\n",TUNITES[Lang],var->Units);
+                  if (var->Magnitude!=DICT_NOTSET)     printf("%-s : %e\n",TMAG[Lang],var->Magnitude);
+                  if (var->Min!=var->Max) {
+                     printf("%-s : ",TRANGE[Lang]);
+                     if (var->Min!=DICT_NOTSET) printf("[%.0f ",var->Min);
+                     if (var->Max!=DICT_NOTSET) printf("%.0f]\n",var->Max);
                      printf("\n");
                   }
                   break;
                   
-            } else if (DVar->Nature & DICT_REAL) {
-                  printf("%-s : %-s\n",TTYPE[lang],TREAL[lang]);
-                  printf("%-s : %s\n",TUNITES[lang],DVar->Units);
-                  if (DVar->Precision!=DICT_NOTSET)    printf("%-s : %e\n",TPREC[lang],DVar->Precision);
-                  if (DVar->Magnitude!=DICT_NOTSET)    printf("%-s : %e\n",TMAG[lang],DVar->Magnitude);
-                  if (DVar->Min!=DVar->Max) {
-                     printf("%-s : ",TRANGE[lang]);
-                     if (DVar->Min!=DICT_NOTSET) printf("[%.0f ",DVar->Min);
-                     if (DVar->Max!=DICT_NOTSET) printf("%.0f]\n",DVar->Max);
+            } else if (var->Nature & DICT_REAL) {
+                  printf("%-s : %-s\n",TTYPE[Lang],TREAL[Lang]);
+                  printf("%-s : %s\n",TUNITES[Lang],var->Units);
+                  if (var->Precision!=DICT_NOTSET)    printf("%-s : %e\n",TPREC[Lang],var->Precision);
+                  if (var->Magnitude!=DICT_NOTSET)    printf("%-s : %e\n",TMAG[Lang],var->Magnitude);
+                  if (var->Min!=var->Max) {
+                     printf("%-s : ",TRANGE[Lang]);
+                     if (var->Min!=DICT_NOTSET) printf("[%.0f ",var->Min);
+                     if (var->Max!=DICT_NOTSET) printf("%.0f]\n",var->Max);
                      printf("\n");
                   }
                   break;
             
-            } else if (DVar->Nature & DICT_LOGICAL) {
-                  printf("%-s : %-s\n",TTYPE[lang],TLOGIC[lang]);
+            } else if (var->Nature & DICT_LOGICAL) {
+                  printf("%-s : %-s\n",TTYPE[Lang],TLOGIC[Lang]);
                   break;
             
-            } else if (DVar->Nature & DICT_CODE) {
-                  printf("%-s : %-s\n",TTYPE[lang],TCODE[lang]);
-                  printf("\tCode\t\t%s\n",TVAL[lang]);
+            } else if (var->Nature & DICT_CODE) {
+                  printf("%-s : %-s\n",TTYPE[Lang],TCODE[Lang]);
+                  printf("\tCode\t\t%s\n",TVAL[Lang]);
                   printf("\t----\t\t----------------\n");
-                  for (i=0; i < DVar->NCodes; i++) {
-                     printf("\t%i\t\t%-s\n", DVar->Codes[i], DVar->Meanings[i]);
+                  for (i=0; i < var->NCodes; i++) {
+                     printf("\t%i\t\t%-s\n", var->Codes[i], var->Meanings[i]);
                   }
                   break;
             }
             break;
-      }  
-      if (DVar->Nature&DICT_OBSOLETE) printf(APP_COLOR_RESET);
+      }
+      if (var!=DVar) free(var);
+      if (var->Nature&DICT_OBSOLETE) printf(APP_COLOR_RESET);
    }
 }
 
@@ -1102,17 +1137,17 @@ void Dict_PrintVar(TDictVar *DVar,int Format,char *Language) {
  *
  * But      : Print info about a list of Types
  *
- * Parametres  :
- *  <Var>      : Variable to look fortement
- *  <Format>   : Print format (DICT_SHORT,DICT_LONG)
- *  <Language> : Language (Fr,En)
+ * Parametres :
+ *  <Var>     : Variable to look fortement
+ *  <Format>  : Print format (DICT_SHORT,DICT_LONG)
+ *  <Lang>    : Language (APP_FR,APP_EN)
  *
  * Retour:
  *
  * Remarques :
  *----------------------------------------------------------------------------
 */
-void Dict_PrintTypes(char *Type,int Format,char *Language) {
+void Dict_PrintTypes(char *Type,int Format,TApp_Lang Lang) {
    
    TList *list;
    int   head=0;
@@ -1124,7 +1159,7 @@ void Dict_PrintTypes(char *Type,int Format,char *Language) {
           printf("\n12-TYPVAR-----------------------------------------------------------------------\n");
           head++;
        }
-       Dict_PrintType((TDictType*)list->Data,Format,Language);
+       Dict_PrintType((TDictType*)list->Data,Format,Lang);
        list=list->Next;
    }
 }
@@ -1135,55 +1170,153 @@ void Dict_PrintTypes(char *Type,int Format,char *Language) {
  *
  * But      : Print info about a type
  *
- * Parametres  :
- *  <Var>      : Variable to look fortement
- *  <Format>   : Print format (DICT_SHORT,DICT_LONG)
- *  <Language> : Language (Fr,En)
+ * Parametres :
+ *  <Var>     : Variable to look fortement
+ *  <Format>  : Print format (DICT_SHORT,DICT_LONG)
+ *  <Lang>    : Language (APP_FR,APP_EN)
  *
  * Retour:
  *
  * Remarques :
  *----------------------------------------------------------------------------
 */
-void Dict_PrintType(TDictType *DType,int Format,char *Language) {
+void Dict_PrintType(TDictType *DType,int Format,TApp_Lang Lang) {
  
    int        i,lang;
    struct tm *tm;
    
    if (DType) {
-      lang=(Language[0]=='f' || Language[0]=='F')?0:1;
       
       switch(Format) {
          case DICT_SHORT:
-            printf("%-2s  %-60s\n", DType->Name, DType->Short[lang]);
+            printf("%-2s  %-60s\n", DType->Name, DType->Short[Lang]);
             break;
 
          case DICT_LONG:
             printf("--------------------------------------------------------------------------------\n");
             printf("Typvar             : %-s", DType->Name);               
-            printf("\n%-s : %-s\n", TSHORT[lang],DType->Short[lang]);
-            printf("%-s : %-s\n", TLONG[lang],DType->Long[lang][0]!='\0'?DType->Long[lang]:"-");
+            printf("\n%-s : %-s\n", TSHORT[Lang],DType->Short[Lang]);
+            printf("%-s : %-s\n", TLONG[Lang],DType->Long[Lang][0]!='\0'?DType->Long[Lang]:"-");
 
             if (DType->Date) {
                tm=gmtime(&(DType->Date));
-               printf("%-s : %04i-%02i-%02i\n", TDATE[lang],1900+tm->tm_year,tm->tm_mon+1,tm->tm_mday);
+               printf("%-s : %04i-%02i-%02i\n", TDATE[Lang],1900+tm->tm_year,tm->tm_mon+1,tm->tm_mday);
             } else {
-               printf("%-s : %-s\n", TDATE[lang],"-");
+               printf("%-s : %-s\n", TDATE[Lang],"-");
             }
             
-            printf("%-s : %-s\n", TORIGIN[lang],DType->Origin[0]!='\0'?DType->Origin:"-");
-            printf("%-s : ", TSTATE[lang]);
+            printf("%-s : %-s\n", TORIGIN[Lang],DType->Origin[0]!='\0'?DType->Origin:"-");
+            printf("%-s : ", TSTATE[Lang]);
             
             if (DType->Nature&DICT_OBSOLETE)
-               printf("%s\n",TOBSOLETE[lang]);
+               printf("%s\n",TOBSOLETE[Lang]);
             else if (DType->Nature&DICT_CURRENT)
-               printf("%s\n",TCURRENT[lang]);
+               printf("%s\n",TCURRENT[Lang]);
             else if (DType->Nature&DICT_FUTURE)
-               printf("%s\n",TFUTURE[lang]);
+               printf("%s\n",TFUTURE[Lang]);
             else if (DType->Nature&DICT_INCOMPLETE)
-               printf("%s\n",TINCOMPLETE[lang]);
+               printf("%s\n",TINCOMPLETE[Lang]);
             
             break;
       }  
    }
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <Dict_ApplyModifier>
+ * Creation : Mai 2014 - J.P. Gauthier
+ *
+ * But      : Decode les étiquette au format RRPPPPPP[N,P,X]MMM
+ *
+ * Parametres :
+ *  <Var>     : Variable to look fortement
+ *  <Format>  : Print format (DICT_SHORT,DICT_LONG)
+ *
+ * Retour:
+ *
+ * Remarques :
+ *   RR     = No de passe
+ *   PPPPPP = produit
+ *   N,P,X  = Opérationnel, Parallèle, Expérimental
+ *   MMM    = Membre (ou ALL pour tous)
+ *----------------------------------------------------------------------------
+*/
+TDictVar* Dict_ApplyModifier(TDictVar *Var,char *Modifier) {
+   
+   char     *c,*l,lang;
+   TDictVar *var;
+   
+   if (!Modifier) {
+      return(Var);
+   }
+   
+   // Copy var since we'll be changing a few things
+   var=(TDictVar*)calloc(1,sizeof(TDictVar));
+   memcpy(var,Var,sizeof(TDictVar));
+   
+   // Loop on languages
+   for(lang=0;lang<2;lang++) {
+      
+      c=&Modifier[2];
+      l=var->Short[lang];
+      l+=strlen(var->Short[lang]);
+      (*l++)=' ';  
+   
+      if (!strncmp(c,"MIN___",6)) {
+         strcpy(l,TMIN[lang]); l+=strlen(TMIN[lang]);
+      } else if (!strncmp(c,"MAX___",6)) {
+         strcpy(l,TMAX[lang]); l+=strlen(TMIN[lang]);
+      } else if (!strncmp(c,"SSTD__",6)) {
+         strcpy(l,TSSTD[lang]); l+=strlen(TMIN[lang]);     
+      } else if (!strncmp(c,"PSTD__",6)) {
+         strcpy(l,TPSTD[lang]); l+=strlen(TMIN[lang]);     
+      } else if (!strncmp(c,"MEAN__",6)) {
+         strcpy(l,TMEAN[lang]); l+=strlen(TMIN[lang]);      
+      } else if (!strncmp(c,"EFI___",6)) {
+         strcpy(l,TEFI[lang]); l+=strlen(TMIN[lang]);   
+      } else {
+         
+         // Decode operator 
+         if (c[0]=='C') {
+            
+            // Centile operator
+            c+=1;
+            while(*c!='_') (*l++)=*c++; 
+            strcpy(l,TCENTILE[lang]); l+=strlen(TCENTILE[lang]);
+         } else {
+            
+            // Probability operator
+            if  (c[0]=='G' && c[1]=='T') {    
+               c+=2; (*l++)='>';
+            } else if  (c[0]=='L' && c[1]=='T') {    
+               c+=2; (*l++)='<';
+            } else if  (c[0]=='E' && c[1]=='Q') {    
+               c+=2; (*l++)='=';         
+            } else if  (c[0]=='G' && c[1]=='E') {    
+               c+=2; (*l++)='>'; (*l++)='=';                
+            } else if  (c[0]=='L' && c[1]=='E') {  
+               c+=2; (*l++)='<'; (*l++)='=';                
+            } else {
+               fprintf(stderr,"(ERROR) Invalid modifier: %s\n",Modifier);
+               return(NULL);
+            }
+            (*l++)=' ';  
+
+            // Decode value
+            while(*c!='_') (*l++)=*c++;
+            
+            // Add variable units
+            (*l++)=' ';
+            strcpy(l,Var->Units); l+=strlen(Var->Units);   
+            
+            // New units -> %
+            var->Units[0]='%';var->Units[1]='\0';
+            var->Min=0.0;
+            var->Max=100.0;
+         }
+      }
+      (*l++)='\0';
+   }
+   
+   return(var);
 }

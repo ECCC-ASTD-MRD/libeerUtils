@@ -31,6 +31,7 @@
  *
  *=========================================================
  */
+#include "App.h"
 #include "eerUtils.h"
 #include "List.h"
 
@@ -59,7 +60,7 @@ typedef struct {
    time_t Date;                 // Date of creation
    char   Name[8];              // NOMVAR
    int    Nature;               // Mask for state and nature of variable
-   char   Short[2][128];        // Short description in both language
+   char   Short[2][256];        // Short description in both language (128 def + 128 modifier)
    char   Long[2][1024];        // Long description in both language
    char   Units[32];            // Units
    int    Pack;                 // Optimum packing number of bits
@@ -81,21 +82,21 @@ typedef struct {
 } TDictType;
 
 char*      Dict_Version(void);
-int        Dict_Parse(char *Filename);
-void       Dict_SetEncoding(TDict_Encoding Encoding);
+int        Dict_Parse(char *Filename,TDict_Encoding Encoding);
 void       Dict_SetSearch(int SearchMode,int SearchState,char *SearchOrigin,int SearchIP1,int SearchIP2,int SearchIP3,char *SearchETIKET);
+void       Dict_SetModifier(char *Modifier);
 void       Dict_AddVar(TDictVar *Var);
 void       Dict_AddType(TDictType *Type);
 TDictVar  *Dict_GetVar(char *Var);
 TDictType *Dict_GetType(char *Type);
 TDictVar  *Dict_IterateVar(TList **Iterator,char *Var);
 TDictType *Dict_IterateType(TList **Iterator,char *Type);
-void       Dict_PrintVar(TDictVar *DVar,int Format,char *Language);
-void       Dict_PrintVars(char *Var,int Format,char *Language);
-void       Dict_PrintType(TDictType *DType,int Format,char *Language);
-void       Dict_PrintTypes(char *Type,int Format,char *Language);
+void       Dict_PrintVar(TDictVar *DVar,int Format,TApp_Lang Lang);
+void       Dict_PrintVars(char *Var,int Format,TApp_Lang Lang);
+void       Dict_PrintType(TDictType *DType,int Format,TApp_Lang Lang);
+void       Dict_PrintTypes(char *Type,int Format,TApp_Lang Lang);
 int        Dict_SortVar(void *Data0,void *Data1);
 int        Dict_SortType(void *Data0,void *Data1);
 int        Dict_CheckVar(void *Data0,void *Data1);
 int        Dict_CheckType(void *Data0,void *Data1);
-
+TDictVar*  Dict_ApplyModifier(TDictVar *Var,char *Modifier);

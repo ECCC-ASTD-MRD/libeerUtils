@@ -44,17 +44,18 @@ int Dict_CheckCFG(TApp *App,char *CFGFile);
 
 int main(int argc, char *argv[]) {
 
-   TApp      *app;
-   int       ok=1,desc=DICT_SHORT,search=DICT_EXACT,st=DICT_ALL,ip1,ip2,ip3;
-   char      *var,*type,*lang,*encoding,*origin,*etiket,*state,*dicfile,*rpnfile[4096],*cfgfile,dicdef[4096];
+   TApp          *app;
+   TDict_Encoding coding;
+   int            ok=1,desc=DICT_SHORT,search=DICT_EXACT,st=DICT_ALL,ip1,ip2,ip3;
+   char          *var,*type,*lang,*encoding,*origin,*etiket,*state,*dicfile,*rpnfile[4096],*cfgfile,dicdef[4096];
    
    TApp_Arg appargs[]=
       { { APP_CHAR|APP_FLAG, (void**)&var,      "n", "nomvar"      , "Search variable name ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
         { APP_CHAR|APP_FLAG, (void**)&type,     "t", "typvar"      , "Search variable type ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
         { APP_INT32,         (void**)&ip1,      "1",  "ip1"        , "Search IP1 ("APP_COLOR_GREEN"-1"APP_COLOR_RESET")" },
         { APP_INT32,         (void**)&ip3,      "3",  "ip3"        , "Search IP3 ("APP_COLOR_GREEN"-1"APP_COLOR_RESET")" },
-        { APP_CHAR,          (void**)&etiket,   "k", "etiket"      , "Search ETIKET ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
         { APP_CHAR,          (void**)&origin,   "o", "origin"      , "Search originator ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
+        { APP_CHAR,          (void**)&etiket,   "k", "etiket"      , "ETIKET modifier ("APP_COLOR_GREEN"\"\""APP_COLOR_RESET")" },
         { APP_CHAR,          (void**)&state,    "s", "state"       , "Search state ("APP_COLOR_GREEN"all"APP_COLOR_RESET",obsolete,current,future,incomplete)" },
         { APP_FLAG,          (void**)&desc,     "l", "long"        , "use long description" },
         { APP_FLAG,          (void**)&search,   "g", "glob"        , "use glob search pattern" },
@@ -86,9 +87,9 @@ int main(int argc, char *argv[]) {
       dicfile=dicdef;
    }
       
-   // Check the language in the environment
+   // Check the language
    if (lang) {
-      app->Language=lang;
+      app->Language=(lang[0]=='f' || lang[0]=='F')?APP_FR:APP_EN;
    }
 
    if (!var && !type && !cfgfile && !rpnfile[0]) {
@@ -112,19 +113,20 @@ int main(int argc, char *argv[]) {
       if (!strcasecmp(state,"future"))     st=DICT_FUTURE;
       if (!strcasecmp(state,"incomplete")) st=DICT_INCOMPLETE;
    }
-
+   
    // Apply search method
-   Dict_SetSearch(search,st,origin,ip1,ip2,ip3,etiket);
+   Dict_SetSearch(search,st,origin,ip1,ip2,ip3,NULL);
 
    // Apply encoding type
-   Dict_SetEncoding(DICT_ASCII);   
+   Dict_SetModifier(etiket);   
 
    if (encoding) {
       if (!strcmp(encoding,"iso8859-1")) {
-         Dict_SetEncoding(DICT_ISO8859_1);
+         coding=DICT_ISO8859_1;
       } else if (!strcmp(encoding,"utf8")) {
-         Dict_SetEncoding(DICT_UTF8);
+         coding=DICT_UTF8;
       } else if (!strcmp(encoding,"ascii")) {
+         coding=DICT_ASCII;
       } else {
          App_Log(app,ERROR,"Invalid encoding, must me iso8859-1, utf8 or ascii\n");
          exit(EXIT_FAILURE);
@@ -136,7 +138,7 @@ int main(int argc, char *argv[]) {
       App_Start(app);
    }
    
-   if (!(ok=Dict_Parse(dicfile))) {
+   if (!(ok=Dict_Parse(dicfile,coding))) {
      App_Log(app,ERROR,"Invalid file\n");
    } else {
       fprintf(stderr,"%s\n\n",Dict_Version());
@@ -198,10 +200,13 @@ int Dict_CheckCFG(TApp *App,char *CFGFile){
    while(fgets(buf,APP_BUFMAX,fp)) {
       
       // Process directives
-         if (idx=strcasestr(buf,"sortie")) {
-            
+#ifdef _AIX_
+      if ((idx=strstr(buf,"sortie")) || (idx=strstr(buf,"SORTIE"))) {
+#else
+      if ((idx=strcasestr(buf,"sortie"))) {           
+#endif
          // Locate var list within []
-         values=strcasestr(idx,"(")+1;
+         values=strstr(idx,"(")+1;
          strrep(buf,'[',' ');
          strrep(buf,']','\0');
          

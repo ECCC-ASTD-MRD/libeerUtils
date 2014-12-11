@@ -1689,14 +1689,14 @@ TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr) {
    }
 
    /*Get the number of levels (if Incr!=0)*/
-   /*In case of # grid, set IP1 to 1 to get NK just for the first tile*/
+   /*In case of # grid, set IP3 to 1 to get NK just for the first tile*/
    if (Incr) {
       ip3=new->H.GRTYP[0]=='#'?1:-1;
       c_fstinl(new->H.FID,&h.NI,&h.NJ,&h.NK,new->H.DATEV,new->H.ETIKET,-1,new->H.IP2,ip3,new->H.TYPVAR,new->H.NOMVAR,idlst,&new->H.NK,RPNMAX);
    }
    pthread_mutex_unlock(&RPNFieldMutex);
    
-      /*Check previous master grid existence*/
+   /*Check previous master grid existence*/
    if ((mst=EZGrid_CacheFind(new))) {
       new->GID=mst->GID;
       new->ZRef=mst->ZRef;

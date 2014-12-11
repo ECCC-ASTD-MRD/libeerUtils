@@ -71,21 +71,10 @@
 typedef enum { MUST=-1,ERROR=0,WARNING=1,INFO=2,DEBUG=3,EXTRA=4 } TApp_LogLevel;
 typedef enum { STOP,RUN,DONE } TApp_State;
 typedef enum { APP_NIL=0x0,APP_FLAG=0x01,APP_LIST=0x02,APP_CHAR=0x04,APP_UINT32=0x06,APP_INT32=0x08,APP_UINT64=0x0A,APP_INT64=0x0C,APP_FLOAT32=0x0E,APP_FLOAT64=0x10 } TApp_Type;
-
-// #define APP_NIL     0x00
-// #define APP_FLAG    0x01
-// #define APP_LIST    0x02
-// #define APP_CHAR    0x04
-// #define APP_UINT32  0x06
-// #define APP_INT32   0x08
-// #define APP_UINT64  0x0A
-// #define APP_INT64   0x0C
-// #define APP_FLOAT32 0x0E
-// #define APP_FLOAT64 0x10
+typedef enum { APP_FR=0x0,APP_EN=0x01 } TApp_Lang;
 
 // Argument definitions
 typedef struct TApp_Arg {
-//   unsigned int Type;
    TApp_Type    Type;
    void         **Var;
    char         *Short,*Long,*Info;
@@ -97,7 +86,6 @@ typedef struct TApp {
     char*          Version;              // Version
     char*          Desc;                 // Description
     char*          TimeStamp;            // Compilation timestamp
-    char*          Language;             // Language (default: $CMCLNG or english)
     char*          LogFile;              // Log file
     int            LogWarning;           // Number of warnings
     int            LogError;             // Number of errors
@@ -106,6 +94,7 @@ typedef struct TApp {
     FILE*          LogStream;            // Log file associated stream
     TApp_LogLevel  LogLevel;             // Level of log
     TApp_State     State;                // State of application
+    TApp_Lang      Language;             // Language (default: $CMCLNG or APP_EN)
     double         Percent;              // Percentage of execution done (0=not started, 100=finished)
     struct timeval Time;                 // Timer for execution time
 

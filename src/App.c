@@ -56,7 +56,8 @@
 TApp *App_New(char *Name,char *Version,char *Desc,char* Stamp) {
 
    TApp *app;
-
+   char *c;
+   
    app=(TApp*)malloc(sizeof(TApp));
    app->Name=Name?strdup(Name):NULL;
    app->Version=Version?strdup(Version):NULL;
@@ -79,9 +80,11 @@ TApp *App_New(char *Name,char *Version,char *Desc,char* Stamp) {
    app->OMPSeed=NULL;
    app->Seed=time(NULL);
 
-   // Check the language in the environment
-   if (!(app->Language=getenv("CMCLNG"))) {
-      app->Language=strdup("english");
+   // Check the language in the environment 
+   if (!(c=getenv("CMCLNG"))) {
+      app->Language=APP_EN;
+   } else {
+      app->Language=(c[0]=='f' || c[0]=='F')?APP_FR:APP_EN;
    }
 
    return(app);

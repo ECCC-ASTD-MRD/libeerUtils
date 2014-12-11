@@ -15,7 +15,7 @@ SSM_NAME    = ${NAME}_${VERSION}${COMP}_${ORDENV_PLAT}
 INSTALL_DIR = $(HOME)
 TCL_DIR     = /users/dor/afsr/005/Links/devfs/Archive/tcl8.6.2
 LIB_DIR     = /users/dor/afsr/005/Links/devfs/Lib/${ORDENV_PLAT}
-RMN_DIR     = $(LIB_DIR)/librmn-15
+RMN_DIR     = $(LIB_DIR)/librmn-15.1
 
 ifeq ($(OS),Linux)
 
