@@ -513,8 +513,11 @@ void App_PrintArgs(TApp *App,TApp_Arg *AArgs,char *Token,int Flags) {
 
    // Process default argument
    printf("\n");
-   if (!(Flags&APP_NOARGSLOG)) {
+   if (Flags&APP_ARGSLOG) {
       printf("\n\t-%s, --%-15s %s","l", "log",     "Log file ("APP_COLOR_GREEN"stdout"APP_COLOR_RESET",stderr,file)");
+   }
+   if (Flags&APP_ARGSLANG) {
+      printf("\n\t-%s, --%-15s %s","g", "language","Language ("APP_COLOR_GREEN"$CMCLNG"APP_COLOR_RESET",english,francais)");
    }
    printf("\n\t-%s, --%-15s %s","v", "verbose",      "Verbose level (ERROR,WARNING,"APP_COLOR_GREEN"INFO"APP_COLOR_RESET",DEBUG,EXTRA or 0-4)");
    printf("\n\t    --%-15s %s",      "verbosecolor", "Use color for log messages");
@@ -585,8 +588,8 @@ inline int App_GetArgs(TApp *App,TApp_Arg *AArg,char *Value) {
 */
 int App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[],int Flags) {
 
-   int       i=-1,ok=TRUE;
-   char     *tok,*ptok=NULL,*env=NULL,*str;
+   int       i=-1,ok=TRUE,ner=TRUE;
+   char     *tok,*ptok=NULL,*env=NULL,*str,*tmp;
    TApp_Arg *aarg=NULL;
    
    str=env=getenv("APP_PARAMS");
@@ -608,13 +611,32 @@ int App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[],int Flags) {
          }
 
          // Process default argument
-         if (!(Flags&APP_NOARGSLOG) && (strcasecmp(tok,"-l")==0 || strcasecmp(tok,"--log")==0)) {               // Log file
-            App->LogFile=env?strtok(str," "):argv[++i];
-         } else if (strcasecmp(tok,"-v")==0 || strcasecmp(tok,"--verbose")==0) {    // Verbose degree
-            App_LogLevel(App,env?strtok(str," "):argv[++i]);
-         } else if (strcasecmp(tok,"--verbosecolor")==0) {                          // Use color in log messages
+         if ((Flags&APP_ARGSLOG) && (!strcasecmp(tok,"-l") || !strcasecmp(tok,"--log"))) {               // Log file
+            i++;
+            if ((ner=ok=(i<argc && argv[i][0]!='-'))) {
+               App->LogFile=env?strtok(str," "):argv[i];
+            }
+         } else if ((Flags&APP_ARGSLANG) && (!strcasecmp(tok,"-g") || !strcasecmp(tok,"--language"))) {  // language (en,fr)
+            i++;
+            if ((ner=ok=(i<argc && argv[i][0]!='-'))) {
+               tmp=env?strtok(str," "):argv[i];
+               if (tmp[0]=='f' || tmp[0]=='F') {
+                  App->Language=APP_FR;
+               } else if  (tmp[0]=='e' || tmp[0]=='E') {
+                  App->Language=APP_EN;
+               } else {
+                  printf("Invalid value for language, must be francais or english\n");
+                  exit(EXIT_FAILURE);               
+               }
+            }
+         } else if (!strcasecmp(tok,"-v") || !strcasecmp(tok,"--verbose")) {                             // Verbose degree
+            i++;
+            if ((ner=ok=(i<argc && argv[i][0]!='-'))) {
+               App_LogLevel(App,env?strtok(str," "):argv[i]);
+            }
+         } else if (!strcasecmp(tok,"--verbosecolor")) {                                                 // Use color in log messages
             App->LogColor=TRUE;
-         } else if (strcasecmp(tok,"-h")==0 || strcasecmp(tok,"--help")==0) {       // Help
+         } else if (!strcasecmp(tok,"-h") || !strcasecmp(tok,"--help")) {                                // Help
             App_PrintArgs(App,AArgs,NULL,Flags) ;
             exit(EXIT_SUCCESS);
          } else {
@@ -627,6 +649,11 @@ int App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[],int Flags) {
                }
                aarg++;
             }
+         }
+         
+         if (!ner) {
+             printf("Missing argument for %s\n",argv[--i]);
+             exit(EXIT_FAILURE);               
          }
          
          // Argument not found

@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
    memset(vars,0x0,256*sizeof(char*));
    app=App_New(APP_NAME,VERSION,APP_DESC,__TIMESTAMP__);
 
-   if (!App_ParseArgs(app,appargs,argc,argv,APP_NOARGSFAIL)) {
+   if (!App_ParseArgs(app,appargs,argc,argv,APP_NOARGSFAIL|APP_ARGSLOG)) {
       exit(EXIT_FAILURE);      
    }
    
