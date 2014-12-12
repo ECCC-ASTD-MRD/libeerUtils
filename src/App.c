@@ -262,10 +262,11 @@ void App_End(TApp *App,int Status) {
    if (!App->RankMPI) {
 
       gettimeofday(&end,NULL);
+      timersub(&end,&App->Time,&end);
 
       App_Log(App,MUST,"\n-------------------------------------------------------------------------------------\n");
       App_Log(App,MUST,"Finish time    : (UTC) %s",ctime(&end.tv_sec));
-      App_Log(App,MUST,"Execution time : %li seconds\n",end.tv_sec-App->Time.tv_sec);
+      App_Log(App,MUST,"Execution time : %.4f seconds\n",(float)end.tv_sec+end.tv_usec/1000000.0);
 
       // Select status code based on error number
       if (Status<0) {

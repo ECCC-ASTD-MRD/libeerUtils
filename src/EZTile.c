@@ -712,7 +712,7 @@ static TGrid* EZGrid_CacheFind(TGrid *Grid) {
 
    register int n;
 
-   int     flag=0,mode=-1,type;
+   int     type;
    float   level;
    char    format;
 
@@ -723,7 +723,7 @@ static TGrid* EZGrid_CacheFind(TGrid *Grid) {
          if (GridCache[n]) {
 
             // Check for same level type and definitions
-            f77name(convip)(&Grid->H.IP1,&level,&type,&mode,&format,&flag);
+            level=ZRef_IP2Level(Grid->H.IP1,&type);
             type=type==LVL_SIGMA?LVL_ETA:type;
             if (type!=GridCache[n]->ZRef->Type) {
                continue;
@@ -1002,23 +1002,25 @@ int EZGrid_TileGrid(int FIdTo,int NI, int NJ,int Halo,TGrid* restrict const Grid
    char   format;
    int    i,j,k,ni,nj,di,dj,pj,no,key;
    float *tile=NULL,*data;
-   int    flag=0,ip1=0,mode=2,type;
+   int    ip1=0;
 
    if (!Grid)
       return(FALSE);
 
    tile=(float*)malloc((NI+Halo*2)*(NJ+Halo*2)*sizeof(float));
 
-   type=Grid->ZRef->Type==LVL_ETA?LVL_SIGMA:Grid->ZRef->Type;
-
    EZGrid_CopyDesc(FIdTo,Grid);
 
+   ip1=Grid->H.IP1;
+   
    /*Build and save the tiles*/
    for(k=0;k<Grid->H.NK;k++) {
       no=0;
       data=EZGrid_TileBurnAll(Grid,k,NULL);
 
-      f77name(convip)(&ip1,&Grid->ZRef->Levels[k],&type,&mode,&format,&flag);
+      if (Grid->H.NK>1) {
+         ip1=ZRef_Level2IP(Grid->ZRef->Levels[k],Grid->ZRef->Type,DEFAULT);
+      }
 
       /*Check if dimensions allow tiling*/
       if (!NI || !NJ || Grid->H.NI==1 || Grid->H.NJ==1 || (Grid->H.NI<NI && Grid->H.NJ<NJ)) {
@@ -1077,19 +1079,21 @@ int EZGrid_Write(int FId,TGrid* restrict const Grid,int NBits,int Overwrite) {
 
    int        k,tidx,key,ok=0;
    char       format;
-   int        flag=0,ip1=0,mode=2,type;
+   int        ip1;
    TGridTile *tile;
 
    if (!Grid)
       return(FALSE);
 
-   // Because of ETA being same as SIGMA, have to make a switch
-   type=Grid->ZRef->Type==LVL_ETA?LVL_SIGMA:Grid->ZRef->Type;
+   ip1=Grid->H.IP1;
+   
    for(k=0;k<Grid->ZRef->LevelNb;k++) {
       for (tidx=0;tidx<Grid->NbTiles;tidx++) {
          tile=&Grid->Tiles[tidx];
 
-         f77name(convip)(&ip1,&Grid->ZRef->Levels[k],&type,&mode,&format,&flag);
+         if (Grid->H.NK>1) {
+            ip1=ZRef_Level2IP(Grid->ZRef->Levels[k],Grid->ZRef->Type,DEFAULT);
+         }
          if (Grid->NbTiles>1) {
             key=cs_fstecr(tile->Data[k],-NBits,FId,Grid->H.DATEO,Grid->H.DEET,Grid->H.NPAS,tile->HNI,tile->HNJ,1,ip1,Grid->H.IP2,
                  tile->NO,Grid->H.TYPVAR,Grid->H.NOMVAR,Grid->H.ETIKET,"#",Grid->H.IG1,Grid->H.IG2,tile->I+1,tile->J+1,Grid->H.DATYP,Overwrite);

@@ -81,6 +81,8 @@ typedef struct TZRef {
    float  *PCube;       /*3D Pressure cube*/
 } TZRef;
 
+typedef enum { DEFAULT=1,NEW=2,OLD=3 } TZRef_IP1Mode;
+
 #define ZRef_Incr(ZREF) ZREF->Count++;
 
 int    ZRef_Init(TZRef *ZRef);
@@ -99,7 +101,7 @@ double ZRef_Pressure2Level(TZRef* restrict const ZRef,double P0,double Pressure)
 double ZRef_IP2Meter(int IP);
 double ZRef_Level2Meter(double Level,int Type);
 double ZRef_IP2Level(int IP,int *Type);
-int    ZRef_Level2IP(float Level,int Type);
+int    ZRef_Level2IP(float Level,int Type,TZRef_IP1Mode Mode);
 
 const char** ZRef_LevelNames();
 const char*  ZRef_LevelName(int Type);

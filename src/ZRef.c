@@ -168,7 +168,7 @@ int ZRef_Copy(TZRef *ZRef0,TZRef *ZRef1,int Level) {
    if (!ZRef0 || !ZRef1 || Level>ZRef1->LevelNb-1)
       return(FALSE);
 
-      if (Level<0) {
+   if (Level<0) {
       ZRef0->LevelNb=ZRef1->LevelNb;
       ZRef0->Levels=(float*)malloc(ZRef1->LevelNb*sizeof(float));
       memcpy(ZRef0->Levels,ZRef1->Levels,ZRef1->LevelNb*sizeof(float));
@@ -207,8 +207,7 @@ int ZRef_Copy(TZRef *ZRef0,TZRef *ZRef1,int Level) {
 int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
 
    TRPNHeader h;
-   int        cd,key=0,skip,j,k,kind,flag=0,mode=-1,ip;
-   char       format;
+   int        cd,key=0,skip,j,k,kind,ip;
    double    *buf=NULL;
    float     *pt=NULL;
 
@@ -252,7 +251,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
 
             /* Find corresponding level */
             for(k=0;k<ZRef->LevelNb;k++) {
-               ip=ZRef_Level2IP(ZRef->Levels[k],ZRef->Type);
+               ip=ZRef_Level2IP(ZRef->Levels[k],ZRef->Type,DEFAULT);
                for(j=skip;j<h.NJ;j++) {                  
                   if (buf[j*h.NI]==ip) {
                      ZRef->A[k]=buf[j*h.NI+1];
@@ -278,7 +277,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
          cd=c_fstprm(key,&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&h.NK,&h.NBITS,&h.DATYP,&h.IP1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,h.GRTYP,&h.IG1,
                      &h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,&h.UBC,&h.EX1,&h.EX2,&h.EX3);
          if (cd>=0) {
-            f77name(convip)(&h.IP1,&ZRef->PTop,&kind,&mode,&format,&flag);
+            ZRef->PTop=ZRef_IP2Level(h.IP1,&kind);
             ZRef->RCoef[0]=h.IG2/1000.0f;
             ZRef->RCoef[1]=0.0f;
             ZRef->PRef=h.IG1;
@@ -427,7 +426,7 @@ int ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Order) {
                h.GRTYP,&h.IG1,&h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,
                &h.UBC,&h.EX1,&h.EX2,&h.EX3);
 
-         f77name(convip)(&ip1,&ZRef->Levels[k2],&l,&mode,&format,&flag);
+         ZRef->Levels[k2]=ZRef_IP2Level(ip1,&l);
          if (k==0) ZRef->Type=l;
 
          /* If a list of restrictive levels is defined, check for validity*/
@@ -460,8 +459,7 @@ int ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Order) {
          return(0);
       }
       ZRef->LevelNb=1;
-      ip1=H->IP1;
-      f77name(convip)(&ip1,&ZRef->Levels[0],&ZRef->Type,&mode,&format,&flag);
+      ZRef->Levels[0]=ZRef_IP2Level(H->IP1,&ZRef->Type);
    }
    
    /*Invert the list if requested*/
@@ -1023,6 +1021,7 @@ double ZRef_IP2Level(int IP,int *Type) {
  * Parametres :
  *  <Level>   : Valeur du niveau
  *  <Type>    : Type de niveau (Coordonnees)
+ *  <Mode>    : Mode (NEW,OLD,DEFAULT)
  *
  * Retour:
  *  <IP>      : IP1
@@ -1031,7 +1030,8 @@ double ZRef_IP2Level(int IP,int *Type) {
  *
  *----------------------------------------------------------------------------
  */
-int ZRef_Level2IP(float Level,int Type) {
+
+int ZRef_Level2IP(float Level,int Type,TZRef_IP1Mode Mode) {
 
    int    flag=0,ip=0,mode;
    char   format;
@@ -1053,7 +1053,7 @@ int ZRef_Level2IP(float Level,int Type) {
       if (Type==LVL_HYBRID || Type==LVL_MAGL) {
          mode=2;
       } else {
-         mode=ZREF_IP1MODE;
+         mode=Mode==DEFAULT?ZREF_IP1MODE:Mode;
       }
 
 #ifdef HAVE_RMN
