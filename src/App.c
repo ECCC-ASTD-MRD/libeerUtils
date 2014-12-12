@@ -247,7 +247,7 @@ void App_Start(TApp *App) {
 */
 void App_End(TApp *App,int Status) {
 
-   struct timeval end;
+   struct timeval end,dif;
    int            nb;
 
 #ifdef _MPI
@@ -262,11 +262,11 @@ void App_End(TApp *App,int Status) {
    if (!App->RankMPI) {
 
       gettimeofday(&end,NULL);
-      timersub(&end,&App->Time,&end);
+      timersub(&end,&App->Time,&dif);
 
       App_Log(App,MUST,"\n-------------------------------------------------------------------------------------\n");
       App_Log(App,MUST,"Finish time    : (UTC) %s",ctime(&end.tv_sec));
-      App_Log(App,MUST,"Execution time : %.4f seconds\n",(float)end.tv_sec+end.tv_usec/1000000.0);
+      App_Log(App,MUST,"Execution time : %.4f seconds\n",(float)dif.tv_sec+dif.tv_usec/1000000.0);
 
       // Select status code based on error number
       if (Status<0) {
