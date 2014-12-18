@@ -518,7 +518,7 @@ void App_PrintArgs(TApp *App,TApp_Arg *AArgs,char *Token,int Flags) {
       printf("\n\t-%s, --%-15s %s","l", "log",     "Log file ("APP_COLOR_GREEN"stdout"APP_COLOR_RESET",stderr,file)");
    }
    if (Flags&APP_ARGSLANG) {
-      printf("\n\t-%s, --%-15s %s","g", "language","Language ("APP_COLOR_GREEN"$CMCLNG"APP_COLOR_RESET",english,francais)");
+      printf("\n\t-%s, --%-15s %s","a", "language","Language ("APP_COLOR_GREEN"$CMCLNG"APP_COLOR_RESET",english,francais)");
    }
    printf("\n\t-%s, --%-15s %s","v", "verbose",      "Verbose level (ERROR,WARNING,"APP_COLOR_GREEN"INFO"APP_COLOR_RESET",DEBUG,EXTRA or 0-4)");
    printf("\n\t    --%-15s %s",      "verbosecolor", "Use color for log messages");
@@ -612,7 +612,7 @@ int App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[],int Flags) {
          }
 
          // Process default argument
-         if ((Flags&APP_ARGSLANG) && (!strcasecmp(tok,"-g") || !strcasecmp(tok,"--language"))) {  // language (en,fr)
+         if ((Flags&APP_ARGSLANG) && (!strcasecmp(tok,"-a") || !strcasecmp(tok,"--language"))) {  // language (en,fr)
             i++;
             if ((ner=ok=(i<argc && argv[i][0]!='-'))) {
                tmp=env?strtok(str," "):argv[i];

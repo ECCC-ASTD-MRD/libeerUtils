@@ -39,6 +39,8 @@
 #define APP_NAME    "Dict"
 #define APP_DESC    "CMC/RPN dictionary variable information."
 
+char *THINT[]       = { "Si une variable utilise '!' comme TYPVAR, utilisez -k avec l'ETIKET pout appliquer la modification de signification","If a variable uses '!' as TYPVAR, use -k flag with the ETIKET to apply the definition modifier" };
+
 int Dict_CheckRPN(TApp *App,char **RPNFile);
 int Dict_CheckCFG(TApp *App,char *CFGFile);
 
@@ -149,6 +151,8 @@ int main(int argc, char *argv[]) {
       } else {
          if (var)  Dict_PrintVars(var,desc,app->Language); 
          if (type) Dict_PrintTypes(type,desc,app->Language);
+         
+         if (!etiket && search!=DICT_GLOB) fprintf(stderr,"\n%s* %s%s\n",APP_COLOR_MAGENTA,THINT[app->Language],APP_COLOR_RESET); 
       }
    }
 

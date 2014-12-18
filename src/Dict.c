@@ -50,22 +50,23 @@ typedef struct {
    int            SearchAltIP1,SearchAltIP2,SearchAltIP3;   // Alternate IP to look for (OLD/NEW)
 } TDict;
 
-char *TSHORT[]  = { "Description courte ","Short Description  " };
-char *TLONG[]   = { "Description longue ","Long  Description  " };
-char *TUNITES[] = { "Unités             ","Units              " };
-char *TDATE[]   = { "Date du status     ","Date of state      " };
-char *TORIGIN[] = { "Origine            ","Origin             " };
-char *TSTATE[]  = { "Status             ","State              " };
-char *TTYPE[]   = { "Représentation     ","Representation     " };
-char *TMAG[]    = { "Ordre de grandeur  ","Magnitude          " };
-char *TPREC[]   = { "Précision requise  ","Required precision " };
-char *TPACK[]   = { "Compaction optimale","Optimal compaction " };
-char *TRANGE[]  = { "Amplitude          ","Range              " };
-char *TINT[]    = { "Variable entière"  ,"Integer Variable"   };
-char *TREAL[]   = { "Variable réelle"   ,"Real Variable"      };
-char *TLOGIC[]  = { "Variable logique"  ,"Logical Variable"   };
-char *TCODE[]   = { "Variable codée"    ,"Coded Variable"     };
-char *TVAL[]    = { "Valeur"            ,"Value"              };
+char *TSHORT[]      = { "Description courte ","Short Description  " };
+char *TLONG[]       = { "Description longue ","Long  Description  " };
+char *TUNITES[]     = { "Unités             ","Units              " };
+char *TDATE[]       = { "Date du status     ","Date of state      " };
+char *TORIGIN[]     = { "Origine            ","Origin             " };
+char *TSTATE[]      = { "Status             ","State              " };
+char *TTYPE[]       = { "Représentation     ","Representation     " };
+char *TMAG[]        = { "Ordre de grandeur  ","Magnitude          " };
+char *TPREC[]       = { "Précision requise  ","Required precision " };
+char *TPACK[]       = { "Compaction optimale","Optimal compaction " };
+char *TRANGE[]      = { "Amplitude          ","Range              " };
+
+char *TINT[]        = { "Variable entière"  ,"Integer Variable" };
+char *TREAL[]       = { "Variable réelle"   ,"Real Variable"    };
+char *TLOGIC[]      = { "Variable logique"  ,"Logical Variable" };
+char *TCODE[]       = { "Variable codée"    ,"Coded Variable"   };
+char *TVAL[]        = { "Valeur"            ,"Value"            };
 
 char *TOBSOLETE[]   = { "Obsolète"   ,"Obsolete"   };
 char *TFUTURE[]     = { "Futur"      ,"Future"     };
@@ -1278,23 +1279,24 @@ TDictVar* Dict_ApplyModifier(TDictVar *Var,char *Modifier) {
          
          // Decode operator 
          if (c[0]=='C') {
-            
-            // Centile operator
+                       
             c+=1;
+            (*l++)='(';  
             while(*c!='_') (*l++)=*c++; 
-            strcpy(l,TCENTILE[lang]); l+=strlen(TCENTILE[lang]);
+            strcpy(l,TCENTILE[lang]); l+=strlen(TCENTILE[lang]);   // Centile operator
+            (*l++)=')';  
+            
          } else {
             
-            // Probability operator
-            if  (c[0]=='G' && c[1]=='T') {    
+            if  (c[0]=='G' && c[1]=='T') {                         // Greater than
                c+=2; (*l++)='>';
-            } else if  (c[0]=='L' && c[1]=='T') {    
+            } else if  (c[0]=='L' && c[1]=='T') {                  // Less than
                c+=2; (*l++)='<';
-            } else if  (c[0]=='E' && c[1]=='Q') {    
+            } else if  (c[0]=='E' && c[1]=='Q') {                  // Equal to
                c+=2; (*l++)='=';         
-            } else if  (c[0]=='G' && c[1]=='E') {    
+            } else if  (c[0]=='G' && c[1]=='E') {                  // Greater or equal
                c+=2; (*l++)='>'; (*l++)='=';                
-            } else if  (c[0]=='L' && c[1]=='E') {  
+            } else if  (c[0]=='L' && c[1]=='E') {                  // Less or equal
                c+=2; (*l++)='<'; (*l++)='=';                
             } else {
                fprintf(stderr,"(ERROR) Invalid modifier: %s\n",Modifier);
@@ -1302,10 +1304,10 @@ TDictVar* Dict_ApplyModifier(TDictVar *Var,char *Modifier) {
             }
             (*l++)=' ';  
 
-            // Decode value
+            // Decode value of operator
             while(*c!='_') (*l++)=*c++;
             
-            // Add variable units
+            // Add variable unit
             (*l++)=' ';
             strcpy(l,Var->Units); l+=strlen(Var->Units);   
             
