@@ -1245,80 +1245,80 @@ void Dict_PrintType(TDictType *DType,int Format,TApp_Lang Lang) {
 TDictVar* Dict_ApplyModifier(TDictVar *Var,char *Modifier) {
    
    char     *c,*l,lang;
-   TDictVar *var;
+   TDictVar *var=NULL;
    
    if (!Modifier) {
       return(Var);
    }
    
    // Copy var since we'll be changing a few things
-   var=(TDictVar*)calloc(1,sizeof(TDictVar));
-   memcpy(var,Var,sizeof(TDictVar));
-   
-   // Loop on languages
-   for(lang=0;lang<2;lang++) {
+   if ((var=(TDictVar*)calloc(1,sizeof(TDictVar)))) {
+      memcpy(var,Var,sizeof(TDictVar));
       
-      c=&Modifier[2];
-      l=var->Short[lang];
-      l+=strlen(var->Short[lang]);
-      (*l++)=' ';  
-   
-      if (!strncmp(c,"MIN___",6)) {
-         strcpy(l,TMIN[lang]); l+=strlen(TMIN[lang]);
-      } else if (!strncmp(c,"MAX___",6)) {
-         strcpy(l,TMAX[lang]); l+=strlen(TMIN[lang]);
-      } else if (!strncmp(c,"SSTD__",6)) {
-         strcpy(l,TSSTD[lang]); l+=strlen(TMIN[lang]);     
-      } else if (!strncmp(c,"PSTD__",6)) {
-         strcpy(l,TPSTD[lang]); l+=strlen(TMIN[lang]);     
-      } else if (!strncmp(c,"MEAN__",6)) {
-         strcpy(l,TMEAN[lang]); l+=strlen(TMIN[lang]);      
-      } else if (!strncmp(c,"EFI___",6)) {
-         strcpy(l,TEFI[lang]); l+=strlen(TMIN[lang]);   
-      } else {
+      // Loop on languages
+      for(lang=0;lang<2;lang++) {
          
-         // Decode operator 
-         if (c[0]=='C') {
-                       
-            c+=1;
-            (*l++)='(';  
-            while(*c!='_') (*l++)=*c++; 
-            strcpy(l,TCENTILE[lang]); l+=strlen(TCENTILE[lang]);   // Centile operator
-            (*l++)=')';  
-            
+         c=&Modifier[2];
+         l=var->Short[lang];
+         l+=strlen(var->Short[lang]);
+         (*l++)=' ';  
+      
+         if (!strncmp(c,"MIN___",6)) {
+            strcpy(l,TMIN[lang]); l+=strlen(TMIN[lang]);
+         } else if (!strncmp(c,"MAX___",6)) {
+            strcpy(l,TMAX[lang]); l+=strlen(TMIN[lang]);
+         } else if (!strncmp(c,"SSTD__",6)) {
+            strcpy(l,TSSTD[lang]); l+=strlen(TMIN[lang]);     
+         } else if (!strncmp(c,"PSTD__",6)) {
+            strcpy(l,TPSTD[lang]); l+=strlen(TMIN[lang]);     
+         } else if (!strncmp(c,"MEAN__",6)) {
+            strcpy(l,TMEAN[lang]); l+=strlen(TMIN[lang]);      
+         } else if (!strncmp(c,"EFI___",6)) {
+            strcpy(l,TEFI[lang]); l+=strlen(TMIN[lang]);   
          } else {
             
-            if  (c[0]=='G' && c[1]=='T') {                         // Greater than
-               c+=2; (*l++)='>';
-            } else if  (c[0]=='L' && c[1]=='T') {                  // Less than
-               c+=2; (*l++)='<';
-            } else if  (c[0]=='E' && c[1]=='Q') {                  // Equal to
-               c+=2; (*l++)='=';         
-            } else if  (c[0]=='G' && c[1]=='E') {                  // Greater or equal
-               c+=2; (*l++)='>'; (*l++)='=';                
-            } else if  (c[0]=='L' && c[1]=='E') {                  // Less or equal
-               c+=2; (*l++)='<'; (*l++)='=';                
+            // Decode operator 
+            if (c[0]=='C') {
+                        
+               c+=1;
+               (*l++)='(';  
+               while(*c!='_') (*l++)=*c++; 
+               strcpy(l,TCENTILE[lang]); l+=strlen(TCENTILE[lang]);   // Centile operator
+               (*l++)=')';  
+               
             } else {
-               fprintf(stderr,"(ERROR) Invalid modifier: %s\n",Modifier);
-               return(NULL);
-            }
-            (*l++)=' ';  
+               
+               if  (c[0]=='G' && c[1]=='T') {                         // Greater than
+                  c+=2; (*l++)='>';
+               } else if  (c[0]=='L' && c[1]=='T') {                  // Less than
+                  c+=2; (*l++)='<';
+               } else if  (c[0]=='E' && c[1]=='Q') {                  // Equal to
+                  c+=2; (*l++)='=';         
+               } else if  (c[0]=='G' && c[1]=='E') {                  // Greater or equal
+                  c+=2; (*l++)='>'; (*l++)='=';                
+               } else if  (c[0]=='L' && c[1]=='E') {                  // Less or equal
+                  c+=2; (*l++)='<'; (*l++)='=';                
+               } else {
+                  fprintf(stderr,"(ERROR) Invalid modifier: %s\n",Modifier);
+                  return(NULL);
+               }
+               (*l++)=' ';  
 
-            // Decode value of operator
-            while(*c!='_') (*l++)=*c++;
-            
-            // Add variable unit
-            (*l++)=' ';
-            strcpy(l,Var->Units); l+=strlen(Var->Units);   
-            
-            // New units -> %
-            var->Units[0]='%';var->Units[1]='\0';
-            var->Min=0.0;
-            var->Max=100.0;
+               // Decode value of operator
+               while(*c!='_') (*l++)=*c++;
+               
+               // Add variable unit
+               (*l++)=' ';
+               strcpy(l,Var->Units); l+=strlen(Var->Units);   
+               
+               // New units -> %
+               var->Units[0]='%';var->Units[1]='\0';
+               var->Min=0.0;
+               var->Max=100.0;
+            }
          }
+         (*l++)='\0';
       }
-      (*l++)='\0';
-   }
-   
+   }   
    return(var);
 }

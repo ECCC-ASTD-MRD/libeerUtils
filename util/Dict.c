@@ -39,7 +39,7 @@
 #define APP_NAME    "Dict"
 #define APP_DESC    "CMC/RPN dictionary variable information."
 
-char *THINT[]       = { "Si une variable utilise '!' comme TYPVAR, utilisez -k avec l'ETIKET pout appliquer la modification de signification","If a variable uses '!' as TYPVAR, use -k flag with the ETIKET to apply the definition modifier" };
+char *THINT[]       = { "ATTENTION: Si le TYPVAR d'une variable est '!', utilisez -k avec l'ETIKET pour obtenir la bonne signification","WARNING: If a variable's TYPVAR is '!, use -k flag with the ETIKET to get the right definition" };
 
 int Dict_CheckRPN(TApp *App,char **RPNFile);
 int Dict_CheckCFG(TApp *App,char *CFGFile);
