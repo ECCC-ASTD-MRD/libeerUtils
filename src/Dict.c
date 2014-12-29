@@ -37,19 +37,6 @@
 #include "Dict.h"
 #include "RMN.h"
 
-typedef struct {
-   char          *Name,*Date,*Version,String[64];           // Dictionnary metadata
-   TList         *Vars;                                     // List of dictionnary variables
-   TList         *Types;                                    // List of dictionnary types
-   char          *Modifier;                                 // Variable modifier (ETIKET)
-   int            SearchMode;                               // Search mode (DICT_EXACT,DICT_GLOB)
-   int            SearchState;                              // Search state (DICT_OBSOLETE,DICT_CURRENT,DICT_FUTURE,DICT_INCOMPLETE)
-   char          *SearchOrigin;                             // Search origin
-   char          *SearchETIKET;                             // Search etiket
-   int            SearchIP1,SearchIP2,SearchIP3;            // IP to look for
-   int            SearchAltIP1,SearchAltIP2,SearchAltIP3;   // Alternate IP to look for (OLD/NEW)
-} TDict;
-
 char *TSHORT[]      = { "Description courte ","Short Description  " };
 char *TLONG[]       = { "Description longue ","Long  Description  " };
 char *TUNITES[]     = { "Unités             ","Units              " };
@@ -81,23 +68,27 @@ char *TPSTD[]       = { "(écart-type (échantillon))"  ,"(standard deviation (s
 char *TMEAN[]       = { "(moyenne)"                   ,"(mean)" };
 char *TEFI[]        = { "(index de prévision extrème)","(extreme forecast index)" };
 
-static TDict Dict;
+typedef struct {
+   char          *Name,*Date,*Version,String[64];     // Dictionnary metadata
+   TList         *Vars;                               // List of dictionnary variables
+   TList         *Types;                              // List of dictionnary types
+} TDict;
+
+typedef struct {
+   char          *Modifier;                           // Variable modifier (ETIKET)
+   int            Mode;                               // Search mode (DICT_EXACT,DICT_GLOB)
+   int            State;                              // Search state (DICT_OBSOLETE,DICT_CURRENT,DICT_FUTURE,DICT_INCOMPLETE)
+   char          *Origin;                             // Search origin
+   char          *ETIKET;                             // Search etiket
+   int            IP1,IP2,IP3;                        // IP to look for
+   int            AltIP1,AltIP2,AltIP3;               // Alternate IP to look for (OLD/NEW)
+} TDictSearch;
+
+static          TDict       Dict;
+static __thread TDictSearch DictSearch;
 
 static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encoding Encoding);
 static int Dict_ParseType(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encoding Encoding);
-
-//typdef struct {
-//   char          *Modifier;                                 // Variable modifier (ETIKET)
-//   int            SearchMode;                               // Search mode (DICT_EXACT,DICT_GLOB)
-//   int            SearchState;                              // Search state (DICT_OBSOLETE,DICT_CURRENT,DICT_FUTURE,DICT_INCOMPLETE)
-//   char          *SearchOrigin;                             // Search origin
-//   char          *SearchETIKET;                             // Search etiket
-//   int            SearchIP1,SearchIP2,SearchIP3;            // IP to look for
-//   int            SearchAltIP1,SearchAltIP2,SearchAltIP3;   // Alternate IP to look for (OLD/NEW)
-//} TDictParams;
-//TDictParams *Dict_GetParams() {  
-//   return((TDictParams *)calloc(1,sizeof(TDictParams)));/
-//}
 
 int Dict_Encoding(char *string,TDict_Encoding Encoding) {
    
@@ -252,41 +243,41 @@ void Dict_SetSearch(int SearchMode,int SearchState,char *SearchOrigin,int Search
    float  level=0.0;
    char   format;
 
-   Dict.SearchState=SearchState;
-   Dict.SearchMode=SearchMode;
-   Dict.SearchOrigin=SearchOrigin;
-   Dict.SearchIP1=SearchIP1;
-   Dict.SearchIP2=SearchIP2;
-   Dict.SearchIP3=SearchIP3;
-   Dict.SearchETIKET=SearchETIKET;
+   DictSearch.State=SearchState;
+   DictSearch.Mode=SearchMode;
+   DictSearch.Origin=SearchOrigin;
+   DictSearch.IP1=SearchIP1;
+   DictSearch.IP2=SearchIP2;
+   DictSearch.IP3=SearchIP3;
+   DictSearch.ETIKET=SearchETIKET;
    
-   if (Dict.SearchIP1>0) {
+   if (DictSearch.IP1>0) {
       // Convert to real level/value
       f77name(convip)(&SearchIP1,&level,&type,&mode,&format,&flag);
       // Get alternate representation (OLD/NEW)
       mode=(SearchIP1<32000)?2:3;
-      f77name(convip)(&Dict.SearchAltIP1,&level,&type,&mode,&format,&flag);  
+      f77name(convip)(&DictSearch.AltIP1,&level,&type,&mode,&format,&flag);  
    }
 
 //   f77name(convip)(&SearchIP2,&level,Type,&mode,&format,&flag);
 //   f77name(convip)(&SearchIP3,&level,Type,&mode,&format,&flag);
    
 //   mode=(SearchIP2<32000)?2:3;
-//   f77name(convip)(&Dict.SearchAltIP2,&level,Type,&mode,&format,&flag);  
+//   f77name(convip)(&DictSearch.AltIP2,&level,Type,&mode,&format,&flag);  
 
 //   mode=(SearchIP3<32000)?2:3;
-//   f77name(convip)(&Dict.SearchAltIP3,&level,Type,&mode,&format,&flag);  
+//   f77name(convip)(&DictSearch.AltIP3,&level,Type,&mode,&format,&flag);  
 }
 
 void Dict_SetModifier(char *Modifier) { 
    
-   if (Dict.Modifier) 
-      free(Dict.Modifier); 
+   if (DictSearch.Modifier) 
+      free(DictSearch.Modifier); 
    
-   Dict.Modifier=NULL;
+   DictSearch.Modifier=NULL;
    
    if (Modifier) 
-      Dict.Modifier=strdup(Modifier);
+      DictSearch.Modifier=strdup(Modifier);
 }
 
 /*----------------------------------------------------------------------------
@@ -758,31 +749,31 @@ int Dict_CheckVar(void *Data0,void *Data1){
       return(0);
    }
    
-   if (Dict.SearchState && !(((TDictVar*)Data0)->Nature&Dict.SearchState)) {
+   if (DictSearch.State && !(((TDictVar*)Data0)->Nature&DictSearch.State)) {
       return(0);
    }
    
-   if (Dict.SearchOrigin && strcasecmp(((TDictVar*)Data0)->Origin,Dict.SearchOrigin)) {
+   if (DictSearch.Origin && strcasecmp(((TDictVar*)Data0)->Origin,DictSearch.Origin)) {
       return(0);
    }
    
-   if (Dict.SearchETIKET && strcasecmp(((TDictVar*)Data0)->ETIKET,Dict.SearchETIKET)) {
+   if (DictSearch.ETIKET && strcasecmp(((TDictVar*)Data0)->ETIKET,DictSearch.ETIKET)) {
       return(0);
    }
    
-   if (Dict.SearchIP1>0 && ((TDictVar*)Data0)->IP1!=Dict.SearchIP1 && ((TDictVar*)Data0)->IP1!=Dict.SearchAltIP1) {
+   if (DictSearch.IP1>0 && ((TDictVar*)Data0)->IP1!=DictSearch.IP1 && ((TDictVar*)Data0)->IP1!=DictSearch.AltIP1) {
       return(0);
    }
    
-   if (Dict.SearchIP2>0 && ((TDictVar*)Data0)->IP2!=Dict.SearchIP2) {
+   if (DictSearch.IP2>0 && ((TDictVar*)Data0)->IP2!=DictSearch.IP2) {
       return(0);
    }
    
-   if (Dict.SearchIP3>0 && ((TDictVar*)Data0)->IP3!=Dict.SearchIP3) {
+   if (DictSearch.IP3>0 && ((TDictVar*)Data0)->IP3!=DictSearch.IP3) {
       return(0);
    }
    
-   if (Dict.SearchMode==DICT_GLOB) {
+   if (DictSearch.Mode==DICT_GLOB) {
       return(Data1?(!strmatch(((TDictVar*)Data0)->Name,(char*)Data1)):1);
    } else {
       return(Data1?(!strcasecmp(((TDictVar*)Data0)->Name,(char*)Data1)):0);
@@ -910,15 +901,15 @@ int Dict_CheckType(void *Data0,void *Data1){
       return(0);
    }
 
-   if (Dict.SearchState && !(((TDictType*)Data0)->Nature&Dict.SearchState)) {
+   if (DictSearch.State && !(((TDictType*)Data0)->Nature&DictSearch.State)) {
       return(0);
    }
    
-   if (Dict.SearchOrigin && strcasecmp(((TDictType*)Data0)->Origin,Dict.SearchOrigin)) {
+   if (DictSearch.Origin && strcasecmp(((TDictType*)Data0)->Origin,DictSearch.Origin)) {
       return(0);
    }
    
-   if (Dict.SearchMode==DICT_GLOB) {
+   if (DictSearch.Mode==DICT_GLOB) {
       return(Data1?(!strmatch(((TDictType*)Data0)->Name,(char*)Data1)):1);
    } else {
       return(Data1?(!strcasecmp(((TDictType*)Data0)->Name,(char*)Data1)):0);
@@ -1037,7 +1028,7 @@ void Dict_PrintVar(TDictVar *DVar,int Format,TApp_Lang Lang) {
    TDictVar  *var;
    
    if (DVar) {      
-      if (!(var=Dict_ApplyModifier(DVar,Dict.Modifier))) {
+      if (!(var=Dict_ApplyModifier(DVar,DictSearch.Modifier))) {
          return;
       }
       if (var->Nature&DICT_OBSOLETE) printf(APP_COLOR_RED);
