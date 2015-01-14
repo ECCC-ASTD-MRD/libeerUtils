@@ -6,7 +6,7 @@
  *
  * Projet       : Interrogation du dictionnaire des variables
  * Fichier      : Dict.c
- * Creation     : Avril 2006 - J.P. Gauthier
+ * Creation     : Mai 2014 - J.P. Gauthier
  *
  * Description  : Basé fortement sur le code d'Yves Chartier afin de convertir
  *                Le binaire un fonctions de librairies.

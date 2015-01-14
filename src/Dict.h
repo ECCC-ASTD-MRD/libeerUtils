@@ -56,20 +56,20 @@
 typedef enum { DICT_ASCII=0,DICT_UTF8=1,DICT_ISO8859_1=2 } TDict_Encoding;
 
 typedef struct {
-   char   Origin[32];           // Origin of the variable
-   time_t Date;                 // Date of creation
-   char   Name[8];              // NOMVAR
-   int    Nature;               // Mask for state and nature of variable
-   char   Short[2][256];        // Short description in both language (128 def + 128 modifier)
-   char   Long[2][1024];        // Long description in both language
-   char   Units[32];            // Units
-   int    Pack;                 // Optimum packing number of bits
-   double Min,Max,Magnitude,Factor,Delta,Precision;    // Range of values and applied factor
-   int    Codes[64];            // List of codes for coded variable
-   char   Meanings[64][64];     // List of associated meanings
-   int    NCodes;               // Number of codes
-   int    IP1,IP2,IP3;          // Specific IP values
-   char   ETIKET[13];           // Specific etiket value
+   char   Origin[32];                                // Origin of the variable
+   time_t Date;                                      // Date of creation
+   char   Name[8];                                   // NOMVAR
+   int    Nature;                                    // Mask for state and nature of variable
+   char   Short[2][256];                             // Short description in both language (128 def + 128 modifier)
+   char   Long[2][1024];                             // Long description in both language
+   char   Units[32];                                 // Units
+   int    Pack;                                      // Optimum packing number of bits
+   double Min,Max,Magnitude,Factor,Delta,Precision;  // Range of values and applied factor
+   int    Codes[64];                                 // List of codes for coded variable
+   char   Meanings[64][64];                          // List of associated meanings
+   int    NCodes;                                    // Number of codes
+   int    IP1,IP2,IP3;                               // Specific IP values
+   char   ETIKET[13];                                // Specific etiket value
 } TDictVar;
 
 typedef struct {
@@ -78,7 +78,7 @@ typedef struct {
    char Name[3];                // TYPVAR
    int  Nature;                 // Mask for state and nature of type
    char Short[2][128];          // Short description in both language
-   char Long[2][1024];           // Long description in both language 
+   char Long[2][1024];          // Long description in both language 
 } TDictType;
 
 char*      Dict_Version(void);

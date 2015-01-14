@@ -84,8 +84,8 @@ typedef struct {
    int            AltIP1,AltIP2,AltIP3;               // Alternate IP to look for (OLD/NEW)
 } TDictSearch;
 
-static          TDict       Dict;
-static __thread TDictSearch DictSearch;
+static          TDict       Dict;                     // Global dictionnary
+static __thread TDictSearch DictSearch;               // Per thread search params
 
 static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encoding Encoding);
 static int Dict_ParseType(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encoding Encoding);
@@ -113,7 +113,7 @@ int Dict_Encoding(char *string,TDict_Encoding Encoding) {
      
       case DICT_ASCII:
          i= i2=0;
-         while (i < tmplenout && i2 < 255) {
+         while (i<tmplenout && i2<255) {
             
             switch ((unsigned char)string[i]) {        
                case 0xC2:
@@ -239,6 +239,7 @@ char* Dict_Version(void) {
  *----------------------------------------------------------------------------
 */
 void Dict_SetSearch(int SearchMode,int SearchState,char *SearchOrigin,int SearchIP1,int SearchIP2,int SearchIP3,char *SearchETIKET) { 
+
    int    mode=-1,flag=0,type;
    float  level=0.0;
    char   format;
@@ -303,7 +304,7 @@ int Dict_Parse(char *Filename,TDict_Encoding Encoding) {
    xmlNodePtr   node;
    xmlDtdPtr    dtd ;
    xmlValidCtxt ctxt;
-   char        *c,dtdfile[256];
+   char        *c,ok,dtdfile[256];
    
    xmlDoValidityCheckingDefaultValue=1;
    LIBXML_TEST_VERSION
@@ -352,14 +353,15 @@ int Dict_Parse(char *Filename,TDict_Encoding Encoding) {
    node=node->children;
   
    // Now, walk the tree
+   ok=1;
    while (node) { 
 
       if (!strcmp(node->name,"metvar")) {
-         if (!Dict_ParseVar(doc,ns,node,Encoding)) break;
+         if (!(ok=Dict_ParseVar(doc,ns,node,Encoding))) break;
       } 
        
       if (!strcmp(node->name,"typvar")) {
-         if (!Dict_ParseType(doc,ns,node,Encoding)) break;
+         if (!(ok=Dict_ParseType(doc,ns,node,Encoding))) break;
       } 
  
       node=node->next;
@@ -368,7 +370,7 @@ int Dict_Parse(char *Filename,TDict_Encoding Encoding) {
     xmlFreeDtd(dtd);
     xmlFreeDoc(doc);
 
-    return(1);
+    return(ok);
 }
 
 /*----------------------------------------------------------------------------
@@ -429,6 +431,10 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encodin
    while (Node) {
     
       if (!strcmp((char*)Node->name,"nomvar")) {
+         if (!xmlNodeListGetString(Doc,Node->children,1)) {
+            fprintf(stderr,"(ERROR) Empty variable definition\n");
+            return(0);
+         }
          strncpy(metvar->Name,xmlNodeListGetString(Doc,Node->children,1),5);
          if (tmpc=(char*)xmlGetProp(Node,"ip1")) {
             metvar->IP1=atoi(tmpc);
@@ -447,27 +453,27 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encodin
       if (!strcmp((char*)Node->name,"description")) {
          trotteur1=Node->children;
          while (trotteur1) {
-            if (!strcmp((char*)trotteur1->name,"short")) {
+            if (!strcmp((char*)trotteur1->name,"short") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
                if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"en")) {
-                  strncpy(metvar->Short[1], xmlNodeListGetString(Doc,trotteur1->children,1),128);
+                  strncpy(metvar->Short[1], tmpc,128);
                   Dict_Encoding(metvar->Short[1],Encoding);
                } else if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"fr")) {
-                  strncpy(metvar->Short[0], xmlNodeListGetString(Doc,trotteur1->children,1),128);
+                  strncpy(metvar->Short[0], tmpc,128);
                   Dict_Encoding(metvar->Short[0],Encoding); 
                }           
-            } else if (!strcmp((char*)trotteur1->name,"long") && xmlNodeListGetString(Doc,trotteur1->children,1)) {
+            } else if (!strcmp((char*)trotteur1->name,"long") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
                if (xmlGetProp(trotteur1,"lang")) {
                   if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"fr")) {
-                     strncpy(metvar->Long[0],xmlNodeListGetString(Doc,trotteur1->children,1),1024);
+                     strncpy(metvar->Long[0],tmpc,1024);
                      Dict_Encoding(metvar->Long[0],Encoding);
                   } else if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"en")) {                                   
-                     strncpy(metvar->Long[1],xmlNodeListGetString(Doc,trotteur1->children,1),1024);
+                     strncpy(metvar->Long[1],tmpc,1024);
                      Dict_Encoding(metvar->Long[1],Encoding);
                   }
                } else {
-                  strncpy(metvar->Long[0],xmlNodeListGetString(Doc,trotteur1->children,1),1024);
+                  strncpy(metvar->Long[0],tmpc,1024);
                   Dict_Encoding(metvar->Long[0],Encoding);
-                  strncpy(metvar->Long[1],xmlNodeListGetString(Doc,trotteur1->children,1),1024);
+                  strncpy(metvar->Long[1],tmpc,1024);
                   Dict_Encoding(metvar->Long[1],Encoding);                                    
                }
             }
@@ -484,27 +490,21 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encodin
             
             trotteur1=trotteur->children;
             while (trotteur1) {
-               if (!strcmp((char*)trotteur1->name,"units")) {
-                  strncpy(metvar->Units, xmlNodeListGetString(Doc,trotteur1->children,1),32);   
+               if (!strcmp((char*)trotteur1->name,"units") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
+                  strncpy(metvar->Units, tmpc,32);   
                   Dict_Encoding(metvar->Units,Encoding);
                }            
 
-               if (!strcmp((char*)trotteur1->name,"magnitude")) { 
-                  if ((tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
-                     metvar->Magnitude=atof(tmpc);
-                  } 
+               if (!strcmp((char*)trotteur1->name,"magnitude") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
+                  metvar->Magnitude=atof(tmpc);
                }
 
-               if (!strcmp((char*)trotteur1->name,"min")) { 
-                  if ((tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
-                     metvar->Min=atof(tmpc);
-                  }
+               if (!strcmp((char*)trotteur1->name,"min") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
+                  metvar->Min=atof(tmpc);
                }  
 
-               if (!strcmp((char*)trotteur1->name,"max")) { 
-                  if ((tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
-                     metvar->Max=atof(tmpc);
-                  } 
+               if (!strcmp((char*)trotteur1->name,"max") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
+                  metvar->Max=atof(tmpc);
                }
 
                trotteur1=trotteur1->next;
@@ -517,35 +517,25 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encodin
             
             trotteur1=trotteur->children;
             while (trotteur1) {
-               if (!strcmp((char*)trotteur1->name,"units")) {
-                  if ((tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {   
-                     strncpy(metvar->Units,tmpc,32);
-                     Dict_Encoding(metvar->Units,Encoding);
-                  }
+               if (!strcmp((char*)trotteur1->name,"units") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {   
+                  strncpy(metvar->Units,tmpc,32);
+                  Dict_Encoding(metvar->Units,Encoding);
                }
 
-               if (!strcmp((char*)trotteur1->name,"magnitude")) { 
-                  if ((tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
-                     metvar->Magnitude=atof(tmpc);
-                  } 
+               if (!strcmp((char*)trotteur1->name,"magnitude") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
+                  metvar->Magnitude=atof(tmpc);
                }
 
-               if (!strcmp((char*)trotteur1->name,"precision")) { 
-                  if ((tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
-                     metvar->Precision=atof(tmpc);
-                  } 
+               if (!strcmp((char*)trotteur1->name,"precision") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
+                  metvar->Precision=atof(tmpc);
                }
 
-               if (!strcmp((char*)trotteur1->name,"min")) {             
-                  if ((tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
-                     metvar->Min=atof(tmpc);
-                  }
+               if (!strcmp((char*)trotteur1->name,"min") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
+                  metvar->Min=atof(tmpc);
                } 
 
-               if (!strcmp((char*)trotteur1->name,"max")) {         
-                  if ((tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
-                     metvar->Max=atof(tmpc);
-                  } 
+               if (!strcmp((char*)trotteur1->name,"max") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
+                  metvar->Max=atof(tmpc);
                }
 
                trotteur1=trotteur1->next;
@@ -567,12 +557,12 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encodin
             trotteur1=trotteur->children;
             i=0;
             while (trotteur1) {
-               if (!strcmp((char*)trotteur1->name,"value")) {
+               if (!strcmp((char*)trotteur1->name,"value") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
                   tmpc=xmlNodeListGetString(Doc,trotteur1->children,1);   
                   metvar->Codes[i]=atoi(tmpc);
                }
-               if (!strcmp((char*)trotteur1->name,"meaning")) {
-                  strncpy(metvar->Meanings[i], (xmlChar *) xmlNodeListGetString(Doc,trotteur1->children,1),64);                      
+               if (!strcmp((char*)trotteur1->name,"meaning") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
+                  strncpy(metvar->Meanings[i], tmpc,64);                      
                   Dict_Encoding(metvar->Meanings[i],Encoding);
                   i++;
                }
@@ -584,9 +574,8 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encodin
       
       Node=Node->next;
    } 
-   
+
    Dict.Vars=TList_AddSorted(Dict.Vars,Dict_SortVar,metvar);
-//   Dict.Vars=TList_Add(Dict.Vars,metvar);
    
    return(1);
 }
@@ -649,29 +638,29 @@ static int Dict_ParseType(xmlDocPtr Doc, xmlNsPtr NS, xmlNodePtr Node,TDict_Enco
       if (!strcmp((char*)Node->name,"description")) {
          trotteur1=Node->children;
          while (trotteur1) {
-            if (!strcmp((char*)trotteur1->name,"short")) {
+            if (!strcmp((char*)trotteur1->name,"short") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
                if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"en")) {
-                  strncpy(type->Short[1],xmlNodeListGetString(Doc,trotteur1->children,1),128);
+                  strncpy(type->Short[1],tmpc,128);
                   Dict_Encoding(type->Short[1],Encoding);
                } else {
                   if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"fr")) {
-                     strncpy(type->Short[0],xmlNodeListGetString(Doc,trotteur1->children,1),128);
+                     strncpy(type->Short[0],tmpc,128);
                      Dict_Encoding(type->Short[0],Encoding);
                   }           
                }          
-            } else if (!strcmp((char*)trotteur1->name,"long") && xmlNodeListGetString(Doc,trotteur1->children,1)) {
+            } else if (!strcmp((char*)trotteur1->name,"long") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
                if (xmlGetProp(trotteur1,"lang")) {
                   if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"fr")) {
-                     strncpy(type->Long[0],xmlNodeListGetString(Doc,trotteur1->children,1),1024);
+                     strncpy(type->Long[0],tmpc,1024);
                      Dict_Encoding(type->Long[0],Encoding);
                   } else if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"en")) {                                   
-                     strncpy(type->Long[1],xmlNodeListGetString(Doc,trotteur1->children,1),1024);
+                     strncpy(type->Long[1],tmpc,1024);
                      Dict_Encoding(type->Long[1],Encoding);
                   }
                } else {
-                  strncpy(type->Long[0],xmlNodeListGetString(Doc,trotteur1->children,1),1024);
+                  strncpy(type->Long[0],tmpc,1024);
                   Dict_Encoding(type->Long[0],Encoding);
-                  strncpy(type->Long[1],xmlNodeListGetString(Doc,trotteur1->children,1),1024);
+                  strncpy(type->Long[1],tmpc,1024);
                   Dict_Encoding(type->Long[1],Encoding);                                    
                }
             }
@@ -723,7 +712,6 @@ void Dict_AddVar(TDictVar *Var) {
  *----------------------------------------------------------------------------
 */
 int Dict_SortVar(void *Data0,void *Data1){
-
    return(strcasecmp(((TDictVar*)Data0)->Name,((TDictVar*)Data1)->Name));
 }
 
@@ -875,7 +863,6 @@ void Dict_AddType(TDictType *Type) {
  *----------------------------------------------------------------------------
 */
 int Dict_SortType(void *Data0,void *Data1){
-
    return(strcasecmp(((TDictType*)Data0)->Name,((TDictType*)Data1)->Name));
 }
 
@@ -1227,10 +1214,11 @@ void Dict_PrintType(TDictType *DType,int Format,TApp_Lang Lang) {
  * Retour:
  *
  * Remarques :
- *   RR     = No de passe
- *   PPPPPP = produit
- *   N,P,X  = Opérationnel, Parallèle, Expérimental
- *   MMM    = Membre (ou ALL pour tous)
+ * 
+ *    RR     = No de passe
+ *    PPPPPP = produit
+ *    N,P,X  = Opérationnel, Parallèle, Expérimental
+ *    MMM    = Membre (ou ALL pour tous)
  *----------------------------------------------------------------------------
 */
 TDictVar* Dict_ApplyModifier(TDictVar *Var,char *Modifier) {
@@ -1238,7 +1226,7 @@ TDictVar* Dict_ApplyModifier(TDictVar *Var,char *Modifier) {
    char     *c,*l,lang;
    TDictVar *var=NULL;
    
-   if (!Modifier) {
+   if (!Modifier || Modifier[0]=='\0') {
       return(Var);
    }
    
