@@ -34,8 +34,9 @@
 #include <libxml/xmlmemory.h>
 #include <libxml/encoding.h>
 #include <libxml/parser.h>
+
 #include "Dict.h"
-#include "RMN.h"
+#include "RPN.h"
 
 char *TSHORT[]      = { "Description courte ","Short Description  " };
 char *TLONG[]       = { "Description longue ","Long  Description  " };
@@ -304,6 +305,7 @@ int Dict_Parse(char *Filename,TDict_Encoding Encoding) {
    xmlNodePtr   node;
    xmlDtdPtr    dtd ;
    xmlValidCtxt ctxt;
+   xmlChar     *tmpc;
    char        *c,ok,dtdfile[256];
    
    xmlDoValidityCheckingDefaultValue=1;
@@ -312,22 +314,27 @@ int Dict_Parse(char *Filename,TDict_Encoding Encoding) {
  
    // Build the XML tree from the file
    if (!(doc=xmlParseFile(Filename))) {
-      fprintf(stderr,"(ERROR) Invalid dictionnary file: %s\n",Filename);
+      App_ErrorSet("Invalid dictionnary file: %s",Filename);
       return(0);
    }
 
    // Check the document is of the right kind
    if (!(node = xmlDocGetRootElement(doc))) {
-      fprintf(stderr,"(ERROR) Empty document\n");
+      App_ErrorSet("Empty document");
       xmlFreeDoc(doc);
       return(0);
    }
 
-   Dict.Name=strdup(node->name);
+   Dict.Name=NULL;
    Dict.Date=strdup(xmlGetProp(node,"date"));
    Dict.Version=strdup(xmlGetProp(node,"version_number"));
 
-   sprintf(Dict.String,"%s %s version %s",Dict.Name,Dict.Date,Dict.Version);
+   if (tmpc=(char*)xmlGetProp(node,"name")) {
+      Dict.Name=strdup(tmpc);
+      sprintf(Dict.String,"%s %s %s version %s",node->name,Dict.Name,Dict.Date,Dict.Version);
+   } else {
+      sprintf(Dict.String,"%s %s version %s",node->name,Dict.Date,Dict.Version);
+   }
 //   Dict.Encoding=XML_CHAR_ENCODING_ASCII;
    
   // Parse the DTD
@@ -336,7 +343,7 @@ int Dict_Parse(char *Filename,TDict_Encoding Encoding) {
 //   strcat(dtdfile,"/datafiles/constants/dict.dtd");
     
 //   if (!(dtd=xmlParseDTD(NULL,dtdfile))) {
-//      fprintf(stderr,"(ERROR) Could not parse DTD %s\n",dtdfile);
+//      App_ErrorSet("Could not parse DTD %s",dtdfile);
 //      return (1);
 //   }
 
@@ -346,7 +353,7 @@ int Dict_Parse(char *Filename,TDict_Encoding Encoding) {
    ctxt.warning  = (xmlValidityWarningFunc) fprintf; /* register warning function */ 
 
 //   if (!xmlValidateDtd(&ctxt,doc,dtd)) {
-//      fprintf(stderr,"(ERROR) DTD validation error\n");
+//      App_ErrorSet("DTD validation error");
 //      return (0);
 //   }
  
@@ -432,7 +439,7 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encodin
     
       if (!strcmp((char*)Node->name,"nomvar")) {
          if (!xmlNodeListGetString(Doc,Node->children,1)) {
-            fprintf(stderr,"(ERROR) Empty variable definition\n");
+            App_ErrorSet("Empty variable definition");
             return(0);
          }
          strncpy(metvar->Name,xmlNodeListGetString(Doc,Node->children,1),5);
@@ -1278,7 +1285,7 @@ TDictVar* Dict_ApplyModifier(TDictVar *Var,char *Modifier) {
                } else if  (c[0]=='L' && c[1]=='E') {                  // Less or equal
                   c+=2; (*l++)='<'; (*l++)='=';                
                } else {
-                  fprintf(stderr,"(ERROR) Invalid modifier: %s\n",Modifier);
+                  App_ErrorSet("Invalid modifier: %s",Modifier);
                   return(NULL);
                }
                (*l++)=' ';  
