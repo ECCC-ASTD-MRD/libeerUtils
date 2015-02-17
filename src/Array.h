@@ -1,16 +1,16 @@
 /*=============================================================================
-* Environnement Canada
-* Centre Meteorologique Canadian
-* 2100 Trans-Canadienne
-* Dorval, Quebec
-*
-* Projet    : Projection diverses de la carte vectorielle.
-* Fichier   : Array.h
-* Creation  : Janvier 2011 - J.P. Gauthier
-*
-* Description: Fichier de definition de structures de donnees
-*
-* Remarques :
+ * Environnement Canada
+ * Centre Meteorologique Canadian
+ * 2100 Trans-Canadienne
+ * Dorval, Quebec
+ *
+ * Projet    : Projection diverses de la carte vectorielle.
+ * Fichier   : Array.h
+ * Creation  : Janvier 2011 - J.P. Gauthier
+ *
+ * Description: Fichier de definition de structures de donnees
+ *
+ * Remarques :
 *
  * License      :
  *    This library is free software; you can redistribute it and/or
@@ -28,8 +28,8 @@
  *    Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  *    Boston, MA 02111-1307, USA.
  *
-*==============================================================================
-*/
+ *==============================================================================
+ */
 
 #ifndef _Array_h
 #define _Array_h

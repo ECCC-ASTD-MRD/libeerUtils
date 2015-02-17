@@ -7,6 +7,7 @@
  * Projet       : Librairies de fonctions utiles
  * Fichier      : ZRef.h
  * Creation     : Octobre 2011 - J.P. Gauthier
+ * Revision     : $Id$
  *
  * Description  : Fonctions relectives a la coordonnee verticale.
  *

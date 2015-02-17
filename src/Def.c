@@ -7,6 +7,7 @@
  * Projet       : Fonctions relatives aux definitions de donnees
  * Fichier      : Def.c
  * Creation     : Fevrier 2003 - J.P. Gauthier
+ * Revision     : $Id$
  *
  * Description  : Fonctions generales applicables a divers types de donnees
  *                encapsules dans la structure TDef.

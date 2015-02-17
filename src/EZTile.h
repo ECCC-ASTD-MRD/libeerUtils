@@ -4,9 +4,10 @@
  * 2100 Trans-Canadienne
  * Dorval, Quebec
  *
- * Projet    : Librairie de gestion des champs RPN en tuiles
- * Creation  : Janvier 2008
- * Auteur    : Jean-Philippe Gauthier
+ * Projet       : Librairie de gestion des champs RPN en tuiles
+ * Creation     : Janvier 2008
+ * Auteur       : Jean-Philippe Gauthier
+ * Revision     : $Id$
  *
  * Description:
  *

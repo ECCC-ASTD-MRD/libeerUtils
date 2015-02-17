@@ -1,17 +1,18 @@
 /*=============================================================================
-* Environnement Canada
-* Centre Meteorologique Canadian
-* 2100 Trans-Canadienne
-* Dorval, Quebec
-*
-* Projet    : Projection diverses de la carte vectorielle.
-* Fichier   : List.c
-* Creation  : Janvier 2011 - J.P. Gauthier
-*
-* Description: Fonctions de manipulations de listes
-*
-* Remarques :
-*
+ * Environnement Canada
+ * Centre Meteorologique Canadian
+ * 2100 Trans-Canadienne
+ * Dorval, Quebec
+ *
+ * Projet       : Projection diverses de la carte vectorielle.
+ * Fichier      : List.c
+ * Creation     : Janvier 2011 - J.P. Gauthier
+ * Revision     : $Id$
+ *
+ * Description: Fonctions de manipulations de listes
+ *
+ * Remarques :
+ *
  * License      :
  *    This library is free software; you can redistribute it and/or
  *    modify it under the terms of the GNU Lesser General Public

@@ -5,10 +5,11 @@
  * Dorval, Quebec
  *
  * Projet    : Librairie de fonctions utiles
- * Creation  : Janvier 2008
- * Auteur    : Jean-Philippe Gauthier
+ * Creation     : Janvier 2008
+ * Auteur       : Jean-Philippe Gauthier
+ * Revision     : $Id$
  *
- * Description: RPN fstd field tiler tester
+ * Description: QTree tester
  *
  * License:
  *    This library is free software; you can redistribute it and/or

@@ -7,7 +7,7 @@
  * Projet    : Librairie de fonctions utiles
  * Fichier   : App.h
  * Creation  : Septembre 2008 - J.P. Gauthier
- * Revision  : $Id: Model.h 715 2012-08-31 14:26:15Z afsr005 $
+ * Revision  : $Id$
  *
  * Description: Fonctions génériques à tout les modèles.
  *

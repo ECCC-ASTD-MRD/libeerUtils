@@ -2,12 +2,12 @@
  * Environnement Canada
  * Centre Meteorologique Canadian
  * 2121 Trans-Canadienne
-  * Dorval, Quebec
+ * Dorval, Quebec
  *
  * Projet    : Librairie de fonctions utiles
  * Fichier   : App.c
  * Creation  : Septembre 2008 - J.P. Gauthier
- * Revision  : $Id: Model.c 715 2012-08-31 14:26:15Z afsr005 $
+ * Revision  : $Id$
  *
  * Description: Fonctions génériques à toute les applications.
  *

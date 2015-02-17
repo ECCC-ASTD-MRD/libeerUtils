@@ -4,9 +4,10 @@
  * 2100 Trans-Canadienne
  * Dorval, Quebec
  *
- * Project    : Generic 2D Quad Tree library
- * Creation   : November 2008
- * Author     : Gilles Mercier && J.P. Gauthier- CMC/CMOE
+ * Project      : Generic 2D Quad Tree library
+ * Creation     : November 2008
+ * Author       : Gilles Mercier && J.P. Gauthier- CMC/CMOE
+ * Revision     : $Id$
  *
  * Description: Library of functions to store data(ex. geo-referenced
  *              Finite Element data) information in a 2D Quad Tree

@@ -1,17 +1,18 @@
 /*=============================================================================
-* Environnement Canada
-* Centre Meteorologique Canadian
-* 2100 Trans-Canadienne
-* Dorval, Quebec
-*
-* Projet    : Projection diverses de la carte vectorielle.
-* Fichier   : List.h
-* Creation  : Janvier 2011 - J.P. Gauthier
-*
-* Description: Fichier de definition de structures de donnees
-*
-* Remarques :
-*
+ * Environnement Canada
+ * Centre Meteorologique Canadian
+ * 2100 Trans-Canadienne
+ * Dorval, Quebec
+ *
+ * Projet       : Projection diverses de la carte vectorielle.
+ * Fichier      : List.h
+ * Creation     : Janvier 2011 - J.P. Gauthier
+ * Revision     : $Id$
+ *
+ * Description: Fichier de definition de structures de donnees
+ *
+ * Remarques :
+ *
  * License      :
  *    This library is free software; you can redistribute it and/or
  *    modify it under the terms of the GNU Lesser General Public

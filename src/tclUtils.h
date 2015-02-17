@@ -7,6 +7,7 @@
  * Projet       : Lecture et traitements de divers fichiers de donnees
  * Fichier      : tclUtils.h
  * Creation     : Avril 2007 - J.P. Gauthier
+ * Revision     : $Id$
  *
  * Description  : Fonctions generales d'utilites courantes.
  *

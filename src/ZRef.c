@@ -7,6 +7,7 @@
  * Projet       : Librairies de fonctions utiles
  * Fichier      : ZRef.c
  * Creation     : Octobre 2011 - J.P. Gauthier
+ * Revision     : $Id$
  *
  * Description  : Fonctions generales d'utilites courantes.
  *

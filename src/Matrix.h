@@ -1,25 +1,26 @@
 /*=============================================================================
-* Environnement Canada
-* Centre Meteorologique Canadian
-* 2100 Trans-Canadienne
-* Dorval, Quebec
-*
-* Projet    : Projection diverses de la carte vectorielle.
-* Fichier   : Matrix.h
-* Creation  : Mars 2011 - J.P. Gauthier
-*
-* Description: Fichier de definition des parametres et fonctions de vecteurs.
-*
-* Remarques :
-*
-* Modification:
-*
-*   Nom         :
-*   Date        :
-*   Description :
-*
-*==============================================================================
-*/
+ * Environnement Canada
+ * Centre Meteorologique Canadian
+ * 2100 Trans-Canadienne
+ * Dorval, Quebec
+ *
+ * Projet       : Projection diverses de la carte vectorielle.
+ * Fichier      : Matrix.h
+ * Creation     : Mars 2011 - J.P. Gauthier
+ * Revision     : $Id$
+ *
+ * Description: Fichier de definition des parametres et fonctions de vecteurs.
+ *
+ * Remarques :
+ *
+ * Modification:
+ *
+ *   Nom         :
+ *   Date        :
+ *   Description :
+ *
+ *==============================================================================
+ */
 
 #ifndef _Matrix_h
 #define _Matrix_h

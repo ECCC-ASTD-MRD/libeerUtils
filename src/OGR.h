@@ -7,6 +7,7 @@
  * Projet       : Lecture et traitements de fichiers raster
  * Fichier      : OGR.h
  * Creation     : Juillet 2004 - J.P. Gauthier
+ * Revision     : $Id$
  *
  * Description  : Fonctions de manipulations et d'affichage de fichiers vectoriel.
  *

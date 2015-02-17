@@ -1,17 +1,18 @@
 /*=============================================================================
-* Environnement Canada
-* Centre Meteorologique Canadian
-* 2100 Trans-Canadienne
-* Dorval, Quebec
-*
-* Projet    : Projection diverses de la carte vectorielle.
-* Fichier   : Array.c
-* Creation  : Janvier 2011 - J.P. Gauthier
-*
-* Description: Fonctions de manipulation de tableau dynamiques
-*
-* Remarques :
-*
+ * Environnement Canada
+ * Centre Meteorologique Canadian
+ * 2100 Trans-Canadienne
+ * Dorval, Quebec
+ *
+ * Projet    : Projection diverses de la carte vectorielle.
+ * Fichier   : Array.c
+ * Creation  : Janvier 2011 - J.P. Gauthier
+ * Revision  : $Id$
+ *
+ * Description: Fonctions de manipulation de tableau dynamiques
+ *
+ * Remarques :
+ *
  * License      :
  *    This library is free software; you can redistribute it and/or
  *    modify it under the terms of the GNU Lesser General Public
@@ -28,8 +29,8 @@
  *    Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  *    Boston, MA 02111-1307, USA.
  *
-*==============================================================================
-*/
+ *==============================================================================
+ */
 
 #include <malloc.h>
 #include "Array.h"

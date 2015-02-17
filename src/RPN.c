@@ -7,6 +7,7 @@
  * Projet       : Fonctions et definitions relatives aux fichiers standards et rmnlib
  * Fichier      : RPN.h
  * Creation     : Avril 2006 - J.P. Gauthier
+ * Revision     : $Id$
  *
  * Description:
  *

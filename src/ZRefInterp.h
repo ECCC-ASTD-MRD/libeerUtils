@@ -4,9 +4,10 @@
  * 2100 Trans-Canadienne
  * Dorval, Quebec
  *
- * Projet    : EZVrInt
- * Creation  : version 1.0 mai 2003
- * Auteur    : Stéphane Gaudreault
+ * Projet       : EZVrInt
+ * Creation     : version 1.0 mai 2003
+ * Auteur       : Stéphane Gaudreault
+ * Revision     : $Id$
  *
  * Description:
  *    Ezvrint is based on EzInterpv, a front end to the

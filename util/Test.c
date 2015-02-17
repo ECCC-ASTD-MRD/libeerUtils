@@ -4,9 +4,10 @@
  * 2100 Trans-Canadienne
  * Dorval, Quebec
  *
- * Projet    : Librairie de fonctions utiles
- * Creation  : Janvier 2008
- * Auteur    : Jean-Philippe Gauthier
+ * Projet       : Librairie de fonctions utiles
+ * Creation     : Janvier 2008
+ * Auteur       : Jean-Philippe Gauthier
+ * Revision     : $Id$
  *
  * Description: RPN fstd field tiler tester
  *
