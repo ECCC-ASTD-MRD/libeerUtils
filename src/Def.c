@@ -1917,6 +1917,7 @@ int Def_GridInterpConservative(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
                Def_Get(ToDef,0,idx3+n,val0);
                val0/=ToDef->Buffer[n];
                Def_Set(ToDef,0,idx3+n,val0);
+               ToDef->Buffer[n]=0.0;
             }
          }
       }
@@ -2002,14 +2003,14 @@ int Def_GridInterpAverage(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *From
          }
          for(n=0;n<nijk;n++) fld[n]=ToDef->NoData;
          
-         if (Mode==IR_VECTOR_AVERAGE) {
+        if (Mode==IR_VECTOR_AVERAGE) {
             aux=ToDef->Aux=malloc(nijk*sizeof(double));
             if (!ToDef->Aux) {
                App_ErrorSet("Def_GridAverage: Unable to allocate auxiliary buffer");
                return(0);
             }
+            for(n=0;n<nijk;n++) aux[n]=0.0;
          }
-         for(n=0;n<nijk;n++) aux[n]=0.0;
       }
       
       if (ToRef->Grid[0]=='Y') {
@@ -2069,7 +2070,7 @@ int Def_GridInterpAverage(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *From
                }
                dx++;
 
-               // Skip if no mask
+              // Skip if no mask
                if (FromDef->Mask && !FromDef->Mask[gscan.V[x]])
                   continue;
 
@@ -2217,6 +2218,10 @@ int Def_GridInterpAverage(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *From
                      }
                   }
             }
+            if (aux) aux[x]=0.0;
+            if (acc) acc[x]=0;
+            if (fld) fld[x]=0.0;
+            
             Def_Set(ToDef,0,idxk,vx);
          }
 
