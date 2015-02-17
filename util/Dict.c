@@ -81,12 +81,6 @@ int main(int argc, char *argv[]) {
       App_Log(app,ERROR,"Too many RPN files, (max=4095)");
       exit(EXIT_FAILURE);     
    }
-
-   // Check for default dicfile
-   if (!dicfile) {
-      sprintf(dicdef, "%s%s",getenv("AFSISIO"),"/datafiles/constants/ops.variable_dictionary.xml");
-      dicfile=dicdef;
-   }
       
    // Check the language
    if (lang) {
@@ -139,20 +133,25 @@ int main(int argc, char *argv[]) {
       App_Start(app);
    }
    
-   if (!(ok=Dict_Parse(dicfile,coding))) {
-     App_Log(app,ERROR,"Invalid file\n");
-   } else {
-      fprintf(stderr,"%s\n\n",Dict_Version());
-      
-      if (rpnfile[0]) {
-         ok=Dict_CheckRPN(app,rpnfile);
-      } else if (cfgfile) {
-         ok=Dict_CheckCFG(app,cfgfile);
-      } else {
-         if (var)  Dict_PrintVars(var,desc,app->Language); 
-         if (type) Dict_PrintTypes(type,desc,app->Language);
+   // Check for default dicfile
+   sprintf(dicdef, "%s%s",getenv("AFSISIO"),"/datafiles/constants/ops.variable_dictionary.xml");
+   if((ok=Dict_Parse(dicdef,coding))) {
+      fprintf(stderr,"%s\n",Dict_Version());
+   
+      if (!dicfile || ((ok=Dict_Parse(dicfile,coding)) && fprintf(stderr,"%s\n",Dict_Version()))) {
          
-         if (!etiket && search!=DICT_GLOB) fprintf(stderr,"\n%s* %s%s\n",APP_COLOR_MAGENTA,THINT[app->Language],APP_COLOR_RESET); 
+         fprintf(stderr,"\n");
+         
+         if (rpnfile[0]) {
+            ok=Dict_CheckRPN(app,rpnfile);
+         } else if (cfgfile) {
+            ok=Dict_CheckCFG(app,cfgfile);
+         } else {
+            if (var)  Dict_PrintVars(var,desc,app->Language); 
+            if (type) Dict_PrintTypes(type,desc,app->Language);
+            
+            if (!etiket && search!=DICT_GLOB) fprintf(stderr,"\n%s* %s%s\n",APP_COLOR_MAGENTA,THINT[app->Language],APP_COLOR_RESET); 
+         }
       }
    }
 

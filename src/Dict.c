@@ -335,27 +335,26 @@ int Dict_Parse(char *Filename,TDict_Encoding Encoding) {
    } else {
       sprintf(Dict.String,"%s %s version %s",node->name,Dict.Date,Dict.Version);
    }
-//   Dict.Encoding=XML_CHAR_ENCODING_ASCII;
    
   // Parse the DTD
-//   strcpy(dtdfile,"");
-//   strcat(dtdfile,getenv("AFSISIO"));
-//   strcat(dtdfile,"/datafiles/constants/dict.dtd");
-    
-//   if (!(dtd=xmlParseDTD(NULL,dtdfile))) {
-//      App_ErrorSet("Could not parse DTD %s",dtdfile);
-//      return (1);
-//   }
-
-   // Set up xmlValidCtxt for error reporting when validating 
-   ctxt.userData = stderr; 
-   ctxt.error    = (xmlValidityErrorFunc) fprintf;   /* register error function */ 
-   ctxt.warning  = (xmlValidityWarningFunc) fprintf; /* register warning function */ 
-
-//   if (!xmlValidateDtd(&ctxt,doc,dtd)) {
-//      App_ErrorSet("DTD validation error");
-//      return (0);
-//   }
+//    strcpy(dtdfile,"");
+//    strcat(dtdfile,getenv("AFSISIO"));
+//    strcat(dtdfile,"/datafiles/constants/dict-2.0.dtd");
+//     
+//    if (!(dtd=xmlParseDTD(NULL,dtdfile))) {
+//       App_ErrorSet("Could not parse DTD %s",dtdfile);
+//       return (1);
+//    }
+// 
+//    // Set up xmlValidCtxt for error reporting when validating 
+//    ctxt.userData = stderr; 
+//    ctxt.error    = (xmlValidityErrorFunc) fprintf;   // register error function 
+//    ctxt.warning  = (xmlValidityWarningFunc) fprintf; // register warning function
+// 
+//    if (!xmlValidateDtd(&ctxt,doc,dtd)) {
+//       App_ErrorSet("DTD validation error");
+//       return (0);
+//    }
  
    node=node->children;
   

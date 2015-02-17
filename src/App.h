@@ -53,6 +53,8 @@
 #   include <mpi.h>
 #endif
 
+#define APP_ERRORSIZE 2048
+
 #define APP_COLOR_BLINK   "\x1b[5m"
 #define APP_COLOR_BLACK   "\x1b[30m"
 #define APP_COLOR_RED     "\x1b[31m"
@@ -127,5 +129,8 @@ int   App_ParseDate(TApp *App,char *Param,char *Value,time_t *Var);
 int   App_ParseDateSplit(TApp *App,char *Param,char *Value,int *Year,int *Month,int *Day,int *Hour,int *Min);
 int   App_ParseCoords(TApp *App,char *Param,char *Value,double *Lat,double *Lon,int Index);
 void  App_SeedInit(TApp *App);
+
+void  App_ErrorSet(const char *Format,...);
+char* App_ErrorGet(void);
 
 #endif

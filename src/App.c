@@ -33,7 +33,23 @@
  */
 #include "App.h"
 #include "eerUtils.h"
-#include "RMN.h"
+#include "RPN.h"
+
+static __thread char APP_ERROR[APP_ERRORSIZE];
+void App_ErrorSet(const char *Format,...) {
+
+   va_list args;
+
+   va_start(args,Format);
+   vsnprintf(APP_ERROR,APP_ERRORSIZE,Format,args);
+   va_end(args);
+
+   fprintf(stderr,"(ERROR) %s\n",APP_ERROR);
+}
+
+char* App_ErrorGet(void) {
+   return(APP_ERROR);
+}
 
 /*----------------------------------------------------------------------------
  * Nom      : <App_New>
@@ -370,8 +386,6 @@ void App_Log(TApp *App,TApp_LogLevel Level,const char *Format,...) {
    static char *colors[] = { APP_COLOR_RED, APP_COLOR_BLUE, "", APP_COLOR_CYAN, APP_COLOR_CYAN };
    char        *color;
    va_list      args;
-
-   color=App->LogColor?colors[Level]:colors[INFO];
       
    if (!App->LogStream)
       App_LogOpen(App);
@@ -380,15 +394,12 @@ void App_Log(TApp *App,TApp_LogLevel Level,const char *Format,...) {
    if (Level==ERROR)   App->LogError++;
 
    if (Level<=App->LogLevel) {
+      color=App->LogColor?colors[Level]:colors[INFO];
+      
       if (Level>=0) {
          fprintf(App->LogStream,"%s(%s) ",color,levels[Level]);
       }
-//      va_start(args,Format);
-//      if (Level==ERROR) {
-//         va_start(args,Format);
-//         vfprintf(stderr,Format,args);
-//         va_end(args);
-//      }
+      
       va_start(args,Format);
       vfprintf(App->LogStream,Format,args);
       va_end(args);

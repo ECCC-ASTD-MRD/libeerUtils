@@ -35,6 +35,9 @@
  *==============================================================================
  */
 
+#include "App.h"
+#include "RPN.h"
+#include "eerUtils.h"
 #include "ZRefInterp.h"
 
 #if defined(__GNUC__) || defined(SGI)
@@ -141,13 +144,13 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
 #endif
    
    if (!ZRefDest || !ZRefSrc) {
-      fprintf(stderr,"(ERROR) ZRefInterp_Define: Invalid vertical reference\n");
+      App_ErrorSet("ZRefInterp_Define: Invalid vertical reference");
       return(NULL);
    }
 
    interp=(TZRefInterp*)malloc(sizeof(TZRefInterp));
    if (!interp) {
-      fprintf(stderr,"(ERROR) ZRefInterp_Define: malloc failed for Interp\n");
+      App_ErrorSet("ZRefInterp_Define: malloc failed for Interp");
       return(NULL);
    }
    
@@ -189,7 +192,7 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
    if (!ZRefSrc->PCube) {
       ZRefSrc->PCube=(float*)malloc(interp->NIJ*ZRefSrc->LevelNb*sizeof(float));
       if (!ZRefSrc->PCube) {
-         fprintf(stderr,"(ERROR) ZRefInterp_Define: malloc failed for ZRefSrc->PCube\n");
+         App_ErrorSet("ZRefInterp_Define: malloc failed for ZRefSrc->PCube");
          ZRefInterp_Free(interp);
          return(NULL);
       }
@@ -211,7 +214,7 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
    if (!ZRefDest->PCube) {
       ZRefDest->PCube=(float*)malloc(interp->NIJ*ZRefDest->LevelNb*sizeof(float));
       if (!ZRefDest->PCube) {
-         fprintf(stderr,"(ERROR) ZRefInterp_Define: malloc failed for ZRefDest->PCube\n");
+         App_ErrorSet("ZRefInterp_Define: malloc failed for ZRefDest->PCube");
          ZRefInterp_Free(interp);
          return(NULL);
       }
@@ -267,7 +270,7 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
    // Calculate interpolation indexes
    interp->Indexes=(int*)malloc(interp->NIJ*ZRefDest->LevelNb*sizeof(int));
    if (!interp->Indexes) {
-      fprintf (stderr, "(ERROR) ZRefInterp_Define: malloc failed for Indexes\n");
+      App_ErrorSet("ZRefInterp_Define: malloc failed for Indexes");
       ZRefInterp_Free(interp);
       return(NULL);
    }
@@ -279,7 +282,7 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
 #ifdef HAVE_RMN
    (void)f77name(interp1d_findpos)(&interp->NIJ,&ZRefSrc->LevelNb,&ZRefDest->LevelNb,&interp->NIJ,&interp->NIJ,ZRefSrc->PCube,interp->Indexes,ZRefDest->PCube);
 #else
-      fprintf(stderr,"(ERROR) Need RMNLIB to process 3D interpolations");
+      App_ErrorSet("Need RMNLIB to process 3D interpolations");
 #endif
    
    return(interp);
@@ -418,7 +421,7 @@ int ZRefInterp(TZRefInterp *Interp,float *stateOut,float *stateIn,float *derivOu
 
    } else if (ZRefInterp_Options & ZRCUBIC_WITH_DERIV) {
       if ((derivIn == NULL) && (derivOut == NULL)) {
-         fprintf (stderr,"(ERROR) ZRefInterp: Cubic Interpolation with derivatives requested\n");
+         App_ErrorSet("ZRefInterp: Cubic Interpolation with derivatives requested");
          return(0);
       }
 
@@ -431,7 +434,7 @@ int ZRefInterp(TZRefInterp *Interp,float *stateOut,float *stateIn,float *derivOu
          Interp->ZRefSrc->PCube,stateIn,derivIn,Interp->Indexes,Interp->ZRefDest->PCube,stateOut,derivOut,
          &extrapEnable,&extrapEnable,&extrapGuideDown,&extrapGuideUp);
    } else {
-      fprintf (stderr, "(ERROR) ZRefInterp: Unknown Interpolation algorithm\n");
+      App_ErrorSet("ZRefInterp: Unknown Interpolation algorithm");
       return(0);
    }
 
@@ -455,7 +458,7 @@ int ZRefInterp(TZRefInterp *Interp,float *stateOut,float *stateIn,float *derivOu
       if (ZRefInterp_Options & ZRVERBOSE) printf ("(INFO) ZRefInterp: Lapserate extrapolation completed\n");
    }
 #else
-      fprintf(stderr,"(ERROR) Need RMNLIB to process 3D interpolations");
+      App_ErrorSet("Need RMNLIB to process 3D interpolations");
 #endif
       
    return(1);

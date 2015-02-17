@@ -312,6 +312,7 @@ void QTree_Del(TQTree* restrict Node) {
             Node->Childs[c]=NULL;
          }
       }
+      QTree_DelData(Node);
    }
 }
 

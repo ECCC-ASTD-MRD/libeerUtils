@@ -1,6 +1,6 @@
 NAME       = eerUtils
 DESC       = SMC-CMC-CMOE Utility librairie package.
-VERSION    = 1.10.1
+VERSION    = 2.0.0
 MAINTAINER = $(USER)
 OS         = $(shell uname -s)
 PROC       = $(shell uname -m | tr _ -)
@@ -14,22 +14,22 @@ SSM_NAME    = ${NAME}_${VERSION}${COMP}_${ORDENV_PLAT}
 
 INSTALL_DIR = $(HOME)
 TCL_DIR     = /users/dor/afsr/ops/Links/devfs/Archive/tcl8.6.3
-LIB_DIR     = /users/dor/afsr/005/Links/devfs/Lib/${ORDENV_PLAT}
-RMN_DIR     = $(LIB_DIR)/librmn-15.1
+LIB_DIR     = ${SSM_DEV}/workspace/libSPI_7.9.0_${ORDENV_PLAT}
+
+LIBS        := -L$(LIB_DIR)/lib -L$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g')
+INCLUDES    := -I$(LIB_DIR)/include -I$(shell echo $(EC_INCLUDE_PATH) | sed 's/\s* / -I/g')
 
 ifeq ($(OS),Linux)
 
-   LIBS        = -L$(RMN_DIR)/lib -L$(LIB_DIR)/libxml2-2.9.1/lib
-   INCLUDES    = -Isrc -I$(LIB_DIR)/libxml2-2.9.1/include/libxml2
+   LIBS        := $(LIBS) -Wl,-rpath $(LIB_DIR)/lib -lxml2 -lgdal -lz -lrmn
+   INCLUDES    := -Isrc -I$(LIB_DIR)/include/libxml2 -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic  $(INCLUDES)
 
 #   CC          = mpicc
    CC          = /usr/bin/mpicc.openmpi
    CC          = s.cc
    AR          = ar rv
    LD          = ld -shared -x
-   LIBS       := $(LIBS) -lxml2 -lz -lrmn
-   INCLUDES   := $(INCLUDES) -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic
-   LINK_EXEC   = -lm -lpthread -Wl,-rpath=$(LIB_DIR)/libxml2-2.9.1/lib
+   LINK_EXEC   = -lm -lpthread
  
    CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer
    ifdef OMPI
@@ -45,9 +45,9 @@ ifeq ($(OS),Linux)
    endif
 else
 
-   LIBS        = -L$(RMN_DIR)/lib -L$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g')
-   RMN_INCLUDE = -I/ssm/net/rpn/libs/15.0/aix-7.1-ppc7-64/include -I/ssm/net/rpn/libs/15.0/all/include -I/ssm/net/rpn/libs/15.0/all/include/AIX-powerpc7/
-   INCLUDES    =  -Isrc $(RMN_INCLUDE) -I$(shell echo $(EC_INCLUDE_PATH) | sed 's/\s* / -I/g')  -I/usr/include/libxml2
+   LIBS        := $(LIBS) -L$(RMN_DIR)/lib -L$(LIB_DIR)/libxml2-2.9.1/lib $(LIB_DIR)/gdal-1.11.0/lib/libgdal.a
+   RMN_INCLUDE = -I/ssm/net/rpn/libs/15.1/aix-7.1-ppc7-64/include -I/ssm/net/rpn/libs/15.1/all/include -I/ssm/net/rpn/libs/15.1/all/include/AIX-powerpc7/
+   INCLUDES    := $(INCLUDES) -Isrc $(RMN_INCLUDE) -I/usr/include/libxml2 -I$(LIB_DIR)/gdal-1.11.0/include
 
    ifdef OMPI
       CC          = mpCC_r
@@ -57,7 +57,7 @@ else
 
    AR          = ar rv
    LD          = ld
-   LIBS       := $(LIBS) -lrmn -lxml2 -lz
+   LIBS       := $(LIBS) -lz -lrmn -lxml2
    INCLUDES   := $(INCLUDES)
    LINK_EXEC   = -lxlf90 -lxlsmp -lc -lpthread -lmass -lm 
 
@@ -101,25 +101,24 @@ lib: obj
 	cp $(CPFLAGS) ./src/*.h ./include
 
 exec: obj 
-	@if test "$(RMN)" = "HAVE_RMN"; then \
-	   mkdir -p ./bin; \
-	   $(CC) util/EZTiler.c -o bin/EZTiler-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC); \
-	   ln -fs EZTiler-$(VERSION) bin/EZTiler; \
-	   ln -fs EZTiler bin/o.eztiler; \
-	   $(CC) util/CodeInfo.c -o bin/CodeInfo-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC);  \
-	   ln -fs CodeInfo-$(VERSION) bin/CodeInfo; \
-	   ln -fs CodeInfo bin/o.codeinfo; \
-	   $(CC) util/Dict.c -o bin/Dict-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC);  \
-	   ln -fs Dict-$(VERSION) bin/Dict; \
-	   ln -fs Dict bin/o.dict; \
-	fi
+	mkdir -p ./bin;
+	$(CC) util/EZTiler.c -o bin/EZTiler-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC);
+	ln -fs EZTiler-$(VERSION) bin/EZTiler;
+	ln -fs EZTiler bin/o.eztiler;
+	$(CC) util/CodeInfo.c -o bin/CodeInfo-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC); 
+	ln -fs CodeInfo-$(VERSION) bin/CodeInfo;
+	ln -fs CodeInfo bin/o.codeinfo;
+	$(CC) util/Dict.c -o bin/Dict-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC); 
+	ln -fs Dict-$(VERSION) bin/Dict;
+	ln -fs Dict bin/o.dict;
+	$(CC) util/ReGrid.c -o bin/ReGrid-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC); 
+	ln -fs ReGrid-$(VERSION) bin/ReGrid;
+	ln -fs ReGrid bin/o.regrid;
 
 test: obj 
-	@if test "$(RMN)" = "HAVE_RMN"; then \
-	   mkdir -p ./bin; \
-	   $(CC) util/Test.c -o bin/Test $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC); \
-	   $(CC) util/TestQTree.c -o bin/TestQTree $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC);  \
-        fi
+	mkdir -p ./bin;
+	$(CC) util/Test.c -o bin/Test $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC);
+	$(CC) util/TestQTree.c -o bin/TestQTree $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC);
 
 install: 
 	mkdir -p $(INSTALL_DIR)/bin/$(ORDENV_PLAT)
@@ -134,11 +133,12 @@ ssm:
 	mkdir -p $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d  $(SSM_DEV)/workspace/$(SSM_NAME)/etc/profile.d $(SSM_DEV)/workspace/$(SSM_NAME)/lib $(SSM_DEV)/workspace/$(SSM_NAME)/include $(SSM_DEV)/workspace/$(SSM_NAME)/bin
 	cp $(CPFLAGS) ./bin/* $(SSM_DEV)/workspace/$(SSM_NAME)/bin
 	cp $(CPFLAGS) ./lib/* $(SSM_DEV)/workspace/$(SSM_NAME)/lib
-	cp $(CPFLAGS) $(RMN_DIR)/lib/* $(SSM_DEV)/workspace/$(SSM_NAME)/lib
+#	cp $(CPFLAGS) $(RMN_DIR)/lib/* $(SSM_DEV)/workspace/$(SSM_NAME)/lib
 	cp $(CPFLAGS) ./include/* $(SSM_DEV)/workspace/$(SSM_NAME)/include
 	cp $(CPFLAGS) .ssm.d/post-install  $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d
 	sed -e 's/NAME/$(NAME)/' -e 's/VERSION/$(VERSION)/' -e 's/PLATFORM/$(ORDENV_PLAT)/' -e 's/MAINTAINER/$(MAINTAINER)/' -e 's/DESC/$(DESC)/' .ssm.d/control >  $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d/control
 	cd $(SSM_DEV)/workspace; tar -zcvf $(SSM_DEV)/package/$(SSM_NAME).ssm $(SSM_NAME)
+#	rm -f -r  $(SSM_DEV)/workspace/$(SSM_NAME)
 
 clean:
 	rm -f src/*.o src/*~

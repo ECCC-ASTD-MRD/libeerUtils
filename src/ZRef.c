@@ -31,8 +31,10 @@
  *=========================================================
  */
 
+#include "App.h"
+#include "RPN.h"
+#include "eerUtils.h"
 #include "ZRef.h"
-#include "RMN.h"
 
 static float       *ZRef_Levels   = NULL;
 static unsigned int ZRef_LevelsNb = 0;
@@ -260,14 +262,14 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
                   }
                }
                if (j==h.NJ) {
-                  fprintf(stdout,"(WARNING) ZRef_DecodeRPN: Could not find level definition for %i.\n",ip);
+                  fprintf(stderr,"(WARNING) ZRef_DecodeRPN: Could not find level definition for %i.\n",ip);
                }
             }
          } else {
-            fprintf(stdout,"(WARNING) ZRef_DecodeRPN: Could not read !! field (c_fstluk).\n");
+            fprintf(stderr,"(WARNING) ZRef_DecodeRPN: Could not read !! field (c_fstluk).\n");
          }
       } else {
-         fprintf(stdout,"(WARNING) ZRef_DecodeRPN: Could not get info on !! field (c_fstprm).\n");
+         fprintf(stderr,"(WARNING) ZRef_DecodeRPN: Could not get info on !! field (c_fstprm).\n");
       }
    } else {
       
@@ -284,7 +286,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
             ZRef->Version=0;
             
          } else {
-            fprintf(stdout,"(WARNING) ZRef_DecodeRPN: Could not get info on HY field (c_fstprm).\n");
+            fprintf(stderr,"(WARNING) ZRef_DecodeRPN: Could not get info on HY field (c_fstprm).\n");
          }
          // It might be ETA
          if (ZRef->Type==LVL_SIGMA) {
@@ -307,7 +309,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
                   if (cd>=0) {
                      ZRef->PTop=pt[0];
                   } else {
-                     fprintf(stdout,"(WARNING) ZRef_DecodeRPN: Could not read PT field (c_fstluk).\n");
+                     fprintf(stderr,"(WARNING) ZRef_DecodeRPN: Could not read PT field (c_fstluk).\n");
                   }
                }
             }
@@ -319,7 +321,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
    if (buf) free(buf);
    if (pt)  free(pt);
 #else
-   fprintf(stderr,"(ERROR) Need RMNLIB to process vertical coordinate");
+   App_ErrorSet("Need RMNLIB to process vertical coordinate");
 #endif
    
    return(key>=0);
@@ -473,7 +475,7 @@ int ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Order) {
 
    if (ZRef->PCube)  free(ZRef->PCube);  ZRef->PCube=NULL;
 #else
-   fprintf(stderr,"(ERROR) Need RMNLIB to process vertical coordinate");
+   App_ErrorSet("Need RMNLIB to process vertical coordinate");
 #endif
    
    return(ZRef->LevelNb);
@@ -525,7 +527,7 @@ double ZRef_K2Pressure(TZRef* restrict const ZRef,double P0,int K) {
                break;
 
             default:
-               fprintf(stderr,"(ERROR) ZRef_K2Pressure: invalid level type (%i)",ZRef->Type);
+               App_ErrorSet("ZRef_K2Pressure: invalid level type (%i)",ZRef->Type);
          }
          break;
 
@@ -537,7 +539,7 @@ double ZRef_K2Pressure(TZRef* restrict const ZRef,double P0,int K) {
       case 5002:                                                                 // Hybrid momentum
       case 5003: pres=exp(ZRef->A[K]+ZRef->B[K]*log(P0/pref))*0.01; break;       // Hybrid momentum
       default:
-         fprintf(stderr,"(ERROR) ZRef_K2Pressure: invalid level type (%i)",ZRef->Type);
+         App_ErrorSet("ZRef_K2Pressure: invalid level type (%i)",ZRef->Type);
    }
 
    return(pres);
@@ -568,7 +570,7 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
    float        pref,ptop,rtop,pk,pr;
 
    if (!P0 && ZRef->Type!=LVL_PRES) {
-      fprintf(stderr,"(ERROR) ZRef_KCube2Pressure: Surface pressure is required\n");
+      App_ErrorSet("ZRef_KCube2Pressure: Surface pressure is required");
       return(0);
    }
 
@@ -621,7 +623,7 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
                }
                break;
             default:
-               fprintf(stderr,"(ERROR) ZRef_KCube2Pressure: invalid level type (%i)",ZRef->Type);
+               App_ErrorSet("ZRef_KCube2Pressure: invalid level type (%i)",ZRef->Type);
          }
          break;
 
@@ -660,7 +662,7 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
          break;
 
       default:
-         fprintf(stderr,"(ERROR) ZRef_KCube2Pressure: invalid level type (%i)",ZRef->Type);
+         App_ErrorSet("ZRef_KCube2Pressure: invalid level type (%i)",ZRef->Type);
    }
 
    if (Log) for (ij=0;ij<NIJ*ZRef->LevelNb;ij++) Pres[ij]=logf(Pres[ij]);
@@ -736,7 +738,7 @@ int ZRef_KCube2Meter(TZRef* restrict const ZRef,float *GZ,const int NIJ,float *H
          break;
 
       default:
-         fprintf(stderr,"(ERROR) ZRef_KCube2Meter: invalid level type (%i)",ZRef->Type);
+         App_ErrorSet("ZRef_KCube2Meter: invalid level type (%i)",ZRef->Type);
          return(0);
    }
    return(1);
@@ -796,7 +798,7 @@ double ZRef_Level2Pressure(TZRef* restrict const ZRef,double P0,double Level) {
                }
             }
             if (z==ZRef->LevelNb) {
-               fprintf(stderr,"(ERROR) ZRef_Level2Pressure: level not in range ([%f,%f])",ZRef->Levels[0],ZRef->Levels[ZRef->LevelNb-1]);
+               App_ErrorSet("ZRef_Level2Pressure: level not in range ([%f,%f])",ZRef->Levels[0],ZRef->Levels[ZRef->LevelNb-1]);
             }
 
             // Interpolate between levels (in log(p))
@@ -816,7 +818,7 @@ double ZRef_Level2Pressure(TZRef* restrict const ZRef,double P0,double Level) {
          break;
 
       default:
-         fprintf(stderr,"(ERROR) ZRef_Level2Pressure: invalid level type (%i)",ZRef->Type);
+         App_ErrorSet("ZRef_Level2Pressure: invalid level type (%i)",ZRef->Type);
    }
    return(pres);
 }
@@ -899,7 +901,7 @@ double ZRef_Pressure2Level(TZRef* restrict const ZRef,double P0,double Pressure)
          break;
 
       default:
-         fprintf(stderr,"(ERROR) ZRef_Level2Pressure: invalid level type (%i)",ZRef->Type);
+         App_ErrorSet("ZRef_Level2Pressure: invalid level type (%i)",ZRef->Type);
    }
    return(level);
 }
@@ -973,7 +975,7 @@ double ZRef_IP2Meter(int IP) {
    /*Convertir en niveau reel*/
    f77name(convip)(&IP,&level,&kind,&mode,&format,&flag);
 #else
-   fprintf(stderr,"(ERROR) Need RMNLIB to process vertical coordinate");
+   App_ErrorSet("Need RMNLIB to process vertical coordinate");
 #endif
    
    return(ZRef_Level2Meter(level,kind));
@@ -1006,7 +1008,7 @@ double ZRef_IP2Level(int IP,int *Type) {
    /*Convertir en niveau reel*/
    f77name(convip)(&IP,&level,Type,&mode,&format,&flag);
 #else
-   fprintf(stderr,"(ERROR) Need RMNLIB to process vertical coordinate");
+   App_ErrorSet("Need RMNLIB to process vertical coordinate");
 #endif
    
    return(level);
@@ -1059,7 +1061,7 @@ int ZRef_Level2IP(float Level,int Type,TZRef_IP1Mode Mode) {
 #ifdef HAVE_RMN
       f77name(convip)(&ip,&Level,&Type,&mode,&format,&flag);
 #else
-      fprintf(stderr,"(ERROR) Need RMNLIB to process vertical coordinate");
+      App_ErrorSet("Need RMNLIB to process vertical coordinate");
 #endif
       
       return(ip);

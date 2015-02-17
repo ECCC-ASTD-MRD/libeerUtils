@@ -34,6 +34,7 @@
 
 #include <pthread.h>
 #include "eerUtils.h"
+#include "RPN.h"
 #include "ZRef.h"
 
 #define GRIDCACHEMAX 2048
@@ -149,13 +150,6 @@ TGrid *EZGrid_InterpFactor(TGrid* restrict const Grid,TGrid* restrict const Grid
 
 float* EZGrid_TileBurn(TGrid* restrict const Grid,TGridTile* restrict const Tile,int K,float* restrict Data);
 float* EZGrid_TileBurnAll(TGrid* restrict const Grid,int K,float* restrict Data);
-
-void EZLock_RPNFile();
-void EZUnLock_RPNFile();
-void EZLock_RPNField();
-void EZUnLock_RPNField();
-void EZLock_RPNInt();
-void EZUnLock_RPNInt();
 
 int EZGrid_IdNew(int NI,int NJ,char* GRTYP,int IG1,int IG2,int IG3, int IG4,int FID);
 int EZGrid_IdFree(int Id);

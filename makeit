@@ -7,6 +7,9 @@ if [[ $HOSTTYPE = "AIX" ]]; then
    MAKE=gmake
 fi
 
+#----- Reset __TIMESTAMP__
+touch src/App.c
+
 #----- Build no multi processor version first
 unset OMPI
 $MAKE clear

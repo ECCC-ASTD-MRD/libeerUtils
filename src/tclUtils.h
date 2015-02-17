@@ -33,10 +33,10 @@
 #ifndef _tclUtils_h
 #define _tclUtils_h
 
+// If AIX, we disable any Tcl stuff and use stubs
+#ifndef _AIX
+
 #include "tcl.h"
-
-#ifndef _AIX_
-
 //#include "tclPort.h"
 
 typedef int (TclY_HashFreeEntryDataFunc) (ClientData EntryData);

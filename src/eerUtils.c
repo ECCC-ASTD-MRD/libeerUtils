@@ -33,7 +33,7 @@
 
 #include </usr/include/regex.h>
 #include "eerUtils.h"
-#include "RMN.h"
+#include "RPN.h"
 
 static char SYSTEM_STRING[256];
 

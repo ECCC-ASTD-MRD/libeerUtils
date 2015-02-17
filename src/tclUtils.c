@@ -31,12 +31,16 @@
  *=========================================================
  */
 
-#ifndef _AIX_
+#include "tclUtils.h"
+
+#include <stdarg.h>
+#include <stdio.h>
+
+// If AIX, we disable any Tcl stuff and use stubs
+#ifndef _AIX
 
 #include <malloc.h>
 #include <string.h>
-
-#include "tclUtils.h"
 
 #include "tclPort.h"
 #include "tclInt.h"

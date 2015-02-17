@@ -5,7 +5,7 @@
  * Dorval, Quebec
  *
  * Projet       : Fonctions et definitions relatives aux fichiers standards et rmnlib
- * Fichier      : RMN.h
+ * Fichier      : RPN.h
  * Creation     : Avril 2006 - J.P. Gauthier
  *
  * Description:
@@ -28,8 +28,8 @@
  *
  *==============================================================================
  */
-#ifndef _RMN_h
-#define _RMN_h
+#ifndef _RPN_h
+#define _RPN_h
 
 #ifdef HAVE_RMN
 #include "rpnmacros.h"
@@ -37,23 +37,35 @@
 
 #define RPNMAX 2048
 
-/*Standard struct to read an RPN Field*/
+struct TDef;
+struct TGeoRef;
+
+typedef struct TRPNFile {
+   char *CId;              // Identificateur du fichier
+   char *Name;             // Path complet du fichier
+   char Mode;              // Mode d'ouverture du fichier (r,w,a)
+   int  Open;              // Etat du fichier
+   unsigned int Id;        // Numero d'unite du fichier
+   int  NRef;              // Nombre de reference
+} TRPNFile;
+
 typedef struct TRPNHeader {
-   int  FID;               /*Fichier dont provient le champs*/
-   int  KEY;               /*Cle du champs*/
-   int  DATEO;             /*Date d'origine du champs*/
-   int  DATEV;             /*Date de validitee du champs*/
-   int  DEET;
-   int  NPAS;
-   int  NBITS;
-   int  DATYP;             /*Type de donnees*/
-   int  IP1,IP2,IP3;       /*Specificateur du champs*/
-   int  NI,NJ,NK,NIJ;      /*Dimensions*/
-   char TYPVAR[3];         /*Type de variable*/
-   char NOMVAR[5];         /*Nom de la variable*/
-   char ETIKET[13];        /*Etiquette du champs*/
-   char GRTYP[2];          /*Type de grilles*/
-   int  IG1,IG2,IG3,IG4;   /*Descripteur de grille*/
+   TRPNFile *File;         // Fichier dont provient le champs
+   int  FID;               // FID dont provient le champs
+   int  KEY;               // Cle du champs
+   int  DATEO;             // Date d'origine du champs
+   int  DATEV;             // Date de validitee du champs
+   int  DEET;              // Duree d'un pas de temps
+   int  NPAS;              // Pas de temps
+   int  NBITS;             // Nombre de bits du champs
+   int  DATYP;             // Type de donnees
+   int  IP1,IP2,IP3;       // Specificateur du champs
+   int  NI,NJ,NK,NIJ;      // Dimensions
+   char TYPVAR[3];         // Type de variable
+   char NOMVAR[5];         // Nom de la variable
+   char ETIKET[13];        // Etiquette du champs
+   char GRTYP[2];          // Type de grilles
+   int  IG1,IG2,IG3,IG4;   // Descripteur de grille
    int  SWA;
    int  LNG;
    int  DLTF;
@@ -61,13 +73,30 @@ typedef struct TRPNHeader {
    int  EX1,EX2,EX3;
 }  TRPNHeader;
 
-int RPN_CopyDesc(int FIdTo,TRPNHeader* restrict const H);
-void EZLock_RPNFile(void);
-void EZUnLock_RPNFile(void);
-void EZLock_RPNField(void);
-void EZUnLock_RPNField(void); 
-void EZLock_RPNInt(void);
-void EZUnLock_RPNInt(void); 
+typedef struct TRPNField {
+   TRPNHeader     Head;    // Entete du champs
+   struct TGeoRef *Ref;    // Reference geographique horizontale
+   struct TDef    *Def;    // Definition des donnees
+} TRPNField;
+
+int  RPN_CopyDesc(int FIdTo,TRPNHeader* const H);
+void RPN_FileLock(void);
+void RPN_FileUnlock(void);
+void RPN_FieldLock(void);
+void RPN_FieldUnlock(void); 
+void RPN_IntLock(void);
+void RPN_IntUnlock(void); 
+
+TRPNField* RPN_FieldNew();
+TRPNField* RPN_FieldReadIndex(int FileId,int Index,TRPNField *Fld);
+TRPNField* RPN_FieldRead(int FileId,int DateV,char *Eticket,int IP1,int IP2,int IP3,char *TypVar,char *NomVar);
+int        RPN_FieldWrite(int FileId,TRPNField *Field);
+void       RPN_CopyHead(TRPNHeader *To,TRPNHeader *From);
+
+int RPN_IntIdNew(int NI,int NJ,char* GRTYP,int IG1,int IG2,int IG3, int IG4,int FID);
+int RPN_IntIdIncr(int Id);
+int RPN_IntIdFree(int Id);
+int RPN_IntIdRealloc(int Nb);
 
 // EER threadsafe fstd functions
 int cs_fstunlockid(int Unit);
@@ -80,13 +109,13 @@ int cs_fstinf(int Unit,int *NI,int *NJ,int *NK,int DateO,char *Etiket,int IP1,in
 int cs_fstprm(int Unit,int *DateO,int *Deet,int *NPas,int *NI,int *NJ,int *NK,int *NBits,int *Datyp,int *IP1,int *IP2,int *IP3,char* TypVar,char *NomVar,char *Etiket,char *GrTyp,int *IG1,int *IG2,int *IG3,int *IG4,int *Swa,int *Lng,int *DLTF,int *UBC,int *EX1,int *EX2,int *EX3);
 int cs_fstlir(void *Buf,int Unit,int *NI,int *NJ,int *NK,int DateO,char *Etiket,int IP1,int IP2,int IP3,char* TypVar,char *NomVar);
 int cs_fstluk(void *Data,int Idx,int *NI,int *NJ,int *NK);
+int cs_fstsui(int Unit,int *NI,int *NJ,int *NK);
 int cs_fstlukt(void *Data,int Unit,int Idx,char *GRTYP,int *NI,int *NJ,int *NK);
 int cs_fstecr(void *Data,int NPak,int Unit, int DateO,int Deet,int NPas,int NI,int NJ,int NK,int IP1,int IP2,int IP3,char* TypVar,char *NomVar,char *Etiket,char *GrTyp,int IG1,int IG2,int IG3,int IG4,int DaTyp,int Over);
 
 // EER external Fortran functions
 extern int f77name(rmnlib_version)(char *rmn,int *print,int len);
 extern int f77name(r8ipsort)(int *ip,double *a,int *n);
-extern int f77name(binarysearchfindlevel2)(ftnfloat *hybvl,ftnfloat *hyb,int *size,int *ikk,int *ikn);
 
 // RPN external C && Fortran functions
 extern int f77name(newdate)(int *dat1,int *dat2,int *dat3,int *mode);

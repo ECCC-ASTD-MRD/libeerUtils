@@ -44,7 +44,6 @@
 #ifndef _ZRefInterp_h
 #define _ZRefInterp_h
 
-#include "eerUtils.h"
 #include "ZRef.h"
 
 /* Interpolation */

@@ -40,9 +40,6 @@
 #ifndef _ZRef_h
 #define _ZRef_h
 
-#include "eerUtils.h"
-#include "RMN.h"
-
 /*Level related constants and functions*/
 #define LVL_NIL         -1  /* No conversion */
 #define LVL_MASL         0  /* Meters above sea level */
@@ -64,6 +61,8 @@
 #define PRESS2METER(LVL) (LVL>0?-8409.1*log(LVL)/1200.0:0)
 #define SIGMA2METER(LVL) (LVL>0?-8409.1*log(LVL):0)
 #define ETA2METER(LVL)   (-8409.1*log(LVL+1e-32))
+
+struct TRPNHeader;
 
 /*Vertical referential definition*/
 typedef struct TZRef {
@@ -92,7 +91,7 @@ int    ZRef_Copy(TZRef *ZRef0,TZRef *ZRef1,int Level);
 int    ZRef_DecodeRPN(TZRef *ZRef,int Unit);
 int    ZRef_SetRestrictLevels(float *Levels,int NbLevels);
 int    ZRef_AddRestrictLevel(float Level);
-int    ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Invert);
+int    ZRef_GetLevels(TZRef *ZRef,const struct TRPNHeader* restrict const H,int Invert);
 double ZRef_K2Pressure(TZRef* restrict const ZRef,double P0,int K);
 int    ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,float *Pres);
 int    ZRef_KCube2Meter(TZRef* restrict const ZRef,float *GZ,const int NIJ,float *Height);
