@@ -195,7 +195,7 @@ int GPC_ClipSegment(OGRGeometryH Line,OGRGeometryH Poly,OGRGeometryH Clip) {
 
          /*Order the intersections*/
          if (nbinter>1)
-            qsort(inter,nbinter,sizeof(Vect3d),(__compar_fn_t)GPC_QSortInter);
+            qsort(inter,nbinter,sizeof(Vect3d),GPC_QSortInter);
 
          /*Add intersections to the linestring*/
          for (nr=0;nr<nbinter;nr++) {

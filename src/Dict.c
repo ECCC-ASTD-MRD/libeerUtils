@@ -906,7 +906,7 @@ int Dict_CheckType(void *Data0,void *Data1){
    if (DictSearch.Mode==DICT_GLOB) {
       return(Data1?(!strmatch(((TDictType*)Data0)->Name,(char*)Data1)):1);
    } else {
-      return(Data1?(!strcasecmp(((TDictType*)Data0)->Name,(char*)Data1)):0);
+      return(Data1?(!strcasecmp(((TDictType*)Data0)->Name,(char*)Data1) || !strcasecmp(&((TDictType*)Data0)->Name[1],(char*)Data1)) :0);
    }
 }
 
