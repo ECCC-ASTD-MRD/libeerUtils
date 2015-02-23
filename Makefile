@@ -45,7 +45,8 @@ ifeq ($(OS),Linux)
    endif
 else
 
-   LIBS        := $(LIBS) -L$(RMN_DIR)/lib -L$(LIB_DIR)/libxml2-2.9.1/lib $(LIB_DIR)/gdal-1.11.0/lib/libgdal.a
+   LIBS        := $(LIBS) -lxml2 -lgdal -lz -lrmn
+#   LIBS        := $(LIBS) -L$(RMN_DIR)/lib -L$(LIB_DIR)/libxml2-2.9.1/lib $(LIB_DIR)/lib/libgdal.a
    RMN_INCLUDE = -I/ssm/net/rpn/libs/15.1/aix-7.1-ppc7-64/include -I/ssm/net/rpn/libs/15.1/all/include -I/ssm/net/rpn/libs/15.1/all/include/AIX-powerpc7/
    INCLUDES    := $(INCLUDES) -Isrc $(RMN_INCLUDE) -I/usr/include/libxml2 -I$(LIB_DIR)/gdal-1.11.0/include
 
@@ -57,11 +58,9 @@ else
 
    AR          = ar rv
    LD          = ld
-   LIBS       := $(LIBS) -lz -lrmn -lxml2
-   INCLUDES   := $(INCLUDES)
-   LINK_EXEC   = -lxlf90 -lxlsmp -lc -lpthread -lmass -lm 
+   LINK_EXEC   = -lxlf90 -lxlsmp -lc -lpthread -lm
 
-   CCOPTIONS   = -std=c99 -O3 -qtls -qnohot -qstrict -Q -v -qkeyword=restrict -qcache=auto -qtune=auto -qarch=auto -qinline
+   CCOPTIONS   = -std=c99 -O3 -qtls -qnohot -qstrict -Q -v -qkeyword=restrict -qcache=auto -qtune=auto -qarch=auto -qinline 
    ifdef OMPI
       CCOPTIONS  := $(CCOPTIONS) -qsmp=omp -qthreaded -qlibmpi -qinline
    endif

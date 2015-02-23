@@ -41,23 +41,23 @@
 #ifndef _ZRef_h
 #define _ZRef_h
 
-/*Level related constants and functions*/
-#define LVL_NIL         -1  /* No conversion */
-#define LVL_MASL         0  /* Meters above sea level */
-#define LVL_SIGMA        1  /* P/Ps */
-#define LVL_PRES         2  /* Pressure mb */
-#define LVL_UNDEF        3  /* units are user defined */
-#define LVL_MAGL         4  /* Meters above ground level */
-#define LVL_HYBRID       5  /* Hybrid levels*/
-#define LVL_THETA        6  /* ? */
-#define LVL_ETA          7  /* (Pt-P)/(Pt-Ps) -not in convip */
-#define LVL_GALCHEN      8  /* Original Gal-Chen -not in convip (JP Defined)*/
-#define LVL_NBR          9  /* Nombre d'elements*/
-#define LVL_HOUR        10  /* Hours */
-#define LVL_ANGLE       11  /* Radar angles (JP defined)*/
-#define LVL_INT         15  /* Entiers (reserve)*/
-#define LVL_IDX         17  /* Index de matrice*/
-#define LVL_MPRES       21  /* Metres-pression*/
+// Level related constants and functions
+#define LVL_NIL         -1  //  No conversion 
+#define LVL_MASL         0  //  Meters above sea level 
+#define LVL_SIGMA        1  //  P/Ps 
+#define LVL_PRES         2  //  Pressure mb 
+#define LVL_UNDEF        3  //  units are user defined 
+#define LVL_MAGL         4  //  Meters above ground level 
+#define LVL_HYBRID       5  //  Hybrid levels
+#define LVL_THETA        6  //  ? 
+#define LVL_ETA          7  //  (Pt-P)/(Pt-Ps) -not in convip 
+#define LVL_GALCHEN      8  //  Original Gal-Chen -not in convip (JP Defined)
+#define LVL_NBR          9  //  Nombre d'elements
+#define LVL_HOUR        10  //  Hours 
+#define LVL_ANGLE       11  //  Radar angles (JP defined)
+#define LVL_INT         15  //  Entiers (reserve)
+#define LVL_IDX         17  //  Index de matrice
+#define LVL_MPRES       21  //  Metres-pression
 
 #define PRESS2METER(LVL) (LVL>0?-8409.1*log(LVL)/1200.0:0)
 #define SIGMA2METER(LVL) (LVL>0?-8409.1*log(LVL):0)
@@ -65,20 +65,20 @@
 
 struct TRPNHeader;
 
-/*Vertical referential definition*/
+// Vertical referential definition
 typedef struct TZRef {
-   int    Count;        /*Reference count*/
-   int    Version;      /*Version*/
-   int    Type;         /*Type of levels*/
-   float *Levels;       /*Levels list*/
-   int    LevelNb;      /*Number of Levels*/
-   float  PTop;         /*Pressure at top of atmosphere*/
-   float  PRef;         /*Reference pressure*/
-   float  RCoef[2];     /*Hybrid level coefficient*/
-   float  ETop;         /*Eta coordinate a top*/
-   float  *A,*B;        /*Pressure calculation factors*/
-   float  *P0;          /*Pressure at surface*/
-   float  *PCube;       /*3D Pressure cube*/
+   int    Count;        // Reference count
+   int    Version;      // Version
+   int    Type;         // Type of levels
+   float *Levels;       // Levels list
+   int    LevelNb;      // Number of Levels
+   float  PTop;         // Pressure at top of atmosphere
+   float  PRef;         // Reference pressure
+   float  RCoef[2];     // Hybrid level coefficient
+   float  ETop;         // Eta coordinate a top
+   float  *A,*B;        // Pressure calculation factors
+   float  *P0;          // Pressure at surface
+   float  *PCube;       // 3D Pressure cube
 } TZRef;
 
 typedef enum { DEFAULT=1,NEW=2,OLD=3 } TZRef_IP1Mode;

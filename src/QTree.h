@@ -47,10 +47,10 @@ typedef struct TQTreeData {
 typedef struct TQTree {
    struct TQTree* Parent;       // Pointer to parent cell
    struct TQTree* Childs[4];    // Array of the sub quad pointers, handy for iterations
+   TQTreeData*    Data;         // Data payload
 
    TPoint2D       BBox[2];      // South West XY position limit of the quad bounding box
    int            NbData;       // Number of data in the payload
-   TQTreeData*    Data;         // Data payload
 } TQTree;
 
 typedef struct TQTreeIterator {

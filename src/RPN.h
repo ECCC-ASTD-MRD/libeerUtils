@@ -62,16 +62,16 @@ typedef struct TRPNHeader {
    int  DATYP;             // Type de donnees
    int  IP1,IP2,IP3;       // Specificateur du champs
    int  NI,NJ,NK,NIJ;      // Dimensions
-   char TYPVAR[3];         // Type de variable
-   char NOMVAR[5];         // Nom de la variable
-   char ETIKET[13];        // Etiquette du champs
-   char GRTYP[2];          // Type de grilles
    int  IG1,IG2,IG3,IG4;   // Descripteur de grille
    int  SWA;
    int  LNG;
    int  DLTF;
    int  UBC;
    int  EX1,EX2,EX3;
+   char TYPVAR[3];         // Type de variable
+   char NOMVAR[5];         // Nom de la variable
+   char ETIKET[13];        // Etiquette du champs
+   char GRTYP[2];          // Type de grilles
 }  TRPNHeader;
 
 typedef struct TRPNField {

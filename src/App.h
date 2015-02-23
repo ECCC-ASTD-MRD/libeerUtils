@@ -86,18 +86,18 @@ typedef struct TApp_Arg {
    char         *Short,*Long,*Info;
 } TApp_Arg;
 
-/*Application controller definition*/
+// Application controller definition
 typedef struct TApp {
     char*          Name;                 // Name
     char*          Version;              // Version
     char*          Desc;                 // Description
     char*          TimeStamp;            // Compilation timestamp
     char*          LogFile;              // Log file
+    char*          Tag;                  // Identificateur
+    FILE*          LogStream;            // Log file associated stream
     int            LogWarning;           // Number of warnings
     int            LogError;             // Number of errors
     int            LogColor;             // Use coloring in the logs
-    char*          Tag;                  // Identificateur
-    FILE*          LogStream;            // Log file associated stream
     TApp_LogLevel  LogLevel;             // Level of log
     TApp_State     State;                // State of application
     TApp_Lang      Language;             // Language (default: $CMCLNG or APP_EN)

@@ -1,4 +1,4 @@
-/*=========================================================
+/* =========================================================
  * Environnement Canada
  * Centre Meteorologique Canadien
  * 2100 Trans-Canadienne
@@ -91,7 +91,7 @@
 #define GeoRef_ScanX(X) (((float*)GeoScanX)[X]-1.0)
 #define GeoRef_ScanY(X) (((float*)GeoScanY)[X]-1.0)
 
-/*Structure pour les coordonees latlon*/
+// Structure pour les coordonees latlon
 typedef struct Coord {
    double Lon,Lat,Elev;
 } Coord;
@@ -114,38 +114,38 @@ typedef int    (TGeoRef_Check)     (struct TGeoRef *Ref);
 
 typedef struct TGeoRef {
    char*   Name;
-   int     NbId,NId;                                      /*Nombre de sous-grille*/
-   int*    Ids;                                           /*Ids des georeferences (>=0 = ezscint)*/
+   int     NbId,NId;                                      // Nombre de sous-grille
+   int*    Ids;                                           // Ids des georeferences (>=0 = ezscint)
 
-   int     NRef;                                          /*Nombre de reference a la georeference*/
-   int     Type;                                          /*Type de grille*/
-   int     BD;                                            /*Bordure*/
-   int     X0,Y0,Z0,X1,Y1,Z1;                             /*Grid limits*/
-   int     IG1,IG2,IG3,IG4;                               /*Grid descriptor id*/
-   Vect3d **Pos;                                          /*Coordonnees des points de grilles (World)*/
+   int     NRef;                                          // Nombre de reference a la georeference
+   int     Type;                                          // Type de grille
+   int     BD;                                            // Bordure
+   int     X0,Y0,Z0,X1,Y1,Z1;                             // Grid limits
+   int     IG1,IG2,IG3,IG4;                               // Grid descriptor id
+   Vect3d **Pos;                                          // Coordonnees des points de grilles (World)
 
    struct TZRef ZRef;
 
-   Coord  Loc;                                            /*(Radar) Localisation du centre de reference*/
-   double CTH,STH;                                        /*(Radar) sin and cos of sweep angle*/
-   int    R;                                              /*(Radar) Rayon autour du centre de reference en bin*/
-   double ResR,ResA;                                      /*(Radar) Resolutions en distance et azimuth*/
+   Coord  Loc;                                            // (Radar) Localisation du centre de reference
+   double CTH,STH;                                        // (Radar) sin and cos of sweep angle
+   int    R;                                              // (Radar) Rayon autour du centre de reference en bin
+   double ResR,ResA;                                      // (Radar) Resolutions en distance et azimuth
 
-   float        *Lat,*Lon,*Hgt;                           /*Coordonnees des points de grilles (Spherical)*/
-   float        *AX,*AY;                                  /*Coordonnees des points de grilles (Spherical)*/
-   unsigned int *Idx,NIdx;                                /*Index dans les positions*/
+   float        *Lat,*Lon,*Hgt;                           // Coordonnees des points de grilles (Spherical)
+   float        *AX,*AY;                                  // Coordonnees des points de grilles (Spherical)
+   unsigned int *Idx,NIdx;                                // Index dans les positions
 
-   char                          Grid[3];                 /*Type de grille*/
-   char                         *String;                  /*OpenGIS WKT String description*/
-   OGREnvelope                   LLExtent;                /*LatLon extent*/
-   OGRCoordinateTransformationH  Function,InvFunction;    /*Projection functions*/
-   OGRSpatialReferenceH          Spatial;                 /*Spatial reference*/
-   double                       *Transform,*InvTransform; /*Transformation functions*/
-   void                         *GCPTransform;            /*GPC derivative transform (1,2,3 order)*/
-   void                         *TPSTransform;            /*GPC Thin Spline transform*/
-   void                         *RPCTransform;            /*GPC Rigorous Projection Model transform*/
+   char                          Grid[3];                 // Type de grille
+   char                         *String;                  // OpenGIS WKT String description
+   OGREnvelope                   LLExtent;                // LatLon extent
+   OGRCoordinateTransformationH  Function,InvFunction;    // Projection functions
+   OGRSpatialReferenceH          Spatial;                 // Spatial reference
+   double                       *Transform,*InvTransform; // Transformation functions
+   void                         *GCPTransform;            // GPC derivative transform (1,2,3 order)
+   void                         *TPSTransform;            // GPC Thin Spline transform
+   void                         *RPCTransform;            // GPC Rigorous Projection Model transform
 
-   struct TGeoRef    *RefFrom;                            /*Georeference de reference (coupe verticale,...)*/
+   struct TGeoRef    *RefFrom;                            // Georeference de reference (coupe verticale,...)
 
    TGeoRef_Project   *Project;
    TGeoRef_UnProject *UnProject;
@@ -157,9 +157,9 @@ typedef struct TGeoRef {
 typedef struct TGeoScan {
    double *X,*Y;
    float  *D;
-   unsigned int *V;                                       /*Coordonnees et valeurs*/
-   unsigned int N,S;                                      /*Nombre de coordonnees et dimension*/
-   int DX,DY;                                             /*Longueur em X et Y*/
+   unsigned int *V;                                       // Coordonnees et valeurs
+   unsigned int N,S;                                      // Nombre de coordonnees et dimension
+   int DX,DY;                                             // Longueur em X et Y
 } TGeoScan;
 
 TGeoRef* GeoRef_Get(char *Name);

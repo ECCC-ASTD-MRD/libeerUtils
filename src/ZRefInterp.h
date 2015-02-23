@@ -47,20 +47,20 @@
 
 #include "ZRef.h"
 
-/* Interpolation */
+//  Interpolation 
 #define ZRNEAREST_NEIGHBOUR 0x001
 #define ZRLINEAR            0x002
 #define ZRCUBIC_WITH_DERIV  0x004
 #define ZRCUBIC_LAGRANGE    0x008
 
-/* Extrapolation */
+//  Extrapolation 
 #define ZRCLAMPED    0x010
 #define ZRLAPSERATE  0x020
 
-/* Other options */
+//  Other options 
 #define ZRVERBOSE    0x040
 
-/* check for float exception (will do nothing on SX6) */
+//  check for float exception (will do nothing on SX6) 
 #define ZRCHECKFLOAT 0x080
 
 typedef struct TZRefInterp {
@@ -69,7 +69,6 @@ typedef struct TZRefInterp {
    int           NIJ;                      // 2D dimensions
    int           Same;                     // Flag indicating source and destination are the same
 } TZRefInterp;
-
 
 int          ZRefInterp_Free(TZRefInterp *Interp);
 void         ZRefInterp_Clear(TZRefInterp *Interp);

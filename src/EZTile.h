@@ -1,4 +1,4 @@
-/*==============================================================================
+/* ==============================================================================
  * Environnement Canada
  * Centre Meteorologique Canadian
  * 2100 Trans-Canadienne
@@ -72,39 +72,39 @@
 }
 
 typedef struct TGridTile {
-   int     GID;                         /*EZSCINT Tile grid id (for interpolation)*/
-   char    Side;                        /*Side flag indicator*/
-   int     I,J;                         /*Tile starting point within master grid*/
-   int     NO;                          /*Tile number*/
-   int     KBurn;                       /*Index estampille*/
-   int     NI,NJ,NIJ;                   /*Tile dimensions without halo)*/
-   int     HI,HJ,HDI,HDJ,HNI,HNJ,HNIJ;  /*Tile dimensions with halo*/
-   float **Data;                        /*Data pointer*/
-   pthread_mutex_t Mutex;               /*Per tile mutex for IO*/
+   float **Data;                        // Data pointer
+   int     GID;                         // EZSCINT Tile grid id (for interpolation)
+   int     I,J;                         // Tile starting point within master grid
+   int     NO;                          // Tile number
+   int     KBurn;                       // Index estampille
+   int     NI,NJ,NIJ;                   // Tile dimensions without halo)
+   int     HI,HJ,HDI,HDJ,HNI,HNJ,HNIJ;  // Tile dimensions with halo
+   char    Side;                        // Side flag indicator
+   pthread_mutex_t Mutex;               // Per tile mutex for IO
 } TGridTile;
 
 struct TGrid;
 
 typedef struct TGrid {
-   TRPNHeader      H;                    /*RPN Standard file header*/
-   TZRef          *ZRef;                 /*Vertical referential*/
-   int             Wrap;                 /*Flag indicating grid globe wrap-around (global grids)*/
-   float           Pole[2];              /*Pole coverage*/
+   TRPNHeader      H;                    // RPN Standard file header
+   TZRef          *ZRef;                 // Vertical referential
+   int             Wrap;                 // Flag indicating grid globe wrap-around (global grids)
+   float           Pole[2];              // Pole coverage
 
-   int             GID;                  /*EZSCINT Tile grid id (for interpolation)*/
-   int             IP1,IP2,IP3,Master;   /*Grid template identifier*/
-   int             Incr;                 /*Increasing sorting*/
-   int             Factor;               /*Increasing sorting*/
-   float          *Data;                 /*Data pointer*/
-   unsigned int    NTI,NTJ;              /*Number of tiles in I and J*/
-   unsigned int    Halo;                 /*Halo width*/
+   int             GID;                  // EZSCINT Tile grid id (for interpolation)
+   int             IP1,IP2,IP3,Master;   // Grid template identifier
+   int             Incr;                 // Increasing sorting
+   int             Factor;               // Increasing sorting
+   float          *Data;                 // Data pointer
+   unsigned int    NTI,NTJ;              // Number of tiles in I and J
+   unsigned int    Halo;                 // Halo width
 
-   float           FT0,FT1;              /*Time interpolation factor*/
-   struct TGrid   *T0,*T1;               /*Time interpolation strat and end grid*/
+   float           FT0,FT1;              // Time interpolation factor
+   struct TGrid   *T0,*T1;               // Time interpolation strat and end grid
 
-   unsigned int    NbTiles;              /*Number of tiles*/
-   TGridTile      *Tiles;                /*Array of tiles*/
-   pthread_mutex_t Mutex;                /*Per grid mutex for IO*/
+   unsigned int    NbTiles;              // Number of tiles
+   TGridTile      *Tiles;                // Array of tiles
+   pthread_mutex_t Mutex;                // Per grid mutex for IO
 } TGrid;
 
 int    EZGrid_CopyDesc(const int FIdTo,TGrid* restrict const Grid);

@@ -238,7 +238,7 @@ switch(DEF->Type) {\
    }\
 }
 
-// Interpolation modes
+// Raster interpolation modes 
 typedef enum {
    IR_NEAREST                        = 0,
    IR_LINEAR                         = 1,
@@ -261,6 +261,7 @@ typedef enum {
    IR_SUBLINEAR                      = 18
 } TDef_InterpR;
 
+// Vector interpolation modes
 typedef enum { 
    IV_FAST                           = 0,
    IV_WITHIN                         = 1,
@@ -275,7 +276,7 @@ typedef enum {
    IV_LENGTH_ALIASED                 = 10
 } TDef_InterpV;
 
-// Interpolation modes
+// Interpolation value combination modes
 typedef enum {
    CB_REPLACE   = 0,
    CB_MIN       = 1,
@@ -302,27 +303,27 @@ typedef enum {
 extern int TDef_Size[];
 
 typedef struct TDef {
-   double  NoData;            /*Valeur de novalue*/
-   double *Buffer,*Aux;       /*Buffer temporaire*/
-   int    *Accum;             /*Accumulation Buffer temporaire*/
-   char   *Mask;              /*Masque a appliquer au traitement sur le champs*/
-   char   *Data[4];           /*Composantes du champs (Pointeurs sur les donnees)*/
-   char   *Mode;              /*Module des champs Data is vectoriel*/
-   float  *Pres,*Height;      /*Pression au sol*/
-   float  *Sub;
-   OGRGeometryH *Pick,*Poly;  /*Geometry used in various interpolation method*/
+   double *Buffer,*Aux;       // Buffer temporaire
+   int    *Accum;             // Accumulation Buffer temporaire
+   char   *Mask;              // Masque a appliquer au traitement sur le champs
+   char   *Data[4];           // Composantes du champs (Pointeurs sur les donnees)
+   char   *Mode;              // Module des champs Data is vectoriel
+   float  *Pres,*Height;      // Pression au sol
+   float  *Sub;               // Sub grid resolutions values
+   OGRGeometryH *Pick,*Poly;  // Geometry used in various interpolation method
+   TList  *Segments;          // Liste d'objets de rendue
 
-   TDef_Type Type;            /*Type de donnees du champs*/
-   int NI,NJ,NK,NC,NIJ;       /*Dimensions du champs*/
-   int Idx;                   /*Index displacement into supergrid*/
+   TDef_Type Type;            // Type de donnees du champs
+   int NI,NJ,NK,NC,NIJ;       // Dimensions du champs
+   int Idx;                   // Index displacement into supergrid
 
-   int     CellDim;           /*Defined grid point coverage, point=1 or area=2*/
-   char    Alias;             /*Alias d'un autre TDef (Pointe sur d'autres donnees)*/
-   int     Level;             /*Niveau courant*/
-   int     Limits[3][2];      /*Limits of processing in grid points*/
-   double  CoordLimits[2][2]; /*Limits of processing in latlon*/
-   int     Sample,SubSample;  /*Sample interval in grid points*/
-   TList  *Segments;          /*Liste d'objets de rendue*/
+   double  NoData;            // Valeur de novalue
+   int     CellDim;           // Defined grid point coverage, point=1 or area=2
+   char    Alias;             // Alias d'un autre TDef (Pointe sur d'autres donnees)
+   int     Level;             // Niveau courant
+   int     Limits[3][2];      // Limits of processing in grid points
+   double  CoordLimits[2][2]; // Limits of processing in latlon
+   int     Sample,SubSample;  // Sample interval in grid points
 } TDef;
 
 struct TGeoRef;

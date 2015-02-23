@@ -63,7 +63,7 @@
   } while (0)
 #endif
 
-/*System related constants and functions*/
+// System related constants and functions
 #define SYS_BIG_ENDIAN     0
 #define SYS_LITTLE_ENDIAN  1
 
@@ -81,21 +81,21 @@
 
 #define SYS_IOTHREAD_STACKSIZE 83886080
 
-/*Mathematical related constants and functions*/
+// Mathematical related constants and functions
 #ifndef M_PI
-#define M_PI        3.141592653589793115997963468544        /*Pi*/
+#define M_PI        3.141592653589793115997963468544        // Pi
 #endif
 #ifndef M_2PI
-#define M_2PI       6.283185307179586231995926937088        /*Deux fois Pi*/
+#define M_2PI       6.283185307179586231995926937088        // Deux fois Pi
 #endif
 #ifndef M_PI2
-#define M_PI2       1.570796326794896557998981734272        /*Pi sur deux*/
+#define M_PI2       1.570796326794896557998981734272        // Pi sur deux
 #endif
 #ifndef M_4PI
-#define M_4PI       12.566370614359172463991853874176       /*Quatre foir Pi*/
+#define M_4PI       12.566370614359172463991853874176       // Quatre foir Pi
 #endif
 #ifndef M_PI4
-#define M_PI4       0.785398163397448278999490867136        /*Pi sur quatre*/
+#define M_PI4       0.785398163397448278999490867136        // Pi sur quatre
 #endif
 
 #define TINY_VALUE 1e-300
@@ -140,9 +140,9 @@
 #define FMAX(X,Y)                         (X>Y?X:Y)
 #define FWITHIN(DL,LA0,LO0,LA1,LO1,LA,LO) ((LA>=LA0 && LA<=LA1)?((DL<=180)?(LO>=LO0 && LO<=LO1):((LO<=LO0 && DL>-180) || (LO>=LO1 && DL<180))):0)
 
-/*Geographical related constants and functions*/
-//#define EARTHRADIUS          6378140.0                          /*Rayon de la terre en metres*/
-#define EARTHRADIUS          6371000.0                          /*Rayon de la terre en metres (Utilise par RPN)*/
+// Geographical related constants and functions
+//#define EARTHRADIUS          6378140.0                          ///Rayon de la terre en metres
+#define EARTHRADIUS          6371000.0                          // Rayon de la terre en metres (Utilise par RPN)
 
 #define DIST(E,A0,O0,A1,O1)  ((E+EARTHRADIUS)*acos(sin(A0)*sin(A1)+cos(O0-O1)*cos(A0)*cos(A1)))
 #define COURSE(A0,O0,A1,O1)  (fmod(atan2(sin(O0-O1)*cos(A1),cos(A0)*sin(A1)-sin(A0)*cos(A1)*cos(O0-O1)),M_2PI))
@@ -157,7 +157,7 @@
 
 #define COORD_CLEAR(C)       (C.Lat=C.Lon=C.Elev=-999.0)
 
-/*Structure pour les coordonees*/
+//Structure pour les coordonees
 typedef struct TGridCoord {
    float Lat,Lon,I,J;
 } TGridCoord;

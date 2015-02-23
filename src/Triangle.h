@@ -4,15 +4,16 @@
  * 2100 Trans-Canadienne
  * Dorval, Quebec
  *
- * Projet    : Projection diverses de la carte vectorielle.
- * Fichier   : Array.h
- * Creation  : Janvier 2011 - J.P. Gauthier
+ * Projet       : Librairie Tcl de fichiers standards.
+ * Fichier      : Triangle.h
+ * Creation     : Aout 2002 - J.P. Gauthier - CMC/CMOE
+ * Revision     : $Id$
  *
- * Description: Fichier de definition de structures de donnees
+ * Description: Fonctions de manipulations et de traitements des vertex.
  *
  * Remarques :
  *
- * License      :
+ * License   :
  *    This library is free software; you can redistribute it and/or
  *    modify it under the terms of the GNU Lesser General Public
  *    License as published by the Free Software Foundation,
@@ -31,18 +32,14 @@
  *==============================================================================
  */
 
-#ifndef _Array_h
-#define _Array_h
+#ifndef _Triangle_h
+#define _Triangle_h
 
 #include "Vector.h"
 
-typedef struct T3DArray {
-   Vect3d *Data;
-   double  Value;
-   int     Size;
-} T3DArray;
+#define Bary_Interp1D(B,V)  (B[0]*V[0]+B[1]*V[1]+B[2]*V[2])
 
-T3DArray *T3DArray_Alloc(double Value,int Size);
-void      T3DArray_Free(T3DArray *Array);
+int Bary_Get(Vect3d B,double X,double Y,double X0,double Y0,double X1,double Y1,double X2,double Y2);
+int Bary_Interp(Vect3d B,Vect3d P,Vect3d P0,Vect3d P1,Vect3d P2);
 
 #endif
