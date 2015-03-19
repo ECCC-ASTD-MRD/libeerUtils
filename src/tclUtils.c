@@ -223,9 +223,9 @@ Tcl_HashEntry* TclY_FindHashEntry(Tcl_HashTable *Table,const char *Name) {
 
    Tcl_HashEntry *entry;
 
-   Tcl_MutexLock(&MUTEX_HASH);
+// No mutex on read  Tcl_MutexLock(&MUTEX_HASH);
    entry=Tcl_FindHashEntry(Table,Name);
-   Tcl_MutexUnlock(&MUTEX_HASH);
+// No mutex on read  Tcl_MutexUnlock(&MUTEX_HASH);
 
    return(entry);
 }
@@ -245,14 +245,14 @@ int TclY_HashAll(Tcl_Interp *Interp,Tcl_HashTable *Table) {
 
    lst=Tcl_NewListObj(0,NULL);
 
-   Tcl_MutexLock(&MUTEX_HASH);
+//No mutex on read   Tcl_MutexLock(&MUTEX_HASH);
    entry=Tcl_FirstHashEntry(Table,&ptr);
 
    while (entry) {
       Tcl_ListObjAppendElement(Interp,lst,Tcl_NewStringObj(Tcl_GetHashKey(Table,entry),-1));
       entry=Tcl_NextHashEntry(&ptr);
    }
-   Tcl_MutexUnlock(&MUTEX_HASH);
+//No mutex on read   Tcl_MutexUnlock(&MUTEX_HASH);
 
    Tcl_SetObjResult(Interp,lst);
    return(TCL_OK);

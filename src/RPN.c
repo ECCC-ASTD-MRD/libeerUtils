@@ -37,6 +37,8 @@
 #include "EZTile.h"
 #include "fnom.h"
 
+static const char *RPN_Desc[]={ ">>  ","^^  ","^>  ","!!  ","HY  ","PROJ","MTRX ",NULL };
+
 static char FGFDTLock[MAXFILES];
 
 static pthread_mutex_t RPNFieldMutex=PTHREAD_MUTEX_INITIALIZER;
@@ -491,7 +493,6 @@ void RPN_CopyHead(TRPNHeader *To,TRPNHeader *From) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-static const char *RPN_Desc[]={ ">>  ","^^  ","^>  ","!!  ","HY  ","PROJ","MTRX ",NULL };
 
 int RPN_CopyDesc(int FIdTo,TRPNHeader* const H) {
    

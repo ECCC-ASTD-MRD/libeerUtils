@@ -1027,7 +1027,7 @@ TZRef* EZGrid_GetZRef(const TGrid* __restrict const Grid) {
    TZRef *zref;
 
    if (!Grid) {
-      App_ErrorSet("EZGrid_GetZRef: Invalid grid (%s)",Grid->H.NOMVAR);
+      App_ErrorSet("EZGrid_GetZRef: Invalid grid");
       return(FALSE);
    }
 
@@ -1353,7 +1353,8 @@ TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr) {
    }
    RPN_FieldUnlock();
    
-   /*Check previous master grid existence*/
+   // Check previous master grid existence
+   // mst is no in a critical sectin but its veryyyyyyyyyy unlikelyyyyyy that it will cause problems
    if ((mst=EZGrid_CacheFind(new))) {
       new->GID=mst->GID;
       new->ZRef=mst->ZRef;
@@ -1419,7 +1420,7 @@ int EZGrid_Load(const TGrid* __restrict const Grid,int I0,int J0,int K0,int I1,i
    int        i,j,k;
 
    if (!Grid) {
-      App_ErrorSet("EZGrid_Load: Invalid grid (%s)",Grid->H.NOMVAR);
+      App_ErrorSet("EZGrid_Load: Invalid grid");
       return(FALSE);
    }
 
@@ -1653,7 +1654,7 @@ wordint f77name(ezgrid_getlevels)(wordint *gdid,ftnfloat *levels,wordint *type) 
 int EZGrid_GetLevels(const TGrid* __restrict const Grid,float* __restrict Levels,int* __restrict Type) {
 
    if (!Grid) {
-      App_ErrorSet("EZGrid_GetLevels Invalid grid (%s)",Grid->H.NOMVAR);
+      App_ErrorSet("EZGrid_GetLevels Invalid grid");
       return(FALSE);
    }
 
@@ -1692,7 +1693,7 @@ float EZGrid_GetLevel(const TGrid* __restrict const Grid,float Pressure,float P0
    TZRef  *zref;
 
    if (!Grid) {
-      App_ErrorSet("EZGrid_GetLevel: Invalid grid (%s)",Grid->H.NOMVAR);
+      App_ErrorSet("EZGrid_GetLevel: Invalid grid");
       return(level);
    }
 
@@ -1725,7 +1726,7 @@ float EZGrid_GetPressure(const TGrid* __restrict const Grid,float Level,float P0
    TZRef  *zref;
 
    if (!Grid) {
-      App_ErrorSet("EZGrid_GetPressure: Invalid grid (%s)",Grid->H.NOMVAR);
+      App_ErrorSet("EZGrid_GetPressure: Invalid grid");
       return(pres);
 
    }
@@ -1765,7 +1766,7 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,float Lat,float Lon,int K0,in
    float i,j;
 
    if (!Grid) {
-      App_ErrorSet("EZGrid_LLGetValue: Invalid grid (%s)",Grid->H.NOMVAR);
+      App_ErrorSet("EZGrid_LLGetValue: Invalid grid");
       return(FALSE);
    }
 
@@ -1808,7 +1809,7 @@ int EZGrid_LLGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const Gr
    float i,j;
 
    if (!GridU || !GridV) {
-      App_ErrorSet("EZGrid_LLGetUVValue: Invalid grid (%s,%s)",GridU->H.NOMVAR,GridV->H.NOMVAR);
+      App_ErrorSet("EZGrid_LLGetUVValue: Invalid grid");
       return(FALSE);
    }
 
@@ -1853,7 +1854,7 @@ int EZGrid_IJGetValue(TGrid* __restrict const Grid,float I,float J,int K0,int K1
    float      dx,dy,d[4];
 
    if (!Grid) {
-      App_ErrorSet("EZGrid_IJGetValue: Invalid grid (%s)",Grid->H.NOMVAR);
+      App_ErrorSet("EZGrid_IJGetValue: Invalid grid");
       return(FALSE);
    }
 
@@ -2022,7 +2023,7 @@ int EZGrid_IJGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const Gr
    int        ik=0,k;
 
    if (!GridU || !GridV) {
-      App_ErrorSet("EZGrid_IJGetUVValue: Invalid grid (%s,%s)",GridU->H.NOMVAR,GridV->H.NOMVAR);
+      App_ErrorSet("EZGrid_IJGetUVValue: Invalid grid");
       return(FALSE);
    }
 
@@ -2098,7 +2099,7 @@ int EZGrid_GetValue(const TGrid* __restrict const Grid,int I,int J,int K0,int K1
    int        k,ik=0;
 
    if (!Grid) {
-      App_ErrorSet("EZGrid_GetValue: Invalid grid (%s)",Grid->H.NOMVAR);
+      App_ErrorSet("EZGrid_GetValue: Invalid grid");
       return(FALSE);
    }
 
@@ -2155,7 +2156,7 @@ int EZGrid_GetValues(const TGrid* __restrict const Grid,int Nb,float* __restrict
    int        n,i,j,k;
 
    if (!Grid) {
-      App_ErrorSet("EZGrid_GetValues: Invalid grid (%s)",Grid->H.NOMVAR);
+      App_ErrorSet("EZGrid_GetValues: Invalid grid");
       return(FALSE);
    }
 
@@ -2217,7 +2218,7 @@ int EZGrid_GetArray(TGrid* __restrict const Grid,int K,float* __restrict Value) 
    float *data;
 
    if (!Grid) {
-      App_ErrorSet("EZGrid_GetArray: Invalid grid (%s)",Grid->H.NOMVAR);
+      App_ErrorSet("EZGrid_GetArray: Invalid grid");
       return(FALSE);
    }
 
@@ -2235,7 +2236,7 @@ int EZGrid_GetArray(TGrid* __restrict const Grid,int K,float* __restrict Value) 
 float* EZGrid_GetArrayPtr(TGrid* __restrict const Grid,int K) {
 
    if (!Grid) {
-      App_ErrorSet("EZGrid_GetArrayPtr: Invalid grid (%s)",Grid->H.NOMVAR);
+      App_ErrorSet("EZGrid_GetArrayPtr: Invalid grid");
       return(FALSE);
    }
 
@@ -2281,7 +2282,7 @@ int EZGrid_GetRange(const TGrid* __restrict const Grid,int I0,int J0,int K0,int 
    int        i,j,k;
 
    if (!Grid) {
-      App_ErrorSet("EZGrid_GetRange: Invalid grid (%s)",Grid->H.NOMVAR);
+      App_ErrorSet("EZGrid_GetRange: Invalid grid");
       return(FALSE);
    }
 
@@ -2342,7 +2343,7 @@ int EZGrid_GetDelta(TGrid* __restrict const Grid,int Invert,float* DX,float* DY,
    double       fx,fy,dx[4],dy[4];
 
    if (!Grid) {
-      App_ErrorSet("EZGrid_GetDelta: Invalid grid (%s)",Grid->H.NOMVAR);
+      App_ErrorSet("EZGrid_GetDelta: Invalid grid");
       return(FALSE);
    }
 
