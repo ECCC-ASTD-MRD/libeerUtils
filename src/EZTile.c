@@ -59,7 +59,7 @@ int EZGrid_Wrap(TGrid* __restrict const Grid) {
    Grid->Wrap=0;
    Grid->Pole[0]=Grid->Pole[1]=0.0f;
 
-   RPN_IntLock();
+//   RPN_IntLock();
    // Check for south pole coverage
    i=1.0;j=1.0;
    c_gdllfxy(Grid->GID,&lat,&lon,&i,&j,1);
@@ -81,7 +81,7 @@ int EZGrid_Wrap(TGrid* __restrict const Grid) {
    c_gdllfxy(Grid->GID,&lat,&lon,&i,&j,1);
    c_gdxyfll(Grid->GID,&i,&j,&lat,&lon,1);
 
-   RPN_IntUnlock();
+//   RPN_IntUnlock();
 
    if (Grid->H.GRTYP[0]=='A' || Grid->H.GRTYP[0]=='B' || Grid->H.GRTYP[0]=='G') {
       Grid->Wrap=1;
@@ -1770,9 +1770,9 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,float Lat,float Lon,int K0,in
       return(FALSE);
    }
 
-   RPN_IntLock();
+//   RPN_IntLock();
    c_gdxyfll(Grid->GID,&i,&j,&Lat,&Lon,1);
-   RPN_IntUnlock();
+//   RPN_IntUnlock();
 
    return(EZGrid_IJGetValue(Grid,i-1.0f,j-1.0f,K0,K1,Value));
 }
@@ -1813,9 +1813,9 @@ int EZGrid_LLGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const Gr
       return(FALSE);
    }
 
-   RPN_IntLock();
+//   RPN_IntLock();
    c_gdxyfll(GridU->GID,&i,&j,&Lat,&Lon,1);
-   RPN_IntUnlock();
+//   RPN_IntUnlock();
 
    return(EZGrid_IJGetUVValue(GridU,GridV,i-1.0f,j-1.0f,K0,K1,UU,VV));
 }
@@ -2053,9 +2053,9 @@ int EZGrid_IJGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const Gr
       if (!EZGrid_IsLoaded(tv,k))
          EZGrid_TileGetData(GridV,tv,k,0);
 
-      RPN_IntLock();
+//      RPN_IntLock();
       c_gdxywdval(tu->GID,&UU[ik],&VV[ik],tu->Data[k],tv->Data[k],&I,&J,1);
-      RPN_IntUnlock();
+//      RPN_IntUnlock();
 
       d=DEG2RAD(VV[ik]);
       v=UU[ik]*0.515f;
@@ -2347,7 +2347,7 @@ int EZGrid_GetDelta(TGrid* __restrict const Grid,int Invert,float* DX,float* DY,
       return(FALSE);
    }
 
-   RPN_IntLock();
+//   RPN_IntLock();
 
    for(j=0,gj=1;j<Grid->H.NJ;j++,gj++) {
       idx=j*Grid->H.NI;
@@ -2378,7 +2378,7 @@ int EZGrid_GetDelta(TGrid* __restrict const Grid,int Invert,float* DX,float* DY,
          if (DA) DA[idx]=(Invert?1.0/(fx*fy):(fx*fy));
       }
    }
-   RPN_IntUnlock();
+//   RPN_IntUnlock();
    
    return(TRUE);
 }
@@ -2408,7 +2408,7 @@ int EZGrid_GetLL(TGrid* __restrict const Grid,float* Lat,float* Lon,float* I,flo
    int i,ok;
    float fi,fj;
 
-   RPN_IntLock();
+//   RPN_IntLock();
    for(i=0;i<Nb;i++) {
       fi=I[i]+1.0;
       fj=J[i]+1.0;
@@ -2416,7 +2416,7 @@ int EZGrid_GetLL(TGrid* __restrict const Grid,float* Lat,float* Lon,float* I,flo
          break;
       }
    }
-   RPN_IntUnlock();
+//   RPN_IntUnlock();
    
    return(ok==0);
 }
@@ -2445,9 +2445,9 @@ int EZGrid_GetIJ(TGrid* __restrict const Grid,float* Lat,float* Lon,float* I,flo
 
    int i,ok;
 
-   RPN_IntLock();
+//   RPN_IntLock();
    ok=c_gdxyfll(Grid->GID,I,J,Lat,Lon,Nb);
-   RPN_IntUnlock();
+//   RPN_IntUnlock();
    
    for(i=0;i<Nb;i++) {
       I[i]-=1.0;

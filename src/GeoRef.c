@@ -196,9 +196,9 @@ int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
             ((float*)Scan->Y)[n]=dd?y+0.5:y+1.0;
          }
       }
-      RPN_IntLock();
+//      RPN_IntLock();
       c_gdllfxy(FromRef->Ids[FromRef->NId],(float*)Scan->Y,(float*)Scan->X,(float*)Scan->X,(float*)Scan->Y,n);
-      RPN_IntUnlock();
+//      RPN_IntUnlock();
 
       d=dd?2:1;
       sz=4;
@@ -263,9 +263,9 @@ int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
          }
       }
 
-      RPN_IntLock();
+//      RPN_IntLock();
       c_gdxyfll(ToRef->Ids[ToRef->NId],(float*)Scan->X,(float*)Scan->Y,(float*)Scan->Y,(float*)Scan->X,n);
-      RPN_IntUnlock();
+//      RPN_IntUnlock();
 //EZFIX
       /*If we have the data of source, get it's values right now*/
       if (ToDef) {
@@ -742,7 +742,7 @@ TGeoRef *GeoRef_HardCopy(TGeoRef *Ref) {
       ref->Ids=(int*)malloc(Ref->NbId*sizeof(int));
       memcpy(ref->Ids,Ref->Ids,Ref->NbId*sizeof(int));
       for(i=0;i<ref->NbId;i++)
-         RPN_IntIdIncr(ref->Ids[i]);
+         c_ez_refgrid(ref->Ids[i]);
    }
 
    ref->IG1=Ref->IG1;

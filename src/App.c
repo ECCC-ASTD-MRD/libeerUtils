@@ -558,16 +558,19 @@ inline int App_GetArgs(TApp *App,TApp_Arg *AArg,char *Value) {
    char *endptr=NULL;
    errno=0;
 
-   if (Value) {   
+   if (Value) {
+      if ((--AArg->Multi)<0) {
+         printf("Too many values for parametre -%s, --%s\n",AArg->Short,AArg->Long);
+         exit(EXIT_FAILURE);
+      }
       switch(AArg->Type&(~APP_FLAG)) {
-         case APP_LIST :  (*AArg->Var++)=Value;                                   break;
-         case APP_CHAR :  (*AArg->Var)=Value;                                     break;
-         case APP_UINT32: (*(unsigned int*)AArg->Var)=strtol(Value,&endptr,10);   break;
-         case APP_INT32:  (*(int*)AArg->Var)=strtol(Value,&endptr,10);            break;
-         case APP_UINT64: (*(unsigned long*)AArg->Var)=strtol(Value,&endptr,10);  break;
-         case APP_INT64:  (*(long*)AArg->Var)=strtol(Value,&endptr,10);           break;
-         case APP_FLOAT32:(*(float*)AArg->Var)=strtof(Value,&endptr);             break;
-         case APP_FLOAT64:(*(double*)AArg->Var)=strtod(Value,&endptr);            break;
+         case APP_CHAR :  (*AArg->Var++)=Value;                                     break;
+         case APP_UINT32: (*(unsigned int*)AArg->Var++)=strtol(Value,&endptr,10);   break;
+         case APP_INT32:  (*(int*)AArg->Var++)=strtol(Value,&endptr,10);            break;
+         case APP_UINT64: (*(unsigned long*)AArg->Var++)=strtol(Value,&endptr,10);  break;
+         case APP_INT64:  (*(long*)AArg->Var++)=strtol(Value,&endptr,10);           break;
+         case APP_FLOAT32:(*(float*)AArg->Var++)=strtof(Value,&endptr);             break;
+         case APP_FLOAT64:(*(double*)AArg->Var++)=strtod(Value,&endptr);            break;
       }
    } else {
       if (AArg->Type&APP_FLAG) (*AArg->Var)=(void*)0x01;

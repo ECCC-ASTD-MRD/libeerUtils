@@ -1966,7 +1966,7 @@ int Def_GridInterpAverage(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *From
       App_ErrorSet("Def_GridInterpAverage: Invalid destination");
       return(0);
    }
-   if (!FromRef || !FromDef) {
+   if ((!FromRef || !FromDef) && (Mode!=IR_NOP && Mode!=IR_ACCUM && Mode!=IR_BUFFER)) {
       App_ErrorSet("Def_GridInterpAverage: Invalid source");
       return(0);
    }

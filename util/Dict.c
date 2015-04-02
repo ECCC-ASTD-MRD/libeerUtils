@@ -53,19 +53,19 @@ int main(int argc, char *argv[]) {
    char          *var,*type,*lang,*encoding,*origin,*etiket,*state,*dicfile,*rpnfile[4096],*cfgfile,dicdef[4096];
    
    TApp_Arg appargs[]=
-      { { APP_CHAR|APP_FLAG, (void**)&var,      "n", "nomvar"      , "Search variable name ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
-        { APP_CHAR|APP_FLAG, (void**)&type,     "t", "typvar"      , "Search variable type ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
-        { APP_INT32,         (void**)&ip1,      "1",  "ip1"        , "Search IP1 ("APP_COLOR_GREEN"-1"APP_COLOR_RESET")" },
-        { APP_INT32,         (void**)&ip3,      "3",  "ip3"        , "Search IP3 ("APP_COLOR_GREEN"-1"APP_COLOR_RESET")" },
-        { APP_CHAR,          (void**)&origin,   "o", "origin"      , "Search originator ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
-        { APP_CHAR,          (void**)&etiket,   "k", "etiket"      , "ETIKET modifier ("APP_COLOR_GREEN"\"\""APP_COLOR_RESET")" },
-        { APP_CHAR,          (void**)&state,    "s", "state"       , "Search state ("APP_COLOR_GREEN"all"APP_COLOR_RESET",obsolete,current,future,incomplete)" },
-        { APP_FLAG,          (void**)&desc,     "l", "long"        , "use long description" },
-        { APP_FLAG,          (void**)&search,   "g", "glob"        , "use glob search pattern" },
-        { APP_CHAR,          (void**)&encoding, "e", "encoding"    , "encoding type (iso8859-1,utf8,"APP_COLOR_GREEN"ascii"APP_COLOR_RESET")" },
-        { APP_CHAR,          (void**)&dicfile,  "d", "dictionnary" , "dictionnary file ("APP_COLOR_GREEN"$AFSISIO/datafiles/constants/ops.variable_dictionary.xml"APP_COLOR_RESET")" },
-        { APP_LIST,          (void**)&rpnfile,  "f", "fstd"        , "Check RPN standard file(s) for unknow variables" },
-        { APP_CHAR,          (void**)&cfgfile,  "c", "cfg"         , "Check GEM configuration file for unknow variables" },
+      { { APP_CHAR|APP_FLAG, (void**)&var,      1   , "n", "nomvar"      , "Search variable name ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
+        { APP_CHAR|APP_FLAG, (void**)&type,     1   , "t", "typvar"      , "Search variable type ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
+        { APP_INT32,         (void**)&ip1,      1   , "1",  "ip1"        , "Search IP1 ("APP_COLOR_GREEN"-1"APP_COLOR_RESET")" },
+        { APP_INT32,         (void**)&ip3,      1   , "3",  "ip3"        , "Search IP3 ("APP_COLOR_GREEN"-1"APP_COLOR_RESET")" },
+        { APP_CHAR,          (void**)&origin,   1   , "o", "origin"      , "Search originator ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
+        { APP_CHAR,          (void**)&etiket,   1   , "k", "etiket"      , "ETIKET modifier ("APP_COLOR_GREEN"\"\""APP_COLOR_RESET")" },
+        { APP_CHAR,          (void**)&state,    1   , "s", "state"       , "Search state ("APP_COLOR_GREEN"all"APP_COLOR_RESET",obsolete,current,future,incomplete)" },
+        { APP_FLAG,          (void**)&desc,     1   , "l", "long"        , "use long description" },
+        { APP_FLAG,          (void**)&search,   1   , "g", "glob"        , "use glob search pattern" },
+        { APP_CHAR,          (void**)&encoding, 1   , "e", "encoding"    , "encoding type (iso8859-1,utf8,"APP_COLOR_GREEN"ascii"APP_COLOR_RESET")" },
+        { APP_CHAR,          (void**)&dicfile,  1   , "d", "dictionnary" , "dictionnary file ("APP_COLOR_GREEN"$AFSISIO/datafiles/constants/ops.variable_dictionary.xml"APP_COLOR_RESET")" },
+        { APP_CHAR,          (void**)&rpnfile,  4096, "f", "fstd"        , "Check RPN standard file(s) for unknow variables" },
+        { APP_CHAR,          (void**)&cfgfile,  1   , "c", "cfg"         , "Check GEM configuration file for unknow variables" },
         { 0 } };
         
    memset(rpnfile,0x0,4096*sizeof(char*));
@@ -135,7 +135,7 @@ int main(int argc, char *argv[]) {
    }
    
    // Check for default dicfile
-   sprintf(dicdef, "%s%s",getenv("AFSISIO"),"/datafiles/constants/ops.variable_dictionary.xml");
+   snprintf(dicdef,4096, "%s%s",getenv("AFSISIO"),"/datafiles/constants/ops.variable_dictionary.xml");
    if((ok=Dict_Parse(dicdef,coding))) {
       fprintf(stderr,"%s\n",Dict_Version());
    

@@ -45,9 +45,6 @@ static pthread_mutex_t RPNFieldMutex=PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t RPNFileMutex=PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t RPNIntMutex=PTHREAD_MUTEX_INITIALIZER;
 
-static unsigned short *RPNIntIds=NULL;
-static unsigned int    RPNIntIdsNb=0;
-
 void RPN_FileLock() {
    pthread_mutex_lock(&RPNFileMutex);
 }
@@ -238,8 +235,6 @@ int cs_fstecr(void *Data,int NPak,int Unit, int DateO,int Deet,int NPas,int NI,i
    return(err);
 }
 
-
-
 /*----------------------------------------------------------------------------
  * Nom      : <RPN_IntIdNew>
  * Creation : Janvier 2012 - J.P. Gauthier - CMC/CMOE
@@ -255,51 +250,15 @@ int cs_fstecr(void *Data,int NPak,int Unit, int DateO,int Deet,int NPas,int NI,i
  * Remarques :
  *----------------------------------------------------------------------------
  */
-int RPN_IntIdRealloc(int Nb) {
-
-   if (!(RPNIntIds=(unsigned short *)realloc(RPNIntIds,(RPNIntIdsNb+Nb)*sizeof(unsigned short)))) {
-      App_ErrorSet("Unable to reallocate GeoRef_RPN array to %i elements\n",RPNIntIdsNb+Nb);
-      return(0);
-   }
-
-   memset(&RPNIntIds[RPNIntIdsNb],0x0,Nb*sizeof(unsigned short));
-   RPNIntIdsNb+=Nb;
-
-   return(RPNIntIdsNb);
-}
-
 int RPN_IntIdNew(int NI,int NJ,char* GRTYP,int IG1,int IG2,int IG3, int IG4,int FID) {
 
    int id;
 
    RPN_IntLock();
    id=c_ezqkdef(NI,NJ,GRTYP,IG1,IG2,IG3,IG4,FID);
-
-   if (id>=RPNIntIdsNb && !RPN_IntIdRealloc(256)) {
-      RPN_IntUnlock();
-      return(-1);
-   }
-   RPNIntIds[id]++;
    RPN_IntUnlock();
 
    return(id);
-}
-
-int RPN_IntIdIncr(int Id) {
-
-   if (Id<0)
-      return(0);
-
-   RPN_IntLock();
-   if (Id>=RPNIntIdsNb && !RPN_IntIdRealloc(256)) {
-      RPN_IntUnlock();
-      return(-1);
-   }
-
-   RPNIntIds[Id]++;
-   RPN_IntUnlock();
-
-   return(RPNIntIds[Id]);
 }
 
 /*----------------------------------------------------------------------------
@@ -325,15 +284,9 @@ int RPN_IntIdFree(int Id) {
    if (Id<0)
       return(n);
 //TODO:Check on grid cache
-   RPN_IntLock();
-   if (Id>RPNIntIdsNb) {
-//      fprintf(stderr,"(WARNING) Grid id is not in id cache: %i\n",Id);
-   } else {
-      if (!(n=(--RPNIntIds[Id]))) {
+//  RPN_IntLock();
 //         c_gdrls(Id);
-      }
-   }
-   RPN_IntUnlock();
+//   RPN_IntUnlock();
 
    return(n);
 }
@@ -493,7 +446,6 @@ void RPN_CopyHead(TRPNHeader *To,TRPNHeader *From) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-
 int RPN_CopyDesc(int FIdTo,TRPNHeader* const H) {
    
    TRPNHeader  h;
@@ -538,5 +490,78 @@ int RPN_CopyDesc(int FIdTo,TRPNHeader* const H) {
    }
 
    return(TRUE);
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <RPN_FieldTile>
+ * Creation : Janvier 2008 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Save an RPN field as tiles
+ *
+ * Parametres  :
+ *   <FID>     : File id
+ *   <Def>     : Data definition
+ *   <Head>    : RPN field Header
+ *   <Ref>     : Georeference
+ *   <Data>    : Data value array
+ *   <NI>      : Horizontal tile size
+ *   <NJ>      : Vertical tile size
+ *   <Halo>    : Width of the alo
+ *   <DATYP>   : Data type (RPN value)
+ *   <NPack>   : Facteur de compaction
+ *   <Rewrite> : Reecrire le champs ou pas
+ *
+ * Retour:
+ *  <int>        : Code de reussite (0=erreur, 1=ok)
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+*/
+int RPN_FieldTile(int FID,TDef *Def,TRPNHeader *Head,TGeoRef *Ref,char *Data,int NI,int NJ,int Halo,int DATYP,int NPack,int Rewrite,int Compress) {
+
+   char *tile=NULL;
+   int   i,j,ni,nj,di,dj,pj,no,sz,key=0;
+
+   // Check if tiling asked and if dimensions allow tiling
+   if (!NI || !NJ || (Def->NI<NI && Def->NJ<NJ)) {
+      c_fst_data_length(TDef_Size[Def->Type]);
+      key=c_fstecr(Data,NULL,NPack,FID,Head->DATEO,Head->DEET,Head->NPAS,Def->NI,Def->NJ,1,Head->IP1,Head->IP2,Head->IP3,Head->TYPVAR,Head->NOMVAR,Head->ETIKET,
+                  (Ref?(Ref->Grid[1]!='\0'?&Ref->Grid[1]:Ref->Grid):"X"),Head->IG1,Head->IG2,Head->IG3,Head->IG4,DATYP,Rewrite);
+   } else {
+      // Allocate temp tile
+      sz=TDef_Size[Def->Type];
+      if (!(tile=(char*)malloc((NI+Halo*2)*(NJ+Halo*2)*sz))) {
+         return(0);
+      }
+   
+      // Build and save the tiles, we adjust the tile size if it is too big
+      no=0;
+      for(j=0;j<Def->NJ;j+=NJ) {
+         nj=((j+NJ>Def->NJ)?(Def->NJ-j):NJ)+Halo*2;
+         dj=j-Halo;
+
+         if (dj<0)          { dj+=Halo; nj-=Halo; }
+         if (dj+nj>Def->NJ) { nj-=Halo; }
+
+         for(i=0;i<Def->NI;i+=NI) {
+            no++;
+            ni=((i+NI>Def->NI)?(Def->NI-i):NI)+Halo*2;
+            di=i-Halo;
+            
+            if (di<0)          { di+=Halo; ni-=Halo; }
+            if (di+ni>Def->NI) { ni-=Halo; }
+
+            for(pj=0;pj<nj;pj++) {
+               memcpy(tile+(pj*ni*sz),Data+((dj+pj)*Def->NI+di)*sz,ni*sz);
+            }
+            c_fst_data_length(TDef_Size[Def->Type]);
+            key=c_fstecr(tile,NULL,NPack,FID,Head->DATEO,Head->DEET,Head->NPAS,ni,nj,1,Head->IP1,Head->IP2,no,Head->TYPVAR,Head->NOMVAR,Head->ETIKET,
+                     "#",Head->IG1,Head->IG2,di+1,dj+1,DATYP,Rewrite);
+         }
+      }
+      free(tile);
+   }
+   
+   return(key>=0);
 }
 

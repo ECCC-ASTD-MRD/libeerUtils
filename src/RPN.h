@@ -93,11 +93,10 @@ TRPNField* RPN_FieldReadIndex(int FileId,int Index,TRPNField *Fld);
 TRPNField* RPN_FieldRead(int FileId,int DateV,char *Eticket,int IP1,int IP2,int IP3,char *TypVar,char *NomVar);
 int        RPN_FieldWrite(int FileId,TRPNField *Field);
 void       RPN_CopyHead(TRPNHeader *To,TRPNHeader *From);
+int        RPN_FieldTile(int FID,struct TDef *Def,TRPNHeader *Head,struct TGeoRef *Ref,char *Data,int NI,int NJ,int Halo,int DATYP,int NPack,int Rewrite,int Compress);
 
 int RPN_IntIdNew(int NI,int NJ,char* GRTYP,int IG1,int IG2,int IG3, int IG4,int FID);
 int RPN_IntIdIncr(int Id);
-int RPN_IntIdFree(int Id);
-int RPN_IntIdRealloc(int Nb);
 
 // EER threadsafe fstd functions
 int cs_fstunlockid(int Unit);

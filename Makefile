@@ -21,7 +21,7 @@ INCLUDES    := -I$(LIB_DIR)/include -I$(shell echo $(EC_INCLUDE_PATH) | sed 's/\
 
 ifeq ($(OS),Linux)
 
-   LIBS        := $(LIBS) -Wl,-rpath $(LIB_DIR)/lib -lxml2 -lgdal -lz -lrmn
+   LIBS        := $(LIBS) -Wl,-rpath $(LIB_DIR)/lib -lxml2 -lgdal -lz -lezscint -lrmn
    INCLUDES    := -Isrc -I$(LIB_DIR)/include/libxml2 -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic  $(INCLUDES)
 
 #   CC          = mpicc

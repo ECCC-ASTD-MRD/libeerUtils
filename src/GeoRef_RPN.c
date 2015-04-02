@@ -71,9 +71,9 @@ void GeoRef_Expand(TGeoRef *Ref) {
 
       if (Ref->AX && Ref->AY) {
          if (Ref->Grid[0]=='Z') {
-            RPN_IntLock();
+//            RPN_IntLock();
             c_gdgaxes(Ref->Ids[Ref->NId],Ref->AX,Ref->AY);
-            RPN_IntUnlock();
+//            RPN_IntUnlock();
          } else {
             for(i=0;i<=Ref->X1;i++) {
                Ref->Project(Ref,i,0,&lat,&lon,1,1);
@@ -119,9 +119,9 @@ double GeoRef_RPNDistance(TGeoRef *Ref,double X0,double Y0,double X1, double Y1)
       i[1]=X1+1.0;
       j[1]=Y1+1.0;
 
-      RPN_IntLock();
+//      RPN_IntLock();
       c_gdllfxy(Ref->Ids[Ref->NId],lat,lon,i,j,2);
-      RPN_IntUnlock();
+//      RPN_IntUnlock();
    
       X0=DEG2RAD(lon[0]);
       X1=DEG2RAD(lon[1]);
@@ -227,7 +227,7 @@ int GeoRef_RPNValue(TGeoRef *Ref,TDef *Def,char Mode,int C,double X,double Y,dou
          if (Ref && Ref->Ids) {
             Def_Pointer(Def,0,mem,p0);
             Def_Pointer(Def,1,mem,p1);
-//EZFIX            RPN_IntLock();
+//            RPN_IntLock();
             c_gdxywdval(Ref->Ids[Ref->NId],&valf,&valdf,p0,p1,&x,&y,1);
 
             /*If it's 3D, use the mode for speed since c_gdxywdval only uses 2D*/
@@ -235,7 +235,7 @@ int GeoRef_RPNValue(TGeoRef *Ref,TDef *Def,char Mode,int C,double X,double Y,dou
                c_gdxysval(Ref->Ids[Ref->NId],&valf,(float*)&Def->Mode[mem],&x,&y,1);
             *Length=valf;
             *ThetaXY=valdf;
-//EZFIX            RPN_IntUnlock();
+//            RPN_IntUnlock();
          }
       } else {
          if (Ref->Grid[0]=='Y' || Ref->Grid[0]=='P') {
@@ -262,10 +262,10 @@ int GeoRef_RPNValue(TGeoRef *Ref,TDef *Def,char Mode,int C,double X,double Y,dou
                if (iy<Ref->Y1 && ((float*)p0)[mem+Def->NI]==Def->NoData)                 { return(valid); }
                if (iy<Ref->Y1 && ix<Ref->X1 && ((float*)p0)[mem+Def->NI+1]==Def->NoData) { return(valid); }    
               
-//EZFIX               RPN_IntLock();
+//               RPN_IntLock();
                c_gdxysval(Ref->Ids[Ref->NId],&valf,p0,&x,&y,1);
                *Length=valf;
-//EZFIX               RPN_IntUnlock();
+//               RPN_IntUnlock();
             } else {
                *Length=VertexVal(Ref,Def,C,X,Y,Z);
             }
@@ -330,9 +330,9 @@ int GeoRef_RPNProject(TGeoRef *Ref,double X,double Y,double *Lat,double *Lon,int
    i=X+1.0;
    j=Y+1.0;
 
-   RPN_IntLock();
+//   RPN_IntLock();
    c_gdllfxy(Ref->Ids[(Ref->NId==0&&Ref->Grid[0]=='U'?1:Ref->NId)],&lat,&lon,&i,&j,1);
-   RPN_IntUnlock();
+//   RPN_IntUnlock();
 
    *Lat=lat;
    *Lon=lon>180?lon-=360:lon;
@@ -422,9 +422,9 @@ int GeoRef_RPNUnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double Lon,i
       lat=Lat;
 
       /*Extraire la valeur du point de grille*/
-      RPN_IntLock();
+//      RPN_IntLock();
       c_gdxyfll(Ref->Ids[Ref->NId],&i,&j,&lat,&lon,1);
-      RPN_IntUnlock();
+//      RPN_IntUnlock();
 
       *X=i-1.0;
       *Y=j-1.0;

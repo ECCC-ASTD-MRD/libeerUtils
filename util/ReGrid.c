@@ -134,11 +134,11 @@ int main(int argc, char *argv[]) {
    char     *in=NULL,*out=NULL,*grid=NULL,*type=NULL,*vars[256];
 
    TApp_Arg appargs[]=
-      { { APP_CHAR,  (void**)&in,   "i", "input",  "Input file" },
-        { APP_CHAR,  (void**)&out,  "o", "output", "Output file" },
-        { APP_CHAR,  (void**)&grid, "g", "grid",   "Grid file" },
-        { APP_CHAR,  (void**)&type, "t", "type",   "Interpolation type ("APP_COLOR_GREEN"CONSERVATIVE"APP_COLOR_RESET",NORMALIZED_CONSERVATIVE)" },
-        { APP_LIST,  (void**)&vars, "n", "nomvar", "List of variable to process" },
+      { { APP_CHAR,  (void**)&in,   1,   "i", "input",  "Input file" },
+        { APP_CHAR,  (void**)&out,  1,   "o", "output", "Output file" },
+        { APP_CHAR,  (void**)&grid, 1,   "g", "grid",   "Grid file" },
+        { APP_CHAR,  (void**)&type, 1,   "t", "type",   "Interpolation type ("APP_COLOR_GREEN"CONSERVATIVE"APP_COLOR_RESET",NORMALIZED_CONSERVATIVE)" },
+        { APP_CHAR,  (void**)&vars, 256, "n", "nomvar", "List of variable to process" },
         { APP_NIL } };
 
    memset(vars,0x0,256*sizeof(char*));
