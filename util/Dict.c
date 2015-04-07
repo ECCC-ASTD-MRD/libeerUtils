@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
         { APP_FLAG,          (void**)&search,   1   , "g", "glob"        , "use glob search pattern" },
         { APP_CHAR,          (void**)&encoding, 1   , "e", "encoding"    , "encoding type (iso8859-1,utf8,"APP_COLOR_GREEN"ascii"APP_COLOR_RESET")" },
         { APP_CHAR,          (void**)&dicfile,  1   , "d", "dictionnary" , "dictionnary file ("APP_COLOR_GREEN"$AFSISIO/datafiles/constants/ops.variable_dictionary.xml"APP_COLOR_RESET")" },
-        { APP_CHAR,          (void**)&rpnfile,  4096, "f", "fstd"        , "Check RPN standard file(s) for unknow variables" },
+        { APP_CHAR,          (void**)&rpnfile,  4095, "f", "fstd"        , "Check RPN standard file(s) for unknow variables" },
         { APP_CHAR,          (void**)&cfgfile,  1   , "c", "cfg"         , "Check GEM configuration file for unknow variables" },
         { 0 } };
         
@@ -78,11 +78,6 @@ int main(int argc, char *argv[]) {
       exit(EXIT_FAILURE);      
    }
 
-   if (rpnfile[4095]) {
-      App_Log(app,ERROR,"Too many RPN files, (max=4095)");
-      exit(EXIT_FAILURE);     
-   }
-      
    // Check the language
    if (lang) {
       app->Language=(lang[0]=='f' || lang[0]=='F')?APP_FR:APP_EN;

@@ -75,11 +75,11 @@ int main(int argc, char *argv[]) {
    char     *in=NULL,*out=NULL,*val=NULL,*vars[256];
 
    TApp_Arg appargs[]=
-      { { APP_CHAR,  (void**)&in,   1, "i", "input",  "Input file" },
-        { APP_CHAR,  (void**)&out,  1, "o", "output", "Output file" },
-        { APP_INT32, (void**)&size, 1, "s", "size",   "Tile size in gridpoint" },
-        { APP_INT32, (void**)&halo, 1, "a", "halo",   "Halo size around the tiles ("APP_COLOR_GREEN"0"APP_COLOR_RESET",1 or 2)" },
-        { APP_CHAR,  (void**)&vars, 2, "n", "nomvar", "List of variable to process" },
+      { { APP_CHAR,  (void**)&in,   1,   "i", "input",  "Input file" },
+        { APP_CHAR,  (void**)&out,  1,   "o", "output", "Output file" },
+        { APP_INT32, (void**)&size, 1,   "s", "size",   "Tile size in gridpoint" },
+        { APP_INT32, (void**)&halo, 1,   "a", "halo",   "Halo size around the tiles ("APP_COLOR_GREEN"0"APP_COLOR_RESET",1 or 2)" },
+        { APP_CHAR,  (void**)&vars, 255, "n", "nomvar", "List of variable to process" },
         { 0 } };
 
    memset(vars,0x0,256*sizeof(char*));
