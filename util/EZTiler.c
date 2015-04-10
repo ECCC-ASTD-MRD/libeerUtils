@@ -36,6 +36,43 @@
 #define APP_NAME "EZTiler"
 #define APP_DESC "SMC/CMC/EERS RPN fstd field tiler."
 
+int TileVar(TApp *App,int FIdTo,int NI, int NJ,int Halo,int FIdFrom,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2) {
+
+   TRPNField *fld;
+   int        idlst[RPNMAX],n,ni,nj,nk,nid;
+
+   // Get the number of fields
+   cs_fstinl(FIdFrom,&ni,&nj,&nk,DateV,Etiket,IP1,IP2,-1,TypVar,Var,idlst,&nid,RPNMAX);
+
+   if (nid<=0) {
+      App_Log(App,ERROR,"TileVar: Specified fields do not exist");
+      return(FALSE);
+   }
+
+   // Loop on all found fields
+   for(n=0;n<nid;n++) {
+      
+      if (!(fld=RPN_FieldReadIndex(FIdFrom,idlst[n],NULL))) {
+         App_Log(App,ERROR,"TileVar: Problem loading field %i",idlst[n]);
+         return(FALSE);
+      }
+       
+      // On first pass, copy grid descriptor
+      if (n==0)
+         RPN_CopyDesc(FIdTo,&fld->Head);
+
+      if (!RPN_FieldTile(FIdTo,fld->Def,&fld->Head,fld->Ref,0,NI,NJ,Halo,fld->Head.DATYP,-fld->Head.NBITS,FALSE,FALSE)) {
+         App_Log(App,ERROR,"TileVar: Unable to tile field %i",idlst[n]);         
+         return(FALSE);
+      }
+      
+      RPN_FieldFree(fld);
+   }
+
+   return(nid);
+}
+
+
 int Tile(TApp *App,char *In,char *Out,int Size,int Halo,char **Vars) {
 
    int  in,out,v=0;
@@ -54,11 +91,11 @@ int Tile(TApp *App,char *In,char *Out,int Size,int Halo,char **Vars) {
 
    if (!Vars[0]) {
       App_Log(App,DEBUG,"Tiling everything\n");
-      EZGrid_Tile(out,Size,Size,Halo,in,"","","",-1,-1,-1);
+      TileVar(App,out,Size,Size,Halo,in,"","","",-1,-1,-1);
    } else {
       while(var=Vars[v++]) {
          App_Log(App,DEBUG,"Tiling var %s\n",var);
-         EZGrid_Tile(out,Size,Size,Halo,in,var,"","",-1,-1,-1);
+         TileVar(App,out,Size,Size,Halo,in,var,"","",-1,-1,-1);
       }
    }
 

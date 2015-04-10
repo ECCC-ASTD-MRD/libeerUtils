@@ -142,7 +142,6 @@ int    EZGrid_GetLL(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,fl
 int    EZGrid_GetIJ(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float* J,int Nb);
 
 int    EZGrid_TileGrid(int FIdTo,int NI, int NJ,int Halo,TGrid* restrict const Grid);
-int    EZGrid_Tile(int FIdTo,int NI, int NJ,int Halo,int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2);
 int    EZGrid_UnTile(int FIdTo,int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2);
 
 int    EZGrid_Interp(TGrid* restrict const To,TGrid* restrict const From);

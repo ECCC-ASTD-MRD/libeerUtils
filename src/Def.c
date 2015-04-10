@@ -1283,35 +1283,36 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
                // Transform geometry to field referential
                GPC_OGRProject(geom,LayerRef,ToRef);
 
-               if (Mode==IV_FAST) {
-                  Def_Rasterize(ToDef,ToRef,geom,value,0);
-               } else {
+               // Use enveloppe limits to initialize the initial lookup range
+               OGR_G_GetEnvelope(geom,&env);
+               if (!(env.MaxX<ToRef->X0 || env.MinX>ToRef->X1 || env.MaxY<ToRef->Y0 || env.MinY>ToRef->Y1)) {
+                  
+                  if (Mode==IV_FAST) {
+                     Def_Rasterize(ToDef,ToRef,geom,value,0);
+                  } else {
 
-                  // Get value to split on
-                  area=-1.0;
-                  switch(Mode) {
-                     case IV_FAST                           : break;
-                     case IV_WITHIN                         : mode='W'; type='A'; break;
-                     case IV_INTERSECT                      : mode='I'; type='A'; break;
-                     case IV_CENTROID                       : break;
-                     case IV_ALIASED                        : mode='A'; type='A'; area=1.0; break;
-                     case IV_CONSERVATIVE                   : mode='C'; type='A'; area=OGR_G_Area(geom); break;
-                     case IV_NORMALIZED_CONSERVATIVE        : mode='N'; type='A'; area=OGR_G_Area(geom); break;
-                     case IV_LENGTH_CONSERVATIVE            : mode='C'; type='L'; area=GPC_Length(geom); break;
-                     case IV_LENGTH_NORMALIZED_CONSERVATIVE : mode='N'; type='L'; area=GPC_Length(geom); break;
-                     case IV_LENGTH_ALIASED                 : mode='A'; type='L'; area=GPC_Length(geom); break;
-                     case IV_POINT_CONSERVATIVE             : mode='C'; type='P'; area=1.0; break;
-                  }   
+                     // Get value to split on
+                     area=-1.0;
+                     switch(Mode) {
+                        case IV_FAST                           : break;
+                        case IV_WITHIN                         : mode='W'; type='A'; break;
+                        case IV_INTERSECT                      : mode='I'; type='A'; break;
+                        case IV_CENTROID                       : break;
+                        case IV_ALIASED                        : mode='A'; type='A'; area=1.0; break;
+                        case IV_CONSERVATIVE                   : mode='C'; type='A'; area=OGR_G_Area(geom); break;
+                        case IV_NORMALIZED_CONSERVATIVE        : mode='N'; type='A'; area=OGR_G_Area(geom); break;
+                        case IV_LENGTH_CONSERVATIVE            : mode='C'; type='L'; area=GPC_Length(geom); break;
+                        case IV_LENGTH_NORMALIZED_CONSERVATIVE : mode='N'; type='L'; area=GPC_Length(geom); break;
+                        case IV_LENGTH_ALIASED                 : mode='A'; type='L'; area=GPC_Length(geom); break;
+                        case IV_POINT_CONSERVATIVE             : mode='C'; type='P'; area=1.0; break;
+                     }   
 
-                  // If it's nil then nothing to distribute on
-                  if (area==0.0) {
-                     OGR_G_DestroyGeometry(geom);
-                     continue;
-                  }
+                     // If it's nil then nothing to distribute on
+                     if (area==0.0) {
+                        OGR_G_DestroyGeometry(geom);
+                        continue;
+                     }
 
-                  // Use enveloppe limits to initialize the initial lookup range
-                  OGR_G_GetEnvelope(geom,&env);
-                  if (!(env.MaxX<ToRef->X0 || env.MinX>ToRef->X1 || env.MaxY<ToRef->Y0 || env.MinY>ToRef->Y1)) {
                      env.MaxX+=0.5;env.MaxY+=0.5;
                      env.MinX=env.MinX<0?0:env.MinX;
                      env.MinY=env.MinY<0?0:env.MinY;

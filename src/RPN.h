@@ -38,7 +38,6 @@
 
 #define RPNMAX 2048
 
-struct TDef;
 struct TGeoRef;
 
 typedef struct TRPNFile {
@@ -76,8 +75,8 @@ typedef struct TRPNHeader {
 
 typedef struct TRPNField {
    TRPNHeader     Head;    // Entete du champs
-   struct TGeoRef *Ref;    // Reference geographique horizontale
    struct TDef    *Def;    // Definition des donnees
+   struct TGeoRef *Ref;    // Reference geographique horizontale
 } TRPNField;
 
 int  RPN_CopyDesc(int FIdTo,TRPNHeader* const H);
@@ -89,11 +88,12 @@ void RPN_IntLock(void);
 void RPN_IntUnlock(void); 
 
 TRPNField* RPN_FieldNew();
+void       RPN_FieldFree(TRPNField *Fld);
 TRPNField* RPN_FieldReadIndex(int FileId,int Index,TRPNField *Fld);
 TRPNField* RPN_FieldRead(int FileId,int DateV,char *Eticket,int IP1,int IP2,int IP3,char *TypVar,char *NomVar);
 int        RPN_FieldWrite(int FileId,TRPNField *Field);
 void       RPN_CopyHead(TRPNHeader *To,TRPNHeader *From);
-int        RPN_FieldTile(int FID,struct TDef *Def,TRPNHeader *Head,struct TGeoRef *Ref,char *Data,int NI,int NJ,int Halo,int DATYP,int NPack,int Rewrite,int Compress);
+int        RPN_FieldTile(int FID,struct TDef *Def,TRPNHeader *Head,struct TGeoRef *Ref,int Comp,int NI,int NJ,int Halo,int DATYP,int NPack,int Rewrite,int Compress);
 
 int RPN_IntIdNew(int NI,int NJ,char* GRTYP,int IG1,int IG2,int IG3, int IG4,int FID);
 int RPN_IntIdIncr(int Id);

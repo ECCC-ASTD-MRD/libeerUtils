@@ -310,6 +310,14 @@ TRPNField* RPN_FieldNew(int NI,int NJ,int NK,int NC,TDef_Type Type) {
    return(fld);
 }
 
+void RPN_FieldFree(TRPNField *Fld) {
+   
+   if (Fld->Ref) GeoRef_Free(Fld->Ref);
+   if (Fld->Def) Def_Free(Fld->Def);
+   
+   free(Fld);
+}
+
 TRPNField* RPN_FieldReadIndex(int FileId,int Index,TRPNField *Fld) {
 
    TRPNField  *fld;
@@ -503,7 +511,7 @@ int RPN_CopyDesc(int FIdTo,TRPNHeader* const H) {
  *   <Def>     : Data definition
  *   <Head>    : RPN field Header
  *   <Ref>     : Georeference
- *   <Data>    : Data value array
+ *   <Comp>    : Component into data array
  *   <NI>      : Horizontal tile size
  *   <NJ>      : Vertical tile size
  *   <Halo>    : Width of the alo
@@ -517,51 +525,64 @@ int RPN_CopyDesc(int FIdTo,TRPNHeader* const H) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-int RPN_FieldTile(int FID,TDef *Def,TRPNHeader *Head,TGeoRef *Ref,char *Data,int NI,int NJ,int Halo,int DATYP,int NPack,int Rewrite,int Compress) {
+int RPN_FieldTile(int FID,TDef *Def,TRPNHeader *Head,TGeoRef *Ref,int Comp,int NI,int NJ,int Halo,int DATYP,int NPack,int Rewrite,int Compress) {
 
-   char *tile=NULL;
-   int   i,j,ni,nj,di,dj,pj,no,sz,key=0;
-
-   // Check if tiling asked and if dimensions allow tiling
-   if (!NI || !NJ || (Def->NI<NI && Def->NJ<NJ)) {
-      c_fst_data_length(TDef_Size[Def->Type]);
-      key=c_fstecr(Data,NULL,NPack,FID,Head->DATEO,Head->DEET,Head->NPAS,Def->NI,Def->NJ,1,Head->IP1,Head->IP2,Head->IP3,Head->TYPVAR,Head->NOMVAR,Head->ETIKET,
-                  (Ref?(Ref->Grid[1]!='\0'?&Ref->Grid[1]:Ref->Grid):"X"),Head->IG1,Head->IG2,Head->IG3,Head->IG4,DATYP,Rewrite);
-   } else {
-      // Allocate temp tile
-      sz=TDef_Size[Def->Type];
-      if (!(tile=(char*)malloc((NI+Halo*2)*(NJ+Halo*2)*sz))) {
-         return(0);
-      }
+   char        *tile=NULL,*data=NULL;;
+   int          i,j,k,ip1,ni,nj,di,dj,pj,no,sz,key=0;
+   unsigned int idx;
    
-      // Build and save the tiles, we adjust the tile size if it is too big
-      no=0;
-      for(j=0;j<Def->NJ;j+=NJ) {
-         nj=((j+NJ>Def->NJ)?(Def->NJ-j):NJ)+Halo*2;
-         dj=j-Halo;
+   // Allocate temp tile
+   sz=TDef_Size[Def->Type];
+   if (!(tile=(char*)malloc((NI+Halo*2)*(NJ+Halo*2)*sz))) {
+      return(0);
+   }
+         
+   for(k=0;k<Def->NK;k++) {
+      idx=k*FSIZE2D(Def);
 
-         if (dj<0)          { dj+=Halo; nj-=Halo; }
-         if (dj+nj>Def->NJ) { nj-=Halo; }
+      Def_Pointer(Def,Comp,idx,data);     
 
-         for(i=0;i<Def->NI;i+=NI) {
-            no++;
-            ni=((i+NI>Def->NI)?(Def->NI-i):NI)+Halo*2;
-            di=i-Halo;
-            
-            if (di<0)          { di+=Halo; ni-=Halo; }
-            if (di+ni>Def->NI) { ni-=Halo; }
+      // If IP1 is set, use it otherwise, convert it from levels array
+      if ((ip1=Head->IP1)==-1 || Def->NK>1) {
+         ip1=ZRef_Level2IP(Ref->ZRef.Levels[k],Ref->ZRef.Type,DEFAULT);
+      }
+      
+      // Check if tiling asked and if dimensions allow tiling
+      if (!NI || !NJ || (Def->NI<NI && Def->NJ<NJ)) {
+         c_fst_data_length(TDef_Size[Def->Type]);
+         key=c_fstecr(data,NULL,NPack,FID,Head->DATEO,Head->DEET,Head->NPAS,Def->NI,Def->NJ,1,ip1,Head->IP2,Head->IP3,Head->TYPVAR,Head->NOMVAR,Head->ETIKET,
+                     (Ref?(Ref->Grid[1]!='\0'?&Ref->Grid[1]:Ref->Grid):"X"),Head->IG1,Head->IG2,Head->IG3,Head->IG4,DATYP,Rewrite);
+      } else {
+      
+         // Build and save the tiles, we adjust the tile size if it is too big
+         no=0;
+         for(j=0;j<Def->NJ;j+=NJ) {
+            nj=((j+NJ>Def->NJ)?(Def->NJ-j):NJ)+Halo*2;
+            dj=j-Halo;
 
-            for(pj=0;pj<nj;pj++) {
-               memcpy(tile+(pj*ni*sz),Data+((dj+pj)*Def->NI+di)*sz,ni*sz);
+            if (dj<0)          { dj+=Halo; nj-=Halo; }
+            if (dj+nj>Def->NJ) { nj-=Halo; }
+
+            for(i=0;i<Def->NI;i+=NI) {
+               no++;
+               ni=((i+NI>Def->NI)?(Def->NI-i):NI)+Halo*2;
+               di=i-Halo;
+               
+               if (di<0)          { di+=Halo; ni-=Halo; }
+               if (di+ni>Def->NI) { ni-=Halo; }
+
+               for(pj=0;pj<nj;pj++) {
+                  memcpy(tile+(pj*ni*sz),data+((dj+pj)*Def->NI+di)*sz,ni*sz);
+               }
+               c_fst_data_length(TDef_Size[Def->Type]);
+               key=c_fstecr(tile,NULL,NPack,FID,Head->DATEO,Head->DEET,Head->NPAS,ni,nj,1,ip1,Head->IP2,no,Head->TYPVAR,Head->NOMVAR,Head->ETIKET,
+                        "#",Head->IG1,Head->IG2,di+1,dj+1,DATYP,Rewrite);
             }
-            c_fst_data_length(TDef_Size[Def->Type]);
-            key=c_fstecr(tile,NULL,NPack,FID,Head->DATEO,Head->DEET,Head->NPAS,ni,nj,1,Head->IP1,Head->IP2,no,Head->TYPVAR,Head->NOMVAR,Head->ETIKET,
-                     "#",Head->IG1,Head->IG2,di+1,dj+1,DATYP,Rewrite);
          }
       }
-      free(tile);
    }
+   
+   free(tile);
    
    return(key>=0);
 }
-
