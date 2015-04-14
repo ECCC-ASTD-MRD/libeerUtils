@@ -178,6 +178,11 @@ typedef struct TPoint2D {
 int QSort_Double(const void *A,const void *B);
 int QSort_Float(const void *A,const void *B);
 int QSort_Int(const void *A,const void *B);
+int QSort_DecDouble(const void *A,const void *B);
+int QSort_DecFloat(const void *A,const void *B);
+int QSort_DecInt(const void *A,const void *B);
+
+void Unique(void* restrict Arr, int* restrict Size, int NBytes);
 
 double InterpCubic(double X0,double X1,double X2, double X3,double F);
 double InterpHermite(double X0,double X1,double X2, double X3,double F,double T,double B);

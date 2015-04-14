@@ -79,10 +79,37 @@ typedef enum { STOP,RUN,DONE } TApp_State;
 typedef enum { APP_NIL=0x0,APP_FLAG=0x01,APP_CHAR=0x02,APP_UINT32=0x04,APP_INT32=0x06,APP_UINT64=0x08,APP_INT64=0x0A,APP_FLOAT32=0x0C,APP_FLOAT64=0x0E } TApp_Type;
 typedef enum { APP_FR=0x0,APP_EN=0x01 } TApp_Lang;
 
+typedef enum { APP_OK=1,APP_ERR=0 } TApp_RetCode;
+#define APP_ASRT_OK(x) if( (x)!=APP_OK ) return(APP_ERR)
+#define APP_ASRT_OK_M(Fct,App, ...) \
+   if( (Fct)!=APP_OK ) { \
+      App_Log(App,ERROR, __VA_ARGS__); \
+      return(APP_ERR); \
+   }
+// Check FST function and return the specified value if an error was encountered
+#define APP_FST_ASRT_H(Fct,App, ...) \
+   if( (Fct) < 0 ) { \
+      App_Log(App,ERROR, __VA_ARGS__); \
+      return(APP_ERR); \
+   }
+#define APP_FST_ASRT(Fct,App, ...) \
+   if( (Fct) != 0 ) { \
+      App_Log(App,ERROR, __VA_ARGS__); \
+      return(APP_ERR); \
+   }
+#define APP_MEM_ASRT(Buf,Fct,App) \
+   if( !(Buf=(Fct)) ) { \
+      App_Log(App,ERROR,"(%s) Could not allocate memory for field %s at line %d.\n",__func__,#Buf,__LINE__); \
+      return(APP_ERR); \
+   }
+#define APP_FREE(Ptr) if(Ptr) free(Ptr)
+
+
+
 // Argument definitions
 typedef struct TApp_Arg {
    TApp_Type    Type;                    // Argument type
-   void         **Var;                   // Where to put the argument value(s)
+   void         *Var;                    // Where to put the argument value(s)
    int          Multi;                   // Multiplicity of the argument (Maximum number of values for a list)
    char         *Short,*Long,*Info;      // Argument flags and description
 } TApp_Arg;

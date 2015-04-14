@@ -156,6 +156,7 @@ extern int c_fstluk();
 extern int c_fstsui();
 extern int c_fstinl();
 extern int c_fstopc();
+extern int c_fsteff();
 
 // RPN external EZscint functions
 extern int  c_ezfreegridset(int gdid, int index);

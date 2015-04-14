@@ -9,7 +9,7 @@
  * Creation  : Septembre 2008 - J.P. Gauthier
  * Revision  : $Id$
  *
- * Description: Fonctions génériques à toute les applications.
+ * Description: Fonctions gÃ©nÃ©riques Ã  toute les applications.
  *
  * Remarques :
  *
@@ -363,7 +363,7 @@ void App_LogClose(TApp *App) {
  * Nom      : <App_Log>
  * Creation : Septembre 2008 - J.P. Gauthier
  *
- * But      : Imprimer un message de manière standard
+ * But      : Imprimer un message de maniÃ¨re standard
  *
  * Parametres :
  *  <App>     : Parametres de l'application
@@ -454,7 +454,7 @@ void App_Progress(TApp *App,float Percent,const char *Format,...) {
  * Nom      : <App_LogLevel>
  * Creation : Septembre 2008 - J.P. Gauthier
  *
- * But      : Imprimer un message de manière standard
+ * But      : Imprimer un message de maniÃ¨re standard
  *
  * Parametres :
  *  <App>     : Parametres de l'application
@@ -553,6 +553,7 @@ void App_PrintArgs(TApp *App,TApp_Arg *AArgs,char *Token,int Flags) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
+#define LST_ASSIGN(type,lst,val) *(type)lst=val; lst=(type)lst+1
 inline int App_GetArgs(TApp *App,TApp_Arg *AArg,char *Value) {
    
    char *endptr=NULL;
@@ -564,16 +565,16 @@ inline int App_GetArgs(TApp *App,TApp_Arg *AArg,char *Value) {
          exit(EXIT_FAILURE);
       }
       switch(AArg->Type&(~APP_FLAG)) {
-         case APP_CHAR :  (*AArg->Var++)=Value;                                     break;
-         case APP_UINT32: (*(unsigned int*)AArg->Var++)=strtol(Value,&endptr,10);   break;
-         case APP_INT32:  (*(int*)AArg->Var++)=strtol(Value,&endptr,10);            break;
-         case APP_UINT64: (*(unsigned long*)AArg->Var++)=strtol(Value,&endptr,10);  break;
-         case APP_INT64:  (*(long*)AArg->Var++)=strtol(Value,&endptr,10);           break;
-         case APP_FLOAT32:(*(float*)AArg->Var++)=strtof(Value,&endptr);             break;
-         case APP_FLOAT64:(*(double*)AArg->Var++)=strtod(Value,&endptr);            break;
+         case APP_CHAR :  LST_ASSIGN(char**,        AArg->Var,Value);                   break;
+         case APP_UINT32: LST_ASSIGN(unsigned int*, AArg->Var,strtol(Value,&endptr,10));break;
+         case APP_INT32:  LST_ASSIGN(int*,          AArg->Var,strtol(Value,&endptr,10));break;
+         case APP_UINT64: LST_ASSIGN(unsigned long*,AArg->Var,strtol(Value,&endptr,10));break;
+         case APP_INT64:  LST_ASSIGN(long*,         AArg->Var,strtol(Value,&endptr,10));break;
+         case APP_FLOAT32:LST_ASSIGN(float*,        AArg->Var,strtof(Value,&endptr));   break;
+         case APP_FLOAT64:LST_ASSIGN(double*,       AArg->Var,strtod(Value,&endptr));   break;
       }
    } else {
-      if (AArg->Type&APP_FLAG) (*AArg->Var)=(void*)0x01;
+      if (AArg->Type&APP_FLAG) *(int*)AArg->Var=0x01;
    }
    if (!(AArg->Type&APP_FLAG) && (!Value || (endptr && endptr==Value))) {
       printf("Invalid value for parametre -%s, --%s: %s\n",AArg->Short,AArg->Long,Value);
@@ -926,3 +927,4 @@ void App_SeedInit(TApp *App) {
 
    App->OMPSeed[0]=App->Seed+=1000000*App->RankMPI;
 }
+

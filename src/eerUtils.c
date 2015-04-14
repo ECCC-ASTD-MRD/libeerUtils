@@ -581,6 +581,90 @@ int QSort_Int(const void *A, const void *B) {
    return(*(const int*)A)-(*(const int*)B);
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <QSort_Dec*>
+ * Creation : Mars 2015 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Fonction de comparaison pour le tri decroissant
+ *
+ * Parametres :
+ *  <V0>      : Valeur 0
+ *  <V1>      : Valeur 1
+ *
+ * Retour:
+ *      - A negative value if B < A
+ *      - A positive value if B > A
+ *      - Zero if B == A
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+*/
+int QSort_DecDouble(const void *A,const void *B){
+   if (*(const double*)B<*(const double*)A) {
+      return(-1);
+   } else if (*(const double*)B>*(const double*)A) {
+      return(1);
+   } else {
+      return(0);
+   }
+}
+
+int QSort_DecFloat(const void *A,const void *B){
+   if (*(const float*)B<*(const float*)A) {
+      return(-1);
+   } else if (*(const float*)B>*(const float*)A) {
+      return(1);
+   } else {
+      return(0);
+   }
+}
+
+int QSort_DecInt(const void *A, const void *B) {
+   return(*(const int*)B)-(*(const int*)A);
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <Unique>
+ * Creation : Mars 2015 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Réduit une liste ordonnée de valeurs en une liste ordonnée de
+ *            valeurs uniques.
+ *
+ * Parametres :
+ *  <Arr>   : Liste de valeurs (sera modifiée)
+ *  <Size>  : Nombre de valeurs (sera ajusté)
+ *  <NBytes>: Nombre de bytes par valeur
+ *
+ * Retour   : 
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
+void Unique(void* restrict Arr, int* restrict Size, int NBytes) {
+    int i,j,b;
+    char *v,*p,*arr=(char*)Arr;
+
+    for(i=1,j=0; i<*Size; ++i) {
+        v=&arr[i*NBytes];
+        p=&arr[j*NBytes];
+
+        for(b=0; b<NBytes; ++b) {
+            if( v[b] != p[b] ) {
+                if( ++j != i ) {
+                    for(b=0; b<NBytes; ++b) {
+                        p[b] = v[b];
+                    }
+                }
+                break;
+            }
+        }
+    }
+    if( ++j!=i ) *Size=j;
+}
+
+
 double HCentile(double *M,int N,int K) {
 
    register int    i,j,l,m;
