@@ -50,25 +50,25 @@ int main(int argc, char *argv[]) {
    TApp          *app;
    TDict_Encoding coding;
    int            ok=1,desc=DICT_SHORT,search=DICT_EXACT,st=DICT_ALL,ip1,ip2,ip3;
-   char          *var,*type,*lang,*encoding,*origin,*etiket,*state,*dicfile,*rpnfile[4096],*cfgfile,dicdef[4096];
+   char          *var,*type,*lang,*encoding,*origin,*etiket,*state,*dicfile,*rpnfile[APP_LISTMAX],*cfgfile,dicdef[APP_BUFMAX];
    
    TApp_Arg appargs[]=
-      { { APP_CHAR|APP_FLAG, (void**)&var,      1   , "n", "nomvar"      , "Search variable name ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
-        { APP_CHAR|APP_FLAG, (void**)&type,     1   , "t", "typvar"      , "Search variable type ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
-        { APP_INT32,         (void**)&ip1,      1   , "1",  "ip1"        , "Search IP1 ("APP_COLOR_GREEN"-1"APP_COLOR_RESET")" },
-        { APP_INT32,         (void**)&ip3,      1   , "3",  "ip3"        , "Search IP3 ("APP_COLOR_GREEN"-1"APP_COLOR_RESET")" },
-        { APP_CHAR,          (void**)&origin,   1   , "o", "origin"      , "Search originator ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
-        { APP_CHAR,          (void**)&etiket,   1   , "k", "etiket"      , "ETIKET modifier ("APP_COLOR_GREEN"\"\""APP_COLOR_RESET")" },
-        { APP_CHAR,          (void**)&state,    1   , "s", "state"       , "Search state ("APP_COLOR_GREEN"all"APP_COLOR_RESET",obsolete,current,future,incomplete)" },
-        { APP_FLAG,          (void**)&desc,     1   , "l", "long"        , "use long description" },
-        { APP_FLAG,          (void**)&search,   1   , "g", "glob"        , "use glob search pattern" },
-        { APP_CHAR,          (void**)&encoding, 1   , "e", "encoding"    , "encoding type (iso8859-1,utf8,"APP_COLOR_GREEN"ascii"APP_COLOR_RESET")" },
-        { APP_CHAR,          (void**)&dicfile,  1   , "d", "dictionnary" , "dictionnary file ("APP_COLOR_GREEN"$AFSISIO/datafiles/constants/ops.variable_dictionary.xml"APP_COLOR_RESET")" },
-        { APP_CHAR,          (void**)&rpnfile,  4095, "f", "fstd"        , "Check RPN standard file(s) for unknow variables" },
-        { APP_CHAR,          (void**)&cfgfile,  1   , "c", "cfg"         , "Check GEM configuration file for unknow variables" },
+      { { APP_CHAR|APP_FLAG, &var,      1,             "n", "nomvar"      , "Search variable name ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
+        { APP_CHAR|APP_FLAG, &type,     1,             "t", "typvar"      , "Search variable type ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
+        { APP_INT32,         &ip1,      1,             "1",  "ip1"        , "Search IP1 ("APP_COLOR_GREEN"-1"APP_COLOR_RESET")" },
+        { APP_INT32,         &ip3,      1,             "3",  "ip3"        , "Search IP3 ("APP_COLOR_GREEN"-1"APP_COLOR_RESET")" },
+        { APP_CHAR,          &origin,   1,             "o", "origin"      , "Search originator ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
+        { APP_CHAR,          &etiket,   1,             "k", "etiket"      , "ETIKET modifier ("APP_COLOR_GREEN"\"\""APP_COLOR_RESET")" },
+        { APP_CHAR,          &state,    1,             "s", "state"       , "Search state ("APP_COLOR_GREEN"all"APP_COLOR_RESET",obsolete,current,future,incomplete)" },
+        { APP_FLAG,          &desc,     1,             "l", "long"        , "use long description" },
+        { APP_FLAG,          &search,   1,             "g", "glob"        , "use glob search pattern" },
+        { APP_CHAR,          &encoding, 1,             "e", "encoding"    , "encoding type (iso8859-1,utf8,"APP_COLOR_GREEN"ascii"APP_COLOR_RESET")" },
+        { APP_CHAR,          &dicfile,  1,             "d", "dictionnary" , "dictionnary file ("APP_COLOR_GREEN"$AFSISIO/datafiles/constants/ops.variable_dictionary.xml"APP_COLOR_RESET")" },
+        { APP_CHAR,          rpnfile,   APP_LISTMAX-1, "f", "fstd"        , "Check RPN standard file(s) for unknow variables" },
+        { APP_CHAR,          &cfgfile,  1,             "c", "cfg"         , "Check GEM configuration file for unknow variables" },
         { 0 } };
         
-   memset(rpnfile,0x0,4096*sizeof(char*));
+   memset(rpnfile,0x0,APP_LISTMAX*sizeof(rpnfile[0]));
    var=type=lang=encoding=dicfile=cfgfile=origin=etiket=state=NULL;
    ip1=ip2=ip3=-1;
    
@@ -130,7 +130,7 @@ int main(int argc, char *argv[]) {
    }
    
    // Check for default dicfile
-   snprintf(dicdef,4096, "%s%s",getenv("AFSISIO"),"/datafiles/constants/ops.variable_dictionary.xml");
+   snprintf(dicdef,APP_BUFMAX, "%s%s",getenv("AFSISIO"),"/datafiles/constants/ops.variable_dictionary.xml");
    if((ok=Dict_Parse(dicdef,coding))) {
       fprintf(stderr,"%s\n",Dict_Version());
    

@@ -129,11 +129,11 @@ int main(int argc, char *argv[]) {
    char     *pool,*val,*fst,*var;
 
    TApp_Arg appargs[]=
-      { { APP_CHAR,  (void**)&pool,   1, "i", "info",   "Information file" },
-        { APP_CHAR,  (void**)&fst,    1, "f", "fstd",   "RPN standard file file" },
-        { APP_FLAG,  (void**)&code,   1, "c", "code",   "Code information into RPN record" },
-        { APP_FLAG,  (void**)&decode, 1, "d", "decode", "Decode information from RPN record" },
-        { APP_CHAR,  (void**)&var,    1, "n", "nomvar", "Name of information variable ("APP_COLOR_GREEN"INFO"APP_COLOR_RESET")" },
+      { { APP_CHAR,  &pool,   1, "i", "info",   "Information file" },
+        { APP_CHAR,  &fst,    1, "f", "fstd",   "RPN standard file file" },
+        { APP_FLAG,  &code,   1, "c", "code",   "Code information into RPN record" },
+        { APP_FLAG,  &decode, 1, "d", "decode", "Decode information from RPN record" },
+        { APP_CHAR,  &var,    1, "n", "nomvar", "Name of information variable ("APP_COLOR_GREEN"INFO"APP_COLOR_RESET")" },
         { 0 } };
 
    pool=val=fst=var=NULL;

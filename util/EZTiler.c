@@ -109,17 +109,17 @@ int main(int argc, char *argv[]) {
 
    TApp     *app;
    int      ok=0,size=0,halo=0;
-   char     *in=NULL,*out=NULL,*val=NULL,*vars[256];
+   char     *in=NULL,*out=NULL,*val=NULL,*vars[APP_LISTMAX];
 
    TApp_Arg appargs[]=
-      { { APP_CHAR,  (void**)&in,   1,   "i", "input",  "Input file" },
-        { APP_CHAR,  (void**)&out,  1,   "o", "output", "Output file" },
-        { APP_INT32, (void**)&size, 1,   "s", "size",   "Tile size in gridpoint" },
-        { APP_INT32, (void**)&halo, 1,   "a", "halo",   "Halo size around the tiles ("APP_COLOR_GREEN"0"APP_COLOR_RESET",1 or 2)" },
-        { APP_CHAR,  (void**)&vars, 255, "n", "nomvar", "List of variable to process" },
+      { { APP_CHAR,  &in,   1,             "i", "input",  "Input file" },
+        { APP_CHAR,  &out,  1,             "o", "output", "Output file" },
+        { APP_INT32, &size, 1,             "s", "size",   "Tile size in gridpoint" },
+        { APP_INT32, &halo, 1,             "a", "halo",   "Halo size around the tiles ("APP_COLOR_GREEN"0"APP_COLOR_RESET",1 or 2)" },
+        { APP_CHAR,  vars,  APP_LISTMAX-1, "n", "nomvar", "List of variable to process" },
         { 0 } };
 
-   memset(vars,0x0,256*sizeof(char*));
+   memset(vars,0x0,APP_LISTMAX*sizeof(vars[0]));
    app=App_New(APP_NAME,VERSION,APP_DESC,__TIMESTAMP__);
 
    if (!App_ParseArgs(app,appargs,argc,argv,APP_NOARGSFAIL|APP_ARGSLOG)) {

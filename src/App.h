@@ -67,6 +67,7 @@
 #define APP_COLOR_RESET   "\x1b[0m"
 
 #define APP_BUFMAX    32768               // Maximum input buffer length
+#define APP_LISTMAX   4096                // MAximum number of items in a flag list
 #define APP_SEED      1049731793          // Initial FIXED seed
 
 #define APP_NOARGSFLAG 0x00               // No flag specified
@@ -78,14 +79,15 @@ typedef enum { MUST=-1,ERROR=0,WARNING=1,INFO=2,DEBUG=3,EXTRA=4 } TApp_LogLevel;
 typedef enum { STOP,RUN,DONE } TApp_State;
 typedef enum { APP_NIL=0x0,APP_FLAG=0x01,APP_CHAR=0x02,APP_UINT32=0x04,APP_INT32=0x06,APP_UINT64=0x08,APP_INT64=0x0A,APP_FLOAT32=0x0C,APP_FLOAT64=0x0E } TApp_Type;
 typedef enum { APP_FR=0x0,APP_EN=0x01 } TApp_Lang;
-
 typedef enum { APP_OK=1,APP_ERR=0 } TApp_RetCode;
+
 #define APP_ASRT_OK(x) if( (x)!=APP_OK ) return(APP_ERR)
 #define APP_ASRT_OK_M(Fct,App, ...) \
    if( (Fct)!=APP_OK ) { \
       App_Log(App,ERROR, __VA_ARGS__); \
       return(APP_ERR); \
    }
+
 // Check FST function and return the specified value if an error was encountered
 #define APP_FST_ASRT_H(Fct,App, ...) \
    if( (Fct) < 0 ) { \
@@ -103,8 +105,6 @@ typedef enum { APP_OK=1,APP_ERR=0 } TApp_RetCode;
       return(APP_ERR); \
    }
 #define APP_FREE(Ptr) if(Ptr) free(Ptr)
-
-
 
 // Argument definitions
 typedef struct TApp_Arg {

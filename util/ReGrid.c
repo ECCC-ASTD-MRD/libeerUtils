@@ -131,17 +131,17 @@ int main(int argc, char *argv[]) {
 
    TApp     *app;
    int      ok=0;
-   char     *in=NULL,*out=NULL,*grid=NULL,*type=NULL,*vars[256];
+   char     *in=NULL,*out=NULL,*grid=NULL,*type=NULL,*vars[APP_LISTMAX];
 
    TApp_Arg appargs[]=
-      { { APP_CHAR,  (void**)&in,   1,   "i", "input",  "Input file" },
-        { APP_CHAR,  (void**)&out,  1,   "o", "output", "Output file" },
-        { APP_CHAR,  (void**)&grid, 1,   "g", "grid",   "Grid file" },
-        { APP_CHAR,  (void**)&type, 1,   "t", "type",   "Interpolation type ("APP_COLOR_GREEN"CONSERVATIVE"APP_COLOR_RESET",NORMALIZED_CONSERVATIVE)" },
-        { APP_CHAR,  (void**)&vars, 255, "n", "nomvar", "List of variable to process" },
+      { { APP_CHAR,  &in,   1,             "i", "input",  "Input file" },
+        { APP_CHAR,  &out,  1,             "o", "output", "Output file" },
+        { APP_CHAR,  &grid, 1,             "g", "grid",   "Grid file" },
+        { APP_CHAR,  &type, 1,             "t", "type",   "Interpolation type ("APP_COLOR_GREEN"CONSERVATIVE"APP_COLOR_RESET",NORMALIZED_CONSERVATIVE)" },
+        { APP_CHAR,  vars,  APP_LISTMAX-1, "n", "nomvar", "List of variable to process" },
         { APP_NIL } };
 
-   memset(vars,0x0,256*sizeof(char*));
+   memset(vars,0x0,APP_LISTMAX*sizeof(vars[0]));
    app=App_New(APP_NAME,VERSION,APP_DESC,__TIMESTAMP__);
 
    if (!App_ParseArgs(app,appargs,argc,argv,APP_NOARGSFAIL|APP_ARGSLOG)) {
