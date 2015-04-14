@@ -359,7 +359,7 @@ TRPNField* RPN_FieldReadIndex(int FileId,int Index,TRPNField *Fld) {
    }
    
    // Recuperer les donnees du champs
-//   c_fst_data_length(TRPNField_Size[field->Def->Type]);
+   c_fst_data_length(TDef_Size[fld->Def->Type]);
    if ((ok=cs_fstlukt(fld->Def->Data[0],h.FID,h.KEY,h.GRTYP,&h.NI,&h.NJ,&h.NK))<0) {
       App_ErrorSet("RPN_FieldReadIndex: Could not read field data (c_fstluk failed)");
       return(NULL);
@@ -411,6 +411,7 @@ int RPN_FieldWrite(int FileId,TRPNField *Field) {
 
    int  ok;
 
+   c_fst_data_length(TDef_Size[Field->Def->Type]);
    ok=cs_fstecr(Field->Def->Data[0],-Field->Head.NBITS,FileId,Field->Head.DATEO,Field->Head.DEET,Field->Head.NPAS,
       Field->Head.NI,Field->Head.NJ,Field->Head.NK,Field->Head.IP1,Field->Head.IP2,Field->Head.IP3,Field->Head.TYPVAR,
       Field->Head.NOMVAR,Field->Head.ETIKET,Field->Head.GRTYP,Field->Head.IG1,Field->Head.IG2,Field->Head.IG3,Field->Head.IG4,Field->Head.DATYP,FALSE);
@@ -537,6 +538,8 @@ int RPN_FieldTile(int FID,TDef *Def,TRPNHeader *Head,TGeoRef *Ref,int Comp,int N
       return(0);
    }
          
+   pthread_mutex_lock(&RPNFieldMutex);
+   
    for(k=0;k<Def->NK;k++) {
       idx=k*FSIZE2D(Def);
 
@@ -550,8 +553,8 @@ int RPN_FieldTile(int FID,TDef *Def,TRPNHeader *Head,TGeoRef *Ref,int Comp,int N
       // Check if tiling asked and if dimensions allow tiling
       if (!NI || !NJ || (Def->NI<NI && Def->NJ<NJ)) {
          c_fst_data_length(TDef_Size[Def->Type]);
-         key=c_fstecr(data,NULL,NPack,FID,Head->DATEO,Head->DEET,Head->NPAS,Def->NI,Def->NJ,1,ip1,Head->IP2,Head->IP3,Head->TYPVAR,Head->NOMVAR,Head->ETIKET,
-                     (Ref?(Ref->Grid[1]!='\0'?&Ref->Grid[1]:Ref->Grid):"X"),Head->IG1,Head->IG2,Head->IG3,Head->IG4,DATYP,Rewrite);
+         key=c_fstecr(data,NULL,NPack,FID,Head->DATEO,Head->DEET,Head->NPAS,Def->NI,Def->NJ,1,ip1,Head->IP2,Head->IP3,Head->TYPVAR,
+            Head->NOMVAR,Head->ETIKET,(Ref?(Ref->Grid[1]!='\0'?&Ref->Grid[1]:Ref->Grid):"X"),Head->IG1,Head->IG2,Head->IG3,Head->IG4,DATYP,Rewrite);
       } else {
       
          // Build and save the tiles, we adjust the tile size if it is too big
@@ -575,12 +578,14 @@ int RPN_FieldTile(int FID,TDef *Def,TRPNHeader *Head,TGeoRef *Ref,int Comp,int N
                   memcpy(tile+(pj*ni*sz),data+((dj+pj)*Def->NI+di)*sz,ni*sz);
                }
                c_fst_data_length(TDef_Size[Def->Type]);
-               key=c_fstecr(tile,NULL,NPack,FID,Head->DATEO,Head->DEET,Head->NPAS,ni,nj,1,ip1,Head->IP2,no,Head->TYPVAR,Head->NOMVAR,Head->ETIKET,
-                        "#",Head->IG1,Head->IG2,di+1,dj+1,DATYP,Rewrite);
+               key=c_fstecr(tile,NULL,NPack,FID,Head->DATEO,Head->DEET,Head->NPAS,ni,nj,1,ip1,Head->IP2,no,Head->TYPVAR,
+                  Head->NOMVAR,Head->ETIKET,"#",Head->IG1,Head->IG2,di+1,dj+1,DATYP,Rewrite);
             }
          }
       }
    }
+   
+   pthread_mutex_unlock(&RPNFieldMutex);
    
    free(tile);
    

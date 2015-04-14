@@ -84,7 +84,7 @@ int ZRef_Init(TZRef *ZRef) {
    ZRef->PTop=ZRef->PRef=ZRef->ETop=0.0;
    ZRef->RCoef[0]=ZRef->RCoef[1]=1.0;
    ZRef->P0=ZRef->PCube=ZRef->A=ZRef->B=NULL;
-   ZRef->Version=0;
+   ZRef->Version=-1;
    ZRef->Count=1;
 
    return(1);
@@ -117,7 +117,7 @@ int ZRef_Free(TZRef *ZRef) {
 //      if (ZRef->P0)     free(ZRef->P0);     ZRef->P0=NULL;
       if (ZRef->PCube)  free(ZRef->PCube);  ZRef->PCube=NULL;
 
-      ZRef->Version=0;
+      ZRef->Version=-1;
       ZRef->LevelNb=0;
    }
    return(1);
@@ -181,10 +181,13 @@ int ZRef_Copy(TZRef *ZRef0,TZRef *ZRef1,int Level) {
       ZRef0->Levels[0]=ZRef1->Levels[Level];
    }
    ZRef0->Type=ZRef1->Type;
-   ZRef0->PTop=ZRef0->PRef=ZRef0->ETop=0.0;
-   ZRef0->RCoef[0]=ZRef0->RCoef[1]=1.0;
+   ZRef0->PTop=ZRef1->PTop;
+   ZRef0->PRef=ZRef1->PRef;
+   ZRef0->ETop=ZRef1->ETop;
+   ZRef0->RCoef[0]=ZRef1->RCoef[0];
+   ZRef0->RCoef[1]=ZRef1->RCoef[1];
    ZRef0->P0=ZRef0->A=ZRef0->B=NULL;
-   ZRef0->Version=0;
+   ZRef0->Version=-1;
    ZRef0->Count=1;
 
    return(TRUE);
@@ -214,12 +217,14 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
    double    *buf=NULL;
    float     *pt=NULL;
 
-   if (ZRef->Type==LVL_PRES || ZRef->Type==LVL_UNDEF) {
+   if (ZRef->Type==LVL_PRES) {
      return(1);
    }
 
 #ifdef HAVE_RMN
 
+   RPN_FieldLock();
+   
    // Check for toctoc (field !!)
    key=c_fstinf(Unit,&h.NI,&h.NJ,&h.NK,-1,"",-1,-1,-1,"X","!!");
    if (key>=0) {
@@ -273,7 +278,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
          fprintf(stderr,"(WARNING) ZRef_DecodeRPN: Could not get info on !! field (c_fstprm).\n");
       }
    } else {
-      
+            
       // Check fo regular hybrid (field HY)
       key = c_fstinf(Unit,&h.NI,&h.NJ,&h.NK,-1,"",-1,-1,-1,"X","HY");
       if (key>=0) {
@@ -283,9 +288,8 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
             ZRef->PTop=ZRef_IP2Level(h.IP1,&kind);
             ZRef->RCoef[0]=h.IG2/1000.0f;
             ZRef->RCoef[1]=0.0f;
-            ZRef->PRef=h.IG1;
-            ZRef->Version=0;
-            
+            ZRef->PRef=h.IG1;  
+            ZRef->Type=LVL_HYBRID;
          } else {
             fprintf(stderr,"(WARNING) ZRef_DecodeRPN: Could not get info on HY field (c_fstprm).\n");
          }
@@ -297,26 +301,30 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
       } else {
          
          // Try to figure out if it's SIGMA or ETA
-         if (ZRef->Type==LVL_SIGMA || (ZRef->Type==LVL_ETA && ZRef->PTop==0.0)) {
+         if (ZRef->Type==LVL_SIGMA || (ZRef->Type==LVL_ETA && ZRef->Version==-1)) {
             /*If we find a PT field, we have ETA coordinate otherwise, its'SIGMA*/
             key=c_fstinf(Unit,&h.NI,&h.NJ,&h.NK,-1,"",-1,-1,-1,"","PT");
             ZRef->PTop=10.0;
             if (key>=0) {
                ZRef->Type=LVL_ETA;
                if (!(pt=(float*)malloc(h.NI*h.NJ*h.NK*sizeof(float)))) {
-                  fprintf(stderr,"(WARNING) ZRef_DecodeRPN: Could not allocate memory for top pressure.\n");
+                  fprintf(stderr,"(WARNING) ZRef_DecodeRPN: Could not allocate memory for top pressure, using default PTOP=10.0.\n");
                } else {
                   cd=c_fstluk(pt,key,&h.NI,&h.NJ,&h.NK);
                   if (cd>=0) {
                      ZRef->PTop=pt[0];
                   } else {
-                     fprintf(stderr,"(WARNING) ZRef_DecodeRPN: Could not read PT field (c_fstluk).\n");
+                     fprintf(stderr,"(WARNING) ZRef_DecodeRPN: Could not read PT field (c_fstluk), using default PTOP=10.0.\n");
                   }
                }
             }
          }
       }
+      
+      ZRef->Version=0;
    }
+   
+   RPN_FieldUnlock();
 
    if (ZRef->PCube)  free(ZRef->PCube);  ZRef->PCube=NULL;
    if (buf) free(buf);
@@ -508,6 +516,7 @@ double ZRef_K2Pressure(TZRef* restrict const ZRef,double P0,int K) {
    ptop=ZRef->PTop;
 
    switch(ZRef->Version) {
+      case -1:
       case 0:
          switch(ZRef->Type) {
             case LVL_PRES:
@@ -579,6 +588,7 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
    ptop=ZRef->PTop;
 
    switch(ZRef->Version) {
+      case -1:
       case 0:
          switch(ZRef->Type) {
             case LVL_PRES:
@@ -609,7 +619,8 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
                rtop=ptop/pref;
                for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
                   pk=pref*ZRef->Levels[k];
-                  pr=powf(((ZRef->Levels[k]-rtop)/(1.0-rtop)),ZRef->RCoef[0]);
+                  pr=ZRef->Levels[k]-rtop;
+                  pr=powf((pr<0?1e-32:pr)/(1.0-rtop),ZRef->RCoef[0]);
                   for (ij=0;ij<NIJ;ij++) {
                      Pres[idxk+ij]=pk+(P0[ij]-pref)*pr;
                   }

@@ -204,7 +204,7 @@ static float **EZGrid_TileGetData(const TGrid* __restrict const Grid,TGridTile* 
             f77name(convip)(&ip1,&Grid->ZRef->Levels[k],&type,&mode,&format,&flag);
             key=c_fstinf(Grid->H.FID,&ni,&nj,&nk,Grid->H.DATEV,Grid->H.ETIKET,ip1,Grid->H.IP2,Tile->NO,Grid->H.TYPVAR,Grid->H.NOMVAR);
             if (key<0) {
-               fprintf(stderr,"(WARNING) EZGrid_TileGetData: Could not find tile data(%s) at level %f (%i)\n",Grid->H.NOMVAR,Grid->ZRef->Levels[k],ip1);
+               fprintf(stderr,"(WARNING) EZGrid_TileGetData: Could not find tile data (%s) at level %f (%i)\n",Grid->H.NOMVAR,Grid->ZRef->Levels[k],ip1);
             } else {
                c_fstluk(datak,key,&ni,&nj,&nk);
             }
@@ -504,29 +504,6 @@ static inline int EZGrid_CacheDel(const TGrid* __restrict const Grid) {
 }
 
 /*----------------------------------------------------------------------------
- * Nom      : <EZGrid_CopyDesc>
- * Creation : Janvier 2008 - J.P. Gauthier - CMC/CMOE
- *
- * But      : Copier les descripteur de grille d'un fichier dans un autre
- *
- * Parametres :
- *   <FidTo>     : Fichier dans lequel copier
- *   <Grid>      : Grille dont on veut copier les descripteurs
- *
- * Retour:
- *  <int>        : Code de reussite (0=erreur, 1=ok)
- *
- * Remarques :
- *----------------------------------------------------------------------------
-*/
-int EZGrid_CopyDesc(int FIdTo,TGrid* const Grid) {
-
-   RPN_CopyDesc(FIdTo,&Grid->H);
-   
-   return(TRUE);
-}
-
-/*----------------------------------------------------------------------------
  * Nom      : <EZGrid_TileGrid>
  * Creation : Janvier 2012 - J.P. Gauthier - CMC/CMOE
  *
@@ -557,7 +534,7 @@ int EZGrid_TileGrid(int FIdTo,int NI, int NJ,int Halo,TGrid* __restrict const Gr
 
    tile=(float*)malloc((NI+Halo*2)*(NJ+Halo*2)*sizeof(float));
 
-   EZGrid_CopyDesc(FIdTo,Grid);
+   RPN_CopyDesc(FIdTo,&Grid->H);
 
    ip1=Grid->H.IP1;
    

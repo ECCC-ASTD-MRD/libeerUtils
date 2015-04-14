@@ -107,7 +107,6 @@ typedef struct TGrid {
    pthread_mutex_t Mutex;                // Per grid mutex for IO
 } TGrid;
 
-int    EZGrid_CopyDesc(const int FIdTo,TGrid* restrict const Grid);
 TGrid *EZGrid_New();
 TGrid *EZGrid_Copy(TGrid *Master,int Level);
 void   EZGrid_Free(TGrid* restrict const Grid);
