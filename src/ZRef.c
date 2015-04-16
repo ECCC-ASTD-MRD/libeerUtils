@@ -396,7 +396,6 @@ int ZRef_AddRestrictLevel(float Level) {
  * Creation : Janvier 2012 - J.P. Gauthier - CMC/CMOE
  *
  * But      : Lire la liste des niveaux disponibles
-   return(NbLevels);
  *
  * Parametres   :
  *  <ZRef>      : Vertical referencer
@@ -415,7 +414,6 @@ int ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Order) {
    TRPNHeader h;
    int        l,key,ip1,flag=0,mode=-1,idlst[RPNMAX];
    int        k,k2,kx;
-   float      lvl;
    char       format;
 
 #ifdef HAVE_RMN
@@ -454,32 +452,15 @@ int ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Order) {
       }
       ZRef->LevelNb=k2;
 
-      /*Sort the levels from ground up*/
-      qsort(ZRef->Levels,ZRef->LevelNb,sizeof(float),QSort_Float);
-
-      /*Remove duplicates*/
-      for(k=1;k<ZRef->LevelNb;k++) {
-         if (ZRef->Levels[k]==ZRef->Levels[k-1]) {
-            memcpy(&ZRef->Levels[k-1],&ZRef->Levels[k],(ZRef->LevelNb-k)*sizeof(float));
-            k--;
-            ZRef->LevelNb--;
-         }
-      }
+      /*Sort the levels from ground up and remove duplicates*/
+      qsort(ZRef->Levels,ZRef->LevelNb,sizeof(float),Order==-1?QSort_DecFloat:QSort_Float);
+      Unique(ZRef->Levels,&ZRef->LevelNb,sizeof(ZRef->Levels[0]));
    } else {
       if (!(ZRef->Levels=(float*)malloc(sizeof(float)))) {
          return(0);
       }
       ZRef->LevelNb=1;
       ZRef->Levels[0]=ZRef_IP2Level(H->IP1,&ZRef->Type);
-   }
-   
-   /*Invert the list if requested*/
-   if (Order==-1) {
-      for(k=0;k<ZRef->LevelNb/2;k++) {
-         lvl=ZRef->Levels[k];
-         ZRef->Levels[k]=ZRef->Levels[ZRef->LevelNb-1-k];
-         ZRef->Levels[ZRef->LevelNb-1-k]=lvl;
-      }
    }
 
    if (ZRef->PCube)  free(ZRef->PCube);  ZRef->PCube=NULL;
