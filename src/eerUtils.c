@@ -463,7 +463,7 @@ char* System_StampFormat(int Stamp,char *Buf,char *Format) {
 
    mktime(&tdate);
    strftime(buf,256,Format,&tdate);
-   
+
    return(buf);
 }
 
@@ -636,32 +636,33 @@ int QSort_DecInt(const void *A, const void *B) {
  *  <Size>  : Nombre de valeurs (sera ajusté)
  *  <NBytes>: Nombre de bytes par valeur
  *
- * Retour   : 
+ * Retour   :
  *
  * Remarques :
  *
  *----------------------------------------------------------------------------
  */
 void Unique(void* restrict Arr, int* restrict Size, int NBytes) {
-    int i,j,b;
-    char *v,*p,*arr=(char*)Arr;
 
-    for(i=1,j=0; i<*Size; ++i) {
-        v=&arr[i*NBytes];
-        p=&arr[j*NBytes];
+   int i,j,b;
+   char *v,*p,*arr=(char*)Arr;
 
-        for(b=0; b<NBytes; ++b) {
-            if( v[b] != p[b] ) {
-                if( ++j != i ) {
-                    for(b=0; b<NBytes; ++b) {
-                        p[b] = v[b];
-                    }
-                }
-                break;
+   for(i=1,j=0; i<*Size; ++i) {
+      v=&arr[i*NBytes];
+      p=&arr[j*NBytes];
+
+      for(b=0; b<NBytes; ++b) {
+         if( v[b] != p[b] ) {
+            if( ++j != i ) {
+               for(b=0; b<NBytes; ++b) {
+                  p[b] = v[b];
+               }
             }
-        }
-    }
-    if( ++j!=i ) *Size=j;
+            break;
+         }
+      }
+   }
+   if( ++j!=i ) *Size=j;
 }
 
 
@@ -788,10 +789,10 @@ int strrindex(char *Str) {
 }
 
 int strmatch(const char *Str,char *Pattern) {
-   
+
    int     status=1;
    regex_t re;
-   
+
    if (regcomp(&re,Pattern,REG_EXTENDED|REG_NOSUB|REG_ICASE)==0)  {
       status=regexec(&re,Str,(size_t)0,NULL,0);
       regfree(&re);

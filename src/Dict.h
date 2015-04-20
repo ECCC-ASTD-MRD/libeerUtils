@@ -54,6 +54,8 @@
 #define DICT_EXACT    0
 #define DICT_GLOB     1
 
+#define DICT_MAXLEN   1024
+
 typedef enum { DICT_ASCII=0,DICT_UTF8=1,DICT_ISO8859_1=2 } TDict_Encoding;
 
 typedef struct {
@@ -62,7 +64,7 @@ typedef struct {
    char   Name[8];                                   // NOMVAR
    int    Nature;                                    // Mask for state and nature of variable
    char   Short[2][256];                             // Short description in both language (128 def + 128 modifier)
-   char   Long[2][1024];                             // Long description in both language
+   char   Long[2][DICT_MAXLEN];                      // Long description in both language
    char   Units[32];                                 // Units
    int    Pack;                                      // Optimum packing number of bits
    double Min,Max,Magnitude,Factor,Delta,Precision;  // Range of values and applied factor
@@ -79,7 +81,7 @@ typedef struct {
    char Name[3];                // TYPVAR
    int  Nature;                 // Mask for state and nature of type
    char Short[2][128];          // Short description in both language
-   char Long[2][1024];          // Long description in both language 
+   char Long[2][DICT_MAXLEN];   // Long description in both language
 } TDictType;
 
 char*      Dict_Version(void);
