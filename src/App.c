@@ -126,12 +126,15 @@ void App_Free(TApp *App) {
    free(App->Version);
    free(App->Desc);
    free(App->LogFile);
+   free(App->TimeStamp);
 
    if (App->Tag) free(App->Tag);
 
    if (App->CountsMPI) free(App->CountsMPI);
    if (App->DisplsMPI) free(App->DisplsMPI);
    if (App->OMPSeed)   free(App->OMPSeed);
+
+   free(App);
 }
 
 /*----------------------------------------------------------------------------
@@ -643,6 +646,7 @@ int App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[],int Flags) {
          } else if ((Flags&APP_ARGSLOG) && (!strcasecmp(tok,"-l") || !strcasecmp(tok,"--log"))) { // Log file
             i++;
             if ((ner=ok=(i<argc && argv[i][0]!='-'))) {
+               free(App->LogFile);
                App->LogFile=env?strtok(str," "):argv[i];
             }
          } else if (!strcasecmp(tok,"-v") || !strcasecmp(tok,"--verbose")) {                      // Verbose degree
@@ -772,6 +776,7 @@ int App_ParseInput(TApp *App,void *Def,char *File,TApp_InputParseProc *ParseProc
       }
    }
 
+   fclose(fp);
    return(n);
 }
 
