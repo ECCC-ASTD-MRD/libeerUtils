@@ -238,7 +238,7 @@ switch(DEF->Type) {\
    }\
 }
 
-// Raster interpolation modes 
+// Raster interpolation modes
 typedef enum {
    IR_NEAREST                        = 0,
    IR_LINEAR                         = 1,
@@ -262,7 +262,7 @@ typedef enum {
 } TDef_InterpR;
 
 // Vector interpolation modes
-typedef enum { 
+typedef enum {
    IV_FAST                           = 0,
    IV_WITHIN                         = 1,
    IV_INTERSECT                      = 2,
@@ -341,6 +341,7 @@ int   Def_Tile(TDef *DefTo,TDef *DefTile,int X0,int Y0);
 int   Def_Rasterize(TDef *Def,struct TGeoRef *Ref,OGRGeometryH Geom,double Value,TDef_Combine Comb);
 int   Def_GridCell2OGR(OGRGeometryH Geom,struct TGeoRef *RefTo,struct TGeoRef *RefFrom,int I,int J,int Seg);
 int   Def_GridInterpOGR(TDef *ToDef,struct TGeoRef *ToRef,OGR_Layer *Layer,struct TGeoRef *LayerRef,TDef_InterpV Mode,int Final,char *Field,double Value,TDef_Combine Comb,float *Index);
+
 int   Def_GridInterpAverage(struct TGeoRef *ToRef,TDef *ToDef,struct TGeoRef *FromRef,TDef *FromDef,double *Table,TDef *TmpDef,TDef_InterpR Mode,int Final);
 int   Def_GridInterpConservative(struct TGeoRef *ToRef,TDef *ToDef,struct TGeoRef *FromRef,TDef *FromDef,TDef_InterpR Mode,int Final,int Prec,float *Index);
 int   Def_GridInterp(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *FromDef,char Degree);

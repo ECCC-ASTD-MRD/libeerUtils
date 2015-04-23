@@ -31,7 +31,7 @@ ifeq ($(OS),Linux)
    LD          = ld -shared -x
    LINK_EXEC   = -lm -lpthread
  
-   CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer
+   CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer -DHAVE_GDAL
    ifdef OMPI
       CCOPTIONS   := $(CCOPTIONS) -fopenmp -mpi
    endif
@@ -45,9 +45,9 @@ ifeq ($(OS),Linux)
    endif
 else
 
-   LIBS        := $(LIBS) -lxml2 -lgdal -lz -lrmn
+   LIBS        := $(LIBS) -lxml2 -lezscint -lrmn
 #   LIBS        := $(LIBS) -L$(RMN_DIR)/lib -L$(LIB_DIR)/libxml2-2.9.1/lib $(LIB_DIR)/lib/libgdal.a
-   RMN_INCLUDE = -I/ssm/net/rpn/libs/15.1/aix-7.1-ppc7-64/include -I/ssm/net/rpn/libs/15.1/all/include -I/ssm/net/rpn/libs/15.1/all/include/AIX-powerpc7/
+   RMN_INCLUDE = -I/ssm/net/rpn/libs/15.2/aix-7.1-ppc7-64/include -I/ssm/net/rpn/libs/15.2/all/include -I/ssm/net/rpn/libs/15.2/all/include/AIX-powerpc7/
    INCLUDES    := $(INCLUDES) -Isrc $(RMN_INCLUDE) -I/usr/include/libxml2 -I$(LIB_DIR)/gdal-1.11.0/include
 
    ifdef OMPI

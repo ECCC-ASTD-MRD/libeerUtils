@@ -38,10 +38,15 @@
 #include "eerUtils.h"
 #include "Vector.h"
 #include "ZRef.h"
+
+#ifdef HAVE_GDAL
 #include "gdal.h"
 #include "gdal_alg.h"
 #include "ogr_api.h"
 #include "ogr_srs_api.h"
+#else
+#include "ogr_stub.h"
+#endif
 
 #define GRID_NONE     0x0
 #define GRID_REGULAR  0x1

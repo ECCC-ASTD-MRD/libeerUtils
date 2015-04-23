@@ -67,12 +67,12 @@ void GeoScan_Clear(TGeoScan *Scan) {
 }
 
 void GeoScan_Init(TGeoScan *Scan) {
-   
+
    if (Scan) {
       Scan->X=Scan->Y=NULL;
       Scan->V=NULL;
       Scan->D=NULL;
-      Scan->N=Scan->S=Scan->DX=Scan->DY=0;   
+      Scan->N=Scan->S=Scan->DX=Scan->DY=0;
    }
 }
 
@@ -112,13 +112,13 @@ int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
    if (!Scan || !ToRef || !FromRef) {
       return(0);
    }
-   
+
    // Check limits
    X0=FMAX(X0,FromRef->X0);
    Y0=FMAX(Y0,FromRef->Y0);
    X1=FMIN(X1,FromRef->X1);
    Y1=FMIN(Y1,FromRef->Y1);
-   
+
    /*Adjust scan buffer sizes*/
    Scan->DX=X1-X0+1;
    Scan->DY=Y1-Y0+1;
@@ -142,6 +142,7 @@ int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
 
    /*WKT grid type*/
    if (FromRef->Grid[0]=='W') {
+#ifdef HAVE_GDAL
       for(y=Y0;y<=Y1+dd;y++) {
          idx=(y-FromRef->Y0)*FromDef->NI+(X0-FromRef->X0);
          for(x=X0;x<=X1+dd;x++,idx++,n++) {
@@ -164,7 +165,7 @@ int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
       if (FromRef->Function) {
          OCTTransform(FromRef->Function,n,Scan->X,Scan->Y,NULL);
       }
-
+#endif
       d=dd?2:1;
       sz=8;
 
@@ -209,6 +210,7 @@ int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
 
    /*Project to destination grid*/
    if (ToRef->Grid[0]=='W') {
+#ifdef HAVE_GDAL
       for(x=n-1;x>=0;x--) {
          if (sz==4) {
             x0=(double)((float*)Scan->X)[x];
@@ -221,7 +223,7 @@ int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
          if (ToDef) {
             Scan->D[x]=ToDef->NoData;
          }
-         
+
          if (ToRef->UnProject(ToRef,&Scan->X[x],&Scan->Y[x],y0,x0,0,1)) {
 
             if (ToDef) {
@@ -251,6 +253,7 @@ int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
             }
          }
 */
+#endif
    } else {
 #ifdef HAVE_RMN
       if (sz==8) {
@@ -470,7 +473,7 @@ int GeoRef_Free(TGeoRef *Ref) {
 
   if (!Ref)
       return(0);
-  
+
    if (__sync_sub_and_fetch(&Ref->NRef,1)>0) {
       return(0);
    }
@@ -482,7 +485,7 @@ int GeoRef_Free(TGeoRef *Ref) {
 
    GeoRef_Clear(Ref,1);
    free(Ref);
-   
+
    return(1);
 }
 
@@ -549,6 +552,7 @@ void GeoRef_Clear(TGeoRef *Ref,int New) {
       free(Ref->Ids);  Ref->Ids=NULL;
    }
 
+#ifdef HAVE_GDAL
    if (Ref->GCPTransform) {
       GDALDestroyGCPTransformer(Ref->GCPTransform);
       Ref->GCPTransform=NULL;
@@ -575,7 +579,8 @@ void GeoRef_Clear(TGeoRef *Ref,int New) {
       OCTDestroyCoordinateTransformation(Ref->InvFunction);
       Ref->InvFunction=NULL;
    }
-   
+#endif
+
    Ref->RefFrom=NULL;
    Ref->Project=NULL;
    Ref->UnProject=NULL;
@@ -588,10 +593,10 @@ void GeoRef_Qualify(TGeoRef *Ref) {
 
    Coord co[2];
    double d[2];
-   
+
    if (Ref) {
       Ref->Type=GRID_NONE;
-      
+
       if (Ref->Grid[0]=='X') {
          return;
       }
@@ -676,8 +681,10 @@ int GeoRef_Equal(TGeoRef *Ref0,TGeoRef *Ref1,int Dim) {
    if ((Ref0->Spatial && !Ref1->Spatial) || (!Ref0->Spatial && Ref1->Spatial))
       return(0);
 
+#ifdef HAVE_GDAL
    if (Ref0->Spatial && Ref1->Spatial && !OSRIsSame(Ref0->Spatial,Ref1->Spatial))
       return(0);
+#endif
 
    if ((Ref0->Transform && !Ref1->Transform) || (!Ref0->Transform && Ref1->Transform))
       return(0);
@@ -1007,8 +1014,8 @@ int GeoRef_Intersect(TGeoRef *Ref0,TGeoRef *Ref1,int *X0,int *Y0,int *X1,int *Y1
       REFCLAMP(Ref1,*X0,*Y0,*X1,*Y1);
    } else {
       REFCLAMPBD(Ref1,*X0,*Y0,*X1,*Y1);
-   }   
-      
+   }
+
    return(in);
 }
 
@@ -1048,7 +1055,7 @@ int GeoRef_Limits(TGeoRef *Ref,double *Lat0,double *Lon0,double *Lat1,double *Lo
       }
       return(1);
    }
-   
+
    /*If destination is global*/
    if (Ref->Type&GRID_WRAP) {
       *Lat0=-90.0;  *Lat1=90.0;
@@ -1226,14 +1233,14 @@ int GeoRef_BoundingBox(TGeoRef *Ref,double Lat0,double Lon0,double Lat1,double L
    *J0=*J0<Ref->Y0?Ref->Y0:*J0;
    *I1=*I1>Ref->X1?Ref->X1:*I1;
    *J1=*J1>Ref->Y1?Ref->Y1:*J1;
-   
+
    if (fabs(Lon0-Lon1)>=359.99999999) {
-      *I0=Ref->X0; 
+      *I0=Ref->X0;
       *I1=Ref->X1;
    }
-   
+
    if (fabs(Lat0-Lat1)>=179.99999999) {
-      *J0=Ref->Y0; 
+      *J0=Ref->Y0;
       *J1=Ref->Y1;
    }
    return(1);
@@ -1340,6 +1347,7 @@ int GeoRef_Positional(TGeoRef *Ref,TDef *XDef,TDef *YDef) {
       }
    }
 
+#ifdef HAVE_GDAL
    /*Get rid of transforms and projection functions if the positionnale are already in latlon (GDAL case)*/
    if (Ref->Grid[1]=='\0') {
       if (Ref->Transform)    free(Ref->Transform);    Ref->Transform=NULL;
@@ -1355,6 +1363,7 @@ int GeoRef_Positional(TGeoRef *Ref,TDef *XDef,TDef *YDef) {
       OSRDestroySpatialReference(Ref->Spatial);
       Ref->Spatial=NULL;
    }
+#endif
 
    /*Set secondary gridtype to Y for the project/unproject functions to work correctly*/
    if (Ref->Grid[0]=='W') {

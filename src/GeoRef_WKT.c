@@ -61,6 +61,7 @@ int      GeoRef_WKTUnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double 
 */
 double GeoRef_WKTDistance(TGeoRef *Ref,double X0,double Y0,double X1, double Y1) {
 
+#ifdef HAVE_GDAL
    double i[2],j[2],lat[2],lon[2];
 
    X0+=Ref->X0;
@@ -86,6 +87,10 @@ double GeoRef_WKTDistance(TGeoRef *Ref,double X0,double Y0,double X1, double Y1)
       }
       return(hypot(j[1]-j[0],i[1]-i[0])*OSRGetLinearUnits(Ref->Spatial,NULL));
    }
+#else
+   App_ErrorSet("Function %s is not available, needs to be built with GDAL",__func__);
+   return(0.0);
+#endif
 }
 
 /*--------------------------------------------------------------------------------------------------------------
@@ -119,7 +124,7 @@ int GeoRef_WKTValue(TGeoRef *Ref,TDef *Def,char Mode,int C,double X,double Y,dou
 
   *Length=Def->NoData;
    d=1.0;
-   
+
    /*Si on est a l'interieur de la grille ou que l'extrapolation est activee*/
    if (C<Def->NC && X>=(Ref->X0-d) && Y>=(Ref->Y0-d) && Z>=0 && X<=(Ref->X1+d) && Y<=(Ref->Y1+d) && Z<=Def->NK-1) {
 
@@ -138,9 +143,9 @@ int GeoRef_WKTValue(TGeoRef *Ref,TDef *Def,char Mode,int C,double X,double Y,dou
       if (Def->Mask && !Def->Mask[idx]) {
          return(valid);
       }
-      
+
       valid=1;
-     
+
       if (Def->Type<=9 || Mode=='N' || (X==ix && Y==iy)) {
          mem+=idx;
          Def_GetMod(Def,mem,*Length);
@@ -187,9 +192,10 @@ int GeoRef_WKTValue(TGeoRef *Ref,TDef *Def,char Mode,int C,double X,double Y,dou
 */
 int GeoRef_WKTProject(TGeoRef *Ref,double X,double Y,double *Lat,double *Lon,int Extrap,int Transform) {
 
+#ifdef HAVE_GDAL
    double d,dx,dy,x,y,z=0.0;
    int    sx,sy,s,ok;
-   
+
    d=1.0;
 
    if (X>(Ref->X1+d) || Y>(Ref->Y1+d) || X<(Ref->X0-d) || Y<(Ref->Y0-d)) {
@@ -262,6 +268,10 @@ int GeoRef_WKTProject(TGeoRef *Ref,double X,double Y,double *Lat,double *Lon,int
    *Lat=y;
 
    return(1);
+#else
+   App_ErrorSet("Function %s is not available, needs to be built with GDAL",__func__);
+   return(0);
+#endif
 }
 
 /*--------------------------------------------------------------------------------------------------------------
@@ -287,6 +297,7 @@ int GeoRef_WKTProject(TGeoRef *Ref,double X,double Y,double *Lat,double *Lon,int
 */
 int GeoRef_WKTUnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double Lon,int Extrap,int Transform) {
 
+#ifdef HAVE_GDAL
    double x,y,z=0.0,d=1e32,sd;
    int    s,dx,dy,ok,idx,ni,nj;
    double lx[4],ly[4];
@@ -300,7 +311,7 @@ int GeoRef_WKTUnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double Lon,i
       y=Lat;
       ni=Ref->X1-Ref->X0+1;
       nj=Ref->Y1-Ref->Y0+1;
-            
+
       /* Transform from latlon */
       if (Ref->InvFunction) {
          if (!OCTTransform(Ref->InvFunction,1,&x,&y,NULL)) {
@@ -308,9 +319,9 @@ int GeoRef_WKTUnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double Lon,i
             *Y=-1.0;
             return(0);
          }
-      } 
-      
-      // No negative longitude (GRIB2 LL grid 
+      }
+
+      // No negative longitude (GRIB2 LL grid
       if (Ref->Type&GRID_NOXNEG) {
          x=x<0?x+360:x;
       }
@@ -375,40 +386,40 @@ int GeoRef_WKTUnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double Lon,i
       } else if (Ref->Grid[1]=='Y') {
          if (Ref->Lon && Ref->Lat) {
             idx=0;
-            
+
             // Loop on all point to find the closest
             lx[0]=DEG2RAD(*X); ly[0]=DEG2RAD(*Y);
             for(dy=0;dy<nj;dy++) {
                for(dx=0;dx<ni;dx++) {
-                  lx[1]=DEG2RAD(Ref->Lon[idx]); ly[1]=DEG2RAD(Ref->Lat[idx]);                 
+                  lx[1]=DEG2RAD(Ref->Lon[idx]); ly[1]=DEG2RAD(Ref->Lat[idx]);
                   sd=DIST(0,ly[0],lx[0],ly[1],lx[1]);
-                  
+
                   if (sd<d) {
                      x=dx;y=dy;d=sd;ok=idx;
                   }
                   idx++;
                }
             }
-                       
+
             *X=x;
             *Y=y;
          }
       } else if (Ref->Grid[1]=='X') {
          int x0,y0,x1,y1;
-         
+
          if (Ref->Lon && Ref->Lat) {
             x0=0;y0=0;
             x1=ni-1;y1=nj-1;
             dx=x1;dy=y1;
-            
+
             // Parse as a quadtree to find enclosing cell
             while (dx || dy) {
-               
-               idx=y0*ni+x0; lx[0]=Ref->Lon[idx]; ly[0]=Ref->Lat[idx];                         
+
+               idx=y0*ni+x0; lx[0]=Ref->Lon[idx]; ly[0]=Ref->Lat[idx];
                idx=y0*ni+x1; lx[1]=Ref->Lon[idx]; ly[1]=Ref->Lat[idx];
                idx=y1*ni+x1; lx[2]=Ref->Lon[idx]; ly[2]=Ref->Lat[idx];
-               idx=y1*ni+x0; lx[3]=Ref->Lon[idx]; ly[3]=Ref->Lat[idx];     
-               
+               idx=y1*ni+x0; lx[3]=Ref->Lon[idx]; ly[3]=Ref->Lat[idx];
+
                Vertex_Map(lx,ly,X,Y,Lon,Lat);
 
                // If not within [0,1] then we're outside
@@ -417,7 +428,7 @@ int GeoRef_WKTUnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double Lon,i
                   *Y=-1.0;
                   break;
                }
-  
+
                // Calculate new sub-division
                dx=(x1-x0)>>1;
                dy=(y1-y0)>>1;
@@ -427,17 +438,17 @@ int GeoRef_WKTUnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double Lon,i
                } else {
                   x0+=dx;
                }
-               
+
                if (*Y<0.5) {
                   y1-=dy;
                } else {
                   y0+=dy;
-               }               
+               }
             }
-            
+
             if (*X!=-1) {
                *X=x0+*X;
-               *Y=y0+*Y;          
+               *Y=y0+*Y;
             }
          }
       }
@@ -457,6 +468,10 @@ int GeoRef_WKTUnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double Lon,i
       return(0);
    }
    return(1);
+#else
+   App_ErrorSet("Function %s is not available, needs to be built with GDAL",__func__);
+   return(0);
+#endif
 }
 
 /*--------------------------------------------------------------------------------------------------------------
@@ -478,6 +493,7 @@ int GeoRef_WKTUnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double Lon,i
 */
 int GeoRef_WKTSet(TGeoRef *Ref,char *String,double *Transform,double *InvTransform,OGRSpatialReferenceH Spatial) {
 
+#ifdef HAVE_GDAL
    OGRSpatialReferenceH llref=NULL;
    char                *string=NULL;
 
@@ -550,6 +566,10 @@ int GeoRef_WKTSet(TGeoRef *Ref,char *String,double *Transform,double *InvTransfo
    Ref->Height=NULL;
 
    return(1);
+#else
+   App_ErrorSet("Function %s is not available, needs to be built with GDAL",__func__);
+   return(0);
+#endif
 }
 
 TGeoRef *GeoRef_WKTSetup(int NI,int NJ,int NK,int Type,float *Levels,char *GRTYP,int IG1,int IG2,int IG3,int IG4,char *String,double *Transform,double *InvTransform,OGRSpatialReferenceH Spatial) {
@@ -558,7 +578,9 @@ TGeoRef *GeoRef_WKTSetup(int NI,int NJ,int NK,int Type,float *Levels,char *GRTYP
 
    ref=GeoRef_New();
    GeoRef_Size(ref,0,0,0,NI>0?NI-1:0,NJ>0?NJ-1:0,NK>0?NK-1:0,0);
-   GeoRef_WKTSet(ref,String,Transform,InvTransform,Spatial);
+   if (!GeoRef_WKTSet(ref,String,Transform,InvTransform,Spatial)) {
+      return(NULL);
+   }
 
    if (GRTYP) {
       ref->Grid[0]=GRTYP[0];
