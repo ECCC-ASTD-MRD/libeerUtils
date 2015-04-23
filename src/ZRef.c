@@ -224,7 +224,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
 #ifdef HAVE_RMN
 
    RPN_FieldLock();
-   
+
    // Check for toctoc (field !!)
    key=c_fstinf(Unit,&h.NI,&h.NJ,&h.NK,-1,"",-1,-1,-1,"X","!!");
    if (key>=0) {
@@ -260,7 +260,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
             /* Find corresponding level */
             for(k=0;k<ZRef->LevelNb;k++) {
                ip=ZRef_Level2IP(ZRef->Levels[k],ZRef->Type,DEFAULT);
-               for(j=skip;j<h.NJ;j++) {                  
+               for(j=skip;j<h.NJ;j++) {
                   if (buf[j*h.NI]==ip) {
                      ZRef->A[k]=buf[j*h.NI+1];
                      ZRef->B[k]=buf[j*h.NI+2];
@@ -278,7 +278,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
          fprintf(stderr,"(WARNING) ZRef_DecodeRPN: Could not get info on !! field (c_fstprm).\n");
       }
    } else {
-            
+
       // Check fo regular hybrid (field HY)
       key = c_fstinf(Unit,&h.NI,&h.NJ,&h.NK,-1,"",-1,-1,-1,"X","HY");
       if (key>=0) {
@@ -288,8 +288,8 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
             ZRef->PTop=ZRef_IP2Level(h.IP1,&kind);
             ZRef->RCoef[0]=h.IG2/1000.0f;
             ZRef->RCoef[1]=0.0f;
-            ZRef->PRef=h.IG1;  
-            ZRef->Type=LVL_HYBRID;
+            ZRef->PRef=h.IG1;
+//            ZRef->Type=LVL_HYBRID;
          } else {
             fprintf(stderr,"(WARNING) ZRef_DecodeRPN: Could not get info on HY field (c_fstprm).\n");
          }
@@ -299,7 +299,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
          }
 
       } else {
-         
+
          // Try to figure out if it's SIGMA or ETA
          if (ZRef->Type==LVL_SIGMA || (ZRef->Type==LVL_ETA && ZRef->Version==-1)) {
             /*If we find a PT field, we have ETA coordinate otherwise, its'SIGMA*/
@@ -320,10 +320,10 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
             }
          }
       }
-      
+
       ZRef->Version=0;
    }
-   
+
    RPN_FieldUnlock();
 
    if (ZRef->PCube)  free(ZRef->PCube);  ZRef->PCube=NULL;
@@ -332,7 +332,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
 #else
    App_ErrorSet("Need RMNLIB to process vertical coordinate");
 #endif
-   
+
    return(key>=0);
 }
 
@@ -345,7 +345,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
  * Parametres   :
  *  <Levels>    : Liste des niveaux
  *  <NbLevels>  : Nombre de niveaux
- * 
+ *
  * Retour:
  *  <Ok>        : (Index du champs <0=erreur).
  *
@@ -360,7 +360,7 @@ int ZRef_SetRestrictLevels(float *Levels,int NbLevels) {
 
    memcpy(ZRef_Levels,Levels,ZRef_LevelsNb);
    qsort(ZRef_Levels,ZRef_LevelsNb,sizeof(float),QSort_Float);
-   
+
    return(ZRef_LevelsNb);
 }
 
@@ -372,7 +372,7 @@ int ZRef_SetRestrictLevels(float *Levels,int NbLevels) {
  *
  * Parametres   :
  *  <Level>     : Niveaux
- * 
+ *
  * Retour:
  *  <Ok>        : (Index du champs <0=erreur).
  *
@@ -401,7 +401,7 @@ int ZRef_AddRestrictLevel(float Level) {
  *  <ZRef>      : Vertical referencer
  *  <H>         : RPN header
  *  <Order>     : Ordre de tri des niveaux (IP1) (-1=decroissant, 0=1 seul niveau, 1=croissant)
- * 
+ *
  * Retour:
  *  <Ok>        : (Index du champs <0=erreur).
  *
@@ -417,7 +417,7 @@ int ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Order) {
    char       format;
 
 #ifdef HAVE_RMN
-   
+
    if (Order) {
       /*Get the number of levels*/
       /*In case of # grid, set IP3 to 1 to get NK just for the first tile*/
@@ -467,7 +467,7 @@ int ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Order) {
 #else
    App_ErrorSet("Need RMNLIB to process vertical coordinate");
 #endif
-   
+
    return(ZRef->LevelNb);
 }
 
@@ -970,7 +970,7 @@ double ZRef_IP2Meter(int IP) {
 #else
    App_ErrorSet("Need RMNLIB to process vertical coordinate");
 #endif
-   
+
    return(ZRef_Level2Meter(level,kind));
 }
 
@@ -1003,7 +1003,7 @@ double ZRef_IP2Level(int IP,int *Type) {
 #else
    App_ErrorSet("Need RMNLIB to process vertical coordinate");
 #endif
-   
+
    return(level);
 }
 
@@ -1056,7 +1056,7 @@ int ZRef_Level2IP(float Level,int Type,TZRef_IP1Mode Mode) {
 #else
       App_ErrorSet("Need RMNLIB to process vertical coordinate");
 #endif
-      
+
       return(ip);
    }
 }
