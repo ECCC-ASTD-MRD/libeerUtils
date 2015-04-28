@@ -83,9 +83,9 @@ int  RPN_CopyDesc(int FIdTo,TRPNHeader* const H);
 void RPN_FileLock(void);
 void RPN_FileUnlock(void);
 void RPN_FieldLock(void);
-void RPN_FieldUnlock(void); 
+void RPN_FieldUnlock(void);
 void RPN_IntLock(void);
-void RPN_IntUnlock(void); 
+void RPN_IntUnlock(void);
 
 TRPNField* RPN_FieldNew();
 void       RPN_FieldFree(TRPNField *Fld);
@@ -96,6 +96,7 @@ void       RPN_CopyHead(TRPNHeader *To,TRPNHeader *From);
 int        RPN_FieldTile(int FID,struct TDef *Def,TRPNHeader *Head,struct TGeoRef *Ref,int Comp,int NI,int NJ,int Halo,int DATYP,int NPack,int Rewrite,int Compress);
 
 int RPN_IntIdNew(int NI,int NJ,char* GRTYP,int IG1,int IG2,int IG3, int IG4,int FID);
+int RPN_IntIdFree(int Id);
 int RPN_IntIdIncr(int Id);
 
 // EER threadsafe fstd functions
@@ -211,6 +212,7 @@ extern int  c_ezuvint_m(float *uuout, float *vvout, float *uuin, float *vvin);
 extern int  c_ezsint_mdm(float *zout, int *mask_out, float *zin, int *mask_in);
 extern int  c_ezuvint_mdm(float *uuout, float *vvout, int *mask_out, float *uuin, float *vvin, int *mask_in);
 extern int  c_ezsint_mask(int *mask_out, int *mask_in);
+extern int  c_ez_refgrid(int gdid);
 extern int  c_fst_data_length(int size);
 
 // RPN external BURP functions

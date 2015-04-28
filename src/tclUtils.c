@@ -139,20 +139,20 @@ int TclY_SocketTimeOut(Tcl_Interp *Interp,Tcl_Obj *Obj,int *Receive,int *Send) {
 
    Tcl_Channel    sock=NULL;
    int            mode;
-   struct timeval timeout;      
+   struct timeval timeout;
 
    timeout.tv_usec = 0;
 
    if ((sock=Tcl_GetChannel(Interp,Tcl_GetString(Obj),&mode))) {
       mode=sizeof(timeout);
-      
+
       if (*Receive==0) {
          if (getsockopt(((TcpState*)((Channel*)sock)->instanceData)->fds.fd,SOL_SOCKET,SO_RCVTIMEO,(void * restrict)&timeout,&mode)<0) {
             Tcl_AppendResult(Interp,"TclY_SocketTimeOut: Unable to get receive timeout, getsockopt failed",(char*)NULL);
             return(TCL_ERROR);
          }
          *Receive=timeout.tv_sec;
-         
+
       } else {
          timeout.tv_sec = *Receive;
          if (setsockopt(((TcpState*)((Channel*)sock)->instanceData)->fds.fd,SOL_SOCKET,SO_RCVTIMEO,(char*)&timeout,mode)<0) {
@@ -167,7 +167,7 @@ int TclY_SocketTimeOut(Tcl_Interp *Interp,Tcl_Obj *Obj,int *Receive,int *Send) {
             return(TCL_ERROR);
          }
          *Send=timeout.tv_sec;
-         
+
       } else {
          timeout.tv_sec = *Send;
 
@@ -178,7 +178,7 @@ int TclY_SocketTimeOut(Tcl_Interp *Interp,Tcl_Obj *Obj,int *Receive,int *Send) {
       }
    } else {
       Tcl_AppendResult(Interp,"TclY_SocketTimeOut: Invalid socket/channel \"",Tcl_GetString(Obj),"\"",(char*)NULL);
-      return(TCL_ERROR);    
+      return(TCL_ERROR);
    }
 
    return(TCL_OK);

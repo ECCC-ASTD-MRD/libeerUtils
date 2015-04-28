@@ -148,10 +148,10 @@ int GeoRef_WKTValue(TGeoRef *Ref,TDef *Def,char Mode,int C,double X,double Y,dou
 
       if (Def->Type<=9 || Mode=='N' || (X==ix && Y==iy)) {
          mem+=idx;
-         Def_GetMod(Def,mem,*Length);
+        Def_GetMod(Def,mem,*Length);
 
          /*Pour un champs vectoriel*/
-         if (Def->Data[1]) {
+         if (Def->Data[1] && ThetaXY) {
             Def_Get(Def,0,mem,x);
             Def_Get(Def,1,mem,y);
             *ThetaXY=180+RAD2DEG(atan2(x,y));
@@ -159,7 +159,7 @@ int GeoRef_WKTValue(TGeoRef *Ref,TDef *Def,char Mode,int C,double X,double Y,dou
       } else {
          *Length=VertexVal(Ref,Def,-1,X,Y,Z);
          /*Pour un champs vectoriel*/
-         if (Def->Data[1]) {
+         if (Def->Data[1] && ThetaXY) {
             x=VertexVal(Ref,Def,0,X,Y,Z);
             y=VertexVal(Ref,Def,1,X,Y,Z);
             *ThetaXY=180+RAD2DEG(atan2(x,y));

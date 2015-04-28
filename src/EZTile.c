@@ -85,7 +85,7 @@ int EZGrid_Wrap(TGrid* __restrict const Grid) {
 
    if (Grid->H.GRTYP[0]=='A' || Grid->H.GRTYP[0]=='B' || Grid->H.GRTYP[0]=='G') {
       Grid->Wrap=1;
-   } else {    
+   } else {
       // If the grid wraps
       if (i<Grid->H.NI) {
          // check if the last gridpoint is a repeat of the first
@@ -280,7 +280,7 @@ float* EZGrid_TileBurn(TGrid* __restrict const Grid,TGridTile* __restrict const 
    }
 
    // If a buffer array is passed, use it otherwise use the internal one
-   if (!Data) {    
+   if (!Data) {
       if (!Grid->Data) {
          if (!(Grid->Data=(float*)malloc(Grid->H.NIJ*sizeof(float)))) {
             App_ErrorSet("EZGrid_TileBurn: Unable to allocate memory for grid data (%s)",Grid->H.NOMVAR);
@@ -537,7 +537,7 @@ int EZGrid_TileGrid(int FIdTo,int NI, int NJ,int Halo,TGrid* __restrict const Gr
    RPN_CopyDesc(FIdTo,&Grid->H);
 
    ip1=Grid->H.IP1;
-   
+
    /*Build and save the tiles*/
    for(k=0;k<Grid->H.NK;k++) {
       no=0;
@@ -611,7 +611,7 @@ int EZGrid_Write(int FId,TGrid* __restrict const Grid,int NBits,int Overwrite) {
       return(FALSE);
 
    ip1=Grid->H.IP1;
-   
+
    for(k=0;k<Grid->ZRef->LevelNb;k++) {
       for (tidx=0;tidx<Grid->NbTiles;tidx++) {
          tile=&Grid->Tiles[tidx];
@@ -1099,7 +1099,7 @@ void EZGrid_Clear(TGrid* __restrict const Grid) {
 
    int n,k;
    float f=nanf("NaN");
-   
+
    /*Cleanup tile data*/
    for(n=0;n<Grid->NbTiles;n++) {
       if (Grid->Tiles[n].Data) {
@@ -1222,7 +1222,7 @@ TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr) {
       c_fstinl(new->H.FID,&h.NI,&h.NJ,&h.NK,new->H.DATEV,new->H.ETIKET,-1,new->H.IP2,ip3,new->H.TYPVAR,new->H.NOMVAR,idlst,&new->H.NK,RPNMAX);
    }
    RPN_FieldUnlock();
-   
+
    // Check previous master grid existence
    // mst is no in a critical sectin but its veryyyyyyyyyy unlikelyyyyyy that it will cause problems
    if ((mst=EZGrid_CacheFind(new))) {
@@ -1256,6 +1256,7 @@ TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr) {
          new->Master=1;
       }
    }
+
    EZGrid_CacheAdd(new);
    return(new);
 }
@@ -1776,7 +1777,7 @@ int EZGrid_IJGetValue(TGrid* __restrict const Grid,float I,float J,int K0,int K1
       if (!EZGrid_IsLoaded(t,k)) {
          EZGrid_TileGetData(Grid,t,k,0);
       }
-      
+
       d[0]=t->Data[k][idx];
       d[2]=t->Data[k][idxj];
 
@@ -2249,7 +2250,7 @@ int EZGrid_GetDelta(TGrid* __restrict const Grid,int Invert,float* DX,float* DY,
       }
    }
 //   RPN_IntUnlock();
-   
+
    return(TRUE);
 }
 
@@ -2287,7 +2288,7 @@ int EZGrid_GetLL(TGrid* __restrict const Grid,float* Lat,float* Lon,float* I,flo
       }
    }
 //   RPN_IntUnlock();
-   
+
    return(ok==0);
 }
 
@@ -2318,12 +2319,12 @@ int EZGrid_GetIJ(TGrid* __restrict const Grid,float* Lat,float* Lon,float* I,flo
 //   RPN_IntLock();
    ok=c_gdxyfll(Grid->GID,I,J,Lat,Lon,Nb);
 //   RPN_IntUnlock();
-   
+
    for(i=0;i<Nb;i++) {
       I[i]-=1.0;
       J[i]-=1.0;
    }
-   
+
    return(ok==0);
 }
 

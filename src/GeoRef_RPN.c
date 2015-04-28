@@ -64,7 +64,7 @@ void GeoRef_Expand(TGeoRef *Ref) {
 #ifdef HAVE_RMN
    double lat,lon;
    int    i;
-   
+
    if (Ref->Ids && !Ref->AX) {
       Ref->AX=(float*)calloc((int)Ref->X1+1,sizeof(float));
       Ref->AY=(float*)calloc((int)Ref->Y1+1,sizeof(float));
@@ -122,7 +122,7 @@ double GeoRef_RPNDistance(TGeoRef *Ref,double X0,double Y0,double X1, double Y1)
 //      RPN_IntLock();
       c_gdllfxy(Ref->Ids[Ref->NId],lat,lon,i,j,2);
 //      RPN_IntUnlock();
-   
+
       X0=DEG2RAD(lon[0]);
       X1=DEG2RAD(lon[1]);
       Y0=DEG2RAD(lat[0]);
@@ -165,7 +165,7 @@ int GeoRef_RPNValue(TGeoRef *Ref,TDef *Def,char Mode,int C,double X,double Y,dou
    void        *p0,*p1;
    int          valid=0,mem,ix,iy,n;
    unsigned int idx;
-   
+
    *Length=Def->NoData;
 
 #ifdef HAVE_RMN
@@ -206,12 +206,12 @@ int GeoRef_RPNValue(TGeoRef *Ref,TDef *Def,char Mode,int C,double X,double Y,dou
       ix=lrint(X);
       iy=lrint(Y);
       idx=iy*Def->NI+ix;
-      
+
       // Check for mask
       if (Def->Mask && !Def->Mask[idx]) {
          return(valid);
       }
-      
+
       valid=1;
 
       if (Ref && Ref->Grid[0]=='V') {
@@ -234,7 +234,8 @@ int GeoRef_RPNValue(TGeoRef *Ref,TDef *Def,char Mode,int C,double X,double Y,dou
             if (Def->Data[2])
                c_gdxysval(Ref->Ids[Ref->NId],&valf,(float*)&Def->Mode[mem],&x,&y,1);
             *Length=valf;
-            *ThetaXY=valdf;
+            if (ThetaXY)
+               *ThetaXY=valdf;
 //            RPN_IntUnlock();
          }
       } else {
@@ -247,12 +248,12 @@ int GeoRef_RPNValue(TGeoRef *Ref,TDef *Def,char Mode,int C,double X,double Y,dou
          if ((Def->Type<TD_Float32 || Mode=='N' || (X==ix && Y==iy)) && Ref->Grid[0]!='G') {
             mem+=idx;
             Def_Get(Def,C,mem,*Length);
-            if (Def->Data[1] && !C)
+            if (Def->Data[1] && ThetaXY && !C)
                Def_Get(Def,1,mem,*ThetaXY);
          } else {
             if (Def->Type==TD_Float32 && Ref && Ref->Ids) {
                Def_Pointer(Def,C,mem,p0);
-               
+
                // If either value is nodata then interpolation will be nodata as well
                ix=trunc(X);
                iy=trunc(Y);
@@ -260,8 +261,8 @@ int GeoRef_RPNValue(TGeoRef *Ref,TDef *Def,char Mode,int C,double X,double Y,dou
                if (              ((float*)p0)[mem]==Def->NoData)                         { return(valid); }
                if (ix<Ref->X1 && ((float*)p0)[mem+1]==Def->NoData)                       { return(valid); }
                if (iy<Ref->Y1 && ((float*)p0)[mem+Def->NI]==Def->NoData)                 { return(valid); }
-               if (iy<Ref->Y1 && ix<Ref->X1 && ((float*)p0)[mem+Def->NI+1]==Def->NoData) { return(valid); }    
-              
+               if (iy<Ref->Y1 && ix<Ref->X1 && ((float*)p0)[mem+Def->NI+1]==Def->NoData) { return(valid); }
+
 //               RPN_IntLock();
                c_gdxysval(Ref->Ids[Ref->NId],&valf,p0,&x,&y,1);
                *Length=valf;
@@ -315,7 +316,7 @@ int GeoRef_RPNProject(TGeoRef *Ref,double X,double Y,double *Lat,double *Lon,int
       *Lon=X;
       return(1);
    }
- 
+
    if (Ref->Type&GRID_SPARSE) {
       if (Ref->Lon && Ref->Lat) {
          idx=Y*(Ref->X1-Ref->X0)+X;
@@ -369,7 +370,7 @@ int GeoRef_RPNUnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double Lon,i
 
    *X=-1.0;
    *Y=-1.0;
-   
+
 #ifdef HAVE_RMN
    if (Ref->Type&GRID_SPARSE) {
       if (Ref->Lon && Ref->Lat) {
@@ -388,7 +389,7 @@ int GeoRef_RPNUnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double Lon,i
             ni=Ref->X1-Ref->X0;
             nj=Ref->Y1-Ref->Y0;
             idx=0;
-            
+
             for(dj=0;dj<=nj;dj++) {
                for(di=0;di<=ni;di++) {
 
@@ -432,7 +433,7 @@ int GeoRef_RPNUnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double Lon,i
 
       // Fix for G grid 0-360 1/5 gridpoint problem
       if (Ref->Grid[0]=='G' && *X>Ref->X1+0.5) *X-=(Ref->X1+1);
-         
+
       /*Si on est a l'interieur de la grille*/
       if (*X>(Ref->X1+0.5) || *Y>(Ref->Y1+0.5) || *X<(Ref->X0-0.5) || *Y<(Ref->Y0-0.5)) {
          if (!Extrap) {
@@ -495,7 +496,7 @@ TGeoRef* GeoRef_RPNSetup(int NI,int NJ,int NK,int Type,float *Levels,char *GRTYP
       if (GRTYP[1]=='#') {
          // For tiled grids (#) we have to fudge the IG3 ang IG4 to 0 since they're used for tile limit
          id=RPN_IntIdNew(NI,NJ,grtyp,IG1,IG2,0,0,FID);
-      } else {   
+      } else {
          id=RPN_IntIdNew(NI,NJ,grtyp,IG1,IG2,IG3,IG4,FID);
       }
 #ifdef HAVE_RMN
@@ -510,7 +511,7 @@ TGeoRef* GeoRef_RPNSetup(int NI,int NJ,int NK,int Type,float *Levels,char *GRTYP
       }
 #endif
    }
-   
+
    ref->IG1=IG1;
    ref->IG2=IG2;
    ref->IG3=IG3;
