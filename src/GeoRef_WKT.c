@@ -494,8 +494,8 @@ int GeoRef_WKTUnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double Lon,i
 int GeoRef_WKTSet(TGeoRef *Ref,char *String,double *Transform,double *InvTransform,OGRSpatialReferenceH Spatial) {
 
 #ifdef HAVE_GDAL
-   OGRSpatialReferenceH llref=NULL;
-   char                *string=NULL;
+   static OGRSpatialReferenceH llref=NULL;
+   char                      *string=NULL;
 
    if (String && String[0]!='\0') {
       string=strdup(String);
@@ -547,12 +547,16 @@ int GeoRef_WKTSet(TGeoRef *Ref,char *String,double *Transform,double *InvTransfo
    Ref->String=string;
 
    if (Ref->Spatial) {
-      llref=OSRCloneGeogCS(Ref->Spatial);
+      if (!llref) {
+         // Create global latlon reference on perfect sphere
+         llref=OSRNewSpatialReference(NULL);
+         OSRSetFromUserInput(llref,"EPSG:4047");
+      }
 
       if (llref) {
+         // Create forward/backward tranformation functions
          Ref->Function=OCTNewCoordinateTransformation(Ref->Spatial,llref);
          Ref->InvFunction=OCTNewCoordinateTransformation(llref,Ref->Spatial);
-         OSRDestroySpatialReference(llref);
       }
    } else {
       fprintf(stderr,"(WARNING) GeoRef_WKTSet: Unable to get spatial reference\n");
