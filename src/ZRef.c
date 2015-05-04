@@ -79,6 +79,7 @@ const char *ZRef_LevelUnit(int Type) {
 int ZRef_Init(TZRef *ZRef) {
 
    ZRef->Levels=NULL;
+   ZRef->Style=NEW;
    ZRef->Type=LVL_UNDEF;
    ZRef->LevelNb=0;
    ZRef->PTop=ZRef->PRef=ZRef->ETop=0.0;
@@ -189,6 +190,7 @@ int ZRef_Copy(TZRef *ZRef0,TZRef *ZRef1,int Level) {
    ZRef0->P0=ZRef0->A=ZRef0->B=NULL;
    ZRef0->Version=-1;
    ZRef0->Count=1;
+   ZRef0->Style=ZRef1->Style;
 
    return(TRUE);
 }
@@ -259,7 +261,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
 
             /* Find corresponding level */
             for(k=0;k<ZRef->LevelNb;k++) {
-               ip=ZRef_Level2IP(ZRef->Levels[k],ZRef->Type,DEFAULT);
+               ip=ZRef_Level2IP(ZRef->Levels[k],ZRef->Type,ZRef->Style);
                for(j=skip;j<h.NJ;j++) {
                   if (buf[j*h.NI]==ip) {
                      ZRef->A[k]=buf[j*h.NI+1];
@@ -412,7 +414,7 @@ int ZRef_AddRestrictLevel(float Level) {
 int ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Order) {
 
    TRPNHeader h;
-   int        l,key,ip1,flag=0,mode=-1,idlst[RPNMAX];
+   int        l,key,ip1=0,flag=0,mode=-1,idlst[RPNMAX];
    int        k,k2,kx;
    char       format;
 
@@ -463,6 +465,7 @@ int ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Order) {
       ZRef->Levels[0]=ZRef_IP2Level(H->IP1,&ZRef->Type);
    }
 
+   ZRef->Style=H->IP1>32768?NEW:OLD;
    if (ZRef->PCube)  free(ZRef->PCube);  ZRef->PCube=NULL;
 #else
    App_ErrorSet("Need RMNLIB to process vertical coordinate");

@@ -37,7 +37,7 @@
 #include "EZTile.h"
 #include "fnom.h"
 
-static const char *RPN_Desc[]={ ">>  ","^^  ","^>  ","!!  ","HY  ","PROJ","MTRX ",NULL };
+static const char *RPN_Desc[]={ ">>","^^","^>","!!","HY","PROJ","MTRX",NULL };
 
 static char FGFDTLock[MAXFILES];
 
@@ -180,7 +180,7 @@ int cs_fstinl(int Unit,int *NI,int *NJ,int *NK,int DateO,char *Etiket,int IP1,in
 }
 
 int cs_fstluk(void *Data,int Idx,int *NI,int *NJ,int *NK) {
-   
+
    int err;
 
    pthread_mutex_lock(&RPNFieldMutex);
@@ -202,10 +202,10 @@ int cs_fstsui(int Unit,int *NI,int *NJ,int *NK) {
 }
 
 int cs_fstlukt(void *Data,int Unit,int Idx,char *GRTYP,int *NI,int *NJ,int *NK) {
-   
+
    int    err=-1;
    TGrid *grid;
-   
+
    if (GRTYP[0]=='#') {
       if ((grid=EZGrid_ReadIdx(Unit,Idx,0))) {
          if (EZGrid_TileBurnAll(grid,0,Data)) {
@@ -218,10 +218,10 @@ int cs_fstlukt(void *Data,int Unit,int Idx,char *GRTYP,int *NI,int *NJ,int *NK) 
       *NK=grid->H.NK;
    } else {
       pthread_mutex_lock(&RPNFieldMutex);
-      err=c_fstluk(Data,Idx,NI,NJ,NK);      
+      err=c_fstluk(Data,Idx,NI,NJ,NK);
       pthread_mutex_unlock(&RPNFieldMutex);
    }
-   
+
    return(err);
 }
 
@@ -293,7 +293,7 @@ int RPN_IntIdFree(int Id) {
 
 
 TRPNField* RPN_FieldNew(int NI,int NJ,int NK,int NC,TDef_Type Type) {
-   
+
    TRPNField  *fld;
 
    fld=(TRPNField*)calloc(1,sizeof(TRPNField));
@@ -301,20 +301,20 @@ TRPNField* RPN_FieldNew(int NI,int NJ,int NK,int NC,TDef_Type Type) {
       App_ErrorSet("RPN_FieldNew: Could not allocate memory");
       return(NULL);
    }
-   
+
    fld->Ref=NULL;
    fld->Head.NI=NI;
    fld->Head.NJ=NJ;
    fld->Head.NK=NK;
-   
+
    return(fld);
 }
 
 void RPN_FieldFree(TRPNField *Fld) {
-   
+
    if (Fld->Ref) GeoRef_Free(Fld->Ref);
    if (Fld->Def) Def_Free(Fld->Def);
-   
+
    free(Fld);
 }
 
@@ -326,9 +326,9 @@ TRPNField* RPN_FieldReadIndex(int FileId,int Index,TRPNField *Fld) {
    float       lvl;
 
    h.FID=FileId;
-   h.KEY=Index; 
+   h.KEY=Index;
    h.GRTYP[0]=h.GRTYP[1]=h.GRTYP[2]='\0';
-   
+
    strcpy(h.NOMVAR,"    ");
    strcpy(h.TYPVAR,"  ");
    strcpy(h.ETIKET,"            ");
@@ -346,7 +346,7 @@ TRPNField* RPN_FieldReadIndex(int FileId,int Index,TRPNField *Fld) {
    strtrim(h.NOMVAR,' ');
    strtrim(h.TYPVAR,' ');
    strtrim(h.ETIKET,' ');
-   
+
    // If a TRPNField is passed, fill it instead of new
    if (Fld) {
       fld=Fld;
@@ -355,17 +355,17 @@ TRPNField* RPN_FieldReadIndex(int FileId,int Index,TRPNField *Fld) {
       if (!(fld->Def=Def_New(h.NI,h.NJ,h.NK,1,TD_Float32))) {
          App_ErrorSet("RPN_FieldReadIndex: Could not allocate memory for fld");
          return(NULL);
-      }  
+      }
    }
-   
+
    // Recuperer les donnees du champs
    c_fst_data_length(TDef_Size[fld->Def->Type]);
    if ((ok=cs_fstlukt(fld->Def->Data[0],h.FID,h.KEY,h.GRTYP,&h.NI,&h.NJ,&h.NK))<0) {
       App_ErrorSet("RPN_FieldReadIndex: Could not read field data (c_fstluk failed)");
       return(NULL);
    }
-   
-   // If a TRPNField is passed, we assume this has alredy been done 
+
+   // If a TRPNField is passed, we assume this has alredy been done
    if (!Fld) {
       // Recuperer les type de niveaux et forcer ETA pour SIGMA
       lvl=ZRef_IP2Level(h.IP1,&type);
@@ -378,7 +378,7 @@ TRPNField* RPN_FieldReadIndex(int FileId,int Index,TRPNField *Fld) {
    //   if (grtyp[0]=='U') {
    //      FSTD_FieldSubBuild(field);
    //   }
-   
+
       GeoRef_Qualify(fld->Ref);
    }
    memcpy(&fld->Head,&h,sizeof(TRPNHeader));
@@ -390,7 +390,7 @@ TRPNField* RPN_FieldRead(int FileId,int DateV,char *Eticket,int IP1,int IP2,int 
 
    TRPNField  *fld;
    TRPNHeader  h;
-   
+
    // Rechercher et lire l'information de l'enregistrement specifie
    h.KEY=cs_fstinf(FileId,&h.NI,&h.NJ,&h.NK,DateV,Eticket,IP1,IP2,IP3,TypVar,NomVar);
 
@@ -400,7 +400,7 @@ TRPNField* RPN_FieldRead(int FileId,int DateV,char *Eticket,int IP1,int IP2,int 
    }
 
    fld=RPN_FieldReadIndex(FileId,h.KEY,NULL);
-   
+
    // Recheck for fstsui to be ok
    cs_fstinf(FileId,&h.NI,&h.NJ,&h.NK,DateV,Eticket,IP1,IP2,IP3,TypVar,NomVar);
 
@@ -424,7 +424,7 @@ int RPN_FieldWrite(int FileId,TRPNField *Field) {
 }
 
 void RPN_CopyHead(TRPNHeader *To,TRPNHeader *From) {
-   
+
    strncpy(To->NOMVAR,From->NOMVAR,5);
    strncpy(To->TYPVAR,From->TYPVAR,3);
    strncpy(To->ETIKET,From->ETIKET,13);
@@ -456,13 +456,13 @@ void RPN_CopyHead(TRPNHeader *To,TRPNHeader *From) {
  *----------------------------------------------------------------------------
 */
 int RPN_CopyDesc(int FIdTo,TRPNHeader* const H) {
-   
+
    TRPNHeader  h;
    char       *data=NULL;
    const char *desc;
    int         d=0,ni,nj,nk,ip1,ip2;
    int         key;
-   
+
    if (H->FID>-1) {
       strcpy(h.NOMVAR,"    ");
       strcpy(h.TYPVAR,"  ");
@@ -501,6 +501,20 @@ int RPN_CopyDesc(int FIdTo,TRPNHeader* const H) {
    return(TRUE);
 }
 
+int RPN_IsDesc(char *Var) {
+
+   const char *desc;
+   int         d=0;
+
+   while(desc=RPN_Desc[d++]) {
+      if (!strncmp(Var,desc,4)) {
+         return(TRUE);
+      }
+   }
+
+   return(FALSE);
+}
+
 /*----------------------------------------------------------------------------
  * Nom      : <RPN_FieldTile>
  * Creation : Janvier 2008 - J.P. Gauthier - CMC/CMOE
@@ -531,32 +545,32 @@ int RPN_FieldTile(int FID,TDef *Def,TRPNHeader *Head,TGeoRef *Ref,int Comp,int N
    char        *tile=NULL,*data=NULL;;
    int          i,j,k,ip1,ni,nj,di,dj,pj,no,sz,key=0;
    unsigned int idx;
-   
+
    // Allocate temp tile
    sz=TDef_Size[Def->Type];
    if (!(tile=(char*)malloc((NI+Halo*2)*(NJ+Halo*2)*sz))) {
       return(0);
    }
-         
+
    pthread_mutex_lock(&RPNFieldMutex);
-   
+
    for(k=0;k<Def->NK;k++) {
       idx=k*FSIZE2D(Def);
 
-      Def_Pointer(Def,Comp,idx,data);     
+      Def_Pointer(Def,Comp,idx,data);
 
       // If IP1 is set, use it otherwise, convert it from levels array
       if ((ip1=Head->IP1)==-1 || Def->NK>1) {
          ip1=ZRef_Level2IP(Ref->ZRef.Levels[k],Ref->ZRef.Type,DEFAULT);
       }
-      
+
       // Check if tiling asked and if dimensions allow tiling
       if (!NI || !NJ || (Def->NI<NI && Def->NJ<NJ)) {
          c_fst_data_length(TDef_Size[Def->Type]);
          key=c_fstecr(data,NULL,NPack,FID,Head->DATEO,Head->DEET,Head->NPAS,Def->NI,Def->NJ,1,ip1,Head->IP2,Head->IP3,Head->TYPVAR,
             Head->NOMVAR,Head->ETIKET,(Ref?(Ref->Grid[1]!='\0'?&Ref->Grid[1]:Ref->Grid):"X"),Head->IG1,Head->IG2,Head->IG3,Head->IG4,DATYP,Rewrite);
       } else {
-      
+
          // Build and save the tiles, we adjust the tile size if it is too big
          no=0;
          for(j=0;j<Def->NJ;j+=NJ) {
@@ -570,7 +584,7 @@ int RPN_FieldTile(int FID,TDef *Def,TRPNHeader *Head,TGeoRef *Ref,int Comp,int N
                no++;
                ni=((i+NI>Def->NI)?(Def->NI-i):NI)+Halo*2;
                di=i-Halo;
-               
+
                if (di<0)          { di+=Halo; ni-=Halo; }
                if (di+ni>Def->NI) { ni-=Halo; }
 
@@ -584,10 +598,10 @@ int RPN_FieldTile(int FID,TDef *Def,TRPNHeader *Head,TGeoRef *Ref,int Comp,int N
          }
       }
    }
-   
+
    pthread_mutex_unlock(&RPNFieldMutex);
-   
+
    free(tile);
-   
+
    return(key>=0);
 }
