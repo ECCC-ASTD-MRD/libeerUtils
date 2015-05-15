@@ -1,5 +1,5 @@
 #!/bin/bash
-#
+# If changing this file, relfect the changes in libSPI.sh
 # post-install <domainHome> <packageHome>
 
 domainHome=$1
@@ -45,7 +45,7 @@ EOF
 cat > ${loginPath} << EOF
 setenv SPI_LIB="${packageHome}"
 setenv EC_INCLUDE_PATH="${packageHome}/include \${EC_INCLUDE_PATH}"
-setenv EC_LD_LIBRARY_PATH ${packageHome}/lib \${EC_LD_LIBRARY_PATH}"
+setenv EC_LD_LIBRARY_PATH="${packageHome}/lib \${EC_LD_LIBRARY_PATH}"
 
 #----- GDAL data
 setenv GDAL_DATA=\${SPI_LIB}/share/gdal
