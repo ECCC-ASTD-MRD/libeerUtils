@@ -69,6 +69,10 @@ char *TSSTD[]       = { "(écart-type (population))"   ,"(standard deviation (po
 char *TPSTD[]       = { "(écart-type (échantillon))"  ,"(standard deviation (sample))" };
 char *TMEAN[]       = { "(moyenne)"                   ,"(mean)" };
 char *TEFI[]        = { "(index de prévision extrème)","(extreme forecast index)" };
+char *TBETWEEN[]    = { "entre","between" };
+char *TAND[]        = { "et","and" };
+char *TDAY[]        = { "le jour","day" };
+char *THOUR[]       = { "l'heure","hour" };
 
 typedef struct {
    char          *Name,*Date,*Version,String[64];     // Dictionnary metadata
@@ -1309,6 +1313,29 @@ TDictVar* Dict_ApplyModifier(TDictVar *Var,char *Modifier) {
                var->Max=100.0;
             }
          }
+         
+         // Check for range of time
+         c=&Modifier[8];
+         if (c[0]!='N') {
+            (*l++)=' ';
+            strcpy(l,TBETWEEN[lang]); l+=strlen(TBETWEEN[lang]);
+            (*l++)=' ';
+            
+            if (c[0]=='D') {
+               strcpy(l,TDAY[lang]); l+=strlen(TDAY[lang]);
+            } else if (c[0]=='H') {
+               strcpy(l,THOUR[lang]); l+=strlen(THOUR[lang]);
+            }
+            (*l++)=' ';
+            (*l++)='1';
+            (*l++)=' ';
+            strcpy(l,TAND[lang]); l+=strlen(TAND[lang]);
+            (*l++)=' ';
+            if (c[1]!='0') (*l++)=c[1];
+            if (c[1]!='0' || c[2]!='0') (*l++)=c[2];
+            (*l++)=c[3];
+         }
+                  
          (*l++)='\0';
       }
    }
