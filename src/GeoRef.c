@@ -1366,8 +1366,8 @@ int GeoRef_Positional(TGeoRef *Ref,TDef *XDef,TDef *YDef) {
 #endif
 
    /*Set secondary gridtype to Y for the project/unproject functions to work correctly*/
-   if (Ref->Grid[0]=='W') {
-      Ref->Grid[1]='Y';
+   if (Ref->Grid[0]=='W' && Ref->Grid[1]=='\0') {
+      Ref->Grid[1]=nx>dx?'Y':'Z';
    }
 
    return(1);

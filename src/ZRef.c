@@ -219,7 +219,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
    double    *buf=NULL;
    float     *pt=NULL;
 
-   if (ZRef->Type==LVL_PRES) {
+   if (ZRef->Type==LVL_PRES || ZRef->Type==LVL_UNDEF) {
      return(1);
    }
 
