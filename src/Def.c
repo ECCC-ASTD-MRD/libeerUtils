@@ -2246,9 +2246,6 @@ int Def_GridInterpAverage(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *From
                      }
                   }
             }
-            if (aux) aux[x]=0.0;
-            if (acc) acc[x]=0;
-            if (fld) fld[x]=0.0;
 
             Def_Set(ToDef,0,idxk,vx);
          }
@@ -2262,7 +2259,13 @@ int Def_GridInterpAverage(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *From
             }
          }
       }
+      
+      // Cleanup temp buffers
+      for(n=0;n<nijk;n++) {
+         if (fld)          fld[n]=ToDef->NoData;
+         if (aux)          aux[n]=0.0;
+         if (acc && n<nij) acc[n]=0;
+      }
    }
-
    return(1);
 }

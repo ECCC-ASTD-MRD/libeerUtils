@@ -49,7 +49,7 @@ const char **ZRef_LevelNames() {
 }
 
 const char *ZRef_LevelName(int Type) {
-   return(ZRef_Names[Type]);
+   return(ZRef_Names[Type<0||Type>21?22:Type]);
 }
 
 const char **ZRef_LevelUnits() {
@@ -57,7 +57,7 @@ const char **ZRef_LevelUnits() {
 }
 
 const char *ZRef_LevelUnit(int Type) {
-   return(ZRef_Units[Type]);
+   return(ZRef_Units[Type<0||Type>21?22:Type]);
 }
 
 /*----------------------------------------------------------------------------
