@@ -76,27 +76,7 @@ void Def_Clear(TDef *Def){
          Def_Set(Def,n,i,Def->NoData);
       }
    }
-}
-
-/*----------------------------------------------------------------------------
- * Nom      : <Def_Clean>
- * Creation : Fevrier 2003- J.P. Gauthier - CMC/CMOE
- *
- * But      : Reinitialiser la structure de definitions des donnees
- *
- * Parametres :
- *  <Def>     : Structure a reinitialiser
- *
- * Retour:
- *
- * Remarques :
- *
- *----------------------------------------------------------------------------
-*/
-void Def_Clean(TDef *Def){
-
-   Def_Clear(Def);
-
+   
    if (Def->Buffer) {
       free(Def->Buffer);
       Def->Buffer=NULL;
@@ -2258,13 +2238,6 @@ int Def_GridInterpAverage(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *From
                Def_Set(ToDef,0,idxt+ToDef->NI-1,vx);
             }
          }
-      }
-      
-      // Cleanup temp buffers
-      for(n=0;n<nijk;n++) {
-         if (fld)          fld[n]=ToDef->NoData;
-         if (aux)          aux[n]=0.0;
-         if (acc && n<nij) acc[n]=0;
       }
    }
    return(1);

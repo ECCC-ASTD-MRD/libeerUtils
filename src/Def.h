@@ -328,7 +328,6 @@ typedef struct TDef {
 
 struct TGeoRef;
 
-void  Def_Clean(TDef *Def);
 void  Def_Clear(TDef *Def);
 int   Def_Compat(TDef *DefTo,TDef *DefFrom);
 TDef *Def_Copy(TDef *Def);
