@@ -145,6 +145,8 @@ int Dict_Encoding(char *string,TDict_Encoding Encoding) {
 
                case 0xC3:
                   i++;
+                  fprintf(stderr,"%0x\n",(unsigned char) string[i]);
+                  
                   switch ((unsigned char) string[i]) {
                      case 0xB5:
                         tmpString[i2] = 'u';
@@ -189,9 +191,9 @@ int Dict_Encoding(char *string,TDict_Encoding Encoding) {
                         tmpString[i2] = 'o';
                         break;
 
-                     case 0xF9:
-                     case 0xFA:
-                     case 0xFB:
+                     case 0xB9:
+                     case 0xBA:
+                     case 0xBB:
                         tmpString[i2] = 'u';
                         break;
 
