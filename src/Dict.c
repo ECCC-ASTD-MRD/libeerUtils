@@ -145,7 +145,6 @@ int Dict_Encoding(char *string,TDict_Encoding Encoding) {
 
                case 0xC3:
                   i++;
-                  fprintf(stderr,"%0x\n",(unsigned char) string[i]);
                   
                   switch ((unsigned char) string[i]) {
                      case 0xB5:
