@@ -48,7 +48,7 @@ int Dict_CheckCFG(TApp *App,char *CFGFile);
 int main(int argc, char *argv[]) {
 
    TApp          *app;
-   TDict_Encoding coding;
+   TDict_Encoding coding=DICT_UTF8;
    int            ok=1,desc=DICT_SHORT,search=DICT_EXACT,st=DICT_ALL,ip1,ip2,ip3;
    char          *var,*type,*lang,*encoding,*origin,*etiket,*state,*dicfile,*rpnfile[APP_LISTMAX],*cfgfile,dicdef[APP_BUFMAX];
    
@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
         { APP_CHAR,          &state,    1,             "s", "state"       , "Search state ("APP_COLOR_GREEN"all"APP_COLOR_RESET",obsolete,current,future,incomplete)" },
         { APP_FLAG,          &desc,     1,             "l", "long"        , "use long description" },
         { APP_FLAG,          &search,   1,             "g", "glob"        , "use glob search pattern" },
-        { APP_CHAR,          &encoding, 1,             "e", "encoding"    , "encoding type (iso8859-1,utf8,"APP_COLOR_GREEN"ascii"APP_COLOR_RESET")" },
+        { APP_CHAR,          &encoding, 1,             "e", "encoding"    , "encoding type (iso8859-1,"APP_COLOR_GREEN"utf8"APP_COLOR_RESET",ascii)" },
         { APP_CHAR,          &dicfile,  1,             "d", "dictionnary" , "dictionnary file ("APP_COLOR_GREEN"$AFSISIO/datafiles/constants/ops.variable_dictionary.xml"APP_COLOR_RESET")" },
         { APP_CHAR,          rpnfile,   APP_LISTMAX-1, "f", "fstd"        , "Check RPN standard file(s) for unknow variables" },
         { APP_CHAR,          &cfgfile,  1,             "c", "cfg"         , "Check GEM configuration file for unknow variables" },
