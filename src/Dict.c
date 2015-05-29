@@ -106,15 +106,6 @@ int Dict_Encoding(char *string,TDict_Encoding Encoding) {
    tmplenout = tmplenin;
    memset(tmpString,'\0',DICT_MAXLEN);
 
- /* TODO
-      <!ENTITY  amp      '&#38;'  >
-     <!ENTITY  lt       '&#60;'  >
-     <!ENTITY  gt       '&#62;'  >
-     <!ENTITY  amp      '&#38;'  >
-     <!ENTITY  quot     '&#34;'  >
-     <!ENTITY  nbsp     '&#160;' >
-   */
-
    switch (Encoding) {
 
       case DICT_ASCII:
@@ -122,9 +113,23 @@ int Dict_Encoding(char *string,TDict_Encoding Encoding) {
          while (i<tmplenout && i2<DICT_MAXLEN-1) {
 
             switch ((unsigned char)string[i]) {
+               case 0xE2:
+                  i++;
+                  i++;
+                  switch ((unsigned char) string[i]) {
+                     case 0xBB:
+                        tmpString[i2] = '-';
+                        break;
+                  }
+                  break;
+                 
                case 0xC2:
                   i++;
                   switch ((unsigned char) string[i]) {
+                     case 0x2D:
+                        tmpString[i2] = '-';
+                        break;
+                        
                      case 0xB0:
                         tmpString[i2] = ' ';
                         break;
@@ -139,6 +144,10 @@ int Dict_Encoding(char *string,TDict_Encoding Encoding) {
 
                      case 0xB5:
                         tmpString[i2] = 'u';
+                        break;
+                        
+                     case 0xB9:
+                        tmpString[i2] = '1';
                         break;
                   }
                   break;
