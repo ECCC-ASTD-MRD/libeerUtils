@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
    TApp          *app;
    TDict_Encoding coding=DICT_UTF8;
    int            ok=1,desc=DICT_SHORT,search=DICT_EXACT,st=DICT_ALL,ip1,ip2,ip3;
-   char          *var,*type,*lang,*encoding,*origin,*etiket,*state,*dicfile,*rpnfile[APP_LISTMAX],*cfgfile,dicdef[APP_BUFMAX];
+   char          *var,*type,*lang,*encoding,*origin,*etiket,*state,*dicfile,*rpnfile[APP_LISTMAX],*cfgfile,dicdef[APP_BUFMAX],*env;
    
    TApp_Arg appargs[]=
       { { APP_CHAR|APP_FLAG, &var,      1,             "n", "nomvar"      , "Search variable name ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
@@ -129,8 +129,14 @@ int main(int argc, char *argv[]) {
       App_Start(app);
    }
    
+   // Check for AFSISIO 
+   if (!(env=getenv("AFSISIO"))) {
+      App_Log(app,ERROR,"Environment variable AFSISIO not defined, source the CMOI base domain.\n");
+      exit(EXIT_FAILURE);   
+   }
+   
    // Check for default dicfile
-   snprintf(dicdef,APP_BUFMAX, "%s%s",getenv("AFSISIO"),"/datafiles/constants/ops.variable_dictionary.xml");
+   snprintf(dicdef,APP_BUFMAX, "%s%s",env,"/datafiles/constants/ops.variable_dictionary.xml");
    if((ok=Dict_Parse(dicdef,coding))) {
       fprintf(stderr,"%s\n",Dict_Version());
    
