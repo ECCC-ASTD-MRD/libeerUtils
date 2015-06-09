@@ -1477,6 +1477,7 @@ int Def_GridInterpRPN(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *FromDef,
    int        ez=1,ok=-1,idx,n,i,j,k;
    void      *pf0,*pt0,*pf1,*pt1;
 
+#ifdef HAVE_RMN
    if (!ToRef || !ToDef) {
       App_ErrorSet("Def_GridInterpRPN: Invalid destination");
       return(0);
@@ -1581,6 +1582,9 @@ int Def_GridInterpRPN(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *FromDef,
 //   if (FieldTo->Def->NC>1) {
 //      Data_GetStat(FieldTo);
 //   }
+#else
+   App_ErrorSet("%s: Need RMNLIB",__func__);
+#endif
 
    return(1);
 }

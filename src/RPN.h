@@ -32,10 +32,6 @@
 #ifndef _RPN_h
 #define _RPN_h
 
-#ifdef HAVE_RMN
-#include "rpnmacros.h"
-#include "rpn_macros_arch.h"
-
 #define RPNMAX 2048
 
 struct TGeoRef;
@@ -99,6 +95,10 @@ int        RPN_FieldTile(int FID,struct TDef *Def,TRPNHeader *Head,struct TGeoRe
 int RPN_IntIdNew(int NI,int NJ,char* GRTYP,int IG1,int IG2,int IG3, int IG4,int FID);
 int RPN_IntIdFree(int Id);
 int RPN_IntIdIncr(int Id);
+
+#ifdef HAVE_RMN
+#include "rpnmacros.h"
+#include "rpn_macros_arch.h"
 
 // EER threadsafe fstd functions
 int cs_fstunlockid(int Unit);

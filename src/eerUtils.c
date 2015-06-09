@@ -252,8 +252,9 @@ time_t System_Seconds2DateTime(time_t Sec,int *YYYYMMDD,int *HHMMSS,int GMT) {
 int System_Julian2Stamp(int Year,int Day,int Time) {
 
    struct tm date;
-   int       stamp,op,d,t;
+   int       stamp=0,op,d,t;
 
+#ifdef HAVE_RMN
    date.tm_sec=fmod(Time,100);   /*seconds apres la minute [0,61]*/
    Time/=100.0;
    date.tm_min=fmod(Time,100);   /*minutes apres l'heure [0,59]*/
@@ -270,6 +271,9 @@ int System_Julian2Stamp(int Year,int Day,int Time) {
    d=(date.tm_year+1900)*10000+(date.tm_mon+1)*100+date.tm_mday;
    t=date.tm_hour*1000000+date.tm_min*10000+date.tm_sec*100;
    f77name(newdate)(&stamp,&d,&t,&op);
+#else
+   App_ErrorSet("%s: Need RMNLIB",__func__);
+#endif
 
    return(stamp);
 }
@@ -333,6 +337,7 @@ void System_StampDecode(int Stamp,int *YYYY,int *MM,int *DD,int *H,int *M,int *S
 
    int op=-3,date,time;
 
+#ifdef HAVE_RMN
    f77name(newdate)(&Stamp,&date,&time,&op);
 
    *YYYY=date/10000;
@@ -345,15 +350,22 @@ void System_StampDecode(int Stamp,int *YYYY,int *MM,int *DD,int *H,int *M,int *S
    *M=(*S)/10000;
    *S-=(*M)*10000;
    *S/=100;
+#else
+   App_ErrorSet("%s: Need RMNLIB",__func__);
+#endif
 }
 
 void System_StampEncode(int *Stamp,int YYYY,int MM,int DD,int H,int M,int S) {
 
    int op=3,date,time;
 
+#ifdef HAVE_RMN
    date=YYYY*10000+MM*100+DD;
    time=H*1000000+M*10000+S*100;
    f77name(newdate)(Stamp,&date,&time,&op);
+#else
+   App_ErrorSet("%s: Need RMNLIB",__func__);
+#endif
 }
 
 /*----------------------------------------------------------------------------
@@ -374,15 +386,18 @@ void System_StampEncode(int *Stamp,int YYYY,int MM,int DD,int H,int M,int S) {
 */
 int System_Seconds2Stamp(long Sec) {
 
-   int         stamp,date,time,op=3;
+   int         stamp=0,date,time,op=3;
    struct tm  *tsec;
 
+#ifdef HAVE_RMN
    tsec=gmtime(&Sec);
    date=(tsec->tm_year+1900)*10000+(tsec->tm_mon+1)*100+tsec->tm_mday;
    time=tsec->tm_hour*1000000+tsec->tm_min*10000+tsec->tm_sec*100;
 
    f77name(newdate)(&stamp,&date,&time,&op);
-
+#else
+   App_ErrorSet("%s: Need RMNLIB",__func__);
+#endif
    return(stamp);
 }
 

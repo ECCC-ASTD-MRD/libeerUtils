@@ -300,9 +300,10 @@ int GeoRef_RPNValue(TGeoRef *Ref,TDef *Def,char Mode,int C,double X,double Y,dou
 */
 int GeoRef_RPNProject(TGeoRef *Ref,double X,double Y,double *Lat,double *Lon,int Extrap,int Transform) {
 
-   float i,j,lat,lon;
+   float i,j,lat=-999.0,lon=-999.0;
    int   idx;
 
+#ifdef HAVE_RMN
    if (X<(Ref->X0-0.5) || Y<(Ref->Y0-0.5) || X>(Ref->X1+0.5) || Y>(Ref->Y1+0.5)) {
       if (!Extrap) {
          *Lat=-999.0;
@@ -334,7 +335,8 @@ int GeoRef_RPNProject(TGeoRef *Ref,double X,double Y,double *Lat,double *Lon,int
 //   RPN_IntLock();
    c_gdllfxy(Ref->Ids[(Ref->NId==0&&Ref->Grid[0]=='U'?1:Ref->NId)],&lat,&lon,&i,&j,1);
 //   RPN_IntUnlock();
-
+#endif
+   
    *Lat=lat;
    *Lon=lon>180?lon-=360:lon;
 
@@ -492,6 +494,7 @@ TGeoRef* GeoRef_RPNSetup(int NI,int NJ,int NK,int Type,float *Levels,char *GRTYP
       grtyp[0]=GRTYP[0];
       grtyp[1]='\0';
 
+#ifdef HAVE_RMN
       // Create master gridid
       if (GRTYP[1]=='#') {
          // For tiled grids (#) we have to fudge the IG3 ang IG4 to 0 since they're used for tile limit
@@ -499,7 +502,6 @@ TGeoRef* GeoRef_RPNSetup(int NI,int NJ,int NK,int Type,float *Levels,char *GRTYP
       } else {
          id=RPN_IntIdNew(NI,NJ,grtyp,IG1,IG2,IG3,IG4,FID);
       }
-#ifdef HAVE_RMN
       // Check for sub-grids (U grids can have sub grids)
       ref->NbId=GRTYP[0]=='U'?c_ezget_nsubgrids(id):1;
 //      ref->NbId=1;

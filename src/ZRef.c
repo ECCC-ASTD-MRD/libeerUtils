@@ -332,7 +332,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
    if (buf) free(buf);
    if (pt)  free(pt);
 #else
-   App_ErrorSet("Need RMNLIB to process vertical coordinate");
+   App_ErrorSet("%s: Need RMNLIB",__func__);
 #endif
 
    return(key>=0);
@@ -468,7 +468,7 @@ int ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Order) {
    ZRef->Style=H->IP1>32768?NEW:OLD;
    if (ZRef->PCube)  free(ZRef->PCube);  ZRef->PCube=NULL;
 #else
-   App_ErrorSet("Need RMNLIB to process vertical coordinate");
+   App_ErrorSet("%s: Need RMNLIB",__func__);
 #endif
 
    return(ZRef->LevelNb);
@@ -971,7 +971,7 @@ double ZRef_IP2Meter(int IP) {
    /*Convertir en niveau reel*/
    f77name(convip)(&IP,&level,&kind,&mode,&format,&flag);
 #else
-   App_ErrorSet("Need RMNLIB to process vertical coordinate");
+   App_ErrorSet("%s: Need RMNLIB",__func__);
 #endif
 
    return(ZRef_Level2Meter(level,kind));
@@ -1004,7 +1004,7 @@ double ZRef_IP2Level(int IP,int *Type) {
    /*Convertir en niveau reel*/
    f77name(convip)(&IP,&level,Type,&mode,&format,&flag);
 #else
-   App_ErrorSet("Need RMNLIB to process vertical coordinate");
+   App_ErrorSet("%s: Need RMNLIB",__func__);
 #endif
 
    return(level);
@@ -1057,7 +1057,7 @@ int ZRef_Level2IP(float Level,int Type,TZRef_IP1Mode Mode) {
 #ifdef HAVE_RMN
       f77name(convip)(&ip,&Level,&Type,&mode,&format,&flag);
 #else
-      App_ErrorSet("Need RMNLIB to process vertical coordinate");
+   App_ErrorSet("%s: Need RMNLIB",__func__);
 #endif
 
       return(ip);

@@ -29,6 +29,8 @@
  *
  *==============================================================================
  */
+#ifdef HAVE_RMN
+
 #include <pthread.h>
 
 #include "App.h"
@@ -605,3 +607,5 @@ int RPN_FieldTile(int FID,TDef *Def,TRPNHeader *Head,TGeoRef *Ref,int Comp,int N
 
    return(key>=0);
 }
+
+#endif

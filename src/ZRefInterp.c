@@ -283,7 +283,7 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
 #ifdef HAVE_RMN
    (void)f77name(interp1d_findpos)(&interp->NIJ,&ZRefSrc->LevelNb,&ZRefDest->LevelNb,&interp->NIJ,&interp->NIJ,ZRefSrc->PCube,interp->Indexes,ZRefDest->PCube);
 #else
-      App_ErrorSet("Need RMNLIB to process 3D interpolations");
+   App_ErrorSet("%s: Need RMNLIB",__func__);
 #endif
    
    return(interp);
@@ -459,7 +459,7 @@ int ZRefInterp(TZRefInterp *Interp,float *stateOut,float *stateIn,float *derivOu
       if (ZRefInterp_Options & ZRVERBOSE) printf ("(INFO) ZRefInterp: Lapserate extrapolation completed\n");
    }
 #else
-      App_ErrorSet("Need RMNLIB to process 3D interpolations");
+   App_ErrorSet("%s: Need RMNLIB",__func__);
 #endif
       
    return(1);

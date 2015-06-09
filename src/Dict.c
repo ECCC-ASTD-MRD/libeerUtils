@@ -268,6 +268,7 @@ void Dict_SetSearch(int SearchMode,int SearchState,char *SearchOrigin,int Search
    DictSearch.IP3=SearchIP3;
    DictSearch.ETIKET=SearchETIKET;
 
+#ifdef HAVE_RMN
    if (DictSearch.IP1>0) {
       // Convert to real level/value
       f77name(convip)(&SearchIP1,&level,&type,&mode,&format,&flag);
@@ -284,6 +285,9 @@ void Dict_SetSearch(int SearchMode,int SearchState,char *SearchOrigin,int Search
 
 //   mode=(SearchIP3<32000)?2:3;
 //   f77name(convip)(&DictSearch.AltIP3,&level,Type,&mode,&format,&flag);
+#else
+   App_ErrorSet("%s: Need RMNLIB",__func__);
+#endif
 }
 
 void Dict_SetModifier(char *Modifier) {

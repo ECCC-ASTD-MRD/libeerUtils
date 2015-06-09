@@ -4,7 +4,7 @@ VERSION    = 2.0.1
 MAINTAINER = $(USER)
 OS         = $(shell uname -s)
 PROC       = $(shell uname -m | tr _ -)
-RMN        = HAVE_RMN
+RMN        = -DHAVE_RMN
 
 ifdef COMP_ARCH
    COMP=-${COMP_ARCH}
@@ -14,6 +14,8 @@ SSM_NAME    = ${NAME}_${VERSION}${COMP}_${ORDENV_PLAT}
 
 INSTALL_DIR = $(HOME)
 TCL_DIR     = /users/dor/afsr/ops/Links/devfs/Archive/tcl8.6.3
+
+#----- Uncoment to use dev libs
 #LIB_DIR     = ${SSM_DEV}/workspace/libSPI_7.9.1_${ORDENV_PLAT}
 
 LIBS        := -L$(LIB_DIR)/lib -L$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g')
@@ -69,7 +71,7 @@ else
    CPFLAGS     = -h
 endif
 
-DEFINES     = -DVERSION=\"$(VERSION)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE -D$(RMN)
+DEFINES     = -DVERSION=\"$(VERSION)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE $(RMN)
 ifdef OMPI
    DEFINES    := $(DEFINES) -D_MPI
 endif
@@ -101,18 +103,20 @@ lib: obj
 
 exec: obj 
 	mkdir -p ./bin;
+ifdef RMN
+	$(CC) util/Dict.c -o bin/Dict-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC); 
+	ln -fs Dict-$(VERSION) bin/Dict;
+	ln -fs Dict bin/o.dict;
 	$(CC) util/EZTiler.c -o bin/EZTiler-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC);
 	ln -fs EZTiler-$(VERSION) bin/EZTiler;
 	ln -fs EZTiler bin/o.eztiler;
 	$(CC) util/CodeInfo.c -o bin/CodeInfo-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC); 
 	ln -fs CodeInfo-$(VERSION) bin/CodeInfo;
 	ln -fs CodeInfo bin/o.codeinfo;
-	$(CC) util/Dict.c -o bin/Dict-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC); 
-	ln -fs Dict-$(VERSION) bin/Dict;
-	ln -fs Dict bin/o.dict;
 	$(CC) util/ReGrid.c -o bin/ReGrid-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC); 
 	ln -fs ReGrid-$(VERSION) bin/ReGrid;
 	ln -fs ReGrid bin/o.regrid;
+endif
 
 test: obj 
 	mkdir -p ./bin;
@@ -130,7 +134,9 @@ install:
 ssm:
 	rm -f -r  $(SSM_DEV)/workspace/$(SSM_NAME) $(SSM_DEV)/package/$(SSM_NAME).ssm 
 	mkdir -p $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d  $(SSM_DEV)/workspace/$(SSM_NAME)/etc/profile.d $(SSM_DEV)/workspace/$(SSM_NAME)/lib $(SSM_DEV)/workspace/$(SSM_NAME)/include $(SSM_DEV)/workspace/$(SSM_NAME)/bin
+ifdef RMN
 	cp $(CPFLAGS) ./bin/* $(SSM_DEV)/workspace/$(SSM_NAME)/bin
+endif
 	cp $(CPFLAGS) ./lib/* $(SSM_DEV)/workspace/$(SSM_NAME)/lib
 #	cp $(CPFLAGS) $(RMN_DIR)/lib/* $(SSM_DEV)/workspace/$(SSM_NAME)/lib
 	cp $(CPFLAGS) ./include/* $(SSM_DEV)/workspace/$(SSM_NAME)/include

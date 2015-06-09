@@ -33,6 +33,7 @@
  */
 
 #include "GeoRef.h"
+#include "App.h"
 #include "Def.h"
 #include "RPN.h"
 
@@ -543,6 +544,7 @@ void GeoRef_Clear(TGeoRef *Ref,int New) {
       ZRef_Free(&Ref->ZRef);
    }
 
+#ifdef HAVE_RMN
    // Release ezscint sub-grid
    if (Ref->Ids) {
       for(n=0;n<Ref->NbId+1;n++) {
@@ -551,6 +553,7 @@ void GeoRef_Clear(TGeoRef *Ref,int New) {
       }
       free(Ref->Ids);  Ref->Ids=NULL;
    }
+#endif
 
 #ifdef HAVE_GDAL
    if (Ref->GCPTransform) {
@@ -745,12 +748,14 @@ TGeoRef *GeoRef_HardCopy(TGeoRef *Ref) {
    ref->NbId=Ref->NbId;
    ref->NId=Ref->NId;
 
+#ifdef HAVE_RMN
    if (Ref->Ids) {
       ref->Ids=(int*)malloc(Ref->NbId*sizeof(int));
       memcpy(ref->Ids,Ref->Ids,Ref->NbId*sizeof(int));
       for(i=0;i<ref->NbId;i++)
          c_ez_refgrid(ref->Ids[i]);
    }
+#endif
 
    ref->IG1=Ref->IG1;
    ref->IG2=Ref->IG2;
