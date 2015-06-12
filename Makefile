@@ -23,7 +23,7 @@ INCLUDES    := -I$(LIB_DIR)/include -I$(shell echo $(EC_INCLUDE_PATH) | sed 's/\
 
 ifeq ($(OS),Linux)
 
-   LIBS        := $(LIBS) -Wl,-rpath-link $(LIB_DIR)/lib -lxml2 -lgdal -lz -lezscint -lrmn
+   LIBS        := $(LIBS) -Wl,-rpath-link $(LIB_DIR)/lib -lxml2 -lgdal -lz -lezscint -lrmneer
    INCLUDES    := -Isrc -I/usr/include/libxml2 -I$(LIB_DIR)/include/libxml2 -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic  $(INCLUDES)
 
 #   CC          = mpicc
@@ -47,7 +47,7 @@ ifeq ($(OS),Linux)
    endif
 else
 
-   LIBS        := $(LIBS) -lxml2 -lezscint -lrmn
+   LIBS        := $(LIBS) -lxml2 -lezscint -lrmneer
 #   LIBS        := $(LIBS) -L$(RMN_DIR)/lib -L$(LIB_DIR)/libxml2-2.9.1/lib $(LIB_DIR)/lib/libgdal.a
    RMN_INCLUDE = -I/ssm/net/rpn/libs/15.2/aix-7.1-ppc7-64/include -I/ssm/net/rpn/libs/15.2/all/include -I/ssm/net/rpn/libs/15.2/all/include/AIX-powerpc7/
    INCLUDES    := $(INCLUDES) -Isrc $(RMN_INCLUDE) -I/usr/include/libxml2 -I$(LIB_DIR)/gdal-1.11.0/include
@@ -82,7 +82,7 @@ OBJ_C = $(subst .c,.o,$(wildcard src/*.c))
 OBJ_F = $(subst .f,.o,$(wildcard src/*.f))
 
 %.o:%.f
-#	gfortran $< $(CCOPTIONS) -c -o $@ -L$(LIB_DIR)/librmn-15/lib -lrmn
+#	gfortran $< $(CCOPTIONS) -c -o $@ -L$(LIB_DIR)/librmn-15/lib -lrmneer
 	s.compile -src $< -optf="-o $@"
 
 all: obj lib exec
@@ -138,7 +138,6 @@ ifdef RMN
 	cp $(CPFLAGS) ./bin/* $(SSM_DEV)/workspace/$(SSM_NAME)/bin
 endif
 	cp $(CPFLAGS) ./lib/* $(SSM_DEV)/workspace/$(SSM_NAME)/lib
-#	cp $(CPFLAGS) $(RMN_DIR)/lib/* $(SSM_DEV)/workspace/$(SSM_NAME)/lib
 	cp $(CPFLAGS) ./include/* $(SSM_DEV)/workspace/$(SSM_NAME)/include
 	cp $(CPFLAGS) .ssm.d/post-install  $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d
 	sed -e 's/NAME/$(NAME)/' -e 's/VERSION/$(VERSION)/' -e 's/PLATFORM/$(ORDENV_PLAT)/' -e 's/MAINTAINER/$(MAINTAINER)/' -e 's/DESC/$(DESC)/' .ssm.d/control >  $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d/control
