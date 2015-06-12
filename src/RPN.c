@@ -462,7 +462,7 @@ int RPN_CopyDesc(int FIdTo,TRPNHeader* const H) {
    TRPNHeader  h;
    char       *data=NULL;
    const char *desc;
-   int         d=0,ni,nj,nk,ip1,ip2;
+   int         d=0,ni,nj,nk,sz=0,ip1,ip2;
    int         key;
 
    if (H->FID>-1) {
@@ -472,7 +472,6 @@ int RPN_CopyDesc(int FIdTo,TRPNHeader* const H) {
       strcpy(h.GRTYP," ");
 
       pthread_mutex_lock(&RPNFieldMutex);
-      data=(char*)malloc(H->NI*H->NJ*sizeof(float));
 
       while(desc=RPN_Desc[d++]) {
          if (strncmp(desc,"HY",2)==0) {
@@ -485,6 +484,10 @@ int RPN_CopyDesc(int FIdTo,TRPNHeader* const H) {
          if (key<0) {
             key=c_fstinf(H->FID,&ni,&nj,&nk,-1,"",ip1,ip2,-1,"",desc);
             if (key>=0) {
+               if (ni*ni>sz) {
+                  data=(char*)realloc(data,ni*nj*sizeof(float));
+                  sz=ni*nj;
+               }
                c_fstluk(data,key,&ni,&nj,&nk);
 
                key=c_fstprm(key,&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&h.NK,&h.NBITS,&h.DATYP,
