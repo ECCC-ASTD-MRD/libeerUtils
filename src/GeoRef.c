@@ -613,26 +613,38 @@ void GeoRef_Qualify(TGeoRef *Ref) {
       if (Ref->Grid[0]=='#') {
          Ref->Type|=GRID_TILE;
       }
-
+   
       if (Ref->Grid[0]=='A' || Ref->Grid[0]=='G') {
          Ref->Type|=GRID_WRAP;
       } else if (Ref->Grid[0]!='V' && Ref->X0!=Ref->X1 && Ref->Y0!=Ref->Y1) {
-         /*Get size of a gridpoint*/
+         // Check if north is up by looking at longitude variation on an Y increment at grid limits
+         Ref->Project(Ref,Ref->X0,Ref->Y0,&co[0].Lat,&co[0].Lon,1,1);
+         Ref->Project(Ref,Ref->X0,Ref->Y0+1,&co[1].Lat,&co[1].Lon,1,1);
+         d[0]=co[0].Lon-co[1].Lon;
+         Ref->Project(Ref,Ref->X1,Ref->Y1-1,&co[0].Lat,&co[0].Lon,1,1);
+         Ref->Project(Ref,Ref->X1,Ref->Y1,&co[1].Lat,&co[1].Lon,1,1);
+         d[1]=co[0].Lon-co[1].Lon;
+
+         if (fabs(d[0])>0.0001 || fabs(d[1])>0.0001) {
+            Ref->Type|=GRID_NUNORTH;
+         }
+                  
+         // Get size of a gridpoint
          Ref->Project(Ref,Ref->X0+(Ref->X1-Ref->X0)/2.0,Ref->Y0+(Ref->Y1-Ref->Y0)/2.0,&co[0].Lat,&co[0].Lon,1,1);
          Ref->Project(Ref,Ref->X0+(Ref->X1-Ref->X0)/2.0+1.0,Ref->Y0+(Ref->Y1-Ref->Y0)/2.0,&co[1].Lat,&co[1].Lon,1,1);
          d[0]=DIST(0.0,DEG2RAD(co[0].Lat),DEG2RAD(co[0].Lon),DEG2RAD(co[1].Lat),DEG2RAD(co[1].Lon));
 
-         /*Get distance between first and lat point*/
+         // Get distance between first and lat point
          Ref->Project(Ref,Ref->X0,Ref->Y0+(Ref->Y1-Ref->Y0)/2.0,&co[0].Lat,&co[0].Lon,1,1);
          Ref->Project(Ref,Ref->X1,Ref->Y0+(Ref->Y1-Ref->Y0)/2.0,&co[1].Lat,&co[1].Lon,1,1);
          d[1]=DIST(0.0,DEG2RAD(co[0].Lat),DEG2RAD(co[0].Lon),DEG2RAD(co[1].Lat),DEG2RAD(co[1].Lon));
 
-         /*If we're within 1.5 grid point, we wrap*/
+         // If we're within 1.5 grid point, we wrap
          if (d[1]<=(d[0]*1.5)) {
             Ref->Type|=GRID_WRAP;
          }
 
-         /*If we're within 0.25 grid point, we repeat*/
+         // If we're within 0.25 grid point, we repeat
          if (d[1]<=(d[0]*0.25)) {
             Ref->Type|=GRID_REPEAT;
          }
@@ -645,6 +657,8 @@ void GeoRef_Qualify(TGeoRef *Ref) {
       if (Ref->Grid[0]=='R') {
          Ref->Type|=GRID_RADIAL;
       }
+      
+      
    }
 }
 
