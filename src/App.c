@@ -665,6 +665,7 @@ int App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[],int Flags) {
             while(aarg->Short) {        
                if ((aarg->Short && tok[1]==aarg->Short[0] && tok[2]=='\0') || (aarg->Long && strcasecmp(&tok[2],aarg->Long)==0)) {
                   ok=(aarg->Type==APP_FLAG?(*(int*)aarg->Var)=TRUE:App_GetArgs(App,aarg,env?strtok(str," "):argv[++i]));
+                  ptok=aarg->Type==APP_FLAG?NULL:tok;
                   break;
                }
                aarg++;
@@ -684,7 +685,6 @@ int App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[],int Flags) {
          }
          
          ++i;
-         ptok=tok;
       }
    }
    
