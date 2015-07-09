@@ -453,6 +453,8 @@ void GeoRef_Size(TGeoRef *Ref,int X0,int Y0,int Z0,int X1,int Y1,int Z1,int BD) 
    Ref->Z0=Z0;
    Ref->Z1=Z1;
    Ref->BD=BD;
+   Ref->NX=X1-X0;
+   Ref->NY=Y1-Y0;
 }
 
 /*--------------------------------------------------------------------------------------------------------------
@@ -1339,30 +1341,30 @@ int GeoRef_Positional(TGeoRef *Ref,TDef *XDef,TDef *YDef) {
    }
 
    /*Clear arrays*/
-   if (Ref->Lat) free(Ref->Lat);
-   if (Ref->Lon) free(Ref->Lon);
+   if (Ref->AX) free(Ref->AX);
+   if (Ref->AY) free(Ref->AY);
 
-   Ref->Lat=(float*)malloc(ny*sizeof(float));
-   Ref->Lon=(float*)malloc(nx*sizeof(float));
+   Ref->AX=(float*)malloc(nx*sizeof(float));
+   Ref->AY=(float*)malloc(ny*sizeof(float));
 
-   if (!Ref->Lat || !Ref->Lon) {
+   if (!Ref->AX || !Ref->AY) {
       return(0);
    }
 
    /*Assign positionals, if size is float, just memcopy otherwise, assign*/
    if (XDef->Type==TD_Float32) {
-      memcpy(Ref->Lon,XDef->Data[0],nx*sizeof(float));
+      memcpy(Ref->AX,XDef->Data[0],nx*sizeof(float));
    } else {
       for(d=0;d<nx;d++) {
-         Def_Get(XDef,0,d,Ref->Lon[d]);
+         Def_Get(XDef,0,d,Ref->AX[d]);
       }
    }
 
    if (YDef->Type==TD_Float32) {
-      memcpy(Ref->Lat,YDef->Data[0],ny*sizeof(float));
+      memcpy(Ref->AY,YDef->Data[0],ny*sizeof(float));
    } else {
       for(d=0;d<ny;d++) {
-         Def_Get(YDef,0,d,Ref->Lat[d]);
+         Def_Get(YDef,0,d,Ref->AY[d]);
       }
    }
 
@@ -1391,3 +1393,50 @@ int GeoRef_Positional(TGeoRef *Ref,TDef *XDef,TDef *YDef) {
 
    return(1);
 }
+
+/*--------------------------------------------------------------------------------------------------------------
+ * Nom          : <GeoRef_Coords>
+ * Creation     : June 2015 J.P. Gauthier - CMC/CMOE
+ *
+ * But          : Calculer la position latlon de tous les points de grille.
+ *
+ * Parametres    :
+ *   <Ref>       : Pointeur sur la reference geographique
+ *   <Lat>       : Latitude array
+ *   <Lon>       : Longitude array
+ *
+ * Retour       : Number of coordinates
+ *
+ * Remarques   :
+ *
+ *---------------------------------------------------------------------------------------------------------------
+*/
+int GeoRef_Coords(TGeoRef *Ref,float *Lat,float *Lon) {
+
+#ifdef HAVE_RMN
+   int x,y,nxy;
+   double lat,lon;
+   
+   nxy=Ref->NX*Ref->NY;
+   
+   if (!Ref->Lat) {
+      Ref->Lat=(float*)malloc(nxy*sizeof(float));
+      Ref->Lon=(float*)malloc(nxy*sizeof(float));
+   
+      nxy=0;
+      for(y=Ref->Y0;y<=Ref->Y1;y++) {
+         for(x=Ref->X0;x<=Ref->X1;x++) {
+            Ref->Project(Ref,x,y,&lat,&lon,FALSE,TRUE);
+            Ref->Lat[nxy]=lat;
+            Ref->Lon[nxy]=lon;
+            nxy++;
+         }
+      }      
+   }
+   
+   Lat=Ref->Lat;
+   Lon=Ref->Lon;
+#endif
+   return(nxy);
+}
+
