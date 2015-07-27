@@ -61,7 +61,7 @@ int TileVar(TApp *App,int FIdTo,int NI, int NJ,int Halo,int FIdFrom,char* Var,ch
       if (n==0)
          RPN_CopyDesc(FIdTo,&fld->Head);
 
-      if (!RPN_FieldTile(FIdTo,fld->Def,&fld->Head,fld->Ref,0,NI,NJ,Halo,fld->Head.DATYP,-fld->Head.NBITS,FALSE,FALSE)) {
+      if (!RPN_FieldTile(FIdTo,fld->Def,&fld->Head,fld->GRef,fld->ZRef,0,NI,NJ,Halo,fld->Head.DATYP,-fld->Head.NBITS,FALSE,FALSE)) {
          App_Log(App,ERROR,"TileVar: Unable to tile field %i",idlst[n]);         
          return(FALSE);
       }

@@ -59,44 +59,47 @@ int EZGrid_Wrap(TGrid* __restrict const Grid) {
    Grid->Wrap=0;
    Grid->Pole[0]=Grid->Pole[1]=0.0f;
 
-//   RPN_IntLock();
-   // Check for south pole coverage
-   i=1.0;j=1.0;
-   c_gdllfxy(Grid->GID,&lat,&lon,&i,&j,1);
-   if (lat==-90.0) {
-      i=1.0;j=1.5;
-      c_gdllfxy(Grid->GID,&Grid->Pole[0],&lon,&i,&j,1);
-   }
+   if (Grid->H.GRTYP[0]!='M' && Grid->H.GRTYP[0]!='W') {
+   
+   //   RPN_IntLock();
+      // Check for south pole coverage
+      i=1.0;j=1.0;
+      c_gdllfxy(Grid->GID,&lat,&lon,&i,&j,1);
+      if (lat==-90.0) {
+         i=1.0;j=1.5;
+         c_gdllfxy(Grid->GID,&Grid->Pole[0],&lon,&i,&j,1);
+      }
 
-   // Check for north pole coverage
-   i=1.0;j=Grid->H.NJ;
-   c_gdllfxy(Grid->GID,&lat,&lon,&i,&j,1);
-   if (lat==90.0) {
-      i=1.0;j=Grid->H.NJ-0.5;
-      c_gdllfxy(Grid->GID,&Grid->Pole[1],&lon,&i,&j,1);
-   }
+      // Check for north pole coverage
+      i=1.0;j=Grid->H.NJ;
+      c_gdllfxy(Grid->GID,&lat,&lon,&i,&j,1);
+      if (lat==90.0) {
+         i=1.0;j=Grid->H.NJ-0.5;
+         c_gdllfxy(Grid->GID,&Grid->Pole[1],&lon,&i,&j,1);
+      }
 
-   i=Grid->H.NI+1.0f;
-   j=Grid->H.NJ/2.0f;
-   c_gdllfxy(Grid->GID,&lat,&lon,&i,&j,1);
-   c_gdxyfll(Grid->GID,&i,&j,&lat,&lon,1);
+      i=Grid->H.NI+1.0f;
+      j=Grid->H.NJ/2.0f;
+      c_gdllfxy(Grid->GID,&lat,&lon,&i,&j,1);
+      c_gdxyfll(Grid->GID,&i,&j,&lat,&lon,1);
 
-//   RPN_IntUnlock();
+   //   RPN_IntUnlock();
 
-   if (Grid->H.GRTYP[0]=='A' || Grid->H.GRTYP[0]=='B' || Grid->H.GRTYP[0]=='G') {
-      Grid->Wrap=1;
-   } else {
-      // If the grid wraps
-      if (i<Grid->H.NI) {
-         // check if the last gridpoint is a repeat of the first
-         if (rintf(i)==1.0f) {
-            Grid->Wrap=1;
-         } else {
-            Grid->Wrap=2;
+      if (Grid->H.GRTYP[0]=='A' || Grid->H.GRTYP[0]=='B' || Grid->H.GRTYP[0]=='G') {
+         Grid->Wrap=1;
+      } else {
+         // If the grid wraps
+         if (i<Grid->H.NI) {
+            // check if the last gridpoint is a repeat of the first
+            if (rintf(i)==1.0f) {
+               Grid->Wrap=1;
+            } else {
+               Grid->Wrap=2;
+            }
          }
       }
    }
-
+   
    return(Grid->Wrap);
 }
 
@@ -164,7 +167,7 @@ static float **EZGrid_TileGetData(const TGrid* __restrict const Grid,TGridTile* 
    int        flag=0,ip1=0,mode=2,type;
    char       format;
    float    **data,*datak;
-
+   
    if (!Safe) pthread_mutex_lock(&Tile->Mutex);
 
    if (!EZGrid_IsLoaded(Tile,K)) {
@@ -172,7 +175,7 @@ static float **EZGrid_TileGetData(const TGrid* __restrict const Grid,TGridTile* 
       /*Allocate Tile data if not already done*/
       if (!Tile->Data) {
          if (!(data=(float**)calloc(Grid->H.NK,sizeof(float*)))) {
-            App_ErrorSet("EZGrid_TileGetData: Unable to allocate memory for tile data levels (%s)",Grid->H.NOMVAR);
+            App_ErrorSet("%s: Unable to allocate memory for tile data levels (%s)",__func__,Grid->H.NOMVAR);
             if (!Safe) pthread_mutex_unlock(&Tile->Mutex);
             return(NULL);
          }
@@ -184,7 +187,7 @@ static float **EZGrid_TileGetData(const TGrid* __restrict const Grid,TGridTile* 
 
       if (!data[k]) {
          if (!(datak=(float*)calloc(Tile->HNIJ,sizeof(float)))) {
-            App_ErrorSet("EZGrid_TileGetData: Unable to allocate memory for tile data slices (%s)\n",Grid->H.NOMVAR);
+            App_ErrorSet("%s: Unable to allocate memory for tile data slices (%s)\n",__func__,Grid->H.NOMVAR);
             if (!Safe) pthread_mutex_unlock(&Tile->Mutex);
             return(NULL);
          }
@@ -274,7 +277,7 @@ float* EZGrid_TileBurn(TGrid* __restrict const Grid,TGridTile* __restrict const 
    }
 
    if (!Tile || !Tile->Data) {
-      App_ErrorSet("EZGrid_TileBurn: Invalid tile (%s)",Grid->H.NOMVAR);
+      App_ErrorSet("%s: Invalid tile (%s)",__func__,Grid->H.NOMVAR);
       pthread_mutex_unlock(&Grid->Mutex);
       return(NULL);
    }
@@ -283,7 +286,7 @@ float* EZGrid_TileBurn(TGrid* __restrict const Grid,TGridTile* __restrict const 
    if (!Data) {
       if (!Grid->Data) {
          if (!(Grid->Data=(float*)malloc(Grid->H.NIJ*sizeof(float)))) {
-            App_ErrorSet("EZGrid_TileBurn: Unable to allocate memory for grid data (%s)",Grid->H.NOMVAR);
+            App_ErrorSet("%s: Unable to allocate memory for grid data (%s)",__func__,Grid->H.NOMVAR);
             pthread_mutex_unlock(&Grid->Mutex);
             return(NULL);
          }
@@ -390,7 +393,7 @@ static TGrid* EZGrid_CacheFind(TGrid *Grid) {
                   pthread_mutex_unlock(&CacheMutex);
                   return(GridCache[n]);
                }
-            } else if (Grid->H.GRTYP[0]=='Z') {
+            } else if (Grid->H.GRTYP[0]=='Z' || Grid->H.GRTYP[0]=='M') {
                if (GridCache[n]->IP1==Grid->H.IG1 && GridCache[n]->IP2==Grid->H.IG2 && GridCache[n]->IP3==Grid->H.IG3) {
                   pthread_mutex_unlock(&CacheMutex);
                   return(GridCache[n]);
@@ -664,7 +667,7 @@ int EZGrid_UnTile(int FIdTo,int FIdFrom,char* Var,char* TypVar,char* Etiket,int 
    cs_fstinl(FIdFrom,&ni,&nj,&nk,DateV,Etiket,IP1,IP2,1,TypVar,Var,idlst,&nid,RPNMAX);
 
    if (nid<=0) {
-      App_ErrorSet("EZGrid_UnTile: Specified fields do not exist");
+      App_ErrorSet("%s: Specified fields do not exist",__func__);
       return(FALSE);
    }
 
@@ -696,18 +699,61 @@ int EZGrid_UnTile(int FIdTo,int FIdFrom,char* Var,char* TypVar,char* Etiket,int 
  *    - La procedure fonctionne aussi pour les champs non tuile. Dans ce cas on a une seule tuile.
  *----------------------------------------------------------------------------
 */
+TQTree* EZGrid_BuildIndex(TGrid* __restrict const Grid) {
+
+   unsigned int  n,nt,res=0;
+   unsigned int *idx;
+   double        lat0,lon0,lat1,lon1;
+   Vect2d        tr[3];
+   
+   // Check data limits   
+   lat0=lon0=1e10;
+   lat1=lon1=-1e10;
+   
+   for(n=0;n<Grid->GRef->NX;n++) {
+      lat0=FMIN(lat0,Grid->GRef->Lat[n]);
+      lon0=FMIN(lon0,Grid->GRef->Lon[n]);
+      lat1=FMAX(lat1,Grid->GRef->Lat[n]);
+      lon1=FMAX(lon1,Grid->GRef->Lon[n]);
+   }
+      
+   // Create the tree on the data limits
+   if (!(Grid->QTree=QTree_New(lat0,lon0,lat1,lon1,NULL))) {
+      App_ErrorSet("%s: failed to create QTree index\n",__func__);
+      return(NULL);
+   }
+
+   // Loop on triangles
+   idx=Grid->GRef->Idx;
+   for(nt=0;nt<Grid->GRef->NIdx-3;nt+=3) {     
+      
+      tr[0][0]=Grid->GRef->Lat[idx[nt]];     tr[0][1]=Grid->GRef->Lon[idx[nt]];
+      tr[1][0]=Grid->GRef->Lat[idx[nt+1]];   tr[1][1]=Grid->GRef->Lon[idx[nt+1]];
+      tr[2][0]=Grid->GRef->Lat[idx[nt+2]];   tr[2][1]=Grid->GRef->Lon[idx[nt+2]];
+      
+      // Put it in the quadtree, in any child nodes intersected
+      res=8;
+      if (!QTree_AddTriangle(Grid->QTree,tr,res,&Grid->GRef->Idx[nt])) {
+         App_ErrorSet("%s: failed to add node\n",__func__);
+         return(NULL);
+      }      
+   }
+   
+   return(Grid->QTree);
+}
+
 TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
 
    TRPNHeader h;
    TGridTile *tile;
-   int        n,i,j,k,nt,ni;
+   int        n,i,j,k,nt,ni,nj,nk;
    int        ip3,key;
    int        l,idlst[RPNMAX];
-
+   
    /*Check for master grid descriptor*/
    if (Grid->H.GRTYP[0]=='#') {
-      key=cs_fstinf(Grid->H.FID,&Grid->H.NI,&h.NJ,&h.NK,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"",">>");
-      key=cs_fstinf(Grid->H.FID,&h.NI,&Grid->H.NJ,&h.NK,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"","^^");
+      key=cs_fstinf(Grid->H.FID,&ni,&h.NJ,&h.NK,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"",">>");
+      key=cs_fstinf(Grid->H.FID,&h.NI,&nj,&h.NK,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"","^^");
       if (key<0) {
          fprintf(stderr,"(WARNING) EZGrid_Get: Could not find master grid descriptor (>>,^^)\n");
          RPN_FieldUnlock();
@@ -722,16 +768,18 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
    cs_fstinl(Grid->H.FID,&h.NI,&h.NJ,&h.NK,Grid->H.DATEV,Grid->H.ETIKET,Grid->H.IP1,Grid->H.IP2,-1,Grid->H.TYPVAR,Grid->H.NOMVAR,idlst,&Grid->NbTiles,RPNMAX);
    Grid->Tiles=(TGridTile*)malloc(Grid->NbTiles*sizeof(TGridTile));
    Grid->Data=NULL;
+   Grid->QTree=NULL;
+   Grid->GRef=NULL;
    Grid->Halo=0;
    Grid->NTI=Grid->NTJ=0;
    Grid->IP1=Grid->H.IG1;
    Grid->IP2=Grid->H.IG2;
    Grid->IP3=Grid->H.IG3;
    Grid->H.NIJ=Grid->H.NI*Grid->H.NJ;
+   h.GRTYP[1]='\0';
    i=j=-1;
    ni=0;
    nt=Grid->NbTiles;
-   h.GRTYP[1]='\0';
 
    /*Parse the tiles to get the tile limits and structure*/
    for(n=0;n<Grid->NbTiles;n++) {
@@ -740,7 +788,7 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
             h.GRTYP,&h.IG1,&h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,
             &h.UBC,&h.EX1,&h.EX2,&h.EX3);
       if (key<0) {
-         App_ErrorSet("EZGrid_Get: Missing subgrid number %i",n);
+         App_ErrorSet("%s: Missing subgrid number %i",__func__,n);
          RPN_FieldUnlock();
          return(NULL);
       }
@@ -781,7 +829,7 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
       }
    }
 
-   /*Is there a halo arounf the tiles*/
+   /*Is there a halo around the tiles*/
    if (ni>Grid->H.NI) {
       /*Calculate halo width*/
       Grid->Halo=ceil((ni-Grid->H.NI)/Grid->NTI/2.0);
@@ -808,9 +856,29 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
       h.GRTYP[0]=Grid->H.GRTYP[0];
    }
 
-   /*c_ezqkdef uses fstd functions to get griddef so we need to keep the RPNFieldMutex on*/
-   Grid->GID =RPN_IntIdNew(Grid->H.NI,Grid->H.NJ,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,Grid->H.FID);
-   Grid->Wrap=EZGrid_Wrap(Grid);
+   if (Grid->H.GRTYP[0]=='M') {
+      Grid->GRef=GeoRef_New();
+  
+      cs_fstinf(Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","##");
+      
+      Grid->GRef->NIdx=ni*nj*nk;
+      Grid->GRef->NX=Grid->H.NI;
+      Grid->GRef->NY=Grid->H.NJ;
+
+      Grid->GRef->Idx=(unsigned int*)malloc(Grid->GRef->NIdx*sizeof(unsigned int));
+      Grid->GRef->Lat=(float*)malloc(Grid->GRef->NX*sizeof(float));
+      Grid->GRef->Lon=(float*)malloc(Grid->GRef->NX*sizeof(float));
+
+      cs_fstlir(Grid->GRef->Lat,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","^^");
+      cs_fstlir(Grid->GRef->Lon,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"",">>");
+      cs_fstlir(Grid->GRef->Idx,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","##");
+      
+      EZGrid_BuildIndex(Grid);
+   } else {
+      /*c_ezqkdef uses fstd functions to get griddef so we need to keep the RPNFieldMutex on*/
+      Grid->GID =RPN_IntIdNew(Grid->H.NI,Grid->H.NJ,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,Grid->H.FID);
+      Grid->Wrap=EZGrid_Wrap(Grid);
+   }
 
    return(Grid);
 }
@@ -897,22 +965,22 @@ TZRef* EZGrid_GetZRef(const TGrid* __restrict const Grid) {
    TZRef *zref;
 
    if (!Grid) {
-      App_ErrorSet("EZGrid_GetZRef: Invalid grid");
+      App_ErrorSet("%s: Invalid grid",__func__);
       return(FALSE);
    }
 
-   if (!(zref=(TZRef*)(malloc(sizeof(TZRef))))) {
+   if (!(zref=ZRef_New())) {
       return(NULL);
    }
 
-   /*Initialize default*/
-   ZRef_Init(zref);
-
-   /*Get levels*/
+   // Get levels
    ZRef_GetLevels(zref,&Grid->H,Grid->Incr);
 
-   /*Decode vertical coordinate parameters*/
+   // Decode vertical coordinate parameters
    ZRef_DecodeRPN(zref,Grid->H.FID);
+   
+   // Force sigma to eta
+   zref->Type=zref->Type==LVL_SIGMA?LVL_ETA:zref->Type;
 
    return(zref);
 }
@@ -946,6 +1014,8 @@ TGrid *EZGrid_New(void) {
       new->Incr=0;
       new->GID=-1;
       new->ZRef=NULL;
+      new->GRef=NULL;
+      new->QTree=NULL;
       new->Wrap=0;
       new->Halo=0;
       new->H.NI=0;
@@ -1011,8 +1081,9 @@ TGrid *EZGrid_Copy(TGrid *Master,int Level) {
          new->Tiles[n].KBurn=-1;
          pthread_mutex_init(&new->Tiles[n].Mutex,NULL);
       }
-      new->ZRef=(TZRef*)malloc(sizeof(TZRef));
-      ZRef_Copy(new->ZRef,Master->ZRef,Level);
+      new->ZRef=ZRef_Copy(Master->ZRef);
+      new->GRef=GeoRef_Copy(Master->GRef);
+      new->QTree=Master->QTree;
       new->H.NK=new->ZRef->LevelNb;
 
       // Force memory allocation of all tiles
@@ -1228,6 +1299,8 @@ TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr) {
    if ((mst=EZGrid_CacheFind(new))) {
       new->GID=mst->GID;
       new->ZRef=mst->ZRef;
+      new->GRef=mst->GRef;
+      new->QTree=mst->QTree;
       new->Wrap=mst->Wrap;
       new->Halo=mst->Halo;
       new->H.NI=mst->H.NI;
@@ -1249,7 +1322,7 @@ TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr) {
       }
    } else {
       if (!EZGrid_Get(new)) {
-         App_ErrorSet("EZGrid_Read: Could not create master grid (%s)",new->H.NOMVAR);
+         App_ErrorSet("%s: Could not create master grid (%s)",__func__,new->H.NOMVAR);
          free(new);
          return(NULL);
       } else {
@@ -1291,7 +1364,7 @@ int EZGrid_Load(const TGrid* __restrict const Grid,int I0,int J0,int K0,int I1,i
    int        i,j,k;
 
    if (!Grid) {
-      App_ErrorSet("EZGrid_Load: Invalid grid");
+      App_ErrorSet("%s: Invalid grid",__func__);
       return(FALSE);
    }
 
@@ -1337,7 +1410,7 @@ int EZGrid_LoadAll(const TGrid* __restrict const Grid) {
 
             /*Check for tile data*/
             if (!EZGrid_TileGetData(Grid,&Grid->Tiles[idx],k,0)) {
-               App_ErrorSet("EZGrid_LoadAll: Unable to get tile data (%s) at level %i",Grid->H.NOMVAR,k);
+               App_ErrorSet("%s: Unable to get tile data (%s) at level %i",__func__,Grid->H.NOMVAR,k);
                return(FALSE);
             }
             idx++;
@@ -1525,7 +1598,7 @@ wordint f77name(ezgrid_getlevels)(wordint *gdid,ftnfloat *levels,wordint *type) 
 int EZGrid_GetLevels(const TGrid* __restrict const Grid,float* __restrict Levels,int* __restrict Type) {
 
    if (!Grid) {
-      App_ErrorSet("EZGrid_GetLevels Invalid grid");
+      App_ErrorSet("%s: Invalid grid",__func__);
       return(FALSE);
    }
 
@@ -1564,7 +1637,7 @@ float EZGrid_GetLevel(const TGrid* __restrict const Grid,float Pressure,float P0
    TZRef  *zref;
 
    if (!Grid) {
-      App_ErrorSet("EZGrid_GetLevel: Invalid grid");
+      App_ErrorSet("%s: Invalid grid",__func__);
       return(level);
    }
 
@@ -1597,7 +1670,7 @@ float EZGrid_GetPressure(const TGrid* __restrict const Grid,float Level,float P0
    TZRef  *zref;
 
    if (!Grid) {
-      App_ErrorSet("EZGrid_GetPressure: Invalid grid");
+      App_ErrorSet("%s: Invalid grid",__func__);
       return(pres);
 
    }
@@ -1634,18 +1707,49 @@ wordint f77name(ezgrid_llgetvalue)(wordint *gdid,ftnfloat *lat,ftnfloat *lon,wor
 }
 int EZGrid_LLGetValue(TGrid* __restrict const Grid,float Lat,float Lon,int K0,int K1,float* __restrict Value) {
 
+   TGridTile *t;
+   TQTree *node;
+   Vect3d  bary;
    float i,j;
-
+   int   v,n,m;
+   unsigned int *idx;
+   
    if (!Grid) {
-      App_ErrorSet("EZGrid_LLGetValue: Invalid grid");
+      App_ErrorSet("%s: Invalid grid",__func__);
       return(FALSE);
    }
 
-//   RPN_IntLock();
-   c_gdxyfll(Grid->GID,&i,&j,&Lat,&Lon,1);
-//   RPN_IntUnlock();
+   if (Grid->H.GRTYP[0]=='M') {
+      // This is a triangle mesh
+      idx=Grid->GRef->Idx;
+      t=&Grid->Tiles[0];
+      EZGrid_TileGetData(Grid,t,K0,0);
+      CLAMPLON(Lon);
+      
+      // Find enclosing triangle
+      if ((node=QTree_Find(Grid->QTree,Lat,Lon)) && node->NbData) {
+         
+         // Loop on this nodes data payload
+         for(n=0;n<node->NbData;n++) {
+            idx=(unsigned int*)QTree_GetData(node,n);
+            
+            // if the Barycentric coordinates are within this triangle, get its interpolated value
+            if (Bary_Get(bary,Lat,Lon,Grid->GRef->Lat[*idx],Grid->GRef->Lon[*idx],Grid->GRef->Lat[*(idx+1)],Grid->GRef->Lon[*(idx+1)],Grid->GRef->Lat[*(idx+2)],Grid->GRef->Lon[*(idx+2)])) {
+               *Value=Bary_Interp(bary,t->Data[K0][*idx],t->Data[K0][*(idx+1)],t->Data[K0][*(idx+2)]);                    
+               return(TRUE);
+            }
+         }
+      }
+      // We must be out of the tin
+      return(FALSE);
+   } else {
+      // This is a regular RPN grid
+   //   RPN_IntLock();
+      c_gdxyfll(Grid->GID,&i,&j,&Lat,&Lon,1);
+   //   RPN_IntUnlock();
 
-   return(EZGrid_IJGetValue(Grid,i-1.0f,j-1.0f,K0,K1,Value));
+      return(EZGrid_IJGetValue(Grid,i-1.0f,j-1.0f,K0,K1,Value));
+   }
 }
 
 /*----------------------------------------------------------------------------
@@ -1680,7 +1784,7 @@ int EZGrid_LLGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const Gr
    float i,j;
 
    if (!GridU || !GridV) {
-      App_ErrorSet("EZGrid_LLGetUVValue: Invalid grid");
+      App_ErrorSet("%s: Invalid grid",__func__);
       return(FALSE);
    }
 
@@ -1725,13 +1829,13 @@ int EZGrid_IJGetValue(TGrid* __restrict const Grid,float I,float J,int K0,int K1
    float      dx,dy,d[4];
 
    if (!Grid) {
-      App_ErrorSet("EZGrid_IJGetValue: Invalid grid");
+      App_ErrorSet("%s: Invalid grid",__func__);
       return(FALSE);
    }
 
    /*Check inclusion in master grid limits*/
    if (I<0 || J<0 || K0<0 || K1<0 || J>=Grid->H.NJ || K0>=Grid->H.NK || K1>=Grid->H.NK) {
-      App_ErrorSet("EZGrid_IJGetValue: Coordinates out of range (%s): I(%f) J(%f) K(%i,%i)",Grid->H.NOMVAR,I,J,K0,K1);
+      App_ErrorSet("%s: Coordinates out of range (%s): I(%f) J(%f) K(%i,%i)",__func__,Grid->H.NOMVAR,I,J,K0,K1);
       return(FALSE);
    }
 
@@ -1739,13 +1843,13 @@ int EZGrid_IJGetValue(TGrid* __restrict const Grid,float I,float J,int K0,int K1
       if (Grid->Wrap) {
          wrap=1;
       } else {
-         App_ErrorSet("EZGrid_IJGetValue: Coordinates out of range (%s): I(%f) J(%f) K(%i,%i)",Grid->H.NOMVAR,I,J,K0,K1);
+         App_ErrorSet("%s: Coordinates out of range (%s): I(%f) J(%f) K(%i,%i)",__func__,Grid->H.NOMVAR,I,J,K0,K1);
          return(FALSE);
       }
    }
 
    if (!(t=EZGrid_TileGet(Grid,I,J))) {
-      App_ErrorSet("EZGrid_IJGetValue: Tile not found (%s) I(%.f) J(%f)",Grid->H.NOMVAR,I,J);
+      App_ErrorSet("%s: Tile not found (%s) I(%.f) J(%f)",__func__,Grid->H.NOMVAR,I,J);
       return(FALSE);
    }
 
@@ -1764,7 +1868,7 @@ int EZGrid_IJGetValue(TGrid* __restrict const Grid,float I,float J,int K0,int K1
    // Get the wrapping tile
    if (wrap) {
       if (!(tw=EZGrid_TileGet(Grid,0,J))) {
-         App_ErrorSet("EZGrid_IJGetValue: Wrapped tile not found (%s) I(%.f) J(%f)",Grid->H.NOMVAR,I,J);
+         App_ErrorSet("%s: Wrapped tile not found (%s) I(%.f) J(%f)",__func__,Grid->H.NOMVAR,I,J);
          return(FALSE);
       }
       // If we wrap, index of first point within wrapped tile
@@ -1829,21 +1933,21 @@ int EZGrid_Interp(TGrid* __restrict const To, TGrid* __restrict const From) {
    float *from,*to;
 
    if (!From) {
-      App_ErrorSet("EZGrid_Interp: Invalid input grid (%s)",From->H.NOMVAR);
+      App_ErrorSet("%s: Invalid input grid (%s)",__func__,From->H.NOMVAR);
       return(FALSE);
    }
 
    if (!To) {
-      App_ErrorSet("EZGrid_Interp: Invalid output grid (%s)",To->H.NOMVAR);
+      App_ErrorSet("%s: Invalid output grid (%s)",__func__,To->H.NOMVAR);
       return(FALSE);
    }
 
    if (!(from=EZGrid_TileBurnAll(From,0,NULL))) {
-      App_ErrorSet("EZGrid_Interp: Problems with input grid");
+      App_ErrorSet("%s: Problems with input grid",__func__);
       return(FALSE);
    }
    if (!(to=EZGrid_TileBurnAll(To,0,NULL))) {
-      App_ErrorSet("EZGrid_Interp: Problems with output grid");
+      App_ErrorSet("%s: Problems with output grid",__func__);
       return(FALSE);
    }
 
@@ -1852,7 +1956,7 @@ int EZGrid_Interp(TGrid* __restrict const To, TGrid* __restrict const From) {
    ok=c_ezsint(to,from);
    RPN_IntUnlock();
    if (ok<0)  {
-      App_ErrorSet("EZGrid_Interp: Unable to do interpolation (c_ezscint (%i))",ok);
+      App_ErrorSet("%s: Unable to do interpolation (c_ezscint (%i))",__func__,ok);
       return(FALSE);
    }
 
@@ -1894,22 +1998,22 @@ int EZGrid_IJGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const Gr
    int        ik=0,k;
 
    if (!GridU || !GridV) {
-      App_ErrorSet("EZGrid_IJGetUVValue: Invalid grid");
+      App_ErrorSet("%s: Invalid grid",__func__);
       return(FALSE);
    }
 
    /*Check inclusion in master grid limits*/
    if (I<0 || J<0 || K0<0 || K1<0 || I>=GridU->H.NI || J>=GridU->H.NJ || K0>=GridU->H.NK || K1>=GridU->H.NK) {
-      App_ErrorSet("EZGrid_IJGetUVValue: Coordinates out of range (%s,%s): I(%f) J(%f) K(%i,%i)",GridU->H.NOMVAR,GridV->H.NOMVAR,I,J,K0,K1);
+      App_ErrorSet("%s: Coordinates out of range (%s,%s): I(%f) J(%f) K(%i,%i)",__func__,GridU->H.NOMVAR,GridV->H.NOMVAR,I,J,K0,K1);
       return(FALSE);
    }
 
    if (!(tu=EZGrid_TileGet(GridU,I,J))) {
-      App_ErrorSet("EZGrid_IJGetUVValue: Tile not found (%s) I(%f) J(%f)",GridU->H.NOMVAR,I,J);
+      App_ErrorSet("%s: Tile not found (%s) I(%f) J(%f)",__func__,GridU->H.NOMVAR,I,J);
       return(FALSE);
    }
    if (!(tv=EZGrid_TileGet(GridV,I,J))) {
-      App_ErrorSet("EZGrid_IJGetUVValue: Tile not found (%s) I(%f) J(%f)",GridV->H.NOMVAR,I,J);
+      App_ErrorSet("%s: Tile not found (%s) I(%f) J(%f)",__func__,GridV->H.NOMVAR,I,J);
       return(FALSE);
    }
 
@@ -1943,7 +2047,7 @@ int EZGrid_IJGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const Gr
  * Nom      : <EZGrid_GetValue>
  * Creation : Janvier 2008 - J.P. Gauthier - CMC/CMOE
  *
- * But      : Obtenir les valeur a une point de grille
+ * But      : Obtenir les valeur a un point de grille
  *
  * Parametres :
  *   <Grid>       : Grille
@@ -1970,18 +2074,18 @@ int EZGrid_GetValue(const TGrid* __restrict const Grid,int I,int J,int K0,int K1
    int        k,ik=0;
 
    if (!Grid) {
-      App_ErrorSet("EZGrid_GetValue: Invalid grid");
+      App_ErrorSet("%s: Invalid grid",__func__);
       return(FALSE);
    }
 
    /*Check inclusion in master grid limits*/
    if (I<0 || J<0 || K0<0 || K1<0 || I>=Grid->H.NI || J>=Grid->H.NJ || K0>=Grid->H.NK || K1>=Grid->H.NK) {
-      App_ErrorSet("EZGrid_GetValue: Coordinates out of range (%s) I(%i) J(%i) K(%i,%i)",Grid->H.NOMVAR,I,J,K0,K1);
+      App_ErrorSet("%s: Coordinates out of range (%s) I(%i) J(%i) K(%i,%i)",__func__,Grid->H.NOMVAR,I,J,K0,K1);
       return(FALSE);
    }
 
    if (!(t=EZGrid_TileGet(Grid,I,J))) {
-      App_ErrorSet("EZGrid_GetValue: Tile not found (%s) I(%i) J(%i)",Grid->H.NOMVAR,I,J);
+      App_ErrorSet("%s: Tile not found (%s) I(%i) J(%i)",__func__,Grid->H.NOMVAR,I,J);
       return(FALSE);
    }
 
@@ -2027,7 +2131,7 @@ int EZGrid_GetValues(const TGrid* __restrict const Grid,int Nb,float* __restrict
    int        n,i,j,k;
 
    if (!Grid) {
-      App_ErrorSet("EZGrid_GetValues: Invalid grid");
+      App_ErrorSet("%s: Invalid grid",__func__);
       return(FALSE);
    }
 
@@ -2045,12 +2149,12 @@ int EZGrid_GetValues(const TGrid* __restrict const Grid,int Nb,float* __restrict
 
       /*Check inclusion in master grid limits*/
       if (i<0 || j<0 || k<0 || i>=Grid->H.NI || j>=Grid->H.NJ || k>=Grid->H.NK) {
-         App_ErrorSet("EZGrid_GetValues: Coordinates out of range (%s): I(%i) J(%i) K(%i)",Grid->H.NOMVAR,i,j,k);
+         App_ErrorSet("%s: Coordinates out of range (%s): I(%i) J(%i) K(%i)",__func__,Grid->H.NOMVAR,i,j,k);
          return(FALSE);
       }
 
       if (!(t=EZGrid_TileGet(Grid,i,j))) {
-         App_ErrorSet("EZGrid_GetValues: Tile not found (%s) I(%i) J(%i)",Grid->H.NOMVAR,i,j);
+         App_ErrorSet("%s: Tile not found (%s) I(%i) J(%i)",__func__,Grid->H.NOMVAR,i,j);
          return(FALSE);
       }
       if (!EZGrid_IsLoaded(t,k))
@@ -2089,13 +2193,13 @@ int EZGrid_GetArray(TGrid* __restrict const Grid,int K,float* __restrict Value) 
    float *data;
 
    if (!Grid) {
-      App_ErrorSet("EZGrid_GetArray: Invalid grid");
+      App_ErrorSet("%s: Invalid grid",__func__);
       return(FALSE);
    }
 
    /*Check inclusion in master grid limits*/
    if (K<0 || K>=Grid->H.NK) {
-      App_ErrorSet("EZGrid_GetArray: Coordinates out of range (%s): K(%i)",Grid->H.NOMVAR,K);
+      App_ErrorSet("%s: Coordinates out of range (%s): K(%i)",__func__,Grid->H.NOMVAR,K);
       return(FALSE);
    }
    data=EZGrid_TileBurnAll(Grid,K,NULL);
@@ -2107,13 +2211,13 @@ int EZGrid_GetArray(TGrid* __restrict const Grid,int K,float* __restrict Value) 
 float* EZGrid_GetArrayPtr(TGrid* __restrict const Grid,int K) {
 
    if (!Grid) {
-      App_ErrorSet("EZGrid_GetArrayPtr: Invalid grid");
+      App_ErrorSet("%s: Invalid grid",__func__);
       return(FALSE);
    }
 
    /*Check inclusion in master grid limits*/
    if (K<0 || K>=Grid->H.NK) {
-      App_ErrorSet("EZGrid_GetArrayPtr: Coordinates out of range (%s): K(%i)",Grid->H.NOMVAR,K);
+      App_ErrorSet("%s: Coordinates out of range (%s): K(%i)",__func__,Grid->H.NOMVAR,K);
       return(FALSE);
    }
    return(EZGrid_TileBurnAll(Grid,K,NULL));
@@ -2153,14 +2257,14 @@ int EZGrid_GetRange(const TGrid* __restrict const Grid,int I0,int J0,int K0,int 
    int        i,j,k;
 
    if (!Grid) {
-      App_ErrorSet("EZGrid_GetRange: Invalid grid");
+      App_ErrorSet("%s: Invalid grid",__func__);
       return(FALSE);
    }
 
    /*Check inclusion in master grid limits*/
    if (I0<0 || J0<0 || K0<0 || I0>=Grid->H.NI || J0>=Grid->H.NJ || K0>=Grid->H.NK ||
        I1<0 || J1<0 || K1<0 || I1>=Grid->H.NI || J1>=Grid->H.NJ || K1>=Grid->H.NK) {
-      App_ErrorSet("EZGrid_GetRange: Coordinates out of range (%s): I(%i,%i) J(%i,%i) K(%i,%i)",Grid->H.NOMVAR,I0,I1,J0,J1,K0,K1);
+      App_ErrorSet("%s: Coordinates out of range (%s): I(%i,%i) J(%i,%i) K(%i,%i)",__func__,Grid->H.NOMVAR,I0,I1,J0,J1,K0,K1);
       return(FALSE);
    }
 
@@ -2169,7 +2273,7 @@ int EZGrid_GetRange(const TGrid* __restrict const Grid,int I0,int J0,int K0,int 
       for(j=J0;j<=J1;j++) {
          for(i=I0;i<=I1;i++) {
             if (!(t=EZGrid_TileGet(Grid,i,j))) {
-               App_ErrorSet("EZGrid_GetRange: Tile not found (%s) I(%i) J(%i)",Grid->H.NOMVAR,i,j);
+               App_ErrorSet("%s: Tile not found (%s) I(%i) J(%i)",__func__,Grid->H.NOMVAR,i,j);
                return(FALSE);
             }
             if (!EZGrid_IsLoaded(t,k))
@@ -2214,7 +2318,7 @@ int EZGrid_GetDelta(TGrid* __restrict const Grid,int Invert,float* DX,float* DY,
    double       fx,fy,dx[4],dy[4];
 
    if (!Grid) {
-      App_ErrorSet("EZGrid_GetDelta: Invalid grid");
+      App_ErrorSet("%s: Invalid grid",__func__);
       return(FALSE);
    }
 
@@ -2276,19 +2380,20 @@ int EZGrid_GetDelta(TGrid* __restrict const Grid,int Invert,float* DX,float* DY,
 */
 int EZGrid_GetLL(TGrid* __restrict const Grid,float* Lat,float* Lon,float* I,float* J,int Nb) {
 
-   int i,ok;
+   int i,ok=0;
    float fi,fj;
 
-//   RPN_IntLock();
-   for(i=0;i<Nb;i++) {
-      fi=I[i]+1.0;
-      fj=J[i]+1.0;
-      if ((ok=c_gdllfxy(Grid->GID,Lat,Lon,&fi,&fj,1))<0) {
-         break;
+   if (Grid->GID>=0) {
+   //   RPN_IntLock();
+      for(i=0;i<Nb;i++) {
+         fi=I[i]+1.0;
+         fj=J[i]+1.0;
+         if ((ok=c_gdllfxy(Grid->GID,Lat,Lon,&fi,&fj,1))<0) {
+            break;
+         }
       }
+   //   RPN_IntUnlock();
    }
-//   RPN_IntUnlock();
-
    return(ok==0);
 }
 
@@ -2314,17 +2419,18 @@ int EZGrid_GetLL(TGrid* __restrict const Grid,float* Lat,float* Lon,float* I,flo
 */
 int EZGrid_GetIJ(TGrid* __restrict const Grid,float* Lat,float* Lon,float* I,float* J,int Nb) {
 
-   int i,ok;
+   int i,ok=0;
 
-//   RPN_IntLock();
-   ok=c_gdxyfll(Grid->GID,I,J,Lat,Lon,Nb);
-//   RPN_IntUnlock();
+   if (Grid->GID>=0) {
+   //   RPN_IntLock();
+      ok=c_gdxyfll(Grid->GID,I,J,Lat,Lon,Nb);
+   //   RPN_IntUnlock();
 
-   for(i=0;i<Nb;i++) {
-      I[i]-=1.0;
-      J[i]-=1.0;
+      for(i=0;i<Nb;i++) {
+         I[i]-=1.0;
+         J[i]-=1.0;
+      }
    }
-
    return(ok==0);
 }
 

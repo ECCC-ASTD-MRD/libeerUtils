@@ -61,13 +61,52 @@ const char *ZRef_LevelUnit(int Type) {
 }
 
 /*----------------------------------------------------------------------------
- * Nom      : <ZRef_Init>
+ * Nom      : <ZRef_New>
+ * Creation : Octobre 2011 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Initialize a new vertical reference.
+ *
+ * Parametres  :
+ *
+ * Retour:
+ *  <ZRef>     : Vertical reference (NULL on error)
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
+TZRef* ZRef_New(void) {
+
+   TZRef *zref=NULL;
+
+   if (!(zref=(TZRef*)calloc(1,sizeof(TZRef)))) {
+      App_ErrorSet("%s: Unable to allocate memory\n",__func__);
+   }
+   
+   zref->Levels=NULL;
+   zref->Style=NEW;
+   zref->Type=LVL_UNDEF;
+   zref->LevelNb=0;
+   zref->PTop=zref->PRef=zref->ETop=0.0;
+   zref->RCoef[0]=zref->RCoef[1]=1.0;
+   zref->P0=zref->PCube=zref->A=zref->B=NULL;
+   zref->Version=-1;
+   zref->NRef=1;
+   
+   return(zref);
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <ZRef_Define>
  * Creation : Octobre 2011 - J.P. Gauthier - CMC/CMOE
  *
  * But      : Initialize a vertical reference.
  *
  * Parametres  :
  *  <ZRef>     : Vertical reference to initialize
+ *  <Type>     : Type of levels
+ *  <NbLevels> : Number of levels passed in
+ *  <Levels>   : List of levels to assign
  *
  * Retour:
  *  <Ok>       : (1=Ok, 0=Bad)
@@ -76,19 +115,29 @@ const char *ZRef_LevelUnit(int Type) {
  *
  *----------------------------------------------------------------------------
  */
-int ZRef_Init(TZRef *ZRef) {
+TZRef* ZRef_Define(int Type,int NbLevels,float *Levels) {
 
-   ZRef->Levels=NULL;
-   ZRef->Style=NEW;
-   ZRef->Type=LVL_UNDEF;
-   ZRef->LevelNb=0;
-   ZRef->PTop=ZRef->PRef=ZRef->ETop=0.0;
-   ZRef->RCoef[0]=ZRef->RCoef[1]=1.0;
-   ZRef->P0=ZRef->PCube=ZRef->A=ZRef->B=NULL;
-   ZRef->Version=-1;
-   ZRef->Count=1;
+   TZRef *zref=NULL;
+   
+   if ((zref=ZRef_New())) {
 
-   return(1);
+      zref->Type=Type;
+      zref->LevelNb=NbLevels;
+      
+      if (zref->Levels && zref->LevelNb!=NbLevels) {
+         zref->Levels=(float*)realloc(zref->Levels,zref->LevelNb*sizeof(float));
+      } else {
+         zref->Levels=(float*)malloc(zref->LevelNb*sizeof(float));
+      }
+      
+      if (!zref->Levels) {
+         App_ErrorSet("%s: Unable to allocate memory\n",__func__);
+      } else if (Levels) {
+         memcpy(zref->Levels,Levels,zref->LevelNb*sizeof(float));
+      }
+   }
+   
+   return(zref);
 }
 
 /*----------------------------------------------------------------------------
@@ -109,7 +158,7 @@ int ZRef_Init(TZRef *ZRef) {
  */
 int ZRef_Free(TZRef *ZRef) {
 
-   if (ZRef && --ZRef->Count<=0) {
+   if (ZRef && ZRef_Decr(ZRef)<=0) {
 
       if (ZRef->Levels) free(ZRef->Levels); ZRef->Levels=NULL;
       if (ZRef->A)      free(ZRef->A);      ZRef->A=NULL;
@@ -156,43 +205,60 @@ int ZRef_Equal(TZRef *ZRef0,TZRef *ZRef1) {
  * But      : Copy a vertical reference into another one
  *
  * Parametres  :
- *  <ZRef0>     : Vertical reference destination
- *  <ZRef1>     : Vertical reference source
- *  <Level>     : (Level to copy or -1 for all)
+ *  <ZRef>     : Vertical reference to copy
  *
  * Retour:
- *  <Ok>       : (1=Ok, 0=Bad)
+ *  <ZRef>     : Copied vertical reference (Error=NULL)
  *
  * Remarques :
  *
  *----------------------------------------------------------------------------
  */
-int ZRef_Copy(TZRef *ZRef0,TZRef *ZRef1,int Level) {
+TZRef* ZRef_Copy(TZRef *ZRef) {
 
-   if (!ZRef0 || !ZRef1 || Level>ZRef1->LevelNb-1)
-      return(FALSE);
+   ZRef_Incr(ZRef);
+   
+   return(ZRef);
+}
 
-   if (Level<0) {
-      ZRef0->LevelNb=ZRef1->LevelNb;
-      ZRef0->Levels=(float*)malloc(ZRef1->LevelNb*sizeof(float));
-      memcpy(ZRef0->Levels,ZRef1->Levels,ZRef1->LevelNb*sizeof(float));
-   } else {
-      ZRef0->LevelNb=1;
-      ZRef0->Levels=(float*)malloc(sizeof(float));
-      ZRef0->Levels[0]=ZRef1->Levels[Level];
+/*----------------------------------------------------------------------------
+ * Nom      : <ZRef_HardCCopy>
+ * Creation : Octobre 2011 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Copy a vertical reference into another one
+ *
+ * Parametres  :
+ *  <ZRef>     : Vertical reference to copy
+ *
+ * Retour:
+ *  <ZRef>     : Copied vertical reference (Error=NULL)
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
+TZRef *ZRef_HardCopy(TZRef *ZRef) {
+
+   TZRef *zref=NULL;
+   
+   if (ZRef && (zref=ZRef_New())) {
+   
+      zref->LevelNb=ZRef->LevelNb;
+      zref->Levels=(float*)malloc(ZRef->LevelNb*sizeof(float));
+      memcpy(zref->Levels,ZRef->Levels,ZRef->LevelNb*sizeof(float));
+      
+      zref->Type=ZRef->Type;
+      zref->PTop=ZRef->PTop;
+      zref->PRef=ZRef->PRef;
+      zref->ETop=ZRef->ETop;
+      zref->RCoef[0]=ZRef->RCoef[0];
+      zref->RCoef[1]=ZRef->RCoef[1];
+      zref->P0=zref->A=zref->B=NULL;
+      zref->Version=-1;
+      zref->NRef=1;
+      zref->Style=ZRef->Style;
    }
-   ZRef0->Type=ZRef1->Type;
-   ZRef0->PTop=ZRef1->PTop;
-   ZRef0->PRef=ZRef1->PRef;
-   ZRef0->ETop=ZRef1->ETop;
-   ZRef0->RCoef[0]=ZRef1->RCoef[0];
-   ZRef0->RCoef[1]=ZRef1->RCoef[1];
-   ZRef0->P0=ZRef0->A=ZRef0->B=NULL;
-   ZRef0->Version=-1;
-   ZRef0->Count=1;
-   ZRef0->Style=ZRef1->Style;
-
-   return(TRUE);
+   return(zref);
 }
 
 /*----------------------------------------------------------------------------
@@ -270,14 +336,14 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
                   }
                }
                if (j==h.NJ) {
-                  fprintf(stderr,"(WARNING) ZRef_DecodeRPN: Could not find level definition for %i.\n",ip);
+                  fprintf(stderr,"(WARNING) %s: Could not find level definition for %i.\n",__func__,ip);
                }
             }
          } else {
-            fprintf(stderr,"(WARNING) ZRef_DecodeRPN: Could not read !! field (c_fstluk).\n");
+            fprintf(stderr,"(WARNING) %s: Could not read !! field (c_fstluk).\n",__func__);
          }
       } else {
-         fprintf(stderr,"(WARNING) ZRef_DecodeRPN: Could not get info on !! field (c_fstprm).\n");
+         fprintf(stderr,"(WARNING) %s: Could not get info on !! field (c_fstprm).\n",__func__);
       }
    } else {
 
@@ -293,7 +359,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
             ZRef->PRef=h.IG1;
 //            ZRef->Type=LVL_HYBRID;
          } else {
-            fprintf(stderr,"(WARNING) ZRef_DecodeRPN: Could not get info on HY field (c_fstprm).\n");
+            fprintf(stderr,"(WARNING) %s: Could not get info on HY field (c_fstprm).\n",__func__);
          }
          // It might be ETA
          if (ZRef->Type==LVL_SIGMA) {
@@ -310,13 +376,13 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
             if (key>=0) {
                ZRef->Type=LVL_ETA;
                if (!(pt=(float*)malloc(h.NI*h.NJ*h.NK*sizeof(float)))) {
-                  fprintf(stderr,"(WARNING) ZRef_DecodeRPN: Could not allocate memory for top pressure, using default PTOP=10.0.\n");
+                  fprintf(stderr,"(WARNING) %s: Could not allocate memory for top pressure, using default PTOP=10.0.\n",__func__);
                } else {
                   cd=c_fstluk(pt,key,&h.NI,&h.NJ,&h.NK);
                   if (cd>=0) {
                      ZRef->PTop=pt[0];
                   } else {
-                     fprintf(stderr,"(WARNING) ZRef_DecodeRPN: Could not read PT field (c_fstluk), using default PTOP=10.0.\n");
+                     fprintf(stderr,"(WARNING) %s: Could not read PT field (c_fstluk), using default PTOP=10.0.\n",__func__);
                   }
                }
             }
@@ -521,7 +587,7 @@ double ZRef_K2Pressure(TZRef* restrict const ZRef,double P0,int K) {
                break;
 
             default:
-               App_ErrorSet("ZRef_K2Pressure: invalid level type (%i)",ZRef->Type);
+               App_ErrorSet("%s: invalid level type (%i)",__func__,ZRef->Type);
          }
          break;
 
@@ -533,7 +599,7 @@ double ZRef_K2Pressure(TZRef* restrict const ZRef,double P0,int K) {
       case 5002:                                                                 // Hybrid momentum
       case 5003: pres=exp(ZRef->A[K]+ZRef->B[K]*log(P0/pref))*0.01; break;       // Hybrid momentum
       default:
-         App_ErrorSet("ZRef_K2Pressure: invalid level type (%i)",ZRef->Type);
+         App_ErrorSet("%s: invalid level type (%i)",__func__,ZRef->Type);
    }
 
    return(pres);
@@ -564,7 +630,7 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
    float        pref,ptop,rtop,pk,pr;
 
    if (!P0 && ZRef->Type!=LVL_PRES) {
-      App_ErrorSet("ZRef_KCube2Pressure: Surface pressure is required");
+      App_ErrorSet("%s: Surface pressure is required",__func__);
       return(0);
    }
 
@@ -619,7 +685,7 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
                }
                break;
             default:
-               App_ErrorSet("ZRef_KCube2Pressure: invalid level type (%i)",ZRef->Type);
+               App_ErrorSet("%s: invalid level type (%i)",__func__,ZRef->Type);
          }
          break;
 
@@ -658,7 +724,7 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
          break;
 
       default:
-         App_ErrorSet("ZRef_KCube2Pressure: invalid level type (%i)",ZRef->Type);
+         App_ErrorSet("%s: invalid level type (%i)",__func__,ZRef->Type);
    }
 
    if (Log) for (ij=0;ij<NIJ*ZRef->LevelNb;ij++) Pres[ij]=logf(Pres[ij]);
@@ -734,7 +800,7 @@ int ZRef_KCube2Meter(TZRef* restrict const ZRef,float *GZ,const int NIJ,float *H
          break;
 
       default:
-         App_ErrorSet("ZRef_KCube2Meter: invalid level type (%i)",ZRef->Type);
+         App_ErrorSet("%s: invalid level type (%i)",__func__,ZRef->Type);
          return(0);
    }
    return(1);
@@ -794,7 +860,7 @@ double ZRef_Level2Pressure(TZRef* restrict const ZRef,double P0,double Level) {
                }
             }
             if (z==ZRef->LevelNb) {
-               App_ErrorSet("ZRef_Level2Pressure: level not in range ([%f,%f])",ZRef->Levels[0],ZRef->Levels[ZRef->LevelNb-1]);
+               App_ErrorSet("%s: level not in range ([%f,%f])",__func__,ZRef->Levels[0],ZRef->Levels[ZRef->LevelNb-1]);
             }
 
             // Interpolate between levels (in log(p))
@@ -814,7 +880,7 @@ double ZRef_Level2Pressure(TZRef* restrict const ZRef,double P0,double Level) {
          break;
 
       default:
-         App_ErrorSet("ZRef_Level2Pressure: invalid level type (%i)",ZRef->Type);
+         App_ErrorSet("%s: invalid level type (%i)",__func__,ZRef->Type);
    }
    return(pres);
 }
@@ -897,7 +963,7 @@ double ZRef_Pressure2Level(TZRef* restrict const ZRef,double P0,double Pressure)
          break;
 
       default:
-         App_ErrorSet("ZRef_Level2Pressure: invalid level type (%i)",ZRef->Type);
+         App_ErrorSet("%s: invalid level type (%i)",__func__,ZRef->Type);
    }
    return(level);
 }

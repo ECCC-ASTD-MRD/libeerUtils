@@ -55,7 +55,7 @@
  */
 static inline int QTree_Inside(TQTree * const Node,double X,double Y) {
 
-  return(X>=Node->BBox[0].X && X<=Node->BBox[1].X && Y<=Node->BBox[1].Y && Y>=Node->BBox[0].Y);
+  return(X>=Node->BBox[0].X && X<Node->BBox[1].X && Y>=Node->BBox[0].Y && Y<Node->BBox[1].Y );
 }
 
 /*----------------------------------------------------------------------------
@@ -134,13 +134,16 @@ static inline int QTree_Split(TQTree* const restrict Node,const TPoint2D* const 
 static inline int QTree_AddData(TQTree* const restrict Node,double X,double Y,void *Data) {
 
   if (Data) {
-     if (!(Node->Data=(TQTreeData*)realloc(Node->Data,(Node->NbData+1)*sizeof(TQTreeData)))) {
-        return(0);
-     }
-     Node->Data[Node->NbData].Ptr=Data;
-     Node->Data[Node->NbData].Pos.X=X;
-     Node->Data[Node->NbData].Pos.Y=Y;
      Node->NbData++;
+     if (Node->NbData>Node->Size) {
+        Node->Size+=QTREE_SIZEINCR;
+        if (!(Node->Data=(TQTreeData*)realloc(Node->Data,Node->Size*sizeof(TQTreeData)))) {
+           return(0);
+        }
+     }
+     Node->Data[Node->NbData-1].Ptr=Data;
+     Node->Data[Node->NbData-1].Pos.X=X;
+     Node->Data[Node->NbData-1].Pos.Y=Y;
   }
   
   return(1);
@@ -164,6 +167,7 @@ static inline int QTree_AddData(TQTree* const restrict Node,double X,double Y,vo
 static inline void QTree_DelData(TQTree* const Node) {
 
    Node->NbData=0;
+   Node->Size=0;
  
    if (Node->Data) {
       free(Node->Data);
@@ -196,6 +200,7 @@ TQTree* QTree_New(double X0,double Y0,double X1,double Y1,TQTree *Parent) {
    
    if ((node=(TQTree*)malloc(sizeof(TQTree)))) {
 
+      node->Size      = 0;
       node->NbData    = 0;
       node->Data      = NULL;
 
@@ -253,7 +258,7 @@ TQTree* QTree_Add(TQTree* restrict Node,double X,double Y,unsigned int MaxDepth,
 
          if (!Node->NbData) {
             // Empty leaf, use it
-            ok=QTree_AddData(Node,X,Y,Data);  
+            ok=QTree_AddData(Node,X,Y,Data);
          } else {
             // Check if it's same coordinate to avoid infinite recursion
             if (Node->Data[0].Pos.X==X && Node->Data[0].Pos.Y==Y) {
@@ -261,8 +266,8 @@ TQTree* QTree_Add(TQTree* restrict Node,double X,double Y,unsigned int MaxDepth,
             } else {
             
                // Leaf node but there is data already stored here, split.
-               center.X = Node->BBox[0].X+(Node->BBox[1].X-Node->BBox[0].X)/2.0;
-               center.Y = Node->BBox[0].Y+(Node->BBox[1].Y-Node->BBox[0].Y)/2.0;
+               center.X = Node->BBox[0].X+(Node->BBox[1].X-Node->BBox[0].X)*0.5;
+               center.Y = Node->BBox[0].Y+(Node->BBox[1].Y-Node->BBox[0].Y)*0.5;
 
                if (!QTree_Split(Node,&center)) {
                   return(NULL);
@@ -274,6 +279,7 @@ TQTree* QTree_Add(TQTree* restrict Node,double X,double Y,unsigned int MaxDepth,
                new->NbData=Node->NbData;
                Node->Data=NULL;
                Node->NbData=0;
+               Node->Size=0;
                
                // Assign new data
                new = QTree_FindChild(Node,X,Y);
@@ -284,6 +290,92 @@ TQTree* QTree_Add(TQTree* restrict Node,double X,double Y,unsigned int MaxDepth,
    }
 
    return(ok?new:NULL);
+}
+
+// Vertice codes for Cohen–Sutherland bbox intersection algorithm check
+#define CS_INSIDE 0x0;             // 0000
+#define CS_LEFT   0x1;             // 0001
+#define CS_RIGHT  0x2;             // 0010
+#define CS_BOTTOM 0x4;             // 0100
+#define CS_TOP    0x8;             // 1000
+#define CS_Intersect(A,B) (!(A&B)) // Do theses code intersect
+
+// Cohen–Sutherland algorithm 
+// Compute the bit code for a point (x, y) using the clip rectangle
+// bounded diagonally by (xmin, ymin), and (xmax, ymax)
+int CS_Code(double X, double Y,double X0,double Y0,double X1,double Y1) {
+   
+   int code=CS_INSIDE;                    // Initialised as being inside of clip window
+
+   if      (X<X0) { code |= CS_LEFT; }     // Left of clip window 
+   else if (X>X1) { code |= CS_RIGHT; }    // Right of clip window
+            
+   if      (Y<Y0) { code |= CS_BOTTOM; }    // Below the clip window           
+   else if (Y>Y1) { code |= CS_TOP; }      // Above the clip window
+            
+   return code;
+}
+
+/*----------------------------------------------------------------------------
+ * Name     : <QTree_AddTriangle>
+ * Creation : July 2015 - G.Mercier - CMC/CMOE
+ *
+ * Purpose  : Add some triangle data to a TQTree object(usually a head quad at level=1...).
+ *
+ * Args :
+ *   <Node>     : TQTree object pointer which we want to add data information (cannot be NULL).
+ *   <T>        : Trinagle's corners (X,Y).
+ *   <MaxDepth> : Maximum depth of tree
+ *   <Data>     : External Data pointer.
+ *
+ * Return:
+ *  <TQTree *> : A TQTree object pointer(Could be NULL if a problem arise).  
+ *
+ * Remarks : 
+ *   - We insert the triangle in any leaf nodes intersected by the triangle, this implis
+ *     some possible duplication but it's the most effective way.
+ *----------------------------------------------------------------------------
+ */
+TQTree* QTree_AddTriangle(TQTree* restrict Node,Vect2d T[3],unsigned int MaxDepth,void* restrict Data) {
+
+   TPoint2D center;
+   int      cs[3];
+   TQTree  *new=Node;
+      
+   // Get Cohen-Sutherland code value for each triangle endpoint
+   cs[0]=CS_Code(T[0][0],T[0][1],Node->BBox[0].X,Node->BBox[0].Y,Node->BBox[1].X,Node->BBox[1].Y);
+   cs[1]=CS_Code(T[1][0],T[1][1],Node->BBox[0].X,Node->BBox[0].Y,Node->BBox[1].X,Node->BBox[1].Y);
+   cs[2]=CS_Code(T[2][0],T[2][1],Node->BBox[0].X,Node->BBox[0].Y,Node->BBox[1].X,Node->BBox[1].Y);
+      
+   // If any segment intersects this node's bbox
+   if (CS_Intersect(cs[0],cs[1]) || CS_Intersect(cs[1],cs[2]) || CS_Intersect(cs[2],cs[0])) {
+      
+      if (!(MaxDepth--)) {
+         // We've hit maximum depth, add to this node
+         if (QTree_AddData(Node,T[0][0],T[0][1],Data)) {
+            new=Node;
+         }
+      }  else {
+         // If there's no child yet at thi node and depth
+         if (!Node->Childs[0]) {
+            // Split node in 4.
+            center.X = Node->BBox[0].X+(Node->BBox[1].X-Node->BBox[0].X)*0.5;
+            center.Y = Node->BBox[0].Y+(Node->BBox[1].Y-Node->BBox[0].Y)*0.5;
+
+            if (!QTree_Split(Node,&center)) {
+               return(NULL);
+            }
+         }
+
+         // Recursively dig into the tree
+         QTree_AddTriangle(Node->Childs[0],T,MaxDepth,Data);
+         QTree_AddTriangle(Node->Childs[1],T,MaxDepth,Data);
+         QTree_AddTriangle(Node->Childs[2],T,MaxDepth,Data);
+         QTree_AddTriangle(Node->Childs[3],T,MaxDepth,Data);
+      }
+   }
+
+   return(new);
 }
 
 /*----------------------------------------------------------------------------
@@ -336,16 +428,25 @@ void QTree_Del(TQTree* restrict Node) {
  */
 TQTree* QTree_Find(TQTree* restrict Node,double X,double Y) {
 
-   int     cidx=0;
+   int     cidx=0,f;
    TQTree* node=Node;
 
    if (Node->Childs[0]) {
 
       // Navigate through the quad tree recursively to find the terminal quad
       // which bounding box contains the XY position X,Y.
-      while (cidx<4 && !QTree_Inside(Node->Childs[cidx++],X,Y));
+      while (cidx<4 && !(f=QTree_Inside(Node->Childs[cidx++],X,Y)));
+      if (!f) 
+         return(NULL);
 
       node=QTree_Find(Node->Childs[cidx-1],X,Y);
+   } else {
+      // This node is empty
+      if (0 && !Node->Data) {
+         // Go up and pick first parent's child having data
+         while (cidx<4 && !Node->Parent->Childs[cidx++]->Data);
+         node=Node->Parent->Childs[cidx-1];
+      }    
    }
 
    return(node);

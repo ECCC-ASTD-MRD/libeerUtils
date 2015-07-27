@@ -115,22 +115,18 @@ typedef int    (TGeoRef_Project)   (struct TGeoRef *Ref,double X,double Y,double
 typedef int    (TGeoRef_UnProject) (struct TGeoRef *Ref,double *X,double *Y,double Lat,double Lon,int Extrap,int Transform);
 typedef int    (TGeoRef_Value)     (struct TGeoRef *Ref,struct TDef *Def,char Mode,int C,double X,double Y,double Z,double *Length,double *ThetaXY);
 typedef double (TGeoRef_Distance)  (struct TGeoRef *Ref,double X0,double Y0,double X1, double Y1);
-typedef double (TGeoRef_Height)    (struct TGeoRef *Ref,double X,double Y,double Z);
-typedef int    (TGeoRef_Check)     (struct TGeoRef *Ref);
+typedef double (TGeoRef_Height)    (struct TGeoRef *Ref,TZRef *ZRef,double X,double Y,double Z);
 
 typedef struct TGeoRef {
-   char*   Name;
+   char*   Name;                                          // Reference name
    int     NbId,NId;                                      // Nombre de sous-grille
    int*    Ids;                                           // Ids des georeferences (>=0 = ezscint)
 
    int     NRef;                                          // Nombre de reference a la georeference
    int     Type;                                          // Type de grille
    int     BD;                                            // Bordure
-   int     X0,Y0,Z0,X1,Y1,Z1;                             // Grid limits
+   int     NX,NY,X0,Y0,X1,Y1;                             // Grid limits
    int     IG1,IG2,IG3,IG4;                               // Grid descriptor id
-   Vect3d **Pos;                                          // Coordonnees des points de grilles (World)
-
-   struct TZRef ZRef;
 
    Coord  Loc;                                            // (Radar) Localisation du centre de reference
    double CTH,STH;                                        // (Radar) sin and cos of sweep angle
@@ -138,7 +134,7 @@ typedef struct TGeoRef {
    double ResR,ResA;                                      // (Radar) Resolutions en distance et azimuth
 
    float        *Lat,*Lon,*Hgt;                           // Coordonnees des points de grilles (Spherical)
-   float        *AX,*AY;                                  // Coordonnees des points de grilles (Spherical)
+   float        *AX,*AY;                                  // Axes de deformation
    unsigned int *Idx,NIdx;                                // Index dans les positions
 
    char                          Grid[3];                 // Type de grille
@@ -158,7 +154,18 @@ typedef struct TGeoRef {
    TGeoRef_Value     *Value;
    TGeoRef_Distance  *Distance;
    TGeoRef_Height    *Height;
+
+#ifdef HAVE_RPNC   
+   int NC_Id,NC_NXDimId,NC_NYDimId;                       // netCDF identifiers
+#endif
 } TGeoRef;
+
+typedef struct TGeoPos {
+   int      NRef;                                         // Nombre de reference a la georeference
+   TGeoRef *GRef;                                         // Reference horizontale
+   TZRef   *ZRef;                                         // Reference verticale
+   Vect3d **Pos;                                          // Coordonnees des points de grilles (World)
+} TGeoPos;
 
 typedef struct TGeoScan {
    double *X,*Y;
@@ -174,13 +181,13 @@ void     GeoRef_Decr(TGeoRef *Ref);
 int      GeoRef_Within(TGeoRef *Ref0,TGeoRef *Ref1);
 int      GeoRef_WithinRange(TGeoRef *Ref,double Lat0,double Lon0,double Lat1,double Lon1,int In);
 int      GeoRef_Intersect(TGeoRef *Ref0,TGeoRef *Ref1,int *X0,int *Y0,int *X1,int *Y1,int BD);
-int      GeoRef_Equal(TGeoRef *Ref0,TGeoRef *Ref1,int Dim);
+int      GeoRef_Equal(TGeoRef *Ref0,TGeoRef *Ref1);
 TGeoRef* GeoRef_New();
 TGeoRef* GeoRef_Copy(TGeoRef *Ref);
 TGeoRef *GeoRef_HardCopy(TGeoRef *Ref);
 TGeoRef* GeoRef_Reference(TGeoRef *Ref);
-void     GeoRef_Size(TGeoRef *Ref,int X0,int Y0,int Z0,int X1,int Y1,int Z1,int BD);
-TGeoRef* GeoRef_Resize(TGeoRef *Ref,int NI,int NJ,int NK,int Type,float *Levels);
+void     GeoRef_Size(TGeoRef *Ref,int X0,int Y0,int X1,int Y1,int BD);
+TGeoRef* GeoRef_Resize(TGeoRef *Ref,int NI,int NJ);
 int      GeoRef_Free(TGeoRef *Ref);
 void     GeoRef_Clear(TGeoRef *Ref,int New);
 TGeoRef* GeoRef_Find(TGeoRef *Ref);
@@ -189,13 +196,14 @@ int      GeoRef_Limits(TGeoRef *Ref,double *Lat0,double *Lon0,double *Lat1,doubl
 int      GeoRef_BoundingBox(TGeoRef *Ref,double Lat0,double Lon0,double Lat1,double Lon1,double *I0,double *J0,double *I1,double *J1);
 int      GeoRef_Valid(TGeoRef *Ref);
 
-TGeoRef* GeoRef_RDRSetup(double Lat,double Lon,double Height,int R,double ResR,double ResA,int NTheta,float *Theta);
-TGeoRef* GeoRef_RPNSetup(int NI,int NJ,int NK,int Type,float *Levels,char *GRTYP,int IG1,int IG2,int IG3,int IG4,int FID);
-TGeoRef* GeoRef_WKTSetup(int NI,int NJ,int NK,int Type,float *Levels,char *GRTYP,int IG1,int IG2,int IG3,int IG4,char *String,double *Transform,double *InvTransform,OGRSpatialReferenceH Spatial);
+TGeoRef* GeoRef_RDRSetup(double Lat,double Lon,double Height,int R,double ResR,double ResA);
+TGeoRef* GeoRef_RPNSetup(int NI,int NJ,char *GRTYP,int IG1,int IG2,int IG3,int IG4,int FID);
+TGeoRef* GeoRef_WKTSetup(int NI,int NJ,char *GRTYP,int IG1,int IG2,int IG3,int IG4,char *String,double *Transform,double *InvTransform,OGRSpatialReferenceH Spatial);
 int      GeoRef_WKTSet(TGeoRef *Ref,char *String,double *Transform,double *InvTransform,OGRSpatialReferenceH Spatial);
 TGeoRef* GeoRef_RDRCheck(double Lat,double Lon,double Height,double Radius,double ResR,double ResA);
 void     GeoRef_Expand(TGeoRef *Ref);
 int      GeoRef_Positional(TGeoRef *Ref,struct TDef *XDef,struct TDef *YDef);
+int      GeoRef_Coords(TGeoRef *Ref,float *Lat,float *Lon);
 
 void GeoScan_Init(TGeoScan *Scan);
 void GeoScan_Clear(TGeoScan *Scan);

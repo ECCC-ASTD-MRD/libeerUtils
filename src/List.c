@@ -148,22 +148,20 @@ TList* TList_Del(TList *List,void *Data) {
 
   TList *node=List;
 
-  while(List) {
-      if (List->Data==Data) {
-         if (List->Prev)
-            List->Prev->Next=List->Next;
-         if (List->Next)
-            List->Next->Prev=List->Prev;
+  while(node) {
+      if (node->Data==Data) {
+         if (node->Prev)
+            node->Prev->Next=node->Next;
+         if (node->Next)
+            node->Next->Prev=node->Prev;
          if (node==List) {
-            node=List->Next;
-            free(List);
-            List=node;
-         } else {
-            free(List);
+            List=List->Next;
          }
+         free(node);
+         
          break;
       }
-      List=List->Next;
+      node=node->Next;
    }
    return(List);
 }

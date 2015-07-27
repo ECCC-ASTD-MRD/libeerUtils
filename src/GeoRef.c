@@ -432,10 +432,8 @@ int GeoFunc_RadialIntersect(Coord C1,Coord C2,double CRS13,double CRS23,Coord *C
  *   <Ref>      : Pointeur sur la reference geographique
  *   <X0>       : Coordonnee X minimale
  *   <Y0>       : Coordonnee Y minimale
- *   <Z0>       : Coordonnee Z minimale
  *   <X1>       : Coordonnee X maximale
  *   <Y1>       : Coordonnee Y maximale
- *   <Z1>       : Coordonnee Z maximale
  *   <BD>       : Bordure
  *
  * Retour       : Code de retour standard TCL
@@ -444,14 +442,12 @@ int GeoFunc_RadialIntersect(Coord C1,Coord C2,double CRS13,double CRS23,Coord *C
  *
  *---------------------------------------------------------------------------------------------------------------
 */
-void GeoRef_Size(TGeoRef *Ref,int X0,int Y0,int Z0,int X1,int Y1,int Z1,int BD) {
+void GeoRef_Size(TGeoRef *Ref,int X0,int Y0,int X1,int Y1,int BD) {
 
    Ref->X0=X0;
    Ref->X1=X1;
    Ref->Y0=Y0;
    Ref->Y1=Y1;
-   Ref->Z0=Z0;
-   Ref->Z1=Z1;
    Ref->BD=BD;
    Ref->NX=X1-X0;
    Ref->NY=Y1-Y0;
@@ -533,17 +529,8 @@ void GeoRef_Clear(TGeoRef *Ref,int New) {
 
    Ref->IG1=Ref->IG2=Ref->IG3=Ref->IG4=0;
 
-   if (Ref->Pos) {
-      for(n=0;n<Ref->ZRef.LevelNb;n++) {
-         if (Ref->Pos[n]) free(Ref->Pos[n]);
-      }
-      free(Ref->Pos);
-      Ref->Pos=NULL;
-   }
-
    if (New) {
       if (Ref->Name)      free(Ref->Name);         Ref->Name=NULL;
-      ZRef_Free(&Ref->ZRef);
    }
 
 #ifdef HAVE_RMN
@@ -658,13 +645,11 @@ void GeoRef_Qualify(TGeoRef *Ref) {
 
       if (Ref->Grid[0]=='R') {
          Ref->Type|=GRID_RADIAL;
-      }
-      
-      
+      }     
    }
 }
 
-int GeoRef_Equal(TGeoRef *Ref0,TGeoRef *Ref1,int Dim) {
+int GeoRef_Equal(TGeoRef *Ref0,TGeoRef *Ref1) {
 
    if (!Ref0 || !Ref1) {
       return(0);
@@ -682,13 +667,10 @@ int GeoRef_Equal(TGeoRef *Ref0,TGeoRef *Ref1,int Dim) {
 
    /*Test for limits but only for ther refs with transforms (bands)*/
    if (Ref0->Transform || Ref1->Transform)
-      if (Ref0->BD!=Ref1->BD || Ref0->X0!=Ref1->X0 || Ref0->X1!=Ref1->X1 || Ref0->Y0!=Ref1->Y0 || Ref0->Y1!=Ref1->Y1 || Ref0->Z0!=Ref1->Z0 || Ref0->Z1!=Ref1->Z1)
+      if (Ref0->BD!=Ref1->BD || Ref0->X0!=Ref1->X0 || Ref0->X1!=Ref1->X1 || Ref0->Y0!=Ref1->Y0 || Ref0->Y1!=Ref1->Y1)
          return(0);
 
    if (Ref0->Grid[0]!=Ref1->Grid[0] || Ref0->Grid[1]!=Ref1->Grid[1])
-      return(0);
-
-   if (Dim==3 && !ZRef_Equal(&Ref0->ZRef,&Ref1->ZRef))
       return(0);
 
    if (Ref0->Ids && Ref1->Ids && Ref0->Ids[Ref0->NId]!=Ref1->Ids[Ref1->NId])
@@ -752,7 +734,7 @@ TGeoRef *GeoRef_HardCopy(TGeoRef *Ref) {
    int      i;
 
    ref=GeoRef_New();
-   GeoRef_Size(ref,Ref->X0,Ref->Y0,Ref->Z0,Ref->X1,Ref->Y1,Ref->Z1,Ref->BD);
+   GeoRef_Size(ref,Ref->X0,Ref->Y0,Ref->X1,Ref->Y1,Ref->BD);
 
    ref->Grid[0]=Ref->Grid[0];
    ref->Grid[1]=Ref->Grid[1];
@@ -778,8 +760,6 @@ TGeoRef *GeoRef_HardCopy(TGeoRef *Ref) {
    ref->IG3=Ref->IG3;
    ref->IG4=Ref->IG4;
 
-   ZRef_Copy(&ref->ZRef,&Ref->ZRef,-1);
-
    switch(ref->Grid[0]) {
       case 'R' :
          ref->Loc.Lat=Ref->Loc.Lat;
@@ -795,7 +775,7 @@ TGeoRef *GeoRef_HardCopy(TGeoRef *Ref) {
   return(ref);
 }
 
-TGeoRef *GeoRef_Resize(TGeoRef *Ref,int NI,int NJ,int NK,int Type,float *Levels) {
+TGeoRef *GeoRef_Resize(TGeoRef *Ref,int NI,int NJ) {
 
    TGeoRef *ref;
 
@@ -804,13 +784,7 @@ TGeoRef *GeoRef_Resize(TGeoRef *Ref,int NI,int NJ,int NK,int Type,float *Levels)
    } else {
       ref=GeoRef_HardCopy(Ref);
    }
-   GeoRef_Size(ref,0,0,0,NI-1,NJ-1,NK-1,0);
-
-   ref->ZRef.LevelNb=(Ref && Ref->Grid[0]=='V')?NJ:NK;
-   ref->ZRef.Type=Type;
-   ref->ZRef.Levels=(float*)realloc(ref->ZRef.Levels,ref->ZRef.LevelNb*sizeof(float));
-   if (Levels)
-      memcpy(ref->ZRef.Levels,Levels,ref->ZRef.LevelNb*sizeof(float));
+   GeoRef_Size(ref,0,0,NI-1,NJ-1,0);
 
    return(ref);
 }
@@ -850,7 +824,7 @@ TGeoRef* GeoRef_New() {
 
    TGeoRef *ref=malloc(sizeof(TGeoRef));
 
-   GeoRef_Size(ref,0,0,0,0,0,0,0);
+   GeoRef_Size(ref,0,0,0,0,0);
 
    /*General*/
    ref->Name=NULL;
@@ -860,7 +834,6 @@ TGeoRef* GeoRef_New() {
    ref->Type=GRID_NONE;
    ref->NRef=1;
    ref->NIdx=0;
-   ref->Pos=NULL;
    ref->Lat=NULL;
    ref->Lon=NULL;
    ref->Hgt=NULL;
@@ -904,9 +877,6 @@ TGeoRef* GeoRef_New() {
    ref->Value=NULL;
    ref->Distance=NULL;
    ref->Height=NULL;
-
-   /*Vertical reference*/
-   ZRef_Init(&ref->ZRef);
 
    return(ref);
 }

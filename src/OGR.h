@@ -77,7 +77,7 @@ typedef struct OGR_Layer {
    char            *Spec;                // (TDataSpec type) Specification de rendue des donnees
 #endif
 
-   TGeoRef         *Ref;                 // GeoReference
+   TGeoRef         *GRef;                // GeoReference
    OGRLayerH        Layer;               // OGR internal layer object
    OGRFeatureH     *Feature;             // List of OGR internal layer featuret
    OGRFeatureDefnH  Def;                 // OGR internal feature definition object

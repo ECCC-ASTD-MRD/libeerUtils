@@ -1,10 +1,11 @@
 NAME       = eerUtils
 DESC       = SMC-CMC-CMOE Utility librairie package.
-VERSION    = 2.0.1
+VERSION    = 2.1.0
 MAINTAINER = $(USER)
 OS         = $(shell uname -s)
 PROC       = $(shell uname -m | tr _ -)
 RMN        = -DHAVE_RMN
+#-DHAVE_RPNC
 
 ifdef COMP_ARCH
    COMP=-${COMP_ARCH}
@@ -16,14 +17,14 @@ INSTALL_DIR = $(HOME)
 TCL_DIR     = /users/dor/afsr/ops/Links/devfs/Archive/tcl8.6.3
 
 #----- Uncoment to use dev libs
-#LIB_DIR     = ${SSM_DEV}/workspace/libSPI_7.9.1_${ORDENV_PLAT}
+LIB_DIR     = ${SSM_DEV}/workspace/libSPI_7.9.1_${ORDENV_PLAT}
 
 LIBS        := -L$(LIB_DIR)/lib -L$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g')
 INCLUDES    := -I$(LIB_DIR)/include -I$(shell echo $(EC_INCLUDE_PATH) | sed 's/\s* / -I/g')
 
 ifeq ($(OS),Linux)
 
-   LIBS        := $(LIBS) -Wl,-rpath-link $(LIB_DIR)/lib -lxml2 -lgdal -lz -lezscint -lrmneer
+   LIBS        := $(LIBS) -Wl,-rpath-link $(LIB_DIR)/lib -lxml2 -lgdal -lnetcdf -lz -lezscint -lrmneer
    INCLUDES    := -Isrc -I/usr/include/libxml2 -I$(LIB_DIR)/include/libxml2 -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic  $(INCLUDES)
 
 #   CC          = mpicc
@@ -116,6 +117,9 @@ ifdef RMN
 	$(CC) util/ReGrid.c -o bin/ReGrid-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC); 
 	ln -fs ReGrid-$(VERSION) bin/ReGrid;
 	ln -fs ReGrid bin/o.regrid;
+#	$(CC) util/RPNC_Convert.c -o bin/RPNC_Convert-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC); 
+#	ln -fs RPNC_Convert-$(VERSION) bin/RPNC_Convert;
+#	ln -fs RPNC_Convert bin/o.rpnc_convert;
 endif
 
 test: obj 

@@ -114,7 +114,6 @@ void Vertex_Map2(double X[4] ,double Y[4],double *LX,double *LY,double WX,double
  *            a l'interieur d'un voxel
  *
  * Parametres :
- *   <Ref>    : Georeference
  *   <Def>    : Definitions des donnees
  *   <Nr>     : Point a l'interieur du voxel
  *
@@ -125,14 +124,14 @@ void Vertex_Map2(double X[4] ,double Y[4],double *LX,double *LY,double WX,double
  *
  *----------------------------------------------------------------------------
 */
-void VertexGradient(TGeoRef *Ref,TDef *Def,Vect3d Nr) {
+void VertexGradient(TDef *Def,Vect3d Nr) {
 
    Vect3d v;
 
    Vect_Assign(v,Nr);
-   Nr[0]=VertexVal(Ref,Def,-1,v[0]-0.5,v[1],v[2])-VertexVal(Ref,Def,-1,v[0]+0.5,v[1],v[2]);
-   Nr[1]=VertexVal(Ref,Def,-1,v[0],v[1]-0.5,v[2])-VertexVal(Ref,Def,-1,v[0],v[1]+0.5,v[2]);
-   Nr[2]=VertexVal(Ref,Def,-1,v[0],v[1],v[2]-0.5)-VertexVal(Ref,Def,-1,v[0],v[1],v[2]+0.5);
+   Nr[0]=VertexVal(Def,-1,v[0]-0.5,v[1],v[2])-VertexVal(Def,-1,v[0]+0.5,v[1],v[2]);
+   Nr[1]=VertexVal(Def,-1,v[0],v[1]-0.5,v[2])-VertexVal(Def,-1,v[0],v[1]+0.5,v[2]);
+   Nr[2]=VertexVal(Def,-1,v[0],v[1],v[2]-0.5)-VertexVal(Def,-1,v[0],v[1],v[2]+0.5);
 
 //   Vect_Mul(Nr,Nr,v);
 }
@@ -203,9 +202,9 @@ void VertexInterp(Vect3d Pi,Vect3d P0,Vect3d P1,double V0,double V1,double Level
  *
  *----------------------------------------------------------------------------
 */
-int VertexLoc(TGeoRef *Ref,TDef *Def,Vect3d Vr,double X,double Y,double Z) {
+int VertexLoc(Vect3d **Pos,TDef *Def,Vect3d Vr,double X,double Y,double Z) {
 
-   Vect3d        v00,v01,v10,v11,v0,v1,**pos;
+   Vect3d        v00,v01,v10,v11,v0,v1;
    unsigned long i,j,k,k1;
    unsigned long idx0,idx1,idx2,idx3;
 
@@ -213,7 +212,6 @@ int VertexLoc(TGeoRef *Ref,TDef *Def,Vect3d Vr,double X,double Y,double Z) {
       return(0);
    }
 
-   pos=Ref->Pos;
    i=X;X-=i;
    j=Y;Y-=j;
    k=Z;Z-=k;
@@ -229,15 +227,15 @@ int VertexLoc(TGeoRef *Ref,TDef *Def,Vect3d Vr,double X,double Y,double Z) {
 
       k1=k+1;
 
-      Vect_InterpC(v00,pos[k][idx0],pos[k1][idx0],Z);
-      Vect_InterpC(v10,pos[k][idx1],pos[k1][idx1],Z);
-      Vect_InterpC(v11,pos[k][idx2],pos[k1][idx2],Z);
-      Vect_InterpC(v01,pos[k][idx3],pos[k1][idx3],Z);
+      Vect_InterpC(v00,Pos[k][idx0],Pos[k1][idx0],Z);
+      Vect_InterpC(v10,Pos[k][idx1],Pos[k1][idx1],Z);
+      Vect_InterpC(v11,Pos[k][idx2],Pos[k1][idx2],Z);
+      Vect_InterpC(v01,Pos[k][idx3],Pos[k1][idx3],Z);
    } else {
-      Vect_Assign(v00,pos[k][idx0]);
-      Vect_Assign(v10,pos[k][idx1]);
-      Vect_Assign(v01,pos[k][idx3]);
-      Vect_Assign(v11,pos[k][idx2]);
+      Vect_Assign(v00,Pos[k][idx0]);
+      Vect_Assign(v10,Pos[k][idx1]);
+      Vect_Assign(v01,Pos[k][idx3]);
+      Vect_Assign(v11,Pos[k][idx2]);
    }
 
    /*Interpolate over X*/
@@ -267,7 +265,6 @@ int VertexLoc(TGeoRef *Ref,TDef *Def,Vect3d Vr,double X,double Y,double Z) {
  *            a l'interieur d'un voxel pour une les deux composante (UV=vitesse)
  *
  * Parametres :
- *   <Ref>    : Georeference
  *   <Def>    : Definition des donnees
  *   <Idx>    : Composantes (-1=mode)
  *   <X>      : Position en X
@@ -280,7 +277,7 @@ int VertexLoc(TGeoRef *Ref,TDef *Def,Vect3d Vr,double X,double Y,double Z) {
  *
  *----------------------------------------------------------------------------
 */
-float VertexVal(TGeoRef *Ref,TDef *Def,int Idx,double X,double Y,double Z) {
+float VertexVal(TDef *Def,int Idx,double X,double Y,double Z) {
 
    double        cube[2][4];
    unsigned long i,j,k,idx[4],idxk;
@@ -348,7 +345,7 @@ float VertexVal(TGeoRef *Ref,TDef *Def,int Idx,double X,double Y,double Z) {
    return(cube[0][0]);
 }
 
-double VertexValV(TGeoRef *Ref,TDef *Def,double X,double Y,double Z,Vect3d V) {
+double VertexValV(TDef *Def,double X,double Y,double Z,Vect3d V) {
 
    double        cube[3][2][4];
    unsigned long i,j,k,idx[4],idxk;

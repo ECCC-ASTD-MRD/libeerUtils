@@ -36,9 +36,13 @@
 #include <pthread.h>
 #include "eerUtils.h"
 #include "RPN.h"
+#include "GeoRef.h"
 #include "ZRef.h"
+#include "QTree.h"
+#include "Triangle.h"
 
 #define GRIDCACHEMAX 2048
+#define GRIDOWNMAX   15
 
 #define GRID_CENTER 0x0
 #define GRID_LEFT   0x1
@@ -88,6 +92,8 @@ struct TGrid;
 typedef struct TGrid {
    TRPNHeader      H;                    // RPN Standard file header
    TZRef          *ZRef;                 // Vertical referential
+   TGeoRef        *GRef;                 // Geographic referential
+   TQTree         *QTree;                // Quad tree index
    int             Wrap;                 // Flag indicating grid globe wrap-around (global grids)
    float           Pole[2];              // Pole coverage
 

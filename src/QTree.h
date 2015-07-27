@@ -36,11 +36,13 @@
 #define _QTree_h
 
 #include "eerUtils.h"
+#include "Vector.h"
 
 #define QTREE_INFINITE 0xFFFFFFFF
+#define QTREE_SIZEINCR 5
 
 typedef struct TQTreeData {
-   void    *Ptr;                // Data pointer
+   char    *Ptr;                // Data pointer
    TPoint2D Pos;                // XY data position
 } TQTreeData;
 
@@ -51,6 +53,7 @@ typedef struct TQTree {
 
    TPoint2D       BBox[2];      // South West XY position limit of the quad bounding box
    int            NbData;       // Number of data in the payload
+   int            Size;         // Current size of data payload
 } TQTree;
 
 typedef struct TQTreeIterator {
@@ -62,6 +65,7 @@ typedef void (QTree_ParseProc) (void *Data);
 
 TQTree* QTree_New(double X0,double Y0,double X1,double Y1,TQTree *Parent);
 TQTree* QTree_Add(TQTree* restrict Node,double X,double Y,unsigned int MaxDepth,void* restrict Data);
+TQTree* QTree_AddTriangle(TQTree* restrict Node,Vect2d T[3],unsigned int MaxDepth,void* restrict Data);
 void    QTree_Del(TQTree* restrict Node);
 TQTree* QTree_Find(TQTree* restrict Node,double X,double Y);
 void    QTree_Parse(TQTree* restrict Node,QTree_ParseProc *Proc,unsigned Depth);
@@ -70,9 +74,12 @@ TQTree*         QTree_Iterate(TQTree* restrict Node,TQTreeIterator *Iter);
 TQTree*         QTree_IterateFilled(TQTree* restrict Node,TQTreeIterator *Iter);
 TQTreeIterator* QTree_IteratorNew(void);
 
-static inline void* QTree_GetData(TQTree* restrict Node,int *Nb) {
-   *Nb=Node->NbData;
-   return(Node->Data);
+static inline char* QTree_GetData(TQTree* const restrict Node,int Index) {
+
+   if (Node && Node->Data && Index<Node->NbData && Index>=0) {
+      return(Node->Data[Index].Ptr);
+   }
+   return(NULL);
 }
 
 #endif

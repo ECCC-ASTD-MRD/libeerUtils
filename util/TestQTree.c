@@ -29,19 +29,29 @@
  *
  *==============================================================================
  */
+
+#include "App.h"
+#include "GeoRef.h"
+#include "RPN.h"
+#include "Def.h"
 #include "QTree.h"
+#include "Triangle.h"
+
+#define APP_NAME "TestQTree"
+#define APP_DESC "QTree testing tool."
 
 void process(void *Data) {
    
-   fprintf(stdout,"%s\n",(char*)Data);   
+   fprintf(stdout,"Tree parse proc test: %s\n",(char*)Data);   
 }
 
-int main(int argc, char *argv[]) {
-
+int QTree_TestBasic(TApp *App) {
+   
    TQTree         *tree,*node;
    TQTreeIterator *it;
    int            depth;
    
+   App_Log(App,INFO,"Tree build test:\n");
    tree=QTree_New(-100,-100,100,100,NULL);
    
    depth=QTREE_INFINITE;
@@ -56,17 +66,19 @@ int main(int argc, char *argv[]) {
    QTree_Add(tree,22,22,depth,"toto2");
    
    // Parse the tree
+   App_Log(App,INFO,"Tree printout test:\n");
    QTree_Parse(tree,NULL,0);
    QTree_Parse(tree,process,0);
 
    // Find the node at a specific point
    if ((node=QTree_Find(tree,20,20))) {
-      fprintf(stdout,"%i data in node\n",node->NbData);
+      fprintf(stdout,"Found %i data in node\n",node->NbData);
    } else {
       fprintf(stdout,"Out of tree\n");
    }
    
    // Iterate over each leaf
+   App_Log(App,INFO,"Tree iterator test:\n");
    it=QTree_IteratorNew();
    
    node=QTree_Iterate(tree,it);
@@ -75,4 +87,175 @@ int main(int argc, char *argv[]) {
    while ((node=QTree_Iterate(NULL,it))) {
       QTree_Parse(node,NULL,0);
    }
- }
+   
+}
+
+TQTree* EZGrid_Build(TApp *App,TGeoRef *Ref) {
+
+   unsigned int  n,nt,res=0;
+   unsigned int *idx;
+   double        lat0,lon0,lat1,lon1;
+   Vect2d        tr[3];
+   TQTree       *tree;
+   
+   // Check data limits   
+   lat0=lon0=1e10;
+   lat1=lon1=-1e10;
+   
+   for(n=0;n<Ref->NX;n++) {
+      lat0=FMIN(lat0,Ref->Lat[n]);
+      lon0=FMIN(lon0,Ref->Lon[n]);
+      lat1=FMAX(lat1,Ref->Lat[n]);
+      lon1=FMAX(lon1,Ref->Lon[n]);
+   }
+      
+   // Create the tree on the data limits
+   if (!(tree=QTree_New(lat0,lon0,lat1,lon1,NULL))) {
+      App_Log(App,ERROR,"%s: failed to create QTree index\n",__func__);
+      return(NULL);
+   }
+
+   // Loop on triangles
+   idx=Ref->Idx;
+   for(nt=0;nt<Ref->NIdx-3;nt+=3) {     
+      
+      tr[0][0]=Ref->Lat[idx[nt]];     tr[0][1]=Ref->Lon[idx[nt]];
+      tr[1][0]=Ref->Lat[idx[nt+1]];   tr[1][1]=Ref->Lon[idx[nt+1]];
+      tr[2][0]=Ref->Lat[idx[nt+2]];   tr[2][1]=Ref->Lon[idx[nt+2]];
+      
+      // Put it in the quadtree, in any child nodes intersected
+      res=8;
+      if (!QTree_AddTriangle(tree,tr,res,&Ref->Idx[nt])) {
+         App_Log(App,ERROR,"%s: failed to add node\n",__func__);
+         return(NULL);
+      }      
+   }
+   
+   return(tree);
+}
+
+int LLGetValue(TQTree *Tree,TGeoRef *Ref,float *Data,double Lat,double Lon,float *Value) {
+   
+   TQTree       *node;
+   Vect3d        bary;
+   int           n,t,i;
+   unsigned int *idx;
+   
+   struct timeval time0,time1;
+   gettimeofday(&time0,NULL);
+
+   // Find enclosing triangle
+   if ((node=QTree_Find(Tree,Lat,Lon)) && node->NbData) {
+      
+      // Loop on this nodes data payload
+      for(n=0;n<node->NbData;n++) {
+         idx=(unsigned int*)QTree_GetData(node,n);
+         
+         // if the Barycentric coordinates are within this triangle, get its interpolated value
+         if (Bary_Get(bary,Lat,Lon,Ref->Lat[*idx],Ref->Lon[*idx],Ref->Lat[*(idx+1)],Ref->Lon[*(idx+1)],Ref->Lat[*(idx+2)],Ref->Lon[*(idx+2)])) {
+            *Value=Bary_Interp(bary,Data[*idx],Data[*(idx+1)],Data[*(idx+2)]);                    
+
+            gettimeofday(&time1,NULL);
+            System_TimeValSubtract(&time0,&time1,&time0);
+            fprintf(stderr,"(TIME) %.8f s\n",time0.tv_sec+((double)time0.tv_usec)*1e-6);
+            
+            return(TRUE);
+         }
+      }
+   }
+      
+   // We must be out of the tin
+   return(FALSE);
+}
+
+//#define TINFILE "/home/afsr/005/public_html/SPI/Script/DataOut/FSTD_TIN2FSTD.fstd"
+#define TINFILE "/fs/cetus/fs2/ops/cmoe/afsr005/Projects/SPILL/Cornwall/cornwall.fst"
+//#define TINFILE "/fs/cetus/fs2/ops/cmoe/afsr005/Projects/SPILL/Cornwall/cnd8500/2015072306_012"
+
+int QTree_TestTIN(TApp *App) {
+
+   TQTree   *tree;
+   TGeoRef   ref;
+   TRPNField *in;
+   int  fin,ni,nj,nk;
+   float value;
+   
+   if ((fin=cs_fstouv(TINFILE,"STD+RND+R/O"))<0) {
+      App_Log(App,ERROR,"Problems opening input file %s\n",TINFILE);
+      return(0);
+   }
+
+   if (!(in=RPN_FieldRead(fin,-1,"",-1,-1,-1,"","UUW"))) {
+      App_Log(App,ERROR,"Problems reading tin field\n");
+      return(0);    
+   }
+   
+//   ref.NIdx=76545;
+   ref.NIdx=197139;
+   ref.Idx=(unsigned int*)malloc(ref.NIdx*sizeof(unsigned int));
+//   ref.NX=13430;
+   ref.NX=135010;
+   ref.Lat=(float*)malloc(ref.NX*sizeof(float));
+   ref.Lon=(float*)malloc(ref.NX*sizeof(float));
+
+   cs_fstlir(ref.Lat,fin,&ni,&nj,&nk,-1,"",-1,-1,-1,"","^^");
+   cs_fstlir(ref.Lon,fin,&ni,&nj,&nk,-1,"",-1,-1,-1,"",">>");
+   cs_fstlir(ref.Idx,fin,&ni,&nj,&nk,-1,"",-1,-1,-1,"","##");
+
+   tree=EZGrid_Build(App,&ref);  
+//   QTree_Parse(tree,NULL,0);
+
+   
+   App_Log(App,INFO,"Testing Cornwall domain:\n");
+   LLGetValue(tree,&ref,(float*)in->Def->Data[0],45.0084972,-74.7374668,&value);
+   App_Log(App,INFO,"   Tree TIN value test: %.4f == 1.8570\n",value);
+
+   LLGetValue(tree,&ref,(float*)in->Def->Data[0],45.0081266,-74.7395578,&value);
+   App_Log(App,INFO,"   Tree TIN value test: %.4f == 0.0198\n",value);
+
+   if (!LLGetValue(tree,&ref,(float*)in->Def->Data[0],45.0081325,-74.7396231,&value)) {
+      App_Log(App,INFO,"   Tree TIN value test outside: OK\n");
+   }
+
+   
+   
+   
+   App_Log(App,INFO,"Testing Hudson bay domain:\n");
+   LLGetValue(tree,&ref,(float*)in->Def->Data[0],59.58349,-82.84078,&value);
+   App_Log(App,INFO,"   Tree TIN value test: %.2f == 229.66\n",value);
+ 
+   LLGetValue(tree,&ref,(float*)in->Def->Data[0],61.00896,-66.35393,&value);
+   App_Log(App,INFO,"   Tree TIN value test: %.2f == 802.84\n",value);
+
+   LLGetValue(tree,&ref,(float*)in->Def->Data[0],62.70096,-78.11559,&value);
+   App_Log(App,INFO,"   Tree TIN value test: %.2f == 425.89\n",value);
+   
+   if (!LLGetValue(tree,&ref,(float*)in->Def->Data[0],62.43475,-77.47023,&value)) {
+      App_Log(App,INFO,"   Tree TIN value test outside: OK\n");
+   }
+   if (!LLGetValue(tree,&ref,(float*)in->Def->Data[0],62.66643,-74.15499,&value)) {
+      App_Log(App,INFO,"   Tree TIN value test outside: OK\n");
+   }
+}
+   
+int main(int argc, char *argv[]) {
+
+   TApp     *app;
+   int      ok=TRUE;
+   
+   app=App_New(APP_NAME,VERSION,APP_DESC,__TIMESTAMP__);
+
+   App_Start(app);
+   
+   QTree_TestBasic(app);
+   QTree_TestTIN(app);
+   
+   App_End(app,ok!=1);
+   App_Free(app);
+
+   if (!ok) {
+      exit(EXIT_FAILURE);
+   } else {
+      exit(EXIT_SUCCESS);
+   }
+}

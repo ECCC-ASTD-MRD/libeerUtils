@@ -95,7 +95,7 @@ int ReGrid(TApp *App,char *In,char *Out,char *Grid,char **Vars) {
       Def_Clear(grid->Def);
      
       // Proceed with interpolation
-      if (!(idx->Head.NI=Def_GridInterpConservative(grid->Ref,grid->Def,in->Ref,in->Def,IR_CONSERVATIVE,TRUE,1,index))) {
+      if (!(idx->Head.NI=Def_GridInterpConservative(grid->GRef,grid->Def,in->GRef,in->Def,IR_CONSERVATIVE,TRUE,1,index))) {
          App_Log(App,ERROR,"Problems interpolating: %s\n",App_ErrorGet());
          return(0);    
       }

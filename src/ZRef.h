@@ -69,28 +69,36 @@ typedef enum { DEFAULT=1,NEW=2,OLD=3 } TZRef_IP1Mode;
 
 // Vertical referential definition
 typedef struct TZRef {
-   int    Count;        // Reference count
-   int    Version;      // Version
-   int    Type;         // Type of levels
-   float *Levels;       // Levels list
-   int    LevelNb;      // Number of Levels
-   float  PTop;         // Pressure at top of atmosphere
-   float  PRef;         // Reference pressure
-   float  RCoef[2];     // Hybrid level coefficient
-   float  ETop;         // Eta coordinate a top
-   float  *A,*B;        // Pressure calculation factors
-   float  *P0;          // Pressure at surface
-   float  *PCube;       // 3D Pressure cube
+   char  *Name;          // Reference name
+   int    NRef;          // Reference count
+   int    Version;       // Version
+   int    Type;          // Type of levels
+   float *Levels;        // Levels list
+   int    LevelNb;       // Number of Levels
+   float  PTop;          // Pressure at top of atmosphere
+   float  PRef;          // Reference pressure
+   float  RCoef[2];      // Hybrid level coefficient
+   float  ETop;          // Eta coordinate a top
+   float  *A,*B;         // Pressure calculation factors
+   float  *P0;           // Pressure at surface
+   float  *PCube;        // 3D Pressure cube
 
-   TZRef_IP1Mode Style; // IP style
+   TZRef_IP1Mode Style;  // IP style
+
+#ifdef HAVE_RPNC   
+   int NC_Id,NC_NZDimId; // netCDF identifiers
+#endif
 } TZRef;
 
-#define ZRef_Incr(ZREF) ZREF->Count++;
+#define ZRef_Incr(ZREF) __sync_add_and_fetch(&ZREF->NRef,1)
+#define ZRef_Decr(ZREF) __sync_sub_and_fetch(&ZREF->NRef,1)
 
-int    ZRef_Init(TZRef *ZRef);
+TZRef* ZRef_New(void);
+TZRef* ZRef_Define(int Type,int NbLevels,float *Levels);
 int    ZRef_Free(TZRef *ZRef);
 int    ZRef_Equal(TZRef *Zref0,TZRef *ZRef1);
-int    ZRef_Copy(TZRef *ZRef0,TZRef *ZRef1,int Level);
+TZRef* ZRef_Copy(TZRef *ZRef);
+TZRef* ZRef_HardCopy(TZRef *ZRef);
 int    ZRef_DecodeRPN(TZRef *ZRef,int Unit);
 int    ZRef_SetRestrictLevels(float *Levels,int NbLevels);
 int    ZRef_AddRestrictLevel(float Level);

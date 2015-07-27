@@ -41,7 +41,7 @@
 
 static const char *RPN_Desc[]={ ">>","^^","^>","!!","HY","PROJ","MTRX",NULL };
 
-static char FGFDTLock[MAXFILES];
+static char FGFDTLock[1000];
 
 static pthread_mutex_t RPNFieldMutex=PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t RPNFileMutex=PTHREAD_MUTEX_INITIALIZER;
@@ -79,9 +79,12 @@ int cs_fstlockid() {
    int id;
 
    pthread_mutex_lock(&RPNFileMutex);
-   for (id=0;id<MAXFILES;id++) {
-      /*Patch pour rmn008 (Unit 6 = bad)*/
-      if (id!=5 && FGFDT[id].iun==0 && FGFDTLock[id]==0) {
+   
+   // Id 5 and 6 are stdout and stderr   
+   FGFDTLock[4]=FGFDTLock[5]=1;  
+
+   for (id=0;id<1000;id++) {
+      if (FGFDTLock[id]==0) {
          FGFDTLock[id]=1;
          id++;
          break;
@@ -254,12 +257,14 @@ int cs_fstecr(void *Data,int NPak,int Unit, int DateO,int Deet,int NPas,int NI,i
  */
 int RPN_IntIdNew(int NI,int NJ,char* GRTYP,int IG1,int IG2,int IG3, int IG4,int FID) {
 
-   int id;
+   int id=-1;
 
-   RPN_IntLock();
-   id=c_ezqkdef(NI,NJ,GRTYP,IG1,IG2,IG3,IG4,FID);
-   RPN_IntUnlock();
-
+   if (GRTYP[0]!='M' && GRTYP[0]!='W' && GRTYP[0]!='V') {
+      RPN_IntLock();
+      id=c_ezqkdef(NI,NJ,GRTYP,IG1,IG2,IG3,IG4,FID);
+      RPN_IntUnlock();
+   }
+   
    return(id);
 }
 
@@ -304,7 +309,7 @@ TRPNField* RPN_FieldNew(int NI,int NJ,int NK,int NC,TDef_Type Type) {
       return(NULL);
    }
 
-   fld->Ref=NULL;
+   fld->GRef=NULL;
    fld->Head.NI=NI;
    fld->Head.NJ=NJ;
    fld->Head.NK=NK;
@@ -314,8 +319,8 @@ TRPNField* RPN_FieldNew(int NI,int NJ,int NK,int NC,TDef_Type Type) {
 
 void RPN_FieldFree(TRPNField *Fld) {
 
-   if (Fld->Ref) GeoRef_Free(Fld->Ref);
-   if (Fld->Def) Def_Free(Fld->Def);
+   if (Fld->GRef) GeoRef_Free(Fld->GRef);
+   if (Fld->Def)  Def_Free(Fld->Def);
 
    free(Fld);
 }
@@ -325,6 +330,7 @@ TRPNField* RPN_FieldReadIndex(int FileId,int Index,TRPNField *Fld) {
    TRPNField  *fld;
    TRPNHeader  h;
    int         ok,type;
+   double      nhour;
    float       lvl;
 
    h.FID=FileId;
@@ -344,6 +350,15 @@ TRPNField* RPN_FieldReadIndex(int FileId,int Index,TRPNField *Fld) {
       return(NULL);
    }
 
+   // Calculer la date de validitee du champs
+   if (h.DATEO!=0) {
+      nhour=((double)h.NPAS*h.DEET)/3600.0;
+      f77name(incdatr)(&h.DATEV,&h.DATEO,&nhour);
+      if (h.DATEV==101010101) h.DATEV=0;
+   } else {
+      h.DATEV=0;
+   }
+   
    // Supprimer les espaces inutiles
    strtrim(h.NOMVAR,' ');
    strtrim(h.TYPVAR,' ');
@@ -374,14 +389,14 @@ TRPNField* RPN_FieldReadIndex(int FileId,int Index,TRPNField *Fld) {
       type=type==LVL_SIGMA?LVL_ETA:type;
 
       if (h.GRTYP[0]!='W') {
-         fld->Ref=GeoRef_RPNSetup(h.NI,h.NJ,h.NK,type,&lvl,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,h.FID);
+         fld->GRef=GeoRef_RPNSetup(h.NI,h.NJ,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,h.FID);
       }
-
+      fld->ZRef=ZRef_Define(type,h.NK,&lvl);
    //   if (grtyp[0]=='U') {
    //      FSTD_FieldSubBuild(field);
    //   }
 
-      GeoRef_Qualify(fld->Ref);
+      GeoRef_Qualify(fld->GRef);
    }
    memcpy(&fld->Head,&h,sizeof(TRPNHeader));
 
@@ -530,7 +545,8 @@ int RPN_IsDesc(char *Var) {
  *   <FID>     : File id
  *   <Def>     : Data definition
  *   <Head>    : RPN field Header
- *   <Ref>     : Georeference
+ *   <GRef>    : Georeference horizontale
+ *   <ZRef>    : Georeference verticale
  *   <Comp>    : Component into data array
  *   <NI>      : Horizontal tile size
  *   <NJ>      : Vertical tile size
@@ -545,7 +561,7 @@ int RPN_IsDesc(char *Var) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-int RPN_FieldTile(int FID,TDef *Def,TRPNHeader *Head,TGeoRef *Ref,int Comp,int NI,int NJ,int Halo,int DATYP,int NPack,int Rewrite,int Compress) {
+int RPN_FieldTile(int FID,TDef *Def,TRPNHeader *Head,TGeoRef *GRef,TZRef *ZRef,int Comp,int NI,int NJ,int Halo,int DATYP,int NPack,int Rewrite,int Compress) {
 
    char        *tile=NULL,*data=NULL;;
    int          i,j,k,ip1,ni,nj,di,dj,pj,no,sz,key=0;
@@ -566,14 +582,14 @@ int RPN_FieldTile(int FID,TDef *Def,TRPNHeader *Head,TGeoRef *Ref,int Comp,int N
 
       // If IP1 is set, use it otherwise, convert it from levels array
       if ((ip1=Head->IP1)==-1 || Def->NK>1) {
-         ip1=ZRef_Level2IP(Ref->ZRef.Levels[k],Ref->ZRef.Type,DEFAULT);
+         ip1=ZRef_Level2IP(ZRef->Levels[k],ZRef->Type,DEFAULT);
       }
 
       // Check if tiling asked and if dimensions allow tiling
       if (!NI || !NJ || (Def->NI<NI && Def->NJ<NJ)) {
          c_fst_data_length(TDef_Size[Def->Type]);
          key=c_fstecr(data,NULL,NPack,FID,Head->DATEO,Head->DEET,Head->NPAS,Def->NI,Def->NJ,1,ip1,Head->IP2,Head->IP3,Head->TYPVAR,
-            Head->NOMVAR,Head->ETIKET,(Ref?(Ref->Grid[1]!='\0'?&Ref->Grid[1]:Ref->Grid):"X"),Head->IG1,Head->IG2,Head->IG3,Head->IG4,DATYP,Rewrite);
+            Head->NOMVAR,Head->ETIKET,(GRef?(GRef->Grid[1]!='\0'?&GRef->Grid[1]:GRef->Grid):"X"),Head->IG1,Head->IG2,Head->IG3,Head->IG4,DATYP,Rewrite);
       } else {
 
          // Build and save the tiles, we adjust the tile size if it is too big

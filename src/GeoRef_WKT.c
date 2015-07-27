@@ -36,9 +36,9 @@
 #include "Def.h"
 #include "Vertex.h"
 
-int      GeoRef_WKTValue(TGeoRef *Ref,TDef *Def,char Mode,int C,double X,double Y,double Z,double *Length,double *ThetaXY);
-int      GeoRef_WKTProject(TGeoRef *Ref,double X,double Y,double *Lat,double *Lon,int Extrap,int Transform);
-int      GeoRef_WKTUnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double Lon,int Extrap,int Transform);
+int      GeoRef_WKTValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,double Z,double *Length,double *ThetaXY);
+int      GeoRef_WKTProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,int Extrap,int Transform);
+int      GeoRef_WKTUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,int Extrap,int Transform);
 
 /*--------------------------------------------------------------------------------------------------------------
  * Nom          : <GeoRef_WKTDistance>
@@ -47,7 +47,7 @@ int      GeoRef_WKTUnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double 
  * But          : Calculer la distance entre deux points.
  *
  * Parametres    :
- *   <Ref>       : Pointeur sur la reference geographique
+ *   <GRef>      : Pointeur sur la reference geographique
  *   <X0>        : coordonnee en X dans la projection/grille
  *   <Y0>        : coordonnee en Y dans la projection/grille
  *   <X0>        : coordonnee en X dans la projection/grille
@@ -59,33 +59,33 @@ int      GeoRef_WKTUnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double 
  *
  *---------------------------------------------------------------------------------------------------------------
 */
-double GeoRef_WKTDistance(TGeoRef *Ref,double X0,double Y0,double X1, double Y1) {
+double GeoRef_WKTDistance(TGeoRef *GRef,double X0,double Y0,double X1, double Y1) {
 
 #ifdef HAVE_GDAL
    double i[2],j[2],lat[2],lon[2];
 
-   X0+=Ref->X0;
-   X1+=Ref->X0;
-   Y0+=Ref->Y0;
-   Y1+=Ref->Y0;
+   X0+=GRef->X0;
+   X1+=GRef->X0;
+   Y0+=GRef->Y0;
+   Y1+=GRef->Y0;
 
-   if (Ref->Grid[1]=='Z' || (Ref->Spatial && OSRIsGeographic(Ref->Spatial))) {
-      GeoRef_WKTProject(Ref,X0,Y0,&lat[0],&lon[0],1,1);
-      GeoRef_WKTProject(Ref,X1,Y1,&lat[1],&lon[1],1,1);
+   if (GRef->Grid[1]=='Z' || (GRef->Spatial && OSRIsGeographic(GRef->Spatial))) {
+      GeoRef_WKTProject(GRef,X0,Y0,&lat[0],&lon[0],1,1);
+      GeoRef_WKTProject(GRef,X1,Y1,&lat[1],&lon[1],1,1);
       return(DIST(0.0,DEG2RAD(lat[0]),DEG2RAD(lon[0]),DEG2RAD(lat[1]),DEG2RAD(lon[1])));
    } else {
-      if (Ref->Transform) {
-         i[0]=Ref->Transform[0]+Ref->Transform[1]*X0+Ref->Transform[2]*Y0;
-         j[0]=Ref->Transform[3]+Ref->Transform[4]*X0+Ref->Transform[5]*Y0;
-         i[1]=Ref->Transform[0]+Ref->Transform[1]*X1+Ref->Transform[2]*Y1;
-         j[1]=Ref->Transform[3]+Ref->Transform[4]*X1+Ref->Transform[5]*Y1;
+      if (GRef->Transform) {
+         i[0]=GRef->Transform[0]+GRef->Transform[1]*X0+GRef->Transform[2]*Y0;
+         j[0]=GRef->Transform[3]+GRef->Transform[4]*X0+GRef->Transform[5]*Y0;
+         i[1]=GRef->Transform[0]+GRef->Transform[1]*X1+GRef->Transform[2]*Y1;
+         j[1]=GRef->Transform[3]+GRef->Transform[4]*X1+GRef->Transform[5]*Y1;
       } else {
          i[0]=X0;
          j[0]=Y0;
          i[1]=X1;
          j[1]=Y1;
       }
-      return(hypot(j[1]-j[0],i[1]-i[0])*OSRGetLinearUnits(Ref->Spatial,NULL));
+      return(hypot(j[1]-j[0],i[1]-i[0])*OSRGetLinearUnits(GRef->Spatial,NULL));
    }
 #else
    App_ErrorSet("Function %s is not available, needs to be built with GDAL",__func__);
@@ -100,7 +100,7 @@ double GeoRef_WKTDistance(TGeoRef *Ref,double X0,double Y0,double X1, double Y1)
  * But          : Extraire la valeur d'une matrice de donnees.
  *
  * Parametres    :
- *   <Ref>       : Pointeur sur la reference geographique
+ *   <GRef>      : Pointeur sur la reference geographique
  *   <Def>       : Pointeur sur la definition de la donnee
  *   <Mode>      : Mode d'interpolation (N=NEAREST,L=LINEAR);
  *   <C>         : Composante
@@ -116,7 +116,7 @@ double GeoRef_WKTDistance(TGeoRef *Ref,double X0,double Y0,double X1, double Y1)
  *
  *---------------------------------------------------------------------------------------------------------------
 */
-int GeoRef_WKTValue(TGeoRef *Ref,TDef *Def,char Mode,int C,double X,double Y,double Z,double *Length,double *ThetaXY){
+int GeoRef_WKTValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,double Z,double *Length,double *ThetaXY){
 
    double       x,y,d;
    int          valid=0,mem,ix,iy;
@@ -126,10 +126,10 @@ int GeoRef_WKTValue(TGeoRef *Ref,TDef *Def,char Mode,int C,double X,double Y,dou
    d=1.0;
 
    /*Si on est a l'interieur de la grille ou que l'extrapolation est activee*/
-   if (C<Def->NC && X>=(Ref->X0-d) && Y>=(Ref->Y0-d) && Z>=0 && X<=(Ref->X1+d) && Y<=(Ref->Y1+d) && Z<=Def->NK-1) {
+   if (C<Def->NC && X>=(GRef->X0-d) && Y>=(GRef->Y0-d) && Z>=0 && X<=(GRef->X1+d) && Y<=(GRef->Y1+d) && Z<=Def->NK-1) {
 
-      X-=Ref->X0;
-      Y-=Ref->Y0;
+      X-=GRef->X0;
+      Y-=GRef->Y0;
       DEFCLAMP(Def,X,Y);
 
       /*Index memoire du niveau desire*/
@@ -157,11 +157,11 @@ int GeoRef_WKTValue(TGeoRef *Ref,TDef *Def,char Mode,int C,double X,double Y,dou
             *ThetaXY=180+RAD2DEG(atan2(x,y));
          }
       } else {
-         *Length=VertexVal(Ref,Def,-1,X,Y,Z);
+         *Length=VertexVal(Def,-1,X,Y,Z);
          /*Pour un champs vectoriel*/
          if (Def->Data[1] && ThetaXY) {
-            x=VertexVal(Ref,Def,0,X,Y,Z);
-            y=VertexVal(Ref,Def,1,X,Y,Z);
+            x=VertexVal(Def,0,X,Y,Z);
+            y=VertexVal(Def,1,X,Y,Z);
             *ThetaXY=180+RAD2DEG(atan2(x,y));
          }
       }
@@ -176,7 +176,7 @@ int GeoRef_WKTValue(TGeoRef *Ref,TDef *Def,char Mode,int C,double X,double Y,dou
  * But          : Projeter une coordonnee de projection en latlon.
  *
  * Parametres    :
- *   <Ref>       : Pointeur sur la reference geographique
+ *   <GRef>      : Pointeur sur la reference geographique
  *   <X>         : coordonnee en X dans la projection/grille
  *   <Y>         : coordonnee en Y dans la projection/grille
  *   <Lat>       : Latitude
@@ -190,7 +190,7 @@ int GeoRef_WKTValue(TGeoRef *Ref,TDef *Def,char Mode,int C,double X,double Y,dou
  *
  *---------------------------------------------------------------------------------------------------------------
 */
-int GeoRef_WKTProject(TGeoRef *Ref,double X,double Y,double *Lat,double *Lon,int Extrap,int Transform) {
+int GeoRef_WKTProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,int Extrap,int Transform) {
 
 #ifdef HAVE_GDAL
    double d,dx,dy,x,y,z=0.0;
@@ -198,7 +198,7 @@ int GeoRef_WKTProject(TGeoRef *Ref,double X,double Y,double *Lat,double *Lon,int
 
    d=1.0;
 
-   if (X>(Ref->X1+d) || Y>(Ref->Y1+d) || X<(Ref->X0-d) || Y<(Ref->Y0-d)) {
+   if (X>(GRef->X1+d) || Y>(GRef->Y1+d) || X<(GRef->X0-d) || Y<(GRef->Y0-d)) {
       if (!Extrap) {
          *Lon=-999.0;
          *Lat=-999.0;
@@ -207,34 +207,34 @@ int GeoRef_WKTProject(TGeoRef *Ref,double X,double Y,double *Lat,double *Lon,int
    }
 
    /* In case of non-uniform grid, figure out where in the position vector we are */
-   if (Ref->Grid[1]=='Z') {
-      if (Ref->AX && Ref->AY) {
-         sx=floor(X);sx=CLAMP(sx,Ref->X0,Ref->X1);
-         X=sx==X?Ref->AX[sx]:ILIN(Ref->AX[sx],Ref->AX[sx+1],X-sx);
+   if (GRef->Grid[1]=='Z') {
+      if (GRef->AX && GRef->AY) {
+         sx=floor(X);sx=CLAMP(sx,GRef->X0,GRef->X1);
+         X=sx==X?GRef->AX[sx]:ILIN(GRef->AX[sx],GRef->AX[sx+1],X-sx);
 
-         s=Ref->X1-Ref->X0+1;
-         sy=floor(Y);sy=CLAMP(sy,Ref->Y0,Ref->Y1);
-         Y=sy==Y?Ref->AY[sy*s]:ILIN(Ref->AY[sy*s],Ref->AY[(sy+1)*s],Y-sy);
+         s=GRef->X1-GRef->X0+1;
+         sy=floor(Y);sy=CLAMP(sy,GRef->Y0,GRef->Y1);
+         Y=sy==Y?GRef->AY[sy*s]:ILIN(GRef->AY[sy*s],GRef->AY[(sy+1)*s],Y-sy);
       }
-   } else if (Ref->Grid[1]=='X' || Ref->Grid[1]=='Y') {
-      if (Ref->AX && Ref->AY) {
-         sx=floor(X);sx=CLAMP(sx,Ref->X0,Ref->X1);
-         sy=floor(Y);sy=CLAMP(sy,Ref->Y0,Ref->Y1);
+   } else if (GRef->Grid[1]=='X' || GRef->Grid[1]=='Y') {
+      if (GRef->AX && GRef->AY) {
+         sx=floor(X);sx=CLAMP(sx,GRef->X0,GRef->X1);
+         sy=floor(Y);sy=CLAMP(sy,GRef->Y0,GRef->Y1);
          dx=X-sx;;
          dy=Y-sy;
 
-         s=sy*(Ref->X1-Ref->X0+1)+sx;
-         X=Ref->AX[s];
-         Y=Ref->AY[s];
+         s=sy*(GRef->X1-GRef->X0+1)+sx;
+         X=GRef->AX[s];
+         Y=GRef->AY[s];
 
-         if (++sx<=Ref->X1) {
-            s=sy*(Ref->X1-Ref->X0+1)+sx;
-            X+=(Ref->AX[s]-X)*dx;
+         if (++sx<=GRef->X1) {
+            s=sy*(GRef->X1-GRef->X0+1)+sx;
+            X+=(GRef->AX[s]-X)*dx;
          }
 
-         if (++sy<=Ref->Y1) {
-            s=sy*(Ref->X1-Ref->X0+1)+(sx-1);
-            Y+=(Ref->AY[s]-Y)*dy;
+         if (++sy<=GRef->Y1) {
+            s=sy*(GRef->X1-GRef->X0+1)+(sx-1);
+            Y+=(GRef->AY[s]-Y)*dy;
          }
       }
    }
@@ -243,21 +243,21 @@ int GeoRef_WKTProject(TGeoRef *Ref,double X,double Y,double *Lat,double *Lon,int
    x=X;
    y=Y;
    if (Transform) {
-      if (Ref->Transform) {
-         x=Ref->Transform[0]+Ref->Transform[1]*X+Ref->Transform[2]*Y;
-         y=Ref->Transform[3]+Ref->Transform[4]*X+Ref->Transform[5]*Y;
-      } else if (Ref->GCPTransform) {
-         GDALGCPTransform(Ref->GCPTransform,FALSE,1,&x,&y,&z,&ok);
-      } else if (Ref->TPSTransform) {
-         GDALGCPTransform(Ref->TPSTransform,FALSE,1,&x,&y,&z,&ok);
-      } else if (Ref->RPCTransform) {
-         GDALGCPTransform(Ref->RPCTransform,FALSE,1,&x,&y,&z,&ok);
+      if (GRef->Transform) {
+         x=GRef->Transform[0]+GRef->Transform[1]*X+GRef->Transform[2]*Y;
+         y=GRef->Transform[3]+GRef->Transform[4]*X+GRef->Transform[5]*Y;
+      } else if (GRef->GCPTransform) {
+         GDALGCPTransform(GRef->GCPTransform,FALSE,1,&x,&y,&z,&ok);
+      } else if (GRef->TPSTransform) {
+         GDALGCPTransform(GRef->TPSTransform,FALSE,1,&x,&y,&z,&ok);
+      } else if (GRef->RPCTransform) {
+         GDALGCPTransform(GRef->RPCTransform,FALSE,1,&x,&y,&z,&ok);
       }
    }
 
    /* Transform to latlon */
-   if (Ref->Function) {
-      if (!OCTTransform(Ref->Function,1,&x,&y,NULL)) {
+   if (GRef->Function) {
+      if (!OCTTransform(GRef->Function,1,&x,&y,NULL)) {
          *Lon=-999.0;
          *Lat=-999.0;
          return(0);
@@ -281,7 +281,7 @@ int GeoRef_WKTProject(TGeoRef *Ref,double X,double Y,double *Lat,double *Lon,int
  * But          : Projeter une latlon en position grille.
  *
  * Parametres    :
- *   <Ref>       : Pointeur sur la reference geographique
+ *   <GRef>      : Pointeur sur la reference geographique
  *   <X>         : coordonnee en X dans la projection/grille
  *   <Y>         : coordonnee en Y dans la projection/grille
  *   <Lat>       : Latitude
@@ -295,7 +295,7 @@ int GeoRef_WKTProject(TGeoRef *Ref,double X,double Y,double *Lat,double *Lon,int
  *
  *---------------------------------------------------------------------------------------------------------------
 */
-int GeoRef_WKTUnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double Lon,int Extrap,int Transform) {
+int GeoRef_WKTUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,int Extrap,int Transform) {
 
 #ifdef HAVE_GDAL
    double x,y,z=0.0,d=1e32,sd;
@@ -309,12 +309,12 @@ int GeoRef_WKTUnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double Lon,i
 
       x=Lon;
       y=Lat;
-      ni=Ref->X1-Ref->X0+1;
-      nj=Ref->Y1-Ref->Y0+1;
+      ni=GRef->X1-GRef->X0+1;
+      nj=GRef->Y1-GRef->Y0+1;
 
       /* Transform from latlon */
-      if (Ref->InvFunction) {
-         if (!OCTTransform(Ref->InvFunction,1,&x,&y,NULL)) {
+      if (GRef->InvFunction) {
+         if (!OCTTransform(GRef->InvFunction,1,&x,&y,NULL)) {
             *X=-1.0;
             *Y=-1.0;
             return(0);
@@ -322,7 +322,7 @@ int GeoRef_WKTUnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double Lon,i
       }
 
       // No negative longitude (GRIB2 LL grid
-      if (Ref->Type&GRID_NOXNEG) {
+      if (GRef->Type&GRID_NOXNEG) {
          x=x<0?x+360:x;
       }
 
@@ -330,68 +330,68 @@ int GeoRef_WKTUnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double Lon,i
       *X=x;
       *Y=y;
       if (Transform) {
-         if (Ref->InvTransform) {
-            *X=Ref->InvTransform[0]+Ref->InvTransform[1]*x+Ref->InvTransform[2]*y;
-            *Y=Ref->InvTransform[3]+Ref->InvTransform[4]*x+Ref->InvTransform[5]*y;
-         } else if (Ref->GCPTransform) {
-            GDALGCPTransform(Ref->GCPTransform,TRUE,1,X,Y,&z,&ok);
-         } else if (Ref->TPSTransform) {
-            GDALTPSTransform(Ref->TPSTransform,TRUE,1,X,Y,&z,&ok);
-         } else if (Ref->RPCTransform) {
-            GDALRPCTransform(Ref->RPCTransform,TRUE,1,X,Y,&z,&ok);
+         if (GRef->InvTransform) {
+            *X=GRef->InvTransform[0]+GRef->InvTransform[1]*x+GRef->InvTransform[2]*y;
+            *Y=GRef->InvTransform[3]+GRef->InvTransform[4]*x+GRef->InvTransform[5]*y;
+         } else if (GRef->GCPTransform) {
+            GDALGCPTransform(GRef->GCPTransform,TRUE,1,X,Y,&z,&ok);
+         } else if (GRef->TPSTransform) {
+            GDALTPSTransform(GRef->TPSTransform,TRUE,1,X,Y,&z,&ok);
+         } else if (GRef->RPCTransform) {
+            GDALRPCTransform(GRef->RPCTransform,TRUE,1,X,Y,&z,&ok);
          }
       }
 
       /* In case of non-uniform grid, figure out where in the position vector we are */
-      if (Ref->Grid[1]=='Z') {
-         if (Ref->AX && Ref->AY) {
-            s=Ref->X0;
+      if (GRef->Grid[1]=='Z') {
+         if (GRef->AX && GRef->AY) {
+            s=GRef->X0;
             /*Check if vector is increasing*/
-            if (Ref->AX[s]<Ref->AX[s+1]) {
-               while(s<=Ref->X1 && *X>Ref->AX[s]) s++;
+            if (GRef->AX[s]<GRef->AX[s+1]) {
+               while(s<=GRef->X1 && *X>GRef->AX[s]) s++;
             } else {
-               while(s<=Ref->X1 && *X<Ref->AX[s]) s++;
+               while(s<=GRef->X1 && *X<GRef->AX[s]) s++;
             }
-            if (s>Ref->X0) {
+            if (s>GRef->X0) {
                /*We're in so interpolate postion*/
-               if (s<=Ref->X1) {
-                  *X=(*X-Ref->AX[s-1])/(Ref->AX[s]-Ref->AX[s-1])+s-1;
+               if (s<=GRef->X1) {
+                  *X=(*X-GRef->AX[s-1])/(GRef->AX[s]-GRef->AX[s-1])+s-1;
                } else {
-                  *X=(*X-Ref->AX[Ref->X1])/(Ref->AX[Ref->X1]-Ref->AX[Ref->X1-1])+s-1;
+                  *X=(*X-GRef->AX[GRef->X1])/(GRef->AX[GRef->X1]-GRef->AX[GRef->X1-1])+s-1;
                }
             } else {
                /*We're out so extrapolate position*/
-               *X=Ref->X0+(*X-Ref->AX[0])/(Ref->AX[1]-Ref->AX[0]);
+               *X=GRef->X0+(*X-GRef->AX[0])/(GRef->AX[1]-GRef->AX[0]);
             }
 
-            s=Ref->Y0;dx=ni;
+            s=GRef->Y0;dx=ni;
             /*Check if vector is increasing*/
-            if (Ref->AY[s*ni]<Ref->AY[(s+1)*ni]) {
-               while(s<=Ref->Y1 && *Y>Ref->AY[s*ni]) s++;
+            if (GRef->AY[s*ni]<GRef->AY[(s+1)*ni]) {
+               while(s<=GRef->Y1 && *Y>GRef->AY[s*ni]) s++;
             } else {
-               while(s<=Ref->Y1 && *Y<Ref->AY[s*ni]) s++;
+               while(s<=GRef->Y1 && *Y<GRef->AY[s*ni]) s++;
             }
-            if (s>Ref->Y0) {
+            if (s>GRef->Y0) {
                /*We're in so interpolate postion*/
-               if (s<=Ref->Y1) {
-                  *Y=(*Y-Ref->AY[(s-1)*ni])/(Ref->AY[s*ni]-Ref->AY[(s-1)*ni])+s-1;
+               if (s<=GRef->Y1) {
+                  *Y=(*Y-GRef->AY[(s-1)*ni])/(GRef->AY[s*ni]-GRef->AY[(s-1)*ni])+s-1;
                } else {
-                  *Y=(*Y-Ref->AY[Ref->Y1*ni])/(Ref->AY[Ref->Y1*ni]-Ref->AY[(Ref->Y1-1)*ni])+s-1;
+                  *Y=(*Y-GRef->AY[GRef->Y1*ni])/(GRef->AY[GRef->Y1*ni]-GRef->AY[(GRef->Y1-1)*ni])+s-1;
                }
             } else {
                /*We're out so extrapolate position*/
-               *Y=Ref->Y0+(*Y-Ref->AY[0])/(Ref->AY[ni]-Ref->AY[0]);
+               *Y=GRef->Y0+(*Y-GRef->AY[0])/(GRef->AY[ni]-GRef->AY[0]);
             }
          }
-      } else if (Ref->Grid[1]=='Y') {
-         if (Ref->AX && Ref->AY) {
+      } else if (GRef->Grid[1]=='Y') {
+         if (GRef->AX && GRef->AY) {
             idx=0;
 
             // Loop on all point to find the closest
             lx[0]=DEG2RAD(*X); ly[0]=DEG2RAD(*Y);
             for(dy=0;dy<nj;dy++) {
                for(dx=0;dx<ni;dx++) {
-                  lx[1]=DEG2RAD(Ref->AX[idx]); ly[1]=DEG2RAD(Ref->AY[idx]);
+                  lx[1]=DEG2RAD(GRef->AX[idx]); ly[1]=DEG2RAD(GRef->AY[idx]);
                   sd=DIST(0,ly[0],lx[0],ly[1],lx[1]);
 
                   if (sd<d) {
@@ -404,10 +404,10 @@ int GeoRef_WKTUnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double Lon,i
             *X=x;
             *Y=y;
          }
-      } else if (Ref->Grid[1]=='X') {
+      } else if (GRef->Grid[1]=='X') {
          int x0,y0,x1,y1;
 
-         if (Ref->AX && Ref->AY) {
+         if (GRef->AX && GRef->AY) {
             x0=0;y0=0;
             x1=ni-1;y1=nj-1;
             dx=x1;dy=y1;
@@ -415,10 +415,10 @@ int GeoRef_WKTUnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double Lon,i
             // Parse as a quadtree to find enclosing cell
             while (dx || dy) {
 
-               idx=y0*ni+x0; lx[0]=Ref->AX[idx]; ly[0]=Ref->AY[idx];
-               idx=y0*ni+x1; lx[1]=Ref->AX[idx]; ly[1]=Ref->AY[idx];
-               idx=y1*ni+x1; lx[2]=Ref->AX[idx]; ly[2]=Ref->AY[idx];
-               idx=y1*ni+x0; lx[3]=Ref->AX[idx]; ly[3]=Ref->AY[idx];
+               idx=y0*ni+x0; lx[0]=GRef->AX[idx]; ly[0]=GRef->AY[idx];
+               idx=y0*ni+x1; lx[1]=GRef->AX[idx]; ly[1]=GRef->AY[idx];
+               idx=y1*ni+x1; lx[2]=GRef->AX[idx]; ly[2]=GRef->AY[idx];
+               idx=y1*ni+x0; lx[3]=GRef->AX[idx]; ly[3]=GRef->AY[idx];
 
                Vertex_Map(lx,ly,X,Y,Lon,Lat);
 
@@ -455,7 +455,7 @@ int GeoRef_WKTUnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double Lon,i
 
       /*Check the grid limits*/
       d=1.0;
-      if (*X>(Ref->X1+d) || *Y>(Ref->Y1+d) || *X<(Ref->X0-d) || *Y<(Ref->Y0-d)) {
+      if (*X>(GRef->X1+d) || *Y>(GRef->Y1+d) || *X<(GRef->X0-d) || *Y<(GRef->Y0-d)) {
          if (!Extrap) {
             *X=-1.0;
             *Y=-1.0;
@@ -475,13 +475,13 @@ int GeoRef_WKTUnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double Lon,i
 }
 
 /*--------------------------------------------------------------------------------------------------------------
- * Nom          : <GeoRef_WKTSetup>
+ * Nom          : <GeoRef_WKTSet>
  * Creation     : Juin 2004 J.P. Gauthier - CMC/CMOE
  *
  * But          : Definir les fonctions de transformations WKT
  *
  * Parametres   :
- *   <Ref>      : Pointeur sur la reference geographique
+ *   <GRef>     : Pointeur sur la reference geographique
  *   <String>   : Description de la projection
  *   <Geometry> : Geometrie d'ou extraire la reference spatiale (optionel=NULL)
  *
@@ -491,7 +491,7 @@ int GeoRef_WKTUnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double Lon,i
  *
  *---------------------------------------------------------------------------------------------------------------
 */
-int GeoRef_WKTSet(TGeoRef *Ref,char *String,double *Transform,double *InvTransform,OGRSpatialReferenceH Spatial) {
+int GeoRef_WKTSet(TGeoRef *GRef,char *String,double *Transform,double *InvTransform,OGRSpatialReferenceH Spatial) {
 
 #ifdef HAVE_GDAL
    static OGRSpatialReferenceH llref=NULL;
@@ -502,51 +502,51 @@ int GeoRef_WKTSet(TGeoRef *Ref,char *String,double *Transform,double *InvTransfo
       strtrim(string,' ');
    }
 
-   GeoRef_Clear(Ref,0);
+   GeoRef_Clear(GRef,0);
 
    if (Transform) {
-      if (!Ref->Transform)
-         Ref->Transform=(double*)calloc(6,sizeof(double));
-      if (Ref->Transform)
-         memcpy(Ref->Transform,Transform,6*sizeof(double));
+      if (!GRef->Transform)
+         GRef->Transform=(double*)calloc(6,sizeof(double));
+      if (GRef->Transform)
+         memcpy(GRef->Transform,Transform,6*sizeof(double));
    } else {
-      if (Ref->Transform) {
-         free(Ref->Transform);
-         Ref->Transform=NULL;
+      if (GRef->Transform) {
+         free(GRef->Transform);
+         GRef->Transform=NULL;
       }
    }
 
    if (InvTransform) {
-      if (!Ref->InvTransform)
-         Ref->InvTransform=(double*)calloc(6,sizeof(double));
-      if (Ref->InvTransform)
-         memcpy(Ref->InvTransform,InvTransform,6*sizeof(double));
+      if (!GRef->InvTransform)
+         GRef->InvTransform=(double*)calloc(6,sizeof(double));
+      if (GRef->InvTransform)
+         memcpy(GRef->InvTransform,InvTransform,6*sizeof(double));
    } else {
-     if (Ref->InvTransform) {
-         free(Ref->InvTransform);
-         Ref->InvTransform=NULL;
+     if (GRef->InvTransform) {
+         free(GRef->InvTransform);
+         GRef->InvTransform=NULL;
       }
    }
 
    if (Spatial) {
-      Ref->Spatial=OSRClone(Spatial);
-      OSRExportToWkt(Ref->Spatial,&string);
+      GRef->Spatial=OSRClone(Spatial);
+      OSRExportToWkt(GRef->Spatial,&string);
    } else if (string) {
-      Ref->Spatial=OSRNewSpatialReference(NULL);
-      if (OSRSetFromUserInput(Ref->Spatial,string)==OGRERR_FAILURE) {
+      GRef->Spatial=OSRNewSpatialReference(NULL);
+      if (OSRSetFromUserInput(GRef->Spatial,string)==OGRERR_FAILURE) {
         fprintf(stderr,"(WARNING) GeoRef_WKTSet: Unable to create spatial reference.\n");
         return(0);
       }
    } else {
       string=strdup(REFDEFAULT);
-      Ref->Spatial=OSRNewSpatialReference(string);
+      GRef->Spatial=OSRNewSpatialReference(string);
    }
 
-   if (Ref->String)
-      free(Ref->String);
-   Ref->String=string;
+   if (GRef->String)
+      free(GRef->String);
+   GRef->String=string;
 
-   if (Ref->Spatial) {
+   if (GRef->Spatial) {
       if (!llref) {
          // Create global latlon reference on perfect sphere
          llref=OSRNewSpatialReference(NULL);
@@ -555,19 +555,19 @@ int GeoRef_WKTSet(TGeoRef *Ref,char *String,double *Transform,double *InvTransfo
 
       if (llref) {
          // Create forward/backward tranformation functions
-         Ref->Function=OCTNewCoordinateTransformation(Ref->Spatial,llref);
-         Ref->InvFunction=OCTNewCoordinateTransformation(llref,Ref->Spatial);
+         GRef->Function=OCTNewCoordinateTransformation(GRef->Spatial,llref);
+         GRef->InvFunction=OCTNewCoordinateTransformation(llref,GRef->Spatial);
       }
    } else {
       fprintf(stderr,"(WARNING) GeoRef_WKTSet: Unable to get spatial reference\n");
       return(0);
    }
 
-   Ref->Project=GeoRef_WKTProject;
-   Ref->UnProject=GeoRef_WKTUnProject;
-   Ref->Value=(TGeoRef_Value*)GeoRef_WKTValue;
-   Ref->Distance=GeoRef_WKTDistance;
-   Ref->Height=NULL;
+   GRef->Project=GeoRef_WKTProject;
+   GRef->UnProject=GeoRef_WKTUnProject;
+   GRef->Value=(TGeoRef_Value*)GeoRef_WKTValue;
+   GRef->Distance=GeoRef_WKTDistance;
+   GRef->Height=NULL;
 
    return(1);
 #else
@@ -576,12 +576,33 @@ int GeoRef_WKTSet(TGeoRef *Ref,char *String,double *Transform,double *InvTransfo
 #endif
 }
 
-TGeoRef *GeoRef_WKTSetup(int NI,int NJ,int NK,int Type,float *Levels,char *GRTYP,int IG1,int IG2,int IG3,int IG4,char *String,double *Transform,double *InvTransform,OGRSpatialReferenceH Spatial) {
+/*--------------------------------------------------------------------------------------------------------------
+ * Nom          : <GeoRef_RPNSetup>
+ * Creation     : Avril 2005 J.P. Gauthier - CMC/CMOE
+ *
+ * But          : Definir le referetiel de type RPN
+ *
+ * Parametres   :
+ *    <NI>      : Dimension en X
+ *    <NJ>      : Dimension en Y
+ *    <GRTYP>   : Type de grille
+ *    <IG1>     : Descripteur IG1
+ *    <IG2>     : Descripteur IG2
+ *    <IG3>     : Descripteur IG3
+ *    <IG4>     : Descripteur IG4
+ *
+ * Retour       :
+ *
+ * Remarques    :
+ *
+ *---------------------------------------------------------------------------------------------------------------
+*/
+TGeoRef *GeoRef_WKTSetup(int NI,int NJ,char *GRTYP,int IG1,int IG2,int IG3,int IG4,char *String,double *Transform,double *InvTransform,OGRSpatialReferenceH Spatial) {
 
    TGeoRef *ref;
 
    ref=GeoRef_New();
-   GeoRef_Size(ref,0,0,0,NI>0?NI-1:0,NJ>0?NJ-1:0,NK>0?NK-1:0,0);
+   GeoRef_Size(ref,0,0,NI>0?NI-1:0,NJ>0?NJ-1:0,0);
    if (!GeoRef_WKTSet(ref,String,Transform,InvTransform,Spatial)) {
       return(NULL);
    }
@@ -597,12 +618,6 @@ TGeoRef *GeoRef_WKTSetup(int NI,int NJ,int NK,int Type,float *Levels,char *GRTYP
    ref->IG2=IG2;
    ref->IG3=IG3;
    ref->IG4=IG4;
-   ref->ZRef.Type=Type;
-   ref->ZRef.LevelNb=NK;
-   ref->ZRef.Levels=(float*)calloc(ref->ZRef.LevelNb+1,sizeof(float));
-   if (Levels && ref->ZRef.Levels)
-      memcpy(ref->ZRef.Levels,Levels,ref->ZRef.LevelNb*sizeof(float));
-
-//TODO:Dont't forget ot add the GeoRef_Find to SPI's call
+   
    return(ref);
 }

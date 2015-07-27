@@ -66,6 +66,7 @@
 // System related constants and functions
 #define SYS_BIG_ENDIAN     0
 #define SYS_LITTLE_ENDIAN  1
+#define SYS_PTR_END        0x1
 
 #define SYS_FIX2(x) ((((x) & 0xff)<<8) | ((unsigned short)(x)>>8))
 #define SYS_FIX4(x) (((x)<<24) | (((x)<<8) & 0x00ff0000) | (((x)>>8) & 0x0000ff00) | ((x)>>24))

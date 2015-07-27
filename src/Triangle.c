@@ -68,9 +68,9 @@ int Bary_Get(Vect3d B,double X,double Y,double X0,double Y0,double X1,double Y1,
    b=1.0/((X1-X0)*(Y2-Y0)-(X2-X0)*(Y1-Y0));
    B[0]=(x1*y2-x2*y1)*b;
    B[1]=(x2*y0-x0*y2)*b;
-   B[2]=(x0*y1-x1*y0)*b;
+   B[2]=1.0-B[0]-B[1];
 
-   return(B[0]>=0 && B[1]>=0 && B[2]>=0);
+   return(B[0]>=0.0 && B[1]>=0.0 && B[2]>=0.0);
 }
 
 /*--------------------------------------------------------------------------------------------------------------
@@ -92,11 +92,11 @@ int Bary_Get(Vect3d B,double X,double Y,double X0,double Y0,double X1,double Y1,
  *
  *---------------------------------------------------------------------------------------------------------------
 */
-int Bary_Interp(Vect3d B,Vect3d P,Vect3d P0,Vect3d P1,Vect3d P2) {
+int Bary_InterpPos(Vect3d B,Vect3d P,Vect3d P0,Vect3d P1,Vect3d P2) {
 
-   P[0]=B[0]*P0[0]+B[1]*P1[0]+B[2]*P2[0];
-   P[1]=B[0]*P0[1]+B[1]*P1[1]+B[2]*P2[1];
-   P[2]=B[0]*P0[2]+B[1]*P1[2]+B[2]*P2[2];
+   P[0]=Bary_Interp(B,P0[0],P1[0],P2[0]);
+   P[1]=Bary_Interp(B,P0[1],P1[1],P2[1]);
+   P[2]=Bary_Interp(B,P0[2],P1[2],P2[2]);
 
    return(1);
 }

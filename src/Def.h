@@ -284,7 +284,7 @@ typedef enum {
    CB_AVERAGE   = 3,
 } TDef_Combine;
 
-   // Value data type
+// Value data type
 typedef enum {
     TD_Unknown = 0,
     TD_Binary  = 1,

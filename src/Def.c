@@ -503,7 +503,7 @@ TDef *Def_Resize(TDef *Def,int NI,int NJ,int NK){
       if (Def->Mask)               free(Def->Mask);   Def->Mask=NULL;
       if (Def->Sub)                free(Def->Sub);    Def->Sub=NULL;
       if (Def->Pres>(float*)0x1)   free(Def->Pres);   Def->Pres=NULL;
-      if (Def->Height>(float*)0x1) free(Def->Pres);   Def->Height=NULL;
+      if (Def->Height>(float*)0x1) free(Def->Height); Def->Height=NULL;
    }
    return(Def);
 }
@@ -1415,7 +1415,7 @@ int Def_GridInterp(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *FromDef,cha
    GeoScan_Init(&scan);
 
    /*If grids are the same, copy the data*/
-   if (GeoRef_Equal(ToRef,FromRef,3)) {
+   if (GeoRef_Equal(ToRef,FromRef)) {
       for(idx=0;idx<=FSIZE2D(FromDef);idx++){
          Def_Get(FromDef,0,idx,val);
          Def_Set(ToDef,0,idx,val);
@@ -1489,9 +1489,8 @@ int Def_GridInterpRPN(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *FromDef,
 
    /*Verifier la compatibilite entre source et destination*/
    if (!Def_Compat(ToDef,FromDef)) {
-      ToRef=GeoRef_Resize(ToRef,ToDef->NI,ToDef->NJ,ToDef->NK,FromRef->ZRef.Type,FromRef->ZRef.Levels);
+      ToRef=GeoRef_Resize(ToRef,ToDef->NI,ToDef->NJ);
    }
-   ToRef->ZRef.Type=FromRef->ZRef.Type;
 
    if (FromDef->Type!=TD_Float32 || FromRef->Grid[0]=='R' || ToRef->Grid[0]=='R' || FromRef->Grid[0]=='W' || ToRef->Grid[0]=='W' || ToRef->Hgt) {
       ez=0;
@@ -1545,7 +1544,6 @@ int Def_GridInterpRPN(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *FromDef,
             Def_Pointer(FromDef,0,k*FSIZE2D(FromDef),pf0);
             ok=c_ezsint(pt0,pf0);
         }
-        ToRef->ZRef.Levels[k]=FromRef->ZRef.Levels[k];
       }
       if (ok<0) {
          App_ErrorSet("Def_GridInterpRPN: EZSCINT internal error, interpolation problem");
@@ -1565,7 +1563,7 @@ int Def_GridInterpRPN(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *FromDef,
                n=0;
                while(ToDef->Data[n]) {
                   if (ok) {
-                     val=VertexVal(FromRef,FromDef,n,di,dj,k);
+                     val=VertexVal(FromDef,n,di,dj,k);
                   } else {
                      val=ToDef->NoData;
                   }

@@ -35,22 +35,22 @@
 #ifndef _Vector_h
 #define _Vector_h
 
-#define VMAX(A,B)                 (A<B?B:A)
-#define VMID(A,B)                 (A+B)*0.5
-#define VMIN(A,B)                 (A<B?A:B)
+#define VECT_MAX(A,B)                 (A<B?B:A)
+#define VECT_MID(A,B)                 (A+B)*0.5
+#define VECT_MIN(A,B)                 (A<B?A:B)
 
 #define Vect_Add(V1,V2,V3)       V1[0]=V2[0]+V3[0];V1[1]=V2[1]+V3[1];V1[2]=V2[2]+V3[2];
 #define Vect_Assign(V1,V2)       V1[0]=V2[0];V1[1]=V2[1];V1[2]=V2[2];
 #define Vect_Clear(V)            V[0]=0.0;V[1]=0.0;V[2]=0.0;
 #define Vect_DotProduct(V1,V2)   (V1[0]*V2[0]+V1[1]*V2[1]+V1[2]*V2[2])
 #define Vect_Init(V,I,J,K)       V[0]=I;V[1]=J;V[2]=K;
-#define Vect_Max(V1,V2,V3)       V1[0]=VMAX(V2[0],V3[0]);V1[1]=VMAX(V2[1],V3[1]);V1[2]=VMAX(V2[2],V3[2])
-#define Vect_Mid(V1,V2,V3)       V1[0]=VMID(V2[0],V3[0]);V1[1]=VMID(V2[1],V3[1]);V1[2]=VMID(V2[2],V3[2])
-#define Vect_Min(V1,V2,V3)       V1[0]=VMIN(V2[0],V3[0]);V1[1]=VMIN(V2[1],V3[1]);V1[2]=VMIN(V2[2],V3[2])
+#define Vect_Max(V1,V2,V3)       V1[0]=VECT_MAX(V2[0],V3[0]);V1[1]=VECT_MAX(V2[1],V3[1]);V1[2]=VECT_MAX(V2[2],V3[2])
+#define Vect_Mid(V1,V2,V3)       V1[0]=VECT_MID(V2[0],V3[0]);V1[1]=VECT_MID(V2[1],V3[1]);V1[2]=VECT_MID(V2[2],V3[2])
+#define Vect_Min(V1,V2,V3)       V1[0]=VECT_MIN(V2[0],V3[0]);V1[1]=VECT_MIN(V2[1],V3[1]);V1[2]=VECT_MIN(V2[2],V3[2])
 #define Vect_Norm(V)             (sqrt(V[0]*V[0]+V[1]*V[1]+V[2]*V[2]))
 #define Vect_Null(V)             (V[0]==0.0 && V[1]==0.0 && V[2]==0.0)
 #define Vect_Substract(V1,V2,V3) V1[0]=V2[0]-V3[0];V1[1]=V2[1]-V3[1];V1[2]=V2[2]-V3[2]
-#define Vect_Weight(V1,V2)       VMAX(VMAX(fabs(V2[0]-V1[0]),fabs(V2[1]-V1[1])),fabs(V2[2]-V1[2]))
+#define Vect_Weight(V1,V2)       VECT_MAX(VECT_MAX(fabs(V2[0]-V1[0]),fabs(V2[1]-V1[1])),fabs(V2[2]-V1[2]))
 #define Vect_Equal(V1,V2)        (V1[0]==V2[0] && V1[1]==V2[1] && V1[2]==V2[2])
 #define Vect_Mul(V1,V2,V3)       V1[0]=V2[0]*V3[0];V1[1]=V2[1]*V3[1];V1[2]=V2[2]*V3[2]
 #define Vect_Dist2(V1,V2)        ((V1[0]-V2[0])*(V1[0]-V2[0])+(V1[1]-V2[1])*(V1[1]-V2[1])+(V1[2]-V2[2])*(V1[2]-V2[2]))
