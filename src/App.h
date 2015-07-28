@@ -104,7 +104,7 @@ typedef enum { APP_OK=1,APP_ERR=0 } TApp_RetCode;
       App_Log(App,ERROR,"(%s) Could not allocate memory for field %s at line %d.\n",__func__,#Buf,__LINE__); \
       return(APP_ERR); \
    }
-#define APP_FREE(Ptr) if(Ptr) free(Ptr)
+#define APP_FREE(Ptr) if(Ptr) { free(Ptr); Ptr=NULL; }
 
 // Argument definitions
 typedef struct TApp_Arg {
