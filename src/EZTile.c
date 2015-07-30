@@ -752,8 +752,8 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
    
    /*Check for master grid descriptor*/
    if (Grid->H.GRTYP[0]=='#') {
-      key=cs_fstinf(Grid->H.FID,&ni,&h.NJ,&h.NK,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"",">>");
-      key=cs_fstinf(Grid->H.FID,&h.NI,&nj,&h.NK,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"","^^");
+      key=cs_fstinf(Grid->H.FID,&Grid->H.NI,&h.NJ,&h.NK,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"",">>");
+      key=cs_fstinf(Grid->H.FID,&h.NI,&Grid->H.NJ,&h.NK,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"","^^");
       if (key<0) {
          App_Log(WARNING,"%s: Could not find master grid descriptor (>>,^^)\n",__func__);
          RPN_FieldUnlock();
@@ -781,7 +781,7 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
    ni=0;
    nt=Grid->NbTiles;
 
-   /*Parse the tiles to get the tile limits and structure*/
+  /*Parse the tiles to get the tile limits and structure*/
    for(n=0;n<Grid->NbTiles;n++) {
       key=cs_fstprm(idlst[n],&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&h.NK,&h.NBITS,
             &h.DATYP,&h.IP1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,
@@ -807,7 +807,6 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
       tile->Side  = GRID_CENTER;
       pthread_mutex_init(&tile->Mutex,NULL);
 
-      /*c_ezqkdef uses fstd functions to get grid def so we need to keep the RPNFieldMutex on*/
       tile->GID =RPN_IntIdNew(h.NI,h.NJ,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,Grid->H.FID);
 
       /*Check for tiled data or not*/
@@ -875,8 +874,7 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
       
       EZGrid_BuildIndex(Grid);
    } else {
-      /*c_ezqkdef uses fstd functions to get griddef so we need to keep the RPNFieldMutex on*/
-      Grid->GID =RPN_IntIdNew(Grid->H.NI,Grid->H.NJ,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,Grid->H.FID);
+      Grid->GID=RPN_IntIdNew(Grid->H.NI,Grid->H.NJ,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,Grid->H.FID);
       Grid->Wrap=EZGrid_Wrap(Grid);
    }
 
