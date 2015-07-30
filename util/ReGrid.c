@@ -39,7 +39,7 @@
 #define APP_DESC "SMC/CMC/EERS RPN fstd re-gridding tool."
 
 
-int ReGrid(TApp *App,char *In,char *Out,char *Grid,char **Vars) {
+int ReGrid(char *In,char *Out,char *Grid,char **Vars) {
 
    TRPNField *in,*grid,*out,*idx;
    int  fin,fout,fgrid,n;
@@ -47,27 +47,27 @@ int ReGrid(TApp *App,char *In,char *Out,char *Grid,char **Vars) {
    float *index=NULL;
    
   if ((fin=cs_fstouv(In,"STD+RND+R/O"))<0) {
-      App_Log(App,ERROR,"Problems opening input file %s\n",In);
+      App_Log(ERROR,"Problems opening input file %s\n",In);
       return(0);
    }
 
    if ((fout=cs_fstouv(Out,"STD+RND+R/W"))<0) {
-      App_Log(App,ERROR,"Problems opening output file %s\n",Out);
+      App_Log(ERROR,"Problems opening output file %s\n",Out);
       return(0);
    }
 
    if ((fgrid=cs_fstouv(Grid,"STD+RND+R/O"))<0) {
-      App_Log(App,ERROR,"Problems opening grid file %s\n",Grid);
+      App_Log(ERROR,"Problems opening grid file %s\n",Grid);
       return(0);
    }
 
    if (!(grid=RPN_FieldRead(fgrid,-1,"",-1,-1,-1,"","P0"))) {
-      App_Log(App,ERROR,"Problems reading grid field\n");
+      App_Log(ERROR,"Problems reading grid field\n");
       return(0);    
    }
 
    if (!(in=RPN_FieldRead(fin,-1,"",-1,-1,-1,"",Vars[0]))) {
-      App_Log(App,ERROR,"Problems reading input field\n");
+      App_Log(ERROR,"Problems reading input field\n");
       return(0);  
    }
  
@@ -89,14 +89,13 @@ int ReGrid(TApp *App,char *In,char *Out,char *Grid,char **Vars) {
    grid->Def->NoData=0.0;
  
    while(in->Head.KEY>0) {
-      App_Log(App,INFO,"Processing %s %i\n",Vars[0],in->Head.KEY);
+      App_Log(INFO,"Processing %s %i\n",Vars[0],in->Head.KEY);
 
       // Reset result grid
       Def_Clear(grid->Def);
      
       // Proceed with interpolation
       if (!(idx->Head.NI=Def_GridInterpConservative(grid->GRef,grid->Def,in->GRef,in->Def,IR_CONSERVATIVE,TRUE,1,index))) {
-         App_Log(App,ERROR,"Problems interpolating: %s\n",App_ErrorGet());
          return(0);    
       }
       
@@ -113,7 +112,7 @@ int ReGrid(TApp *App,char *In,char *Out,char *Grid,char **Vars) {
    
    // Write index
    if (index[0]!=DEF_INDEX_EMPTY) {
-      App_Log(App,DEBUG,"Saving index containing %i items\n",idx->Head.NI);
+      App_Log(DEBUG,"Saving index containing %i items\n",idx->Head.NI);
       
       if (!RPN_FieldWrite(fout,idx)) {
          return(0);
@@ -129,7 +128,6 @@ int ReGrid(TApp *App,char *In,char *Out,char *Grid,char **Vars) {
 
 int main(int argc, char *argv[]) {
 
-   TApp     *app;
    int      ok=0;
    char     *in=NULL,*out=NULL,*grid=NULL,*type=NULL,*vars[APP_LISTMAX];
 
@@ -142,31 +140,31 @@ int main(int argc, char *argv[]) {
         { APP_NIL } };
 
    memset(vars,0x0,APP_LISTMAX*sizeof(vars[0]));
-   app=App_New(APP_NAME,VERSION,APP_DESC,__TIMESTAMP__);
+   App_Init(APP_MASTER,APP_NAME,VERSION,APP_DESC,__TIMESTAMP__);
 
-   if (!App_ParseArgs(app,appargs,argc,argv,APP_NOARGSFAIL|APP_ARGSLOG)) {
+   if (!App_ParseArgs(appargs,argc,argv,APP_NOARGSFAIL|APP_ARGSLOG)) {
       exit(EXIT_FAILURE);      
    }
    
    /*Error checking*/
    if (!in) {
-      App_Log(app,ERROR,"No input standard file specified\n");
+      App_Log(ERROR,"No input standard file specified\n");
       exit(EXIT_FAILURE);
    }
    if (!out) {
-      App_Log(app,ERROR,"No output standard file specified\n");
+      App_Log(ERROR,"No output standard file specified\n");
       exit(EXIT_FAILURE);
    }
    if (!grid) {
-      App_Log(app,ERROR,"No grid standard file specified\n");
+      App_Log(ERROR,"No grid standard file specified\n");
       exit(EXIT_FAILURE);
    }
 
    /*Launch the app*/
-   App_Start(app);
-   ok=ReGrid(app,in,out,grid,vars);
-   App_End(app,ok!=1);
-   App_Free(app);
+   App_Start();
+   ok=ReGrid(in,out,grid,vars);
+   App_End(ok!=1);
+   App_Free();
 
    if (!ok) {
       exit(EXIT_FAILURE);

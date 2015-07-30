@@ -42,12 +42,11 @@
 
 char *THINT[]       = { "ATTENTION: Si le TYPVAR d'une variable est '!', utilisez -k avec l'ETIKET pour obtenir la bonne signification","WARNING: If a variable's TYPVAR is '!, use -k flag with the ETIKET to get the right definition" };
 
-int Dict_CheckRPN(TApp *App,char **RPNFile);
-int Dict_CheckCFG(TApp *App,char *CFGFile);
+int Dict_CheckRPN(char **RPNFile);
+int Dict_CheckCFG(char *CFGFile);
 
 int main(int argc, char *argv[]) {
 
-   TApp          *app;
    TDict_Encoding coding=DICT_UTF8;
    int            ok=1,desc=DICT_SHORT,search=DICT_EXACT,st=DICT_ALL,ip1,ip2,ip3;
    char          *var,*type,*lang,*encoding,*origin,*etiket,*state,*dicfile,*rpnfile[APP_LISTMAX],*cfgfile,dicdef[APP_BUFMAX],*env;
@@ -72,15 +71,10 @@ int main(int argc, char *argv[]) {
    var=type=lang=encoding=dicfile=cfgfile=origin=etiket=state=NULL;
    ip1=ip2=ip3=-1;
    
-   app=App_New(APP_NAME,VERSION,APP_DESC,__TIMESTAMP__);
+   App_Init(APP_MASTER,APP_NAME,VERSION,APP_DESC,__TIMESTAMP__);
 
-   if (!App_ParseArgs(app,appargs,argc,argv,APP_ARGSLANG)) {
+   if (!App_ParseArgs(appargs,argc,argv,APP_ARGSLANG)) {
       exit(EXIT_FAILURE);      
-   }
-
-   // Check the language
-   if (lang) {
-      app->Language=(lang[0]=='f' || lang[0]=='F')?APP_FR:APP_EN;
    }
 
    if (!var && !type && !cfgfile && !rpnfile[0]) {
@@ -119,19 +113,19 @@ int main(int argc, char *argv[]) {
       } else if (!strcmp(encoding,"ascii")) {
          coding=DICT_ASCII;
       } else {
-         App_Log(app,ERROR,"Invalid encoding, must me iso8859-1, utf8 or ascii\n");
+         App_Log(ERROR,"Invalid encoding, must me iso8859-1, utf8 or ascii\n");
          exit(EXIT_FAILURE);
       }
    }
    
    // Launch the app   
    if (rpnfile[0] || cfgfile) {
-      App_Start(app);
+      App_Start();
    }
    
    // Check for AFSISIO 
    if (!(env=getenv("AFSISIO"))) {
-      App_Log(app,ERROR,"Environment variable AFSISIO not defined, source the CMOI base domain.\n");
+      App_Log(ERROR,"Environment variable AFSISIO not defined, source the CMOI base domain.\n");
       exit(EXIT_FAILURE);   
    }
    
@@ -145,22 +139,22 @@ int main(int argc, char *argv[]) {
          fprintf(stderr,"\n");
          
          if (rpnfile[0]) {
-            ok=Dict_CheckRPN(app,rpnfile);
+            ok=Dict_CheckRPN(rpnfile);
          } else if (cfgfile) {
-            ok=Dict_CheckCFG(app,cfgfile);
+            ok=Dict_CheckCFG(cfgfile);
          } else {
-            if (var)  Dict_PrintVars(var,desc,app->Language); 
-            if (type) Dict_PrintTypes(type,desc,app->Language);
+            if (var)  Dict_PrintVars(var,desc,App->Language); 
+            if (type) Dict_PrintTypes(type,desc,App->Language);
             
-            if (!etiket && search!=DICT_GLOB) fprintf(stderr,"\n%s* %s%s\n",APP_COLOR_MAGENTA,THINT[app->Language],APP_COLOR_RESET); 
+            if (!etiket && search!=DICT_GLOB) fprintf(stderr,"\n%s* %s%s\n",APP_COLOR_MAGENTA,THINT[App->Language],APP_COLOR_RESET); 
          }
       }
    }
 
    if (rpnfile[0] || cfgfile) {
-      App_End(app,!ok);
+      App_End(!ok);
    }
-   App_Free(app);
+   App_Free();
 
    if (!ok) {
       exit(EXIT_FAILURE);
@@ -176,7 +170,6 @@ int main(int argc, char *argv[]) {
  * But      : Check an RPN file for unknow variables
  *
  * Parametres  :
- *  <App>      : Application parameters
  *  <CFGFile>  : CFG FST file
  *
  * Retour:
@@ -185,7 +178,7 @@ int main(int argc, char *argv[]) {
  * Remarques :
  *----------------------------------------------------------------------------
  */
-int Dict_CheckCFG(TApp *App,char *CFGFile){
+int Dict_CheckCFG(char *CFGFile){
 
    FILE     *fp;
    TDictVar *var;
@@ -194,7 +187,7 @@ int Dict_CheckCFG(TApp *App,char *CFGFile){
    int       d,nb_unknown=0,nb_known=0;
    
    if (!(fp=fopen(CFGFile,"r"))) {
-      App_Log(App,ERROR,"Unable to open config file: %s\n",CFGFile);
+      App_Log(ERROR,"Unable to open config file: %s\n",CFGFile);
       return(0);
    }
    
@@ -219,7 +212,7 @@ int Dict_CheckCFG(TApp *App,char *CFGFile){
          while(value=strtok_r(values,",",&valuesave)) {
             strtrim(value,' ');
             
-            App_Log(App,DEBUG,"Found variable: %s\n",value);
+            App_Log(DEBUG,"Found variable: %s\n",value);
             
             // Si la variable n'existe pas
             if (!(var=Dict_GetVar(value))) {
@@ -263,9 +256,9 @@ int Dict_CheckCFG(TApp *App,char *CFGFile){
    }
    
    if (nb_unknown) {
-      App_Log(App,ERROR,"Found %i unknown variables\n",nb_unknown);
+      App_Log(ERROR,"Found %i unknown variables\n",nb_unknown);
    } else {
-      App_Log(App,INFO,"No unknown variables found\n");      
+      App_Log(INFO,"No unknown variables found\n");      
    }
     
    return(nb_unknown==0);
@@ -278,7 +271,6 @@ int Dict_CheckCFG(TApp *App,char *CFGFile){
  * But      : Check an RPN file for unknow variables
  *
  * Parametres  :
- *  <App>      : Application parameters
  *  <RPNFile>  : RPN FST file(s)
  *
  * Retour:
@@ -287,7 +279,7 @@ int Dict_CheckCFG(TApp *App,char *CFGFile){
  * Remarques :
  *----------------------------------------------------------------------------
  */
-int Dict_CheckRPN(TApp *App,char **RPNFile){
+int Dict_CheckRPN(char **RPNFile){
 
    TRPNHeader head;
    TDictVar  *var;
@@ -299,10 +291,10 @@ int Dict_CheckRPN(TApp *App,char **RPNFile){
    n=0;
    
    while(RPNFile[n]) {
-       App_Log(App,DEBUG,"Looking into RPN file: %s\n",RPNFile[n]);
+       App_Log(DEBUG,"Looking into RPN file: %s\n",RPNFile[n]);
       
       if  ((fid=cs_fstouv(RPNFile[n],"STD+RND+R/O"))<0) {
-         App_Log(App,ERROR,"Unable to open RPN file: %s\n",RPNFile[n]);
+         App_Log(ERROR,"Unable to open RPN file: %s\n",RPNFile[n]);
          return(0);
       }
            
@@ -393,9 +385,9 @@ int Dict_CheckRPN(TApp *App,char **RPNFile){
    }
    
    if (nb_unknown) {
-      App_Log(App,ERROR,"Found %i unknown variables\n",nb_unknown);
+      App_Log(ERROR,"Found %i unknown variables\n",nb_unknown);
    } else {
-      App_Log(App,INFO,"No unknown variables found\n");      
+      App_Log(INFO,"No unknown variables found\n");      
    }
       
    return(nb_unknown==0);

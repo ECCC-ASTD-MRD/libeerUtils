@@ -32,6 +32,7 @@
  *=========================================================
  */
 
+#include "App.h"
 #include "GeoRef.h"
 #include "Def.h"
 #include "Vertex.h"

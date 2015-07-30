@@ -36,7 +36,7 @@
 #define APP_NAME "EZTiler"
 #define APP_DESC "SMC/CMC/EERS RPN fstd field tiler."
 
-int TileVar(TApp *App,int FIdTo,int NI, int NJ,int Halo,int FIdFrom,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2) {
+int TileVar(int FIdTo,int NI, int NJ,int Halo,int FIdFrom,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2) {
 
    TRPNField *fld;
    int        idlst[RPNMAX],n,ni,nj,nk,nid;
@@ -45,7 +45,7 @@ int TileVar(TApp *App,int FIdTo,int NI, int NJ,int Halo,int FIdFrom,char* Var,ch
    cs_fstinl(FIdFrom,&ni,&nj,&nk,DateV,Etiket,IP1,IP2,-1,TypVar,Var,idlst,&nid,RPNMAX);
 
    if (nid<=0) {
-      App_Log(App,ERROR,"TileVar: Specified fields do not exist");
+      App_Log(ERROR,"TileVar: Specified fields do not exist");
       return(FALSE);
    }
 
@@ -53,7 +53,7 @@ int TileVar(TApp *App,int FIdTo,int NI, int NJ,int Halo,int FIdFrom,char* Var,ch
    for(n=0;n<nid;n++) {
       
       if (!(fld=RPN_FieldReadIndex(FIdFrom,idlst[n],NULL))) {
-         App_Log(App,ERROR,"TileVar: Problem loading field %i",idlst[n]);
+         App_Log(ERROR,"TileVar: Problem loading field %i",idlst[n]);
          return(FALSE);
       }
        
@@ -62,7 +62,7 @@ int TileVar(TApp *App,int FIdTo,int NI, int NJ,int Halo,int FIdFrom,char* Var,ch
          RPN_CopyDesc(FIdTo,&fld->Head);
 
       if (!RPN_FieldTile(FIdTo,fld->Def,&fld->Head,fld->GRef,fld->ZRef,0,NI,NJ,Halo,fld->Head.DATYP,-fld->Head.NBITS,FALSE,FALSE)) {
-         App_Log(App,ERROR,"TileVar: Unable to tile field %i",idlst[n]);         
+         App_Log(ERROR,"TileVar: Unable to tile field %i",idlst[n]);         
          return(FALSE);
       }
       
@@ -73,29 +73,29 @@ int TileVar(TApp *App,int FIdTo,int NI, int NJ,int Halo,int FIdFrom,char* Var,ch
 }
 
 
-int Tile(TApp *App,char *In,char *Out,int Size,int Halo,char **Vars) {
+int Tile(char *In,char *Out,int Size,int Halo,char **Vars) {
 
    int  in,out,v=0;
    char *var,*tok;
    
-   App_Log(App,INFO,"Tiling file %s to %s\n",In,Out);
+   App_Log(INFO,"Tiling file %s to %s\n",In,Out);
    if ((in=cs_fstouv(In,"STD+RND+R/O"))<0) {
-      App_Log(App,ERROR,"Problems opening input file %s\n",In);
+      App_Log(ERROR,"Problems opening input file %s\n",In);
       return(0);
    }
 
    if ((out=cs_fstouv(Out,"STD+RND+R/W"))<0) {
-      App_Log(App,ERROR,"Problems opening output file %s\n",Out);
+      App_Log(ERROR,"Problems opening output file %s\n",Out);
       return(0);
    }
 
    if (!Vars[0]) {
-      App_Log(App,DEBUG,"Tiling everything\n");
-      TileVar(App,out,Size,Size,Halo,in,"","","",-1,-1,-1);
+      App_Log(DEBUG,"Tiling everything\n");
+      TileVar(out,Size,Size,Halo,in,"","","",-1,-1,-1);
    } else {
       while(var=Vars[v++]) {
-         App_Log(App,DEBUG,"Tiling var %s\n",var);
-         TileVar(App,out,Size,Size,Halo,in,var,"","",-1,-1,-1);
+         App_Log(DEBUG,"Tiling var %s\n",var);
+         TileVar(out,Size,Size,Halo,in,var,"","",-1,-1,-1);
       }
    }
 
@@ -107,7 +107,6 @@ int Tile(TApp *App,char *In,char *Out,int Size,int Halo,char **Vars) {
 
 int main(int argc, char *argv[]) {
 
-   TApp     *app;
    int      ok=0,size=0,halo=0;
    char     *in=NULL,*out=NULL,*val=NULL,*vars[APP_LISTMAX];
 
@@ -120,31 +119,31 @@ int main(int argc, char *argv[]) {
         { 0 } };
 
    memset(vars,0x0,APP_LISTMAX*sizeof(vars[0]));
-   app=App_New(APP_NAME,VERSION,APP_DESC,__TIMESTAMP__);
+   App_Init(APP_MASTER,APP_NAME,VERSION,APP_DESC,__TIMESTAMP__);
 
-   if (!App_ParseArgs(app,appargs,argc,argv,APP_NOARGSFAIL|APP_ARGSLOG)) {
+   if (!App_ParseArgs(appargs,argc,argv,APP_NOARGSFAIL|APP_ARGSLOG)) {
       exit(EXIT_FAILURE);      
    }
    
    /*Error checking*/
    if (in==NULL) {
-      App_Log(app,ERROR,"No input standard file specified\n");
+      App_Log(ERROR,"No input standard file specified\n");
       exit(EXIT_FAILURE);
    }
    if (out==NULL) {
-      App_Log(app,ERROR,"No output standard file specified\n");
+      App_Log(ERROR,"No output standard file specified\n");
       exit(EXIT_FAILURE);
    }
    if (!size) {
-      App_Log(app,ERROR,"No tile size specified\n");
+      App_Log(ERROR,"No tile size specified\n");
       exit(EXIT_FAILURE);
    }
 
    /*Launch the app*/
-   App_Start(app);
-   ok=Tile(app,in,out,size,halo,vars);
-   App_End(app,ok!=1);
-   App_Free(app);
+   App_Start();
+   ok=Tile(in,out,size,halo,vars);
+   App_End(ok!=1);
+   App_Free();
 
    if (!ok) {
       exit(EXIT_FAILURE);

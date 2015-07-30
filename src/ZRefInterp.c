@@ -145,13 +145,13 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
 #endif
    
    if (!ZRefDest || !ZRefSrc) {
-      App_ErrorSet("ZRefInterp_Define: Invalid vertical reference");
+      App_Log(ERROR,"%s: Invalid vertical reference",__func__);
       return(NULL);
    }
 
    interp=(TZRefInterp*)malloc(sizeof(TZRefInterp));
    if (!interp) {
-      App_ErrorSet("ZRefInterp_Define: malloc failed for Interp");
+      App_Log(ERROR,"%s: malloc failed for Interp",__func__);
       return(NULL);
    }
    
@@ -170,7 +170,7 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
    // Check if source and destination are the same
    if (ZRefSrc->Type==ZRefDest->Type && ZRefSrc->LevelNb==ZRefDest->LevelNb && memcmp(ZRefSrc->Levels,ZRefDest->Levels,ZRefSrc->LevelNb*sizeof(float))==0) {
       interp->Same=1;
-      if (ZRefInterp_Options & ZRVERBOSE) printf ("(INFO) ZRefInterp_Define: Same vertical reference\n");
+      if (ZRefInterp_Options & ZRVERBOSE) App_Log(INFO,"%s: Same vertical reference\n",__func__);
 
       return(interp);
    }
@@ -193,18 +193,18 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
    if (!ZRefSrc->PCube) {
       ZRefSrc->PCube=(float*)malloc(interp->NIJ*ZRefSrc->LevelNb*sizeof(float));
       if (!ZRefSrc->PCube) {
-         App_ErrorSet("ZRefInterp_Define: malloc failed for ZRefSrc->PCube");
+         App_Log(ERROR,"%s: malloc failed for ZRefSrc->PCube",__func__);
          ZRefInterp_Free(interp);
          return(NULL);
       }
       if (magl) {
-         if (ZRefInterp_Options & ZRVERBOSE) printf ("(INFO) ZRefInterp_Define: Calculating meter cube for ZRefSrc\n");
+         if (ZRefInterp_Options & ZRVERBOSE) App_Log(INFO,"%s: Calculating meter cube for ZRefSrc\n",__func__);
          if (!ZRef_KCube2Meter(ZRefSrc,ZRefSrc->P0,interp->NIJ,ZRefSrc->PCube)) {
             ZRefInterp_Free(interp);
             return(NULL);
          }
       } else {
-         if (ZRefInterp_Options & ZRVERBOSE) printf ("(INFO) ZRefInterp_Define: Calculating pressure cube for ZRefSrc\n");
+         if (ZRefInterp_Options & ZRVERBOSE) App_Log(INFO,"%s: Calculating pressure cube for ZRefSrc\n",__func__);
          if (!ZRef_KCube2Pressure(ZRefSrc,ZRefSrc->P0,interp->NIJ,TRUE,ZRefSrc->PCube)) {
             ZRefInterp_Free(interp);
             return(NULL);
@@ -215,18 +215,18 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
    if (!ZRefDest->PCube) {
       ZRefDest->PCube=(float*)malloc(interp->NIJ*ZRefDest->LevelNb*sizeof(float));
       if (!ZRefDest->PCube) {
-         App_ErrorSet("ZRefInterp_Define: malloc failed for ZRefDest->PCube");
+         App_Log(ERROR,"%s: malloc failed for ZRefDest->PCube",__func__);
          ZRefInterp_Free(interp);
          return(NULL);
       }
       if (magl) {
-         if (ZRefInterp_Options & ZRVERBOSE) printf ("(INFO) ZRefInterp_Define: Calculating meter cube for ZRefDest\n");
+         if (ZRefInterp_Options & ZRVERBOSE) App_Log(INFO,"%s: Calculating meter cube for ZRefDest\n",__func__);
          if (!ZRef_KCube2Meter(ZRefDest,ZRefDest->P0,interp->NIJ,ZRefDest->PCube)) {
             ZRefInterp_Free(interp);
             return(NULL);
          }
       } else {
-         if (ZRefInterp_Options & ZRVERBOSE) printf ("(INFO) ZRefInterp_Define: Calculating pressure cube for ZRefDest\n");
+         if (ZRefInterp_Options & ZRVERBOSE) App_Log(INFO,"%s: Calculating pressure cube for ZRefDest\n",__func__);
          if (!ZRef_KCube2Pressure(ZRefDest,ZRefDest->P0,interp->NIJ,TRUE,ZRefDest->PCube)) {
             ZRefInterp_Free(interp);
             return(NULL);
@@ -238,40 +238,40 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
       // Check for exception in the conversion (plateforme specific)
 #if defined(__GNUC__)  || defined(SGI)
       if (fetestexcept(FE_DIVBYZERO)) {
-         fprintf (stderr, "(WARNING) ZRefInterp_Define: Grid conversion gives an infinity (DIVBYZERO)\n");
+         App_Log(WARNING,"%s: Grid conversion gives an infinity (DIVBYZERO)\n",__func__);
       }
       if (fetestexcept(FE_OVERFLOW)) {
-         fprintf (stderr, "(WARNING) ZRefInterp_Define: Grid conversion gives an overflow\n");
+         App_Log(WARNING,"%s: Grid conversion gives an overflow\n",__func__);
       }
       if (fetestexcept(FE_UNDERFLOW)) {
-         fprintf (stderr, "(WARNING) ZRefInterp_Define: Grid conversion gives an underflow\n");
+         App_Log(WARNING,"%s: Grid conversion gives an underflow\n",__func__);
       }
       if (fetestexcept(FE_INVALID)) {
-         fprintf (stderr, "(WARNING) ZRefInterp_Define: Grid conversion gives a NaN (not a number)\n");
+         App_Log(WARNING,"%s: Grid conversion gives a NaN (not a number)\n",__func__);
       }
 #elif defined(_AIX)
       flag = fp_read_flag();
       if (flag & FP_INVALID) {
-         fprintf (stderr, "(WARNING) ZRefInterp_Define: Grid conversion gives a NaN (not a number)\n");
+         App_Log(WARNING,"%s: Grid conversion gives a NaN (not a number)\n",__func__);
       }
       if (flag & FP_OVERFLOW) {
-         fprintf (stderr, "(WARNING) ZRefInterp_Define: Grid conversion gives an overflow\n");
+         App_Log(WARNING,"%s: Grid conversion gives an overflow\n",__func__);
       }
       if (flag & FP_UNDERFLOW) {
-         fprintf (stderr, "(WARNING) ZRefInterp_Define: Grid conversion gives an underflow\n");
+         App_Log(WARNING,"%s: Grid conversion gives an underflow\n",__func__);
       }
       if (flag & FP_DIV_BY_ZERO) {
-         fprintf (stderr, "(WARNING) ZRefInterp_Define: Grid conversion gives an infinity (DIV_BY_ZERO)\n");
+         App_Log(WARNING,"%s: Grid conversion gives an infinity (DIV_BY_ZERO)\n",__func__);
       }
 #else
-      fprintf(stderr,"(WARNING) Exception check is not availlable on this architecture");
+      App_Log(WARNING,"%s: Exception check is not availlable on this architecture",__func__);
 #endif
    }
 
    // Calculate interpolation indexes
    interp->Indexes=(int*)malloc(interp->NIJ*ZRefDest->LevelNb*sizeof(int));
    if (!interp->Indexes) {
-      App_ErrorSet("ZRefInterp_Define: malloc failed for Indexes");
+      App_Log(ERROR,"%s: malloc failed for Indexes",__func__);
       ZRefInterp_Free(interp);
       return(NULL);
    }
@@ -283,7 +283,7 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
 #ifdef HAVE_RMN
    (void)f77name(interp1d_findpos)(&interp->NIJ,&ZRefSrc->LevelNb,&ZRefDest->LevelNb,&interp->NIJ,&interp->NIJ,ZRefSrc->PCube,interp->Indexes,ZRefDest->PCube);
 #else
-   App_ErrorSet("%s: Need RMNLIB",__func__);
+   App_Log(ERROR,"%s: Need RMNLIB",__func__);
 #endif
    
    return(interp);
@@ -395,7 +395,7 @@ int ZRefInterp(TZRefInterp *Interp,float *stateOut,float *stateIn,float *derivOu
 
    if (Interp->Same) {
       memcpy(stateOut,stateIn,Interp->NIJ*Interp->ZRefDest->LevelNb*sizeof(float));
-      if (ZRefInterp_Options & ZRVERBOSE) printf ("(INFO) ZRefInterp: Same vertical reference, copying data (%ix%i)\n",Interp->NIJ,Interp->ZRefDest->LevelNb);
+      if (ZRefInterp_Options & ZRVERBOSE) App_Log(INFO,"%s: Same vertical reference, copying data (%ix%i)\n",__func__,Interp->NIJ,Interp->ZRefDest->LevelNb);
       return(1);
    }
 
@@ -422,7 +422,7 @@ int ZRefInterp(TZRefInterp *Interp,float *stateOut,float *stateIn,float *derivOu
 
    } else if (ZRefInterp_Options & ZRCUBIC_WITH_DERIV) {
       if ((derivIn == NULL) && (derivOut == NULL)) {
-         App_ErrorSet("ZRefInterp: Cubic Interpolation with derivatives requested");
+         App_Log(ERROR,"%s: Cubic Interpolation with derivatives requested",__func__);
          return(0);
       }
 
@@ -435,11 +435,11 @@ int ZRefInterp(TZRefInterp *Interp,float *stateOut,float *stateIn,float *derivOu
          Interp->ZRefSrc->PCube,stateIn,derivIn,Interp->Indexes,Interp->ZRefDest->PCube,stateOut,derivOut,
          &extrapEnable,&extrapEnable,&extrapGuideDown,&extrapGuideUp);
    } else {
-      App_ErrorSet("ZRefInterp: Unknown Interpolation algorithm");
+      App_Log(ERROR,"%s: Unknown Interpolation algorithm",__func__);
       return(0);
    }
 
-   if (ZRefInterp_Options & ZRVERBOSE) printf ("(INFO) ZRefInterp: Interpolation completed\n");
+   if (ZRefInterp_Options & ZRVERBOSE) App_Log(INFO,"%s: Interpolation completed\n",__func__);
 
    /* Extrapolation */
    if (ZRefInterp_Options & ZRCLAMPED) {
@@ -456,10 +456,10 @@ int ZRefInterp(TZRefInterp *Interp,float *stateOut,float *stateIn,float *derivOu
          Interp->ZRefSrc->PCube,stateIn,derivIn,Interp->Indexes,Interp->ZRefDest->PCube,stateOut,derivOut,
          &extrapEnable,&extrapEnable,&extrapGuideDown,&extrapGuideUp);
 
-      if (ZRefInterp_Options & ZRVERBOSE) printf ("(INFO) ZRefInterp: Lapserate extrapolation completed\n");
+      if (ZRefInterp_Options & ZRVERBOSE) App_Log(INFO,"%s: Lapserate extrapolation completed\n",__func__);
    }
 #else
-   App_ErrorSet("%s: Need RMNLIB",__func__);
+   App_Log(ERROR,"%s: Need RMNLIB",__func__);
 #endif
       
    return(1);

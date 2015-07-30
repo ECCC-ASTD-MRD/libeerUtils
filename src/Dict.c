@@ -286,7 +286,7 @@ void Dict_SetSearch(int SearchMode,int SearchState,char *SearchOrigin,int Search
 //   mode=(SearchIP3<32000)?2:3;
 //   f77name(convip)(&DictSearch.AltIP3,&level,Type,&mode,&format,&flag);
 #else
-   App_ErrorSet("%s: Need RMNLIB",__func__);
+   App_Log(ERROR,"%s: Need RMNLIB",__func__);
 #endif
 }
 
@@ -333,13 +333,13 @@ int Dict_Parse(char *Filename,TDict_Encoding Encoding) {
 
    // Build the XML tree from the file
    if (!(doc=xmlParseFile(Filename))) {
-      App_ErrorSet("Invalid dictionnary file: %s",Filename);
+      App_Log(ERROR,"%s: Invalid dictionnary file: %s",__func__,Filename);
       return(0);
    }
 
    // Check the document is of the right kind
    if (!(node = xmlDocGetRootElement(doc))) {
-      App_ErrorSet("Empty document");
+      App_Log(ERROR,"%s: Empty document",__func__);
       xmlFreeDoc(doc);
       return(0);
    }
@@ -361,7 +361,7 @@ int Dict_Parse(char *Filename,TDict_Encoding Encoding) {
 //    strcat(dtdfile,"/datafiles/constants/dict-2.0.dtd");
 //
 //    if (!(dtd=xmlParseDTD(NULL,dtdfile))) {
-//       App_ErrorSet("Could not parse DTD %s",dtdfile);
+//       App_Log(ERROR,"%s: Could not parse DTD %s",__func__,dtdfile);
 //       return (1);
 //    }
 //
@@ -371,7 +371,7 @@ int Dict_Parse(char *Filename,TDict_Encoding Encoding) {
 //    ctxt.warning  = (xmlValidityWarningFunc) fprintf; // register warning function
 //
 //    if (!xmlValidateDtd(&ctxt,doc,dtd)) {
-//       App_ErrorSet("DTD validation error");
+//       App_Log(ERROR,"%s: DTD validation error",__func__);
 //       return (0);
 //    }
 
@@ -457,7 +457,7 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encodin
 
       if (!strcmp((char*)Node->name,"nomvar")) {
          if (!xmlNodeListGetString(Doc,Node->children,1)) {
-            App_ErrorSet("Empty variable definition");
+            App_Log(ERROR,"%s: Empty variable definition",__func__);
             return(0);
          }
          strncpy(metvar->Name,xmlNodeListGetString(Doc,Node->children,1),5);
@@ -1309,7 +1309,7 @@ TDictVar* Dict_ApplyModifier(TDictVar *Var,char *Modifier) {
                } else if  (c[0]=='L' && c[1]=='E') {                  // Less or equal
                   c+=2; (*l++)='<'; (*l++)='=';
                } else {
-                  App_ErrorSet("Invalid modifier: %s",Modifier);
+                  App_Log(ERROR,"%s: Invalid modifier: %s",__func__,Modifier);
                   return(NULL);
                }
                (*l++)=' ';

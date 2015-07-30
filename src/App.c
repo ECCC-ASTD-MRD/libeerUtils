@@ -5,7 +5,7 @@
  * Dorval, Quebec
  *
  * Projet    : Librairie de fonctions utiles
- * Fichier   : App.c
+ * Fichier   : App->c
  * Creation  : Septembre 2008 - J.P. Gauthier
  * Revision  : $Id$
  *
@@ -31,33 +31,28 @@
  *
  *==============================================================================
  */
+#define APP_BUILD
+
 #include "App.h"
 #include "eerUtils.h"
 #include "RPN.h"
 
-static __thread char APP_ERROR[APP_ERRORSIZE];
-void App_ErrorSet(const char *Format,...) {
-
-   va_list args;
-
-   va_start(args,Format);
-   vsnprintf(APP_ERROR,APP_ERRORSIZE,Format,args);
-   va_end(args);
-
-   fprintf(stderr,"(ERROR) %s\n",APP_ERROR);
-}
+TApp AppInstance;                                // Static App instance
+__thread TApp *App;                              // Per thread App pointer
+static __thread char APP_ERROR[APP_ERRORSIZE];   // Last error is accessible through this
 
 char* App_ErrorGet(void) {
    return(APP_ERROR);
 }
 
 /*----------------------------------------------------------------------------
- * Nom      : <App_New>
+ * Nom      : <App_Init>
  * Creation : Septembre 2008 - J.P. Gauthier
  *
- * But      : Creer une nouvelle structure App
+ * But      : Initialiser la structure App
  *
  * Parametres :
+ *    <Type>    : App type (APP_MASTER=single independent process, APP_THREAD=threaded co-process)
  *    <Name>    : Application name
  *    <Version> : Version
  *    <Desc>    : Description
@@ -69,41 +64,43 @@ char* App_ErrorGet(void) {
  * Remarques  :
  *----------------------------------------------------------------------------
 */
-TApp *App_New(char *Name,char *Version,char *Desc,char* Stamp) {
+TApp *App_Init(int Type,char *Name,char *Version,char *Desc,char* Stamp) {
 
-   TApp *app;
    char *c;
    
-   app=(TApp*)malloc(sizeof(TApp));
-   app->Name=Name?strdup(Name):NULL;
-   app->Version=Version?strdup(Version):NULL;
-   app->Desc=Desc?strdup(Desc):NULL;
-   app->TimeStamp=Stamp?strdup(Stamp):NULL;
-   app->LogFile=strdup("stdout");
-   app->LogStream=(FILE*)NULL;
-   app->LogWarning=0;
-   app->LogError=0;
-   app->LogColor=FALSE;
-   app->Tag=NULL;
-   app->LogLevel=INFO;
-   app->State=STOP;
-   app->Percent=0.0;
-   app->NbThread=1;
-   app->NbMPI=1;
-   app->RankMPI=0;
-   app->CountsMPI=NULL;
-   app->DisplsMPI=NULL;
-   app->OMPSeed=NULL;
-   app->Seed=time(NULL);
+   // In coprocess threaded mode, we need a different App object than the master thread
+   App=(Type==APP_THREAD)?(TApp*)malloc(sizeof(TApp)):&AppInstance;
+ 
+   App->Type=Type;
+   App->Name=Name?strdup(Name):NULL;
+   App->Version=Version?strdup(Version):NULL;
+   App->Desc=Desc?strdup(Desc):NULL;
+   App->TimeStamp=Stamp?strdup(Stamp):NULL;
+   App->LogFile=strdup("stdout");
+   App->LogStream=(FILE*)NULL;
+   App->LogWarning=0;
+   App->LogError=0;
+   App->LogColor=FALSE;
+   App->Tag=NULL;
+   App->LogLevel=INFO;
+   App->State=STOP;
+   App->Percent=0.0;
+   App->NbThread=1;
+   App->NbMPI=1;
+   App->RankMPI=0;
+   App->CountsMPI=NULL;
+   App->DisplsMPI=NULL;
+   App->OMPSeed=NULL;
+   App->Seed=time(NULL);
 
    // Check the language in the environment 
    if (!(c=getenv("CMCLNG"))) {
-      app->Language=APP_EN;
+      App->Language=APP_EN;
    } else {
-      app->Language=(c[0]=='f' || c[0]=='F')?APP_FR:APP_EN;
+      App->Language=(c[0]=='f' || c[0]=='F')?APP_FR:APP_EN;
    }
-
-   return(app);
+ 
+   return(App);
 }
 
 /*----------------------------------------------------------------------------
@@ -113,14 +110,13 @@ TApp *App_New(char *Name,char *Version,char *Desc,char* Stamp) {
  * But      : Liberer une structure App
  *
  * Parametres :
- *  <App>     : Parametres de l'application
  *
  * Retour     :
  *
  * Remarques  :
  *----------------------------------------------------------------------------
 */
-void App_Free(TApp *App) {
+void App_Free(void) {
 
    free(App->Name);
    free(App->Version);
@@ -133,8 +129,8 @@ void App_Free(TApp *App) {
    if (App->CountsMPI) free(App->CountsMPI);
    if (App->DisplsMPI) free(App->DisplsMPI);
    if (App->OMPSeed)   free(App->OMPSeed);
-
-   free(App);
+   
+   if (App->Type==APP_THREAD) free(App); App=NULL;
 }
 
 /*----------------------------------------------------------------------------
@@ -144,7 +140,6 @@ void App_Free(TApp *App) {
  * But      : Check if the application has finished.
  *
  * Parametres  :
- *  <App>     : Parametres de l'application
  *
  * Retour:
  *  <Done>     : Finished (0,1)
@@ -152,13 +147,16 @@ void App_Free(TApp *App) {
  * Remarques :
  *----------------------------------------------------------------------------
  */
-int App_IsDone(TApp *App) {
+int App_IsDone(void) {
 
    if (App->State==DONE) {
       return(1);
    }
    return(0);
 }
+
+int App_IsMPI(void) { return(App->NbMPI>1); }
+int App_IsOMP(void) { return(App->NbThread>1); }
 
 /*----------------------------------------------------------------------------
  * Nom      : <App_Start>
@@ -167,17 +165,16 @@ int App_IsDone(TApp *App) {
  * But      : Initialiser l'execution de l'application et afficher l'entete
  *
  * Parametres :
- *  <App>     : Parametres de l'application
  *
  * Retour     :
  *
  * Remarques  :
  *----------------------------------------------------------------------------
 */
-void App_Start(TApp *App) {
+void App_Start(void) {
 
    char rmn[128],*env=NULL;
-   int print=0,t,mpi;
+   int print=0,t,th,mpi;
 
 #ifdef HAVE_RMN
    // RMN Lib settings
@@ -217,6 +214,13 @@ void App_Start(TApp *App) {
          omp_set_num_threads(0);
       }
    }
+   
+   // We need to initialize the per thread app pointer
+   th=App->NbThread;
+   #pragma omp parallel for 
+   for(t=0;t<th;t++) {
+      App=&AppInstance;
+   }
 #else
    App->NbThread=1;
 #endif
@@ -226,27 +230,27 @@ void App_Start(TApp *App) {
 
    if (!App->RankMPI) {
 
-      App_Log(App,MUST,"-------------------------------------------------------------------------------------\n");
-      App_Log(App,MUST,"Application    : %s %s (%s)\n",App->Name,App->Version,App->TimeStamp);
-      App_Log(App,MUST,"Lib eerUtils   : %s (%s)\n",VERSION,__TIMESTAMP__);
+      App_Log(MUST,"-------------------------------------------------------------------------------------\n");
+      App_Log(MUST,"Application    : %s %s (%s)\n",App->Name,App->Version,App->TimeStamp);
+      App_Log(MUST,"Lib eerUtils   : %s (%s)\n",VERSION,__TIMESTAMP__);
 
 #ifdef HAVE_RMN
       // Extract RMNLIB version
       f77name(rmnlib_version)(rmn,&print,127);
       rmn[126]='\0';
-      App_Log(App,MUST,"Lib RMN        : %s\n",&rmn[22]);
+      App_Log(MUST,"Lib RMN        : %s\n",&rmn[22]);
 #endif
-      App_Log(App,MUST,"\nStart time     : (UTC) %s",ctime(&App->Time.tv_sec));
+      App_Log(MUST,"\nStart time     : (UTC) %s",ctime(&App->Time.tv_sec));
 
       if (App->NbThread>1) {
-         App_Log(App,MUST,"OpenMP threads : %i\n",App->NbThread);
+         App_Log(MUST,"OpenMP threads : %i\n",App->NbThread);
 
       }
       if (App->NbMPI>1) {
-         App_Log(App,MUST,"MPI processes  : %i\n",App->NbMPI);
+         App_Log(MUST,"MPI processes  : %i\n",App->NbMPI);
 
       }
-      App_Log(App,MUST,"-------------------------------------------------------------------------------------\n\n");
+      App_Log(MUST,"-------------------------------------------------------------------------------------\n\n");
    }
 }
 
@@ -257,14 +261,13 @@ void App_Start(TApp *App) {
  * But      : Finaliser l'execution du modele et afficher le footer
  *
  * Parametres :
- *  <App>     : Parametres de l'application
  *
  * Retour     :
  *
  * Remarques  :
  *----------------------------------------------------------------------------
 */
-void App_End(TApp *App,int Status) {
+void App_End(int Status) {
 
    struct timeval end,dif;
    int            nb;
@@ -283,9 +286,9 @@ void App_End(TApp *App,int Status) {
       gettimeofday(&end,NULL);
       timersub(&end,&App->Time,&dif);
 
-      App_Log(App,MUST,"\n-------------------------------------------------------------------------------------\n");
-      App_Log(App,MUST,"Finish time    : (UTC) %s",ctime(&end.tv_sec));
-      App_Log(App,MUST,"Execution time : %.4f seconds\n",(float)dif.tv_sec+dif.tv_usec/1000000.0);
+      App_Log(MUST,"\n-------------------------------------------------------------------------------------\n");
+      App_Log(MUST,"Finish time    : (UTC) %s",ctime(&end.tv_sec));
+      App_Log(MUST,"Execution time : %.4f seconds\n",(float)dif.tv_sec+dif.tv_usec/1000000.0);
 
       // Select status code based on error number
       if (Status<0) {
@@ -293,14 +296,14 @@ void App_End(TApp *App,int Status) {
       }
       
       if (Status!=0) {
-         App_Log(App,MUST,"Status         : Error %i (%i Errors)\n",Status,App->LogError);
+         App_Log(MUST,"Status         : Error %i (%i Errors)\n",Status,App->LogError);
       } else {
-         App_Log(App,MUST,"Status         : Ok (%i Warnings)\n",App->LogWarning);
+         App_Log(MUST,"Status         : Ok (%i Warnings)\n",App->LogWarning);
       }
 
-      App_Log(App,MUST,"-------------------------------------------------------------------------------------\n");
+      App_Log(MUST,"-------------------------------------------------------------------------------------\n");
 
-      App_LogClose(App);
+      App_LogClose();
 
       App->State=DONE;
    }
@@ -313,14 +316,13 @@ void App_End(TApp *App,int Status) {
  * But      : Ouvrir le fichier log
  *
  * Parametres :
- *  <App>     : Parametres de l'application
  *
  * Retour:
  *
  * Remarques  :
  *----------------------------------------------------------------------------
 */
-void App_LogOpen(TApp *App) {
+void App_LogOpen(void) {
    
    if (!App->LogStream) {
       if (strcmp(App->LogFile,"stdout")==0) {
@@ -348,14 +350,13 @@ void App_LogOpen(TApp *App) {
  * But      : Fermer le fichier log
  *
  * Parametres :
- *  <App>     : Parametres de l'application
  *
  * Retour:
  *
  * Remarques  :
  *----------------------------------------------------------------------------
 */
-void App_LogClose(TApp *App) {
+void App_LogClose(void) {
 
    if (App->LogStream!=stdout && App->LogStream!=stderr) {
       fclose(App->LogStream);
@@ -369,7 +370,6 @@ void App_LogClose(TApp *App) {
  * But      : Imprimer un message de manière standard
  *
  * Parametres :
- *  <App>     : Parametres de l'application
  *  <Level>   : Niveau d'importance du message (MUST,ERROR,WARNING,INFO,DEBUG,EXTRA)
  *  <Format>  : Format d'affichage du message
  *  <...>     : Liste des variables du message
@@ -383,7 +383,7 @@ void App_LogClose(TApp *App) {
  *     sur stdout ou le fichier log
  *----------------------------------------------------------------------------
 */
-void App_Log(TApp *App,TApp_LogLevel Level,const char *Format,...) {
+void App_Log(TApp_LogLevel Level,const char *Format,...) {
 
    static char *levels[] = { "ERROR","WARNING","INFO","DEBUG","EXTRA" };
    static char *colors[] = { APP_COLOR_RED, APP_COLOR_BLUE, "", APP_COLOR_CYAN, APP_COLOR_CYAN };
@@ -391,7 +391,7 @@ void App_Log(TApp *App,TApp_LogLevel Level,const char *Format,...) {
    va_list      args;
       
    if (!App->LogStream)
-      App_LogOpen(App);
+      App_LogOpen();
 
    if (Level==WARNING) App->LogWarning++;
    if (Level==ERROR)   App->LogError++;
@@ -410,7 +410,15 @@ void App_Log(TApp *App,TApp_LogLevel Level,const char *Format,...) {
       if (App->LogColor)
          fprintf(App->LogStream,APP_COLOR_RESET);
       
-      fflush(App->LogStream);
+      if (Level==ERROR) {
+         // On errors, save for extenal to use (ex: Tcl)
+         va_start(args,Format);
+         vsnprintf(APP_ERROR,APP_ERRORSIZE,Format,args);
+         va_end(args);
+     
+         // Force flush on error to garantee we'll see it
+         fflush(App->LogStream);
+      }
    }
 }
 
@@ -421,7 +429,6 @@ void App_Log(TApp *App,TApp_LogLevel Level,const char *Format,...) {
  * But      : Imprimer un message d'indication d'avancement
  *
  * Parametres :
- *  <App>     : Parametres de l'application
  *  <Percent> : Pourcentage d'avancement
  *  <Format>  : Format d'affichage du message
  *  <...>     : Liste des variables du message
@@ -433,14 +440,14 @@ void App_Log(TApp *App,TApp_LogLevel Level,const char *Format,...) {
  *     le pourcentage d'avancement
  *----------------------------------------------------------------------------
 */
-void App_Progress(TApp *App,float Percent,const char *Format,...) {
+void App_Progress(float Percent,const char *Format,...) {
 
    va_list      args;
 
    App->Percent=Percent;
 
    if (!App->LogStream)
-      App_LogOpen(App);
+      App_LogOpen();
 
    fprintf(App->LogStream,"%s(PROGRESS) [%6.2f %%] ",(App->LogColor?APP_COLOR_MAGENTA:""),App->Percent);
    va_start(args,Format);
@@ -457,10 +464,9 @@ void App_Progress(TApp *App,float Percent,const char *Format,...) {
  * Nom      : <App_LogLevel>
  * Creation : Septembre 2008 - J.P. Gauthier
  *
- * But      : Imprimer un message de manière standard
+ * But      : Definir le niveau de log courant
  *
  * Parametres :
- *  <App>     : Parametres de l'application
  *  <Val>     : Niveau de log a traiter
  *
  * Retour:
@@ -468,7 +474,7 @@ void App_Progress(TApp *App,float Percent,const char *Format,...) {
  * Remarques  :
  *----------------------------------------------------------------------------
 */
-int App_LogLevel(TApp *App,char *Val) {
+int App_LogLevel(char *Val) {
 
    if (strcasecmp(Val,"ERROR")==0) {
       App->LogLevel=0;
@@ -493,7 +499,6 @@ int App_LogLevel(TApp *App,char *Val) {
  * But      : Print arguments information.
  *
  * Parametres  :
- *  <App>     : Parametres de l'application
  *  <AArgs>   : Arguments definition
  *  <Token>   : Invalid token if any, NULL otherwise
  *  <Flags>    : configuration flags
@@ -504,7 +509,7 @@ int App_LogLevel(TApp *App,char *Val) {
  *----------------------------------------------------------------------------
 */
 
-void App_PrintArgs(TApp *App,TApp_Arg *AArgs,char *Token,int Flags) {
+void App_PrintArgs(TApp_Arg *AArgs,char *Token,int Flags) {
    
    TApp_Arg *aarg=NULL;
 
@@ -547,7 +552,6 @@ void App_PrintArgs(TApp *App,TApp_Arg *AArgs,char *Token,int Flags) {
  * But      : Extract argument value
  *
  * Parametres  :
- *  <App>      : Parametres de l'application
  *  <AArg>     : Argument definition
  *  <Value>    : Value to extract
  *
@@ -557,7 +561,7 @@ void App_PrintArgs(TApp *App,TApp_Arg *AArgs,char *Token,int Flags) {
  *----------------------------------------------------------------------------
 */
 #define LST_ASSIGN(type,lst,val) *(type)lst=val; lst=(type)lst+1
-inline int App_GetArgs(TApp *App,TApp_Arg *AArg,char *Value) {
+inline int App_GetArgs(TApp_Arg *AArg,char *Value) {
    
    char *endptr=NULL;
    errno=0;
@@ -593,7 +597,6 @@ inline int App_GetArgs(TApp *App,TApp_Arg *AArg,char *Value) {
  * But      : Parse default arguments.
  *
  * Parametres  :
- *  <App>      : Parametres de l'application
  *  <AArgs>    : Arguments definition
  *  <argc>     : Number of argument
  *  <argv>     : Arguments
@@ -605,7 +608,7 @@ inline int App_GetArgs(TApp *App,TApp_Arg *AArg,char *Value) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-int App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[],int Flags) {
+int App_ParseArgs(TApp_Arg *AArgs,int argc,char *argv[],int Flags) {
 
    int       i=-1,ok=TRUE,ner=TRUE;
    char     *tok,*ptok=NULL,*env=NULL,*str,*tmp;
@@ -614,7 +617,7 @@ int App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[],int Flags) {
    str=env=getenv("APP_PARAMS");
 
    if (argc==1 && !env && Flags&APP_NOARGSFAIL) {
-      App_PrintArgs(App,AArgs,NULL,Flags) ;
+      App_PrintArgs(AArgs,NULL,Flags) ;
       ok=FALSE;
    } else {
 
@@ -652,19 +655,19 @@ int App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[],int Flags) {
          } else if (!strcasecmp(tok,"-v") || !strcasecmp(tok,"--verbose")) {                      // Verbose degree
             i++;
             if ((ner=ok=(i<argc && argv[i][0]!='-'))) {
-               App_LogLevel(App,env?strtok(str," "):argv[i]);
+               App_LogLevel(env?strtok(str," "):argv[i]);
             }
          } else if (!strcasecmp(tok,"--verbosecolor")) {                                          // Use color in log messages
             App->LogColor=TRUE;
          } else if (!strcasecmp(tok,"-h") || !strcasecmp(tok,"--help")) {                         // Help
-            App_PrintArgs(App,AArgs,NULL,Flags) ;
+            App_PrintArgs(AArgs,NULL,Flags) ;
             exit(EXIT_SUCCESS);
          } else {
             // Process specific argument
             aarg=AArgs;
             while(aarg->Short) {        
                if ((aarg->Short && tok[1]==aarg->Short[0] && tok[2]=='\0') || (aarg->Long && strcasecmp(&tok[2],aarg->Long)==0)) {
-                  ok=(aarg->Type==APP_FLAG?(*(int*)aarg->Var)=TRUE:App_GetArgs(App,aarg,env?strtok(str," "):argv[++i]));
+                  ok=(aarg->Type==APP_FLAG?(*(int*)aarg->Var)=TRUE:App_GetArgs(aarg,env?strtok(str," "):argv[++i]));
                   ptok=aarg->Type==APP_FLAG?NULL:tok;
                   break;
                }
@@ -679,7 +682,7 @@ int App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[],int Flags) {
          
          // Argument not found
          if (aarg && (!ok || !aarg->Short)) {
-            App_PrintArgs(App,AArgs,tok,Flags) ;
+            App_PrintArgs(AArgs,tok,Flags) ;
             ok=FALSE;
             break;
          }
@@ -698,7 +701,6 @@ int App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[],int Flags) {
  * But      : Parse an imput file.
  *
  * Parametres  :
- *  <App>     : Parametres de l'application
  *  <Def>      : Model definitions
  *  <File>     : Input file to parse
  *  <ParseProc>: Model specific token parsing proc
@@ -712,19 +714,19 @@ int App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[],int Flags) {
  *   - It also allows for multiline definitions
  *----------------------------------------------------------------------------
 */
-int App_ParseInput(TApp *App,void *Def,char *File,TApp_InputParseProc *ParseProc) {
+int App_ParseInput(void *Def,char *File,TApp_InputParseProc *ParseProc) {
 
    FILE *fp;
    int   n=0,seq;
    char  token[256],*parse,*values,*value,*valuesave,*idx,*buf,*tokensave;
 
    if (!(fp=fopen(File,"r"))) {
-      App_Log(App,ERROR,"Unable to open input file: %s\n",File);
+      App_Log(ERROR,"Unable to open input file: %s\n",File);
       return(0);
    }
 
    if (!(buf=(char*)alloca(APP_BUFMAX))) {
-      App_Log(App,ERROR,"Unable to allocate input parsing buffer\n");
+      App_Log(ERROR,"Unable to allocate input parsing buffer\n");
       return(0);
    }
 
@@ -760,13 +762,13 @@ int App_ParseInput(TApp *App,void *Def,char *File,TApp_InputParseProc *ParseProc
          valuesave=NULL;
          while(value=strtok_r(values," ",&valuesave)) {
             if (seq) {
-               App_Log(App,DEBUG,"Input parameters: %s(%i) = %s\n",token,seq,value);
+               App_Log(DEBUG,"Input parameters: %s(%i) = %s\n",token,seq,value);
             } else {
-               App_Log(App,DEBUG,"Input parameters: %s = %s\n",token,value);
+               App_Log(DEBUG,"Input parameters: %s = %s\n",token,value);
             }
 
             // Call mode specific imput parser
-            if (!ParseProc(App,Def,token,value,seq)) {
+            if (!ParseProc(Def,token,value,seq)) {
                fclose(fp);
                return(0);
             }
@@ -787,7 +789,6 @@ int App_ParseInput(TApp *App,void *Def,char *File,TApp_InputParseProc *ParseProc
  * But      : Parse a boolean value.
  *
  * Parametres :
- *  <App>     : Parametres de l'application
  *  <Param>   : Nom du parametre
  *  <Value>   : Value to parse
  *  <Var>     : Variable to put result into
@@ -798,14 +799,14 @@ int App_ParseInput(TApp *App,void *Def,char *File,TApp_InputParseProc *ParseProc
  * Remarques :
  *----------------------------------------------------------------------------
 */
-int App_ParseBool(TApp *App,char *Param,char *Value,char *Var) {
+int App_ParseBool(char *Param,char *Value,char *Var) {
    
   if (strcasecmp(Value,"true")==0 || strcmp(Value,"1")==0) {
       *Var=1;
    } else if (strcasecmp(Value,"false")==0 || strcmp(Value,"0")==0) {
       *Var=0;
    } else {
-      App_Log(App,ERROR,"Invalid value for %s, must be TRUE(1) or FALSE(0): %s\n",Param,Value);
+      App_Log(ERROR,"Invalid value for %s, must be TRUE(1) or FALSE(0): %s\n",Param,Value);
       return(0);
    }
    return(1);
@@ -818,7 +819,6 @@ int App_ParseBool(TApp *App,char *Param,char *Value,char *Var) {
  * But      : Parse a date value (YYYMMDDhhmm.
  *
  * Parametres :
- *  <App>     : Parametres de l'application
  *  <Param>   : Nom du parametre
  *  <Value>   : Value to parse
  *  <Var>     : Variable to put result into
@@ -829,13 +829,13 @@ int App_ParseBool(TApp *App,char *Param,char *Value,char *Var) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-int App_ParseDate(TApp *App,char *Param,char *Value,time_t *Var) {
+int App_ParseDate(char *Param,char *Value,time_t *Var) {
    
    long long t;
    char     *ptr;
 
    if (strlen(Value)!=12 || (t=strtoll(Value,&ptr,10))<=0) {
-       App_Log(App,ERROR,"Invalid value for %s, must be YYYYMMDDHHMM: %s\n",Param,Value);
+       App_Log(ERROR,"Invalid value for %s, must be YYYYMMDDHHMM: %s\n",Param,Value);
       return(0);
    }
    *Var=System_DateTime2Seconds(t/10000,(t-(t/10000*10000))*100,1);
@@ -843,13 +843,13 @@ int App_ParseDate(TApp *App,char *Param,char *Value,time_t *Var) {
    return(1);
 }   
 
-int App_ParseDateSplit(TApp *App,char *Param,char *Value,int *Year,int *Month,int *Day,int *Hour,int *Min) {
+int App_ParseDateSplit(char *Param,char *Value,int *Year,int *Month,int *Day,int *Hour,int *Min) {
    
    long long t;
    char     *ptr;
 
    if (strlen(Value)!=12 || (t=strtoll(Value,&ptr,10))<=0) {
-      App_Log(App,ERROR,"Invalid value for %s, must be YYYYMMDDHHMM: %s\n",Param,Value);
+      App_Log(ERROR,"Invalid value for %s, must be YYYYMMDDHHMM: %s\n",Param,Value);
       return(0);
    }
    *Year=t/100000000;  t-=(long long)(*Year)*100000000;
@@ -868,7 +868,6 @@ int App_ParseDateSplit(TApp *App,char *Param,char *Value,int *Year,int *Month,in
  * But      : Parse a coordinate  value.
  *
  * Parametres :
- *  <App>     : Parametres de l'application
  *  <Param>   : Nom du parametre
  *  <Value>   : Value to parse
  *  <Var>     : Variable to put result into
@@ -880,7 +879,7 @@ int App_ParseDateSplit(TApp *App,char *Param,char *Value,int *Year,int *Month,in
  * Remarques :
  *----------------------------------------------------------------------------
 */
-int App_ParseCoords(TApp *App,char *Param,char *Value,double *Lat,double *Lon,int Index) {
+int App_ParseCoords(char *Param,char *Value,double *Lat,double *Lon,int Index) {
    
    double coord;
    char *ptr;
@@ -890,7 +889,7 @@ int App_ParseCoords(TApp *App,char *Param,char *Value,double *Lat,double *Lon,in
    switch(Index) {
       case 0: 
          if (coord<-90.0 || coord>90.0) {
-            App_Log(App,ERROR,"Invalid latitude coordinate: %s\n",Value);
+            App_Log(ERROR,"Invalid latitude coordinate: %s\n",Value);
             return(0);
          }
          *Lat=coord;
@@ -898,7 +897,7 @@ int App_ParseCoords(TApp *App,char *Param,char *Value,double *Lat,double *Lon,in
       case 1:
          if (coord<0.0) coord+=360.0;
          if (coord<0.0 || coord>360.0) {
-            App_Log(App,ERROR,"Invalid longitude coordinate: %s\n",Value);
+            App_Log(ERROR,"Invalid longitude coordinate: %s\n",Value);
             return(0);
          }
          *Lon=coord;
@@ -915,14 +914,13 @@ int App_ParseCoords(TApp *App,char *Param,char *Value,double *Lat,double *Lon,in
  * But      : Initialise seeds for MPI/OpenMP.
  *
  * Parametres  :
- *  <App>     : Parametres de l'application
  *
  * Retour:
  *
  * Remarques :
  *----------------------------------------------------------------------------
  */
-void App_SeedInit(TApp *App) {
+void App_SeedInit() {
 
    int t;
 

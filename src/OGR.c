@@ -58,11 +58,11 @@ Vect3d* GPC_GetVect3d(unsigned int Size,unsigned int No) {
       GPC_Ptr=(Vect3d**)realloc(GPC_Ptr,GPC_GeomNb*sizeof(Vect3d*));
 
       if (!GPC_Geom[0] || !GPC_Geom[1] || !GPC_Ptr) {
-         App_ErrorSet("Could not allocate GPC buffers");
+         App_Log(ERROR,"%s: Could not allocate GPC buffers",__func__);
          return(NULL);
       }
 #ifdef DEBUG
-         fprintf(stderr,"(DEBUG) GPC_GetVect3d: Increasing size to %i\n",GPC_GeomNb);
+         App_Log(DEBUG,"%s: Increasing size to %i\n",__func__,GPC_GeomNb);
 #endif
    }
    return(No==2?(Vect3d*)GPC_Ptr:GPC_Geom[No]);
@@ -262,7 +262,7 @@ void GPC_FromOGR(gpc_polygon *Poly,OGRGeometryH *Geom) {
          Poly->num_contours+=nc;
       }
    } else {
-      App_ErrorSet("GPC_FromOGR: Unsupported geometry type");
+      App_Log(ERROR,"%s: Unsupported geometry type",__func__);
    }
 }
 
@@ -334,7 +334,7 @@ void GPC_ToOGR(gpc_polygon *Poly,OGRGeometryH *Geom) {
                   }
                }
                if (!in) {
-                  App_ErrorSet("GPC_ToOGR: Found a hole without parent");
+                  App_Log(ERROR,"%s: Found a hole without parent",__func__);
                }
             } else {
                OGR_G_AddGeometryDirectly(poly,ring);
@@ -1142,7 +1142,7 @@ int GPC_Simplify(double Tolerance,OGRGeometryH Geom) {
    if ((n=GPC_ToVect3d(Geom,GPC_ARRAY0))>2) {
       mk=(int*)calloc(n,sizeof(int));
       if (!mk) {
-         App_ErrorSet("GPC_Simplify: Unable to allocate buffers");
+         App_Log(ERROR,"%s: Unable to allocate buffers",__func__);
          return(0);
       }
 

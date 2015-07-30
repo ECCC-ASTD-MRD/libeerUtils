@@ -32,6 +32,7 @@
  *=========================================================
  */
 
+#include "App.h"
 #include "GeoRef.h"
 #include "Def.h"
 #include "Vertex.h"
@@ -88,7 +89,7 @@ double GeoRef_WKTDistance(TGeoRef *GRef,double X0,double Y0,double X1, double Y1
       return(hypot(j[1]-j[0],i[1]-i[0])*OSRGetLinearUnits(GRef->Spatial,NULL));
    }
 #else
-   App_ErrorSet("Function %s is not available, needs to be built with GDAL",__func__);
+   App_Log(ERROR,"Function %s is not available, needs to be built with GDAL",__func__);
    return(0.0);
 #endif
 }
@@ -269,7 +270,7 @@ int GeoRef_WKTProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,in
 
    return(1);
 #else
-   App_ErrorSet("Function %s is not available, needs to be built with GDAL",__func__);
+   App_Log(ERROR,"Function %s is not available, needs to be built with GDAL",__func__);
    return(0);
 #endif
 }
@@ -469,7 +470,7 @@ int GeoRef_WKTUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
    }
    return(1);
 #else
-   App_ErrorSet("Function %s is not available, needs to be built with GDAL",__func__);
+   App_Log(ERROR,"Function %s is not available, needs to be built with GDAL",__func__);
    return(0);
 #endif
 }
@@ -534,7 +535,7 @@ int GeoRef_WKTSet(TGeoRef *GRef,char *String,double *Transform,double *InvTransf
    } else if (string) {
       GRef->Spatial=OSRNewSpatialReference(NULL);
       if (OSRSetFromUserInput(GRef->Spatial,string)==OGRERR_FAILURE) {
-        fprintf(stderr,"(WARNING) GeoRef_WKTSet: Unable to create spatial reference.\n");
+        App_Log(WARNING,"%s: Unable to create spatial reference\n",__func__);
         return(0);
       }
    } else {
@@ -559,7 +560,7 @@ int GeoRef_WKTSet(TGeoRef *GRef,char *String,double *Transform,double *InvTransf
          GRef->InvFunction=OCTNewCoordinateTransformation(llref,GRef->Spatial);
       }
    } else {
-      fprintf(stderr,"(WARNING) GeoRef_WKTSet: Unable to get spatial reference\n");
+      App_Log(WARNING,"%s: Unable to get spatial reference\n",__func__);
       return(0);
    }
 
@@ -571,7 +572,7 @@ int GeoRef_WKTSet(TGeoRef *GRef,char *String,double *Transform,double *InvTransf
 
    return(1);
 #else
-   App_ErrorSet("Function %s is not available, needs to be built with GDAL",__func__);
+   App_Log(ERROR,"Function %s is not available, needs to be built with GDAL",__func__);
    return(0);
 #endif
 }

@@ -66,6 +66,9 @@
 #define APP_COLOR_GRAY    "\x1b[37m"
 #define APP_COLOR_RESET   "\x1b[0m"
 
+#define APP_MASTER    0
+#define APP_THREAD    1
+
 #define APP_BUFMAX    32768               // Maximum input buffer length
 #define APP_LISTMAX   4096                // MAximum number of items in a flag list
 #define APP_SEED      1049731793          // Initial FIXED seed
@@ -82,26 +85,26 @@ typedef enum { APP_FR=0x0,APP_EN=0x01 } TApp_Lang;
 typedef enum { APP_OK=1,APP_ERR=0 } TApp_RetCode;
 
 #define APP_ASRT_OK(x) if( (x)!=APP_OK ) return(APP_ERR)
-#define APP_ASRT_OK_M(Fct,App, ...) \
+#define APP_ASRT_OK_M(Fct, ...) \
    if( (Fct)!=APP_OK ) { \
-      App_Log(App,ERROR, __VA_ARGS__); \
+      App_Log(ERROR, __VA_ARGS__); \
       return(APP_ERR); \
    }
 
 // Check FST function and return the specified value if an error was encountered
-#define APP_FST_ASRT_H(Fct,App, ...) \
+#define APP_FST_ASRT_H(Fct, ...) \
    if( (Fct) < 0 ) { \
-      App_Log(App,ERROR, __VA_ARGS__); \
+      App_Log(ERROR, __VA_ARGS__); \
       return(APP_ERR); \
    }
-#define APP_FST_ASRT(Fct,App, ...) \
+#define APP_FST_ASRT(Fct, ...) \
    if( (Fct) != 0 ) { \
-      App_Log(App,ERROR, __VA_ARGS__); \
+      App_Log(ERROR, __VA_ARGS__); \
       return(APP_ERR); \
    }
-#define APP_MEM_ASRT(Buf,Fct,App) \
+#define APP_MEM_ASRT(Buf,Fct) \
    if( !(Buf=(Fct)) ) { \
-      App_Log(App,ERROR,"(%s) Could not allocate memory for field %s at line %d.\n",__func__,#Buf,__LINE__); \
+      App_Log(ERROR,"(%s) Could not allocate memory for field %s at line %d.\n",__func__,#Buf,__LINE__); \
       return(APP_ERR); \
    }
 #define APP_FREE(Ptr) if(Ptr) { free(Ptr); Ptr=NULL; }
@@ -131,6 +134,7 @@ typedef struct TApp {
     TApp_Lang      Language;             // Language (default: $CMCLNG or APP_EN)
     double         Percent;              // Percentage of execution done (0=not started, 100=finished)
     struct timeval Time;                 // Timer for execution time
+    int            Type;                 // App object type (APP_MASTER,APP_THREAD)
 
     int            Seed,*OMPSeed;        // Random number generator seed
     int           *CountsMPI,*DisplsMPI; // MPI counting and gathering arrays
@@ -138,27 +142,30 @@ typedef struct TApp {
     int            NbThread;             // Number of OpenMP threads
 } TApp;
 
-typedef int (TApp_InputParseProc) (TApp *App,void *Def,char *Token,char *Value,int Index);
+#ifndef APP_BUILD
+extern __thread TApp *App;               // Per thread App pointer
+#endif
 
-TApp *App_New(char* Name,char* Version,char* Desc,char* Stamp);
-void  App_Free(TApp *App);
-void  App_Start(TApp *App);
-void  App_End(TApp *App,int Status);
-int   App_IsDone(TApp *App);
-void  App_Log(TApp *App,TApp_LogLevel Level,const char *Format,...);
-void  App_LogOpen(TApp *App);
-void  App_LogClose(TApp *App);
-int   App_LogLevel(TApp *App,char *Val);
-void  App_Progress(TApp *App,float Percent,const char *Format,...);
-int   App_ParseArgs(TApp *App,TApp_Arg *AArgs,int argc,char *argv[],int Flags);
-int   App_ParseInput(TApp *App,void *Def,char *File,TApp_InputParseProc *ParseProc);
-int   App_ParseBool(TApp *App,char *Param,char *Value,char *Var);
-int   App_ParseDate(TApp *App,char *Param,char *Value,time_t *Var);
-int   App_ParseDateSplit(TApp *App,char *Param,char *Value,int *Year,int *Month,int *Day,int *Hour,int *Min);
-int   App_ParseCoords(TApp *App,char *Param,char *Value,double *Lat,double *Lon,int Index);
-void  App_SeedInit(TApp *App);
+typedef int (TApp_InputParseProc) (void *Def,char *Token,char *Value,int Index);
 
-void  App_ErrorSet(const char *Format,...);
-char* App_ErrorGet(void);
+TApp *App_Init(int Type,char* Name,char* Version,char* Desc,char* Stamp);
+void  App_Free(void);
+void  App_Start(void);
+void  App_End(int Status);
+int   App_IsDone(void);
+int   App_IsMPI(void);
+int   App_IsOMP(void);
+void  App_Log(TApp_LogLevel Level,const char *Format,...);
+void  App_LogOpen(void);
+void  App_LogClose(void);
+int   App_LogLevel(char *Val);
+void  App_Progress(float Percent,const char *Format,...);
+int   App_ParseArgs(TApp_Arg *AArgs,int argc,char *argv[],int Flags);
+int   App_ParseInput(void *Def,char *File,TApp_InputParseProc *ParseProc);
+int   App_ParseBool(char *Param,char *Value,char *Var);
+int   App_ParseDate(char *Param,char *Value,time_t *Var);
+int   App_ParseDateSplit(char *Param,char *Value,int *Year,int *Month,int *Day,int *Hour,int *Min);
+int   App_ParseCoords(char *Param,char *Value,double *Lat,double *Lon,int Index);
+void  App_SeedInit(void);
 
 #endif

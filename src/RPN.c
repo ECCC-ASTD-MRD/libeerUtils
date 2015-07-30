@@ -305,7 +305,7 @@ TRPNField* RPN_FieldNew(int NI,int NJ,int NK,int NC,TDef_Type Type) {
 
    fld=(TRPNField*)calloc(1,sizeof(TRPNField));
    if (!(fld->Def=Def_New(NI,NJ,NK,NC,Type))) {
-      App_ErrorSet("RPN_FieldNew: Could not allocate memory");
+      App_Log(ERROR,"%s: Could not allocate memory",__func__);
       return(NULL);
    }
 
@@ -346,7 +346,7 @@ TRPNField* RPN_FieldReadIndex(int FileId,int Index,TRPNField *Fld) {
          &h.UBC,&h.EX1,&h.EX2,&h.EX3);
 
    if (ok<0) {
-      App_ErrorSet("RPN_FieldReadIndex: Could not get field information (c_fstprm failed)");
+      App_Log(ERROR,"%s: Could not get field information (c_fstprm failed)",__func__);
       return(NULL);
    }
 
@@ -370,7 +370,7 @@ TRPNField* RPN_FieldReadIndex(int FileId,int Index,TRPNField *Fld) {
    } else {
       fld=(TRPNField*)malloc(sizeof(TRPNField));
       if (!(fld->Def=Def_New(h.NI,h.NJ,h.NK,1,TD_Float32))) {
-         App_ErrorSet("RPN_FieldReadIndex: Could not allocate memory for fld");
+         App_Log(ERROR,"%s: Could not allocate memory for fld",__func__);
          return(NULL);
       }
    }
@@ -378,7 +378,7 @@ TRPNField* RPN_FieldReadIndex(int FileId,int Index,TRPNField *Fld) {
    // Recuperer les donnees du champs
    c_fst_data_length(TDef_Size[fld->Def->Type]);
    if ((ok=cs_fstlukt(fld->Def->Data[0],h.FID,h.KEY,h.GRTYP,&h.NI,&h.NJ,&h.NK))<0) {
-      App_ErrorSet("RPN_FieldReadIndex: Could not read field data (c_fstluk failed)");
+      App_Log(ERROR,"%s: Could not read field data (c_fstluk failed)",__func__);
       return(NULL);
    }
 
@@ -412,7 +412,7 @@ TRPNField* RPN_FieldRead(int FileId,int DateV,char *Eticket,int IP1,int IP2,int 
    h.KEY=cs_fstinf(FileId,&h.NI,&h.NJ,&h.NK,DateV,Eticket,IP1,IP2,IP3,TypVar,NomVar);
 
    if (h.KEY<0) {
-      App_ErrorSet("RPN_FieldRead: Specified field does not exist (c_fstinf failed)");
+      App_Log(ERROR,"%s: Specified field does not exist (c_fstinf failed)",__func__);
       return(NULL);
    }
 
@@ -434,7 +434,7 @@ int RPN_FieldWrite(int FileId,TRPNField *Field) {
       Field->Head.NOMVAR,Field->Head.ETIKET,Field->Head.GRTYP,Field->Head.IG1,Field->Head.IG2,Field->Head.IG3,Field->Head.IG4,Field->Head.DATYP,FALSE);
 
    if (ok<0) {
-      App_ErrorSet("RPN_FieldWrite: Could not write field data (c_fstecr failed)");
+      App_Log(ERROR,"%s: Could not write field data (c_fstecr failed)",__func__);
       return(0);
    }
    return(1);

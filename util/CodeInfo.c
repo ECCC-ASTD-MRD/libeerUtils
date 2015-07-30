@@ -44,7 +44,6 @@
  * But      : Code/Decode pool information from/to an RPN field.
  *
  * Parametres  :
- *  <App>      : Application parameters
  *  <Pool>     : ASCII pool file
  *  <FST>      : RPN FST file
  *  <Var>      : NOMVAR of the pool field
@@ -56,7 +55,7 @@
  * Remarques :
  *----------------------------------------------------------------------------
  */
-int Codec(TApp *App,char *Pool,char *FST,char *Var,int Code) {
+int Codec(char *Pool,char *FST,char *Var,int Code) {
 
    char       buf[APP_BUFMAX],*c;
    int        fld[APP_BUFMAX],len,err,fstid,i;
@@ -65,7 +64,7 @@ int Codec(TApp *App,char *Pool,char *FST,char *Var,int Code) {
 
    if (Code) {
       if (!(fid=fopen(Pool,"r"))) {
-         App_Log(App,ERROR,"Unable to open information file (%s)\n",Pool);
+         App_Log(ERROR,"Unable to open information file (%s)\n",Pool);
          return(0);
       }
 
@@ -79,30 +78,30 @@ int Codec(TApp *App,char *Pool,char *FST,char *Var,int Code) {
       // Get rid of trailing \n
       if (buf[len-1]=='\n') len--;
       
-      App_Log(App,INFO,"Encoding %i character\n",len);
+      App_Log(INFO,"Encoding %i character\n",len);
       for(i=0;i<len;i++) {
          fld[i]=buf[i];
       }
       
       if ((fstid=cs_fstouv(FST,"STD+RND+R/W"))<0) {
-         App_Log(App,ERROR,"Problems opening output file %s\n",FST);
+         App_Log(ERROR,"Problems opening output file %s\n",FST);
          return(0);
       }
-      App_Log(App,INFO,"Encoding into %s\n",FST);
+      App_Log(INFO,"Encoding into %s\n",FST);
 
       err=cs_fstecr(fld,-8,fstid,0,0,0,len,1,1,0,0,0,"X",Var,"DESCRIPTION","X",0,0,0,0,2,TRUE);
       if (err<0) {
-         App_Log(App,ERROR,"Could not write encoded pool record\n");
+         App_Log(ERROR,"Could not write encoded pool record\n");
          return(0);
       }
    } else {
       if ((fstid=cs_fstouv(FST,"STD+RND+R/O"))<0) {
-         App_Log(App,ERROR,"Problems opening output file %s\n",FST);
+         App_Log(ERROR,"Problems opening output file %s\n",FST);
          return(0);
       }
       err=cs_fstlir(fld,fstid,&h.NI,&h.NJ,&h.NK,-1,"",-1,-1,-1,"",Var);
       if (err<0) {
-         App_Log(App,ERROR,"Could not find encoded pool record\n");
+         App_Log(ERROR,"Could not find encoded pool record\n");
          return(0);
       }
 
@@ -124,7 +123,6 @@ int Codec(TApp *App,char *Pool,char *FST,char *Var,int Code) {
 
 int main(int argc, char *argv[]) {
 
-   TApp     *app;
    int       ok=0,code,decode,ckey;
    char     *pool,*val,*fst,*var;
 
@@ -139,9 +137,9 @@ int main(int argc, char *argv[]) {
    pool=val=fst=var=NULL;
    code=decode=ckey=0;
 
-   app=App_New(APP_NAME,VERSION,APP_DESC,__TIMESTAMP__);
+   App_Init(APP_MASTER,APP_NAME,VERSION,APP_DESC,__TIMESTAMP__);
 
-   if (!App_ParseArgs(app,appargs,argc,argv,APP_NOARGSFAIL|APP_ARGSLOG)) {
+   if (!App_ParseArgs(appargs,argc,argv,APP_NOARGSFAIL|APP_ARGSLOG)) {
       exit(EXIT_FAILURE);      
    }
 
@@ -149,7 +147,7 @@ int main(int argc, char *argv[]) {
    ckey=code?1:0;
    
    if (fst==NULL) {
-      App_Log(app,ERROR,"No standard file specified\n");
+      App_Log(ERROR,"No standard file specified\n");
       exit(EXIT_FAILURE);
    }
    if (var==NULL) {
@@ -157,10 +155,10 @@ int main(int argc, char *argv[]) {
    }
 
    /*Launch the app*/
-   App_Start(app);
-   ok=Codec(app,pool,fst,var,ckey);
-   App_End(app,ok!=1);
-   App_Free(app);
+   App_Start();
+   ok=Codec(pool,fst,var,ckey);
+   App_End(ok!=1);
+   App_Free();
 
    if (!ok) {
       exit(EXIT_FAILURE);
