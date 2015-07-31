@@ -205,7 +205,7 @@ int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
       d=dd?2:1;
       sz=4;
 #else
-      App_Log(ERROR,"%s: RMNLIB support not included",__func__);
+      App_Log(ERROR,"%s: RMNLIB support not included\n",__func__);
 #endif
    }
 
@@ -289,7 +289,7 @@ int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
          }
       }
 #else
-      App_Log(ERROR,"%s: RMNLIB support not included",__func__);
+      App_Log(ERROR,"%s: RMNLIB support not included\n",__func__);
 #endif
    }
    return(d);

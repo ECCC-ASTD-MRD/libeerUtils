@@ -272,7 +272,7 @@ int System_Julian2Stamp(int Year,int Day,int Time) {
    t=date.tm_hour*1000000+date.tm_min*10000+date.tm_sec*100;
    f77name(newdate)(&stamp,&d,&t,&op);
 #else
-   App_Log(ERROR,"%s: Need RMNLIB",__func__);
+   App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
 #endif
 
    return(stamp);
@@ -351,7 +351,7 @@ void System_StampDecode(int Stamp,int *YYYY,int *MM,int *DD,int *H,int *M,int *S
    *S-=(*M)*10000;
    *S/=100;
 #else
-   App_Log(ERROR,"%s: Need RMNLIB",__func__);
+   App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
 #endif
 }
 
@@ -364,7 +364,7 @@ void System_StampEncode(int *Stamp,int YYYY,int MM,int DD,int H,int M,int S) {
    time=H*1000000+M*10000+S*100;
    f77name(newdate)(Stamp,&date,&time,&op);
 #else
-   App_Log(ERROR,"%s: Need RMNLIB",__func__);
+   App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
 #endif
 }
 
@@ -396,7 +396,7 @@ int System_Seconds2Stamp(long Sec) {
 
    f77name(newdate)(&stamp,&date,&time,&op);
 #else
-   App_Log(ERROR,"%s: Need RMNLIB",__func__);
+   App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
 #endif
    return(stamp);
 }

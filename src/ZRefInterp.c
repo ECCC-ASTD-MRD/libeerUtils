@@ -145,13 +145,13 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
 #endif
    
    if (!ZRefDest || !ZRefSrc) {
-      App_Log(ERROR,"%s: Invalid vertical reference",__func__);
+      App_Log(ERROR,"%s: Invalid vertical reference\n",__func__);
       return(NULL);
    }
 
    interp=(TZRefInterp*)malloc(sizeof(TZRefInterp));
    if (!interp) {
-      App_Log(ERROR,"%s: malloc failed for Interp",__func__);
+      App_Log(ERROR,"%s: malloc failed for Interp\n",__func__);
       return(NULL);
    }
    
@@ -193,7 +193,7 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
    if (!ZRefSrc->PCube) {
       ZRefSrc->PCube=(float*)malloc(interp->NIJ*ZRefSrc->LevelNb*sizeof(float));
       if (!ZRefSrc->PCube) {
-         App_Log(ERROR,"%s: malloc failed for ZRefSrc->PCube",__func__);
+         App_Log(ERROR,"%s: malloc failed for ZRefSrc->PCube\n",__func__);
          ZRefInterp_Free(interp);
          return(NULL);
       }
@@ -215,7 +215,7 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
    if (!ZRefDest->PCube) {
       ZRefDest->PCube=(float*)malloc(interp->NIJ*ZRefDest->LevelNb*sizeof(float));
       if (!ZRefDest->PCube) {
-         App_Log(ERROR,"%s: malloc failed for ZRefDest->PCube",__func__);
+         App_Log(ERROR,"%s: malloc failed for ZRefDest->PCube\n",__func__);
          ZRefInterp_Free(interp);
          return(NULL);
       }
@@ -264,14 +264,14 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
          App_Log(WARNING,"%s: Grid conversion gives an infinity (DIV_BY_ZERO)\n",__func__);
       }
 #else
-      App_Log(WARNING,"%s: Exception check is not availlable on this architecture",__func__);
+      App_Log(WARNING,"%s: Exception check is not availlable on this architecture\n",__func__);
 #endif
    }
 
    // Calculate interpolation indexes
    interp->Indexes=(int*)malloc(interp->NIJ*ZRefDest->LevelNb*sizeof(int));
    if (!interp->Indexes) {
-      App_Log(ERROR,"%s: malloc failed for Indexes",__func__);
+      App_Log(ERROR,"%s: malloc failed for Indexes\n",__func__);
       ZRefInterp_Free(interp);
       return(NULL);
    }
@@ -283,7 +283,7 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
 #ifdef HAVE_RMN
    (void)f77name(interp1d_findpos)(&interp->NIJ,&ZRefSrc->LevelNb,&ZRefDest->LevelNb,&interp->NIJ,&interp->NIJ,ZRefSrc->PCube,interp->Indexes,ZRefDest->PCube);
 #else
-   App_Log(ERROR,"%s: Need RMNLIB",__func__);
+   App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
 #endif
    
    return(interp);
@@ -422,7 +422,7 @@ int ZRefInterp(TZRefInterp *Interp,float *stateOut,float *stateIn,float *derivOu
 
    } else if (ZRefInterp_Options & ZRCUBIC_WITH_DERIV) {
       if ((derivIn == NULL) && (derivOut == NULL)) {
-         App_Log(ERROR,"%s: Cubic Interpolation with derivatives requested",__func__);
+         App_Log(ERROR,"%s: Cubic Interpolation with derivatives requested\n",__func__);
          return(0);
       }
 
@@ -435,7 +435,7 @@ int ZRefInterp(TZRefInterp *Interp,float *stateOut,float *stateIn,float *derivOu
          Interp->ZRefSrc->PCube,stateIn,derivIn,Interp->Indexes,Interp->ZRefDest->PCube,stateOut,derivOut,
          &extrapEnable,&extrapEnable,&extrapGuideDown,&extrapGuideUp);
    } else {
-      App_Log(ERROR,"%s: Unknown Interpolation algorithm",__func__);
+      App_Log(ERROR,"%s: Unknown Interpolation algorithm\n",__func__);
       return(0);
    }
 
@@ -459,7 +459,7 @@ int ZRefInterp(TZRefInterp *Interp,float *stateOut,float *stateIn,float *derivOu
       if (ZRefInterp_Options & ZRVERBOSE) App_Log(INFO,"%s: Lapserate extrapolation completed\n",__func__);
    }
 #else
-   App_Log(ERROR,"%s: Need RMNLIB",__func__);
+   App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
 #endif
       
    return(1);

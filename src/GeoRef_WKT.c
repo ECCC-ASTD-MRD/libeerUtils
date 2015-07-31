@@ -89,7 +89,7 @@ double GeoRef_WKTDistance(TGeoRef *GRef,double X0,double Y0,double X1, double Y1
       return(hypot(j[1]-j[0],i[1]-i[0])*OSRGetLinearUnits(GRef->Spatial,NULL));
    }
 #else
-   App_Log(ERROR,"Function %s is not available, needs to be built with GDAL",__func__);
+   App_Log(ERROR,"Function %s is not available, needs to be built with GDAL\n",__func__);
    return(0.0);
 #endif
 }
@@ -270,7 +270,7 @@ int GeoRef_WKTProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,in
 
    return(1);
 #else
-   App_Log(ERROR,"Function %s is not available, needs to be built with GDAL",__func__);
+   App_Log(ERROR,"Function %s is not available, needs to be built with GDAL\n",__func__);
    return(0);
 #endif
 }
@@ -470,7 +470,7 @@ int GeoRef_WKTUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
    }
    return(1);
 #else
-   App_Log(ERROR,"Function %s is not available, needs to be built with GDAL",__func__);
+   App_Log(ERROR,"Function %s is not available, needs to be built with GDAL\n",__func__);
    return(0);
 #endif
 }
@@ -572,7 +572,7 @@ int GeoRef_WKTSet(TGeoRef *GRef,char *String,double *Transform,double *InvTransf
 
    return(1);
 #else
-   App_Log(ERROR,"Function %s is not available, needs to be built with GDAL",__func__);
+   App_Log(ERROR,"Function %s is not available, needs to be built with GDAL\n",__func__);
    return(0);
 #endif
 }

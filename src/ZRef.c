@@ -398,7 +398,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
    if (buf) free(buf);
    if (pt)  free(pt);
 #else
-   App_Log(ERROR,"%s: Need RMNLIB",__func__);
+   App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
 #endif
 
    return(key>=0);
@@ -534,7 +534,7 @@ int ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Order) {
    ZRef->Style=H->IP1>32768?NEW:OLD;
    if (ZRef->PCube)  free(ZRef->PCube);  ZRef->PCube=NULL;
 #else
-   App_Log(ERROR,"%s: Need RMNLIB",__func__);
+   App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
 #endif
 
    return(ZRef->LevelNb);
@@ -587,7 +587,7 @@ double ZRef_K2Pressure(TZRef* restrict const ZRef,double P0,int K) {
                break;
 
             default:
-               App_Log(ERROR,"%s: Invalid level type (%i)",__func__,ZRef->Type);
+               App_Log(ERROR,"%s: Invalid level type (%i)\n",__func__,ZRef->Type);
          }
          break;
 
@@ -599,7 +599,7 @@ double ZRef_K2Pressure(TZRef* restrict const ZRef,double P0,int K) {
       case 5002:                                                                 // Hybrid momentum
       case 5003: pres=exp(ZRef->A[K]+ZRef->B[K]*log(P0/pref))*0.01; break;       // Hybrid momentum
       default:
-         App_Log(ERROR,"%s: Invalid level type (%i)",__func__,ZRef->Type);
+         App_Log(ERROR,"%s: Invalid level version (%i)\n",__func__,ZRef->Version);
    }
 
    return(pres);
@@ -630,7 +630,7 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
    float        pref,ptop,rtop,pk,pr;
 
    if (!P0 && ZRef->Type!=LVL_PRES) {
-      App_Log(ERROR,"%s: Surface pressure is required",__func__);
+      App_Log(ERROR,"%s: Surface pressure is required\n",__func__);
       return(0);
    }
 
@@ -685,7 +685,7 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
                }
                break;
             default:
-               App_Log(ERROR,"%s: Invalid level type (%i)",__func__,ZRef->Type);
+               App_Log(ERROR,"%s: Invalid level type (%i)\n",__func__,ZRef->Type);
          }
          break;
 
@@ -724,7 +724,7 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
          break;
 
       default:
-         App_Log(ERROR,"%s: Invalid level type (%i)",__func__,ZRef->Type);
+         App_Log(ERROR,"%s: Invalid level type (%i)\n",__func__,ZRef->Type);
    }
 
    if (Log) for (ij=0;ij<NIJ*ZRef->LevelNb;ij++) Pres[ij]=logf(Pres[ij]);
@@ -800,7 +800,7 @@ int ZRef_KCube2Meter(TZRef* restrict const ZRef,float *GZ,const int NIJ,float *H
          break;
 
       default:
-         App_Log(ERROR,"%s: Invalid level type (%i)",__func__,ZRef->Type);
+         App_Log(ERROR,"%s: Invalid level type (%i)\n",__func__,ZRef->Type);
          return(0);
    }
    return(1);
@@ -860,7 +860,7 @@ double ZRef_Level2Pressure(TZRef* restrict const ZRef,double P0,double Level) {
                }
             }
             if (z==ZRef->LevelNb) {
-               App_Log(ERROR,"%s: Level not in range ([%f,%f])",__func__,ZRef->Levels[0],ZRef->Levels[ZRef->LevelNb-1]);
+               App_Log(ERROR,"%s: Level not in range ([%f,%f])\n",__func__,ZRef->Levels[0],ZRef->Levels[ZRef->LevelNb-1]);
             }
 
             // Interpolate between levels (in log(p))
@@ -880,7 +880,7 @@ double ZRef_Level2Pressure(TZRef* restrict const ZRef,double P0,double Level) {
          break;
 
       default:
-         App_Log(ERROR,"%s: Invalid level type (%i)",__func__,ZRef->Type);
+         App_Log(ERROR,"%s: Invalid level type (%i)\n",__func__,ZRef->Type);
    }
    return(pres);
 }
@@ -963,7 +963,7 @@ double ZRef_Pressure2Level(TZRef* restrict const ZRef,double P0,double Pressure)
          break;
 
       default:
-         App_Log(ERROR,"%s: Invalid level type (%i)",__func__,ZRef->Type);
+         App_Log(ERROR,"%s: Invalid level type (%i)\n",__func__,ZRef->Type);
    }
    return(level);
 }
@@ -1037,7 +1037,7 @@ double ZRef_IP2Meter(int IP) {
    /*Convertir en niveau reel*/
    f77name(convip)(&IP,&level,&kind,&mode,&format,&flag);
 #else
-   App_Log(ERROR,"%s: Need RMNLIB",__func__);
+   App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
 #endif
 
    return(ZRef_Level2Meter(level,kind));
@@ -1070,7 +1070,7 @@ double ZRef_IP2Level(int IP,int *Type) {
    /*Convertir en niveau reel*/
    f77name(convip)(&IP,&level,Type,&mode,&format,&flag);
 #else
-   App_Log(ERROR,"%s: Need RMNLIB",__func__);
+   App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
 #endif
 
    return(level);
@@ -1123,7 +1123,7 @@ int ZRef_Level2IP(float Level,int Type,TZRef_IP1Mode Mode) {
 #ifdef HAVE_RMN
       f77name(convip)(&ip,&Level,&Type,&mode,&format,&flag);
 #else
-   App_Log(ERROR,"%s: Need RMNLIB",__func__);
+   App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
 #endif
 
       return(ip);

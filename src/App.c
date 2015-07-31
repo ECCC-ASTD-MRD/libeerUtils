@@ -38,7 +38,7 @@
 #include "RPN.h"
 
 TApp AppInstance;                                // Static App instance
-__thread TApp *App;                              // Per thread App pointer
+__thread TApp *App=&AppInstance;                 // Per thread App pointer
 static __thread char APP_ERROR[APP_ERRORSIZE];   // Last error is accessible through this
 
 char* App_ErrorGet(void) {
@@ -325,7 +325,7 @@ void App_End(int Status) {
 void App_LogOpen(void) {
    
    if (!App->LogStream) {
-      if (strcmp(App->LogFile,"stdout")==0) {
+      if (!App->LogFile || strcmp(App->LogFile,"stdout")==0) {
          App->LogStream=stdout;
       } else if (strcmp(App->LogFile,"stderr")==0) {
          App->LogStream=stderr;
@@ -389,7 +389,7 @@ void App_Log(TApp_LogLevel Level,const char *Format,...) {
    static char *colors[] = { APP_COLOR_RED, APP_COLOR_BLUE, "", APP_COLOR_CYAN, APP_COLOR_CYAN };
    char        *color;
    va_list      args;
-      
+
    if (!App->LogStream)
       App_LogOpen();
 
