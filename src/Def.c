@@ -897,11 +897,11 @@ int Def_GridCell2OGR(OGRGeometryH Geom,TGeoRef *RefTo,TGeoRef *RefFrom,int I,int
       return(0);
    }
 
-   // If we are on the wrap boundary
-   if ((x1-x0)>((RefTo->X1-RefTo->X0)>>1) && RefTo->Type&GRID_WRAP ) {
+   // If the size is larger than half the destination, it has to be a wrap around
+   if ((x1-x0)>((RefTo->X1-RefTo->X0)>>1)) {
       return(-pt);
    }
-
+   
    return(pt);
 #else
    App_Log(ERROR,"Function %s is not available, needs to be built with GDAL\n",__func__);
@@ -1069,6 +1069,7 @@ static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,char Mode
  *   <Field>    : Champs de la couche a utiliser
  *   <Value>    : Valeur a assigner
  *   <Comb>     : Mode de combinaison des valeurs multiples (CB_REPLACE,CB_MIN,CB_MAX,CB_AVERAGE)
+ *   <Index>    : liste des index , a remplir ou a utiliser
  *
  * Retour       :
  *   <OK>       : ERROR=0
