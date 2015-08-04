@@ -127,7 +127,7 @@ TZRef* ZRef_Define(int Type,int NbLevels,float *Levels) {
       if (zref->Levels && zref->LevelNb!=NbLevels) {
          zref->Levels=(float*)realloc(zref->Levels,zref->LevelNb*sizeof(float));
       } else {
-         zref->Levels=(float*)malloc(zref->LevelNb*sizeof(float));
+         zref->Levels=(float*)calloc(zref->LevelNb,sizeof(float));
       }
       
       if (!zref->Levels) {
