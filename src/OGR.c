@@ -34,53 +34,53 @@
 #include "App.h"
 #include "OGR.h"
 
-static  __thread Vect3d*  GPC_Geom[2];
-static  __thread Vect3d** GPC_Ptr;
-static  __thread unsigned int GPC_GeomNb=0;
+static  __thread Vect3d*  OGM_Geom[2];
+static  __thread Vect3d** OGM_Ptr;
+static  __thread unsigned int OGM_GeomNb=0;
 
 #ifdef HAVE_GDAL
 
-void GPC_ClearVect3d(void) {
+void OGM_ClearVect3d(void) {
 
-   if (GPC_GeomNb>OGR_BUFFER) {
-      if (GPC_Geom[0]) free(GPC_Geom[0]); GPC_Geom[0]=GPC_Geom[1]=NULL;
-      if (GPC_Ptr)  free(GPC_Ptr); GPC_Ptr=NULL;
-      GPC_GeomNb=0;
+   if (OGM_GeomNb>OGR_BUFFER) {
+      if (OGM_Geom[0]) free(OGM_Geom[0]); OGM_Geom[0]=OGM_Geom[1]=NULL;
+      if (OGM_Ptr)  free(OGM_Ptr); OGM_Ptr=NULL;
+      OGM_GeomNb=0;
    }
 }
 
-Vect3d* GPC_GetVect3d(unsigned int Size,unsigned int No) {
+Vect3d* OGM_GetVect3d(unsigned int Size,unsigned int No) {
 
-   if (Size>GPC_GeomNb) {
-      GPC_GeomNb=Size<OGR_BUFFER?OGR_BUFFER:Size;
-      GPC_Geom[0]=(Vect3d*)realloc(GPC_Geom[0],GPC_GeomNb*2*sizeof(Vect3d));
-      GPC_Geom[1]=&GPC_Geom[0][GPC_GeomNb];
-      GPC_Ptr=(Vect3d**)realloc(GPC_Ptr,GPC_GeomNb*sizeof(Vect3d*));
+   if (Size>OGM_GeomNb) {
+      OGM_GeomNb=Size<OGR_BUFFER?OGR_BUFFER:Size;
+      OGM_Geom[0]=(Vect3d*)realloc(OGM_Geom[0],OGM_GeomNb*2*sizeof(Vect3d));
+      OGM_Geom[1]=&OGM_Geom[0][OGM_GeomNb];
+      OGM_Ptr=(Vect3d**)realloc(OGM_Ptr,OGM_GeomNb*sizeof(Vect3d*));
 
-      if (!GPC_Geom[0] || !GPC_Geom[1] || !GPC_Ptr) {
+      if (!OGM_Geom[0] || !OGM_Geom[1] || !OGM_Ptr) {
          App_Log(ERROR,"%s: Could not allocate GPC buffers\n",__func__);
          return(NULL);
       }
 #ifdef DEBUG
-         App_Log(DEBUG,"%s: Increasing size to %i\n",__func__,GPC_GeomNb);
+         App_Log(DEBUG,"%s: Increasing size to %i\n",__func__,OGM_GeomNb);
 #endif
    }
-   return(No==2?(Vect3d*)GPC_Ptr:GPC_Geom[No]);
+   return(No==2?(Vect3d*)OGM_Ptr:OGM_Geom[No]);
 }
 
-static inline int GPC_ToVect3d(OGRGeometryH Geom,unsigned int No) {
+static inline int OGM_ToVect3d(OGRGeometryH Geom,unsigned int No) {
 
    unsigned int n;
 
    n=OGR_G_GetPointCount(Geom);
-   if (GPC_GetVect3d(n,No))  {
-      OGR_G_GetPoints(Geom,&GPC_Geom[No][0][0],sizeof(Vect3d),&GPC_Geom[No][0][1],sizeof(Vect3d),&GPC_Geom[No][0][2],sizeof(Vect3d));
+   if (OGM_GetVect3d(n,No))  {
+      OGR_G_GetPoints(Geom,&OGM_Geom[No][0][0],sizeof(Vect3d),&OGM_Geom[No][0][1],sizeof(Vect3d),&OGM_Geom[No][0][2],sizeof(Vect3d));
       return(n);
    }
    return(0);
 }
 
-int GPC_QSortInter(const Vect3d *A,const Vect3d *B){
+int OGM_QSortInter(const Vect3d *A,const Vect3d *B){
 
    if (*A[2]<*B[2]) {
       return(-1);
@@ -92,7 +92,7 @@ int GPC_QSortInter(const Vect3d *A,const Vect3d *B){
 }
 
 /*--------------------------------------------------------------------------------------------------------------
- * Nom          : <GPC_OGRProject>
+ * Nom          : <OGM_OGRProject>
  * Creation     : Novembre 2005 J.P. Gauthier - CMC/CMOE
  *
  * But          : Transforme les coordonnees d'un object vectoriel OGR dans une autre referentiel
@@ -108,7 +108,7 @@ int GPC_QSortInter(const Vect3d *A,const Vect3d *B){
  *
  *---------------------------------------------------------------------------------------------------------------
 */
-void GPC_OGRProject(OGRGeometryH Geom,TGeoRef *FromRef,TGeoRef *ToRef) {
+void OGM_OGRProject(OGRGeometryH Geom,TGeoRef *FromRef,TGeoRef *ToRef) {
 
    OGRGeometryH geom;
    Vect3d       vr;
@@ -118,7 +118,7 @@ void GPC_OGRProject(OGRGeometryH Geom,TGeoRef *FromRef,TGeoRef *ToRef) {
    if (FromRef!=ToRef) {
       for(n=0;n<OGR_G_GetGeometryCount(Geom);n++) {
          geom=OGR_G_GetGeometryRef(Geom,n);
-         GPC_OGRProject(geom,FromRef,ToRef);
+         OGM_OGRProject(geom,FromRef,ToRef);
       }
 
       for(n=0;n<OGR_G_GetPointCount(Geom);n++) {
@@ -130,7 +130,7 @@ void GPC_OGRProject(OGRGeometryH Geom,TGeoRef *FromRef,TGeoRef *ToRef) {
    }
 }
 
-OGRGeometryH GPC_Clip(OGRGeometryH Line,OGRGeometryH Poly) {
+OGRGeometryH OGM_Clip(OGRGeometryH Line,OGRGeometryH Poly) {
 
    OGRGeometryH clip=NULL;
 
@@ -139,12 +139,12 @@ OGRGeometryH GPC_Clip(OGRGeometryH Line,OGRGeometryH Poly) {
    }
 
    clip=OGR_G_CreateGeometry(wkbMultiLineString);
-   GPC_ClipSegment(Line,Poly,clip);
+   OGM_ClipSegment(Line,Poly,clip);
 
    return(clip);
 }
 
-int GPC_ClipSegment(OGRGeometryH Line,OGRGeometryH Poly,OGRGeometryH Clip) {
+int OGM_ClipSegment(OGRGeometryH Line,OGRGeometryH Poly,OGRGeometryH Clip) {
 
    OGRGeometryH line,point,ring;
    Vect3d       pt0,pt1,ppt0,ppt1,inter[16];
@@ -152,7 +152,7 @@ int GPC_ClipSegment(OGRGeometryH Line,OGRGeometryH Poly,OGRGeometryH Clip) {
 
    for (n=0;n<OGR_G_GetGeometryCount(Line);n++) {
       line=OGR_G_GetGeometryRef(Line,n);
-      GPC_ClipSegment(line,Poly,Clip);
+      OGM_ClipSegment(line,Poly,Clip);
    }
 
    line=NULL;
@@ -163,7 +163,7 @@ int GPC_ClipSegment(OGRGeometryH Line,OGRGeometryH Poly,OGRGeometryH Clip) {
    if ((nb=OGR_G_GetPointCount(Line))) {
       OGR_G_GetPoint(Line,0,&pt0[0],&pt0[1],&pt0[2]);
       OGR_G_SetPoint_2D(point,0,pt0[0],pt0[1]);
-      in=GPC_PointPolyIntersect(point,ring,0);
+      in=OGM_PointPolyIntersect(point,ring,0);
       /*Add the current point if inside*/
       if (in) {
          if (!line) line=OGR_G_CreateGeometry(wkbLineString);
@@ -188,7 +188,7 @@ int GPC_ClipSegment(OGRGeometryH Line,OGRGeometryH Poly,OGRGeometryH Clip) {
                OGR_G_GetPoint(ring,np,&ppt1[0],&ppt1[1],&ppt1[2]);
 
                /*If intersect, add point*/
-               if ((GPC_SegmentIntersect(pt0,pt1,ppt0,ppt1,inter[nbinter]))==1) {
+               if ((OGM_SegmentIntersect(pt0,pt1,ppt0,ppt1,inter[nbinter]))==1) {
                   nbinter++;
                }
                Vect_Assign(ppt0,ppt1);
@@ -197,7 +197,7 @@ int GPC_ClipSegment(OGRGeometryH Line,OGRGeometryH Poly,OGRGeometryH Clip) {
 
          /*Order the intersections*/
          if (nbinter>1)
-            qsort(inter,nbinter,sizeof(Vect3d),GPC_QSortInter);
+            qsort(inter,nbinter,sizeof(Vect3d),OGM_QSortInter);
 
          /*Add intersections to the linestring*/
          for (nr=0;nr<nbinter;nr++) {
@@ -214,7 +214,7 @@ int GPC_ClipSegment(OGRGeometryH Line,OGRGeometryH Poly,OGRGeometryH Clip) {
          /*If still in, add the point*/
          if (in) {
             OGR_G_SetPoint_2D(point,0,pt1[0],pt1[1]);
-            if (GPC_PointPolyIntersect(point,ring,0)) {
+            if (OGM_PointPolyIntersect(point,ring,0)) {
                OGR_G_AddPoint_2D(line,pt1[0],pt1[1]);
             }
          }
@@ -230,7 +230,7 @@ int GPC_ClipSegment(OGRGeometryH Line,OGRGeometryH Poly,OGRGeometryH Clip) {
    return(1);
 }
 
-void GPC_FromOGR(gpc_polygon *Poly,OGRGeometryH *Geom) {
+void OGM_GPCFromOGR(gpc_polygon *Poly,OGRGeometryH *Geom) {
 
    OGRGeometryH       geom;
    OGRwkbGeometryType type;
@@ -242,7 +242,7 @@ void GPC_FromOGR(gpc_polygon *Poly,OGRGeometryH *Geom) {
    if (type==wkbMultiPolygon || type==wkbGeometryCollection) {
       for (g=0;g<OGR_G_GetGeometryCount(Geom);g++) {
          geom=OGR_G_GetGeometryRef(Geom,g);
-         GPC_FromOGR(Poly,geom);
+         OGM_GPCFromOGR(Poly,geom);
       }
    } else if (type==wkbPolygon) {
       if ((nc=OGR_G_GetGeometryCount(Geom))) {
@@ -266,7 +266,7 @@ void GPC_FromOGR(gpc_polygon *Poly,OGRGeometryH *Geom) {
    }
 }
 
-void GPC_ToOGR(gpc_polygon *Poly,OGRGeometryH *Geom) {
+void OGM_GPCToOGR(gpc_polygon *Poly,OGRGeometryH *Geom) {
 
    OGRGeometryH     geom,ring,poly=NULL,multi=NULL;
    gpc_vertex_list *gpc;
@@ -327,7 +327,7 @@ void GPC_ToOGR(gpc_polygon *Poly,OGRGeometryH *Geom) {
                /*Look for hole's parent*/
                for (n=0;n<OGR_G_GetGeometryCount(multi);n++) {
                   geom=OGR_G_GetGeometryRef(multi,n);
-                  if (GPC_Intersect(geom,ring,NULL,NULL)) {
+                  if (OGM_Intersect(geom,ring,NULL,NULL)) {
                      OGR_G_AddGeometryDirectly(geom,ring);
                      in=1;
                      break;
@@ -345,27 +345,27 @@ void GPC_ToOGR(gpc_polygon *Poly,OGRGeometryH *Geom) {
    *Geom=multi?multi:poly;
 }
 
-void GPC_New(gpc_polygon *Poly) {
+void OGM_GPCNew(gpc_polygon *Poly) {
 
    Poly->num_contours=0;
    Poly->hole=NULL;
    Poly->contour=NULL;
 }
 
-OGRGeometryH GPC_OnOGR(gpc_op Op,OGRGeometryH Geom0,OGRGeometryH Geom1) {
+OGRGeometryH OGM_GPCOnOGR(gpc_op Op,OGRGeometryH Geom0,OGRGeometryH Geom1) {
 
    gpc_polygon  poly0,poly1,poly;
    OGRGeometryH geom=NULL;
 
-   GPC_New(&poly0);
-   GPC_New(&poly1);
+   OGM_GPCNew(&poly0);
+   OGM_GPCNew(&poly1);
 
-   GPC_FromOGR(&poly0,Geom0);
-   GPC_FromOGR(&poly1,Geom1);
+   OGM_GPCFromOGR(&poly0,Geom0);
+   OGM_GPCFromOGR(&poly1,Geom1);
 
    gpc_polygon_clip(Op,&poly0,&poly1,&poly);
 
-   GPC_ToOGR(&poly,&geom);
+   OGM_GPCToOGR(&poly,&geom);
 
    gpc_free_polygon(&poly);
    gpc_free_polygon(&poly0);
@@ -374,15 +374,15 @@ OGRGeometryH GPC_OnOGR(gpc_op Op,OGRGeometryH Geom0,OGRGeometryH Geom1) {
    return(geom);
 }
 
-OGRGeometryH GPC_OnOGRLayer(gpc_op Op,OGR_Layer *Layer) {
+OGRGeometryH OGM_GPCOnOGRLayer(gpc_op Op,OGR_Layer *Layer) {
 
    gpc_polygon  poly0,poly1,result,*r,*p,*t;
    OGRGeometryH geom=NULL;
    unsigned int f;
 
-   GPC_New(&poly0);
-   GPC_New(&poly1);
-   GPC_New(&result);
+   OGM_GPCNew(&poly0);
+   OGM_GPCNew(&poly1);
+   OGM_GPCNew(&result);
 
    p=&poly0;
    r=&result;
@@ -392,7 +392,7 @@ OGRGeometryH GPC_OnOGRLayer(gpc_op Op,OGR_Layer *Layer) {
       if (Layer->Select[f] && Layer->Feature[f]) {
          if ((geom=OGR_F_GetGeometryRef(Layer->Feature[f]))) {
 
-            GPC_FromOGR((t?&poly1:&result),geom);
+            OGM_GPCFromOGR((t?&poly1:&result),geom);
             if (t) {
                gpc_polygon_clip(Op,p,&poly1,r);
                gpc_free_polygon(p);
@@ -404,7 +404,7 @@ OGRGeometryH GPC_OnOGRLayer(gpc_op Op,OGR_Layer *Layer) {
       }
    }
 
-   GPC_ToOGR(p,&geom);
+   OGM_GPCToOGR(p,&geom);
 
    gpc_free_polygon(&result);
    gpc_free_polygon(&poly0);
@@ -413,7 +413,7 @@ OGRGeometryH GPC_OnOGRLayer(gpc_op Op,OGR_Layer *Layer) {
    return(geom);
 }
 
-int GPC_Within(OGRGeometryH Geom0,OGRGeometryH Geom1,OGREnvelope *Env0,OGREnvelope *Env1) {
+int OGM_Within(OGRGeometryH Geom0,OGRGeometryH Geom1,OGREnvelope *Env0,OGREnvelope *Env1) {
 
    int          n0,n1,npt=0;
    OGRGeometryH pt,geom;
@@ -436,7 +436,7 @@ int GPC_Within(OGRGeometryH Geom0,OGRGeometryH Geom1,OGREnvelope *Env0,OGREnvelo
       for(n0=0;n0<OGR_G_GetGeometryCount(Geom0);n0++) {
          geom=OGR_G_GetGeometryRef(Geom0,n0);
          OGR_G_GetEnvelope(geom,&env);
-         if (!GPC_Within(geom,Geom1,&env,Env1)) {
+         if (!OGM_Within(geom,Geom1,&env,Env1)) {
             return(0);
          } else {
             npt++;
@@ -449,7 +449,7 @@ int GPC_Within(OGRGeometryH Geom0,OGRGeometryH Geom1,OGREnvelope *Env0,OGREnvelo
      for(n1=0;n1<OGR_G_GetGeometryCount(Geom1);n1++) {
          geom=OGR_G_GetGeometryRef(Geom1,n1);
          OGR_G_GetEnvelope(geom,&env);
-         if (GPC_Within(Geom0,geom,Env0,&env)) {
+         if (OGM_Within(Geom0,geom,Env0,&env)) {
             return(1);
          }
       }
@@ -462,7 +462,7 @@ int GPC_Within(OGRGeometryH Geom0,OGRGeometryH Geom1,OGREnvelope *Env0,OGREnvelo
          npt=0;
          for(n1=0;n1<OGR_G_GetPointCount(Geom0);n1++) {
             OGR_G_SetPoint(pt,0,OGR_G_GetX(Geom0,n1),OGR_G_GetY(Geom0,n1),0);
-            if (GPC_PointPolyIntersect(pt,OGR_G_GetGeometryRef(Geom1,n0),0)) {
+            if (OGM_PointPolyIntersect(pt,OGR_G_GetGeometryRef(Geom1,n0),0)) {
                OGR_G_DestroyGeometry(pt);
                return(0);
             }
@@ -479,17 +479,17 @@ int GPC_Within(OGRGeometryH Geom0,OGRGeometryH Geom1,OGREnvelope *Env0,OGREnvelo
       Geom1=OGR_G_GetGeometryRef(Geom1,0);
    }
 
-//   return(GPC_PointPolyIntersect(Geom0,Geom1,1));
+//   return(OGM_PointPolyIntersect(Geom0,Geom1,1));
 
    /*Demarrer les tests selon les type de geometrie*/
-   if (GPC_LinePolyIntersect(Geom0,Geom1)) {
+   if (OGM_LinePolyIntersect(Geom0,Geom1)) {
       return(0);
    } else {
-      return(GPC_PointPolyIntersect(Geom0,Geom1,0));
+      return(OGM_PointPolyIntersect(Geom0,Geom1,0));
    }
 }
 
-int GPC_Intersect(OGRGeometryH Geom0,OGRGeometryH Geom1,OGREnvelope *Env0,OGREnvelope *Env1) {
+int OGM_Intersect(OGRGeometryH Geom0,OGRGeometryH Geom1,OGREnvelope *Env0,OGREnvelope *Env1) {
 
    int          n0,n1,t0,t1,npt;
    Vect3d       v0,v1;
@@ -508,7 +508,7 @@ int GPC_Intersect(OGRGeometryH Geom0,OGRGeometryH Geom1,OGREnvelope *Env0,OGREnv
       for(n0=0;n0<OGR_G_GetGeometryCount(Geom0);n0++) {
          geom=OGR_G_GetGeometryRef(Geom0,n0);
          OGR_G_GetEnvelope(geom,&env);
-         if (GPC_Intersect(geom,Geom1,&env,Env1)) {
+         if (OGM_Intersect(geom,Geom1,&env,Env1)) {
             return(1);
          }
       }
@@ -518,7 +518,7 @@ int GPC_Intersect(OGRGeometryH Geom0,OGRGeometryH Geom1,OGREnvelope *Env0,OGREnv
       for(n1=0;n1<OGR_G_GetGeometryCount(Geom1);n1++) {
          geom=OGR_G_GetGeometryRef(Geom1,n1);
          OGR_G_GetEnvelope(geom,&env);
-         if (GPC_Intersect(Geom0,geom,Env0,&env)) {
+         if (OGM_Intersect(Geom0,geom,Env0,&env)) {
             return(1);
          }
       }
@@ -538,7 +538,7 @@ int GPC_Intersect(OGRGeometryH Geom0,OGRGeometryH Geom1,OGREnvelope *Env0,OGREnv
          }
          for(n1=0;n1<OGR_G_GetPointCount(geom);n1++) {
             OGR_G_SetPoint(pt,0,OGR_G_GetX(geom,n1),OGR_G_GetY(geom,n1),0);
-            npt+=GPC_PointPolyIntersect(pt,OGR_G_GetGeometryRef(Geom0,n0),0);
+            npt+=OGM_PointPolyIntersect(pt,OGR_G_GetGeometryRef(Geom0,n0),0);
          }
          if (npt==OGR_G_GetPointCount(geom)) {
             return(0);
@@ -575,46 +575,46 @@ int GPC_Intersect(OGRGeometryH Geom0,OGRGeometryH Geom1,OGREnvelope *Env0,OGREnv
    if (n0 && n1) {
       if (t0==0) {
          if (t1==0) {
-            return(GPC_PointPointIntersect(Geom0,Geom1,0));
+            return(OGM_PointPointIntersect(Geom0,Geom1,0));
          } else if (t1==1){
-            return(GPC_PointLineIntersect(Geom0,Geom1,0));
+            return(OGM_PointLineIntersect(Geom0,Geom1,0));
          } else {
-            return(GPC_PointPolyIntersect(Geom0,Geom1,0));
+            return(OGM_PointPolyIntersect(Geom0,Geom1,0));
          }
       } else if (t0==1) {
          if (t1==0) {
-            return(GPC_PointLineIntersect(Geom1,Geom0,0));
+            return(OGM_PointLineIntersect(Geom1,Geom0,0));
          } else if (t1==1) {
-            return(GPC_LinePolyIntersect(Geom0,Geom1));
+            return(OGM_LinePolyIntersect(Geom0,Geom1));
          } else {
-            return(GPC_PolyPolyIntersect(Geom0,Geom1));
+            return(OGM_PolyPolyIntersect(Geom0,Geom1));
          }
       } else {
          if (t1==0) {
-            return(GPC_PointPolyIntersect(Geom1,Geom0,0));
+            return(OGM_PointPolyIntersect(Geom1,Geom0,0));
          } else if (t1==1) {
-            return(GPC_LinePolyIntersect(Geom1,Geom0));
+            return(OGM_LinePolyIntersect(Geom1,Geom0));
          } else {
-            if (GPC_PolyPolyIntersect(Geom0,Geom1)) {
+            if (OGM_PolyPolyIntersect(Geom0,Geom1)) {
                return(1);
             }
-            return(GPC_PointPolyIntersect(Geom1,Geom0,0));
+            return(OGM_PointPolyIntersect(Geom1,Geom0,0));
          }
       }
    }
    return(0);
 }
 
-int GPC_PointPointIntersect(OGRGeometryH Geom0,OGRGeometryH Geom1,int All) {
+int OGM_PointPointIntersect(OGRGeometryH Geom0,OGRGeometryH Geom1,int All) {
 
    unsigned int n0,n1,g0,g1,t=0;
 
-   g0=GPC_ToVect3d(Geom0,GPC_ARRAY0);
-   g1=GPC_ToVect3d(Geom1,GPC_ARRAY1);
+   g0=OGM_ToVect3d(Geom0,OGM_ARRAY0);
+   g1=OGM_ToVect3d(Geom1,OGM_ARRAY1);
 
    for(n0=0;n0<g0;n0++) {
       for(n1=0;n1<g1;n1++) {
-         if (Vect_Equal(GPC_Geom[0][n0],GPC_Geom[1][n1])) {
+         if (Vect_Equal(OGM_Geom[0][n0],OGM_Geom[1][n1])) {
             t++;
             if (!All)
                return(1);
@@ -624,22 +624,22 @@ int GPC_PointPointIntersect(OGRGeometryH Geom0,OGRGeometryH Geom1,int All) {
    return(All?t==g0:t);
 }
 
-int GPC_PointLineIntersect(OGRGeometryH Geom0,OGRGeometryH Geom1,int All) {
+int OGM_PointLineIntersect(OGRGeometryH Geom0,OGRGeometryH Geom1,int All) {
 
    unsigned int n0,n1,g0,g1,t=0,i;
    Vect3d       v0,v1[2];
 
-   g0=GPC_ToVect3d(Geom0,GPC_ARRAY0);
-   g1=GPC_ToVect3d(Geom1,GPC_ARRAY1);
+   g0=OGM_ToVect3d(Geom0,OGM_ARRAY0);
+   g1=OGM_ToVect3d(Geom1,OGM_ARRAY1);
 
    for(n0=0;n0<g0;n0++) {
-      Vect_Assign(v0,GPC_Geom[0][n0]);
+      Vect_Assign(v0,OGM_Geom[0][n0]);
 
       for(n1=0;n1<g1-1;n1++) {
-         Vect_Assign(v1[0],GPC_Geom[1][n1]);
-         Vect_Assign(v1[1],GPC_Geom[1][n1+1]);
+         Vect_Assign(v1[0],OGM_Geom[1][n1]);
+         Vect_Assign(v1[1],OGM_Geom[1][n1+1]);
 
-         i=GPC_SegmentIntersect(v0,v0,v1[0],v1[1],NULL);
+         i=OGM_SegmentIntersect(v0,v0,v1[0],v1[1],NULL);
          if (i==1 || i==4 || i==5) {
             t++;
             if (!All)
@@ -650,26 +650,26 @@ int GPC_PointLineIntersect(OGRGeometryH Geom0,OGRGeometryH Geom1,int All) {
    return(All?t==g0:t);
 }
 
-int GPC_PointPolyIntersect(OGRGeometryH Geom0,OGRGeometryH Geom1,int All) {
+int OGM_PointPolyIntersect(OGRGeometryH Geom0,OGRGeometryH Geom1,int All) {
 
    unsigned int n0,n1,g0,g1,n11,t=0;
    int          c=0;
    Vect3d       v0,v1[2];
 
-   g0=GPC_ToVect3d(Geom0,GPC_ARRAY0);
-   g1=GPC_ToVect3d(Geom1,GPC_ARRAY1);
+   g0=OGM_ToVect3d(Geom0,OGM_ARRAY0);
+   g1=OGM_ToVect3d(Geom1,OGM_ARRAY1);
 
    if (!g0 || !g1)
       return(0);
 
    for(n0=0;n0<g0;n0++) {
-      Vect_Assign(v0,GPC_Geom[0][n0]);
+      Vect_Assign(v0,OGM_Geom[0][n0]);
 
       c=0;
 
       for(n1=0,n11=g1-1;n1<g1;n11=n1++) {
-         Vect_Assign(v1[0],GPC_Geom[1][n1]);
-         Vect_Assign(v1[1],GPC_Geom[1][n11]);
+         Vect_Assign(v1[0],OGM_Geom[1][n1]);
+         Vect_Assign(v1[1],OGM_Geom[1][n11]);
 
          /*Check for point insidness*/
          if (OGR_PointInside(v0,v1[0],v1[1])) {
@@ -686,31 +686,31 @@ int GPC_PointPolyIntersect(OGRGeometryH Geom0,OGRGeometryH Geom1,int All) {
    return(All?t==g0:t);
 }
 
-int GPC_PolyPolyIntersect(OGRGeometryH Geom0,OGRGeometryH Geom1) {
+int OGM_PolyPolyIntersect(OGRGeometryH Geom0,OGRGeometryH Geom1) {
 
    unsigned int n0,n1,g0,g1,n11;
    int          c;
    Vect3d       v0[2],v1[2];
 
-   g0=GPC_ToVect3d(Geom0,GPC_ARRAY0);
-   g1=GPC_ToVect3d(Geom1,GPC_ARRAY1);
+   g0=OGM_ToVect3d(Geom0,OGM_ARRAY0);
+   g1=OGM_ToVect3d(Geom1,OGM_ARRAY1);
 
    if (!g0 || !g1)
       return(0);
 
    for(n0=0;n0<(g0-1);n0++) {
 
-      Vect_Assign(v0[0],GPC_Geom[0][n0]);
-      Vect_Assign(v0[1],GPC_Geom[0][n0+1]);
+      Vect_Assign(v0[0],OGM_Geom[0][n0]);
+      Vect_Assign(v0[1],OGM_Geom[0][n0+1]);
       c=0;
 
       for(n1=0,n11=g1-2;n1<(g1-1);n11=n1++) {
 
-         Vect_Assign(v1[0],GPC_Geom[1][n1]);
-         Vect_Assign(v1[1],GPC_Geom[1][n11]);
+         Vect_Assign(v1[0],OGM_Geom[1][n1]);
+         Vect_Assign(v1[1],OGM_Geom[1][n11]);
 
          /*Check for segment intersection*/
-         if ((GPC_SegmentIntersect(v0[0],v0[1],v1[0],v1[1],NULL)==1)) {
+         if ((OGM_SegmentIntersect(v0[0],v0[1],v1[0],v1[1],NULL)==1)) {
             return(1);
          }
 
@@ -726,27 +726,27 @@ int GPC_PolyPolyIntersect(OGRGeometryH Geom0,OGRGeometryH Geom1) {
    return(0);
 }
 
-int GPC_LinePolyIntersect(OGRGeometryH Geom0,OGRGeometryH Geom1) {
+int OGM_LinePolyIntersect(OGRGeometryH Geom0,OGRGeometryH Geom1) {
 
    unsigned int n0,n1,g0,g1;
    Vect3d       v0[2],v1[2];
 
-   g0=GPC_ToVect3d(Geom0,GPC_ARRAY0);
-   g1=GPC_ToVect3d(Geom1,GPC_ARRAY1);
+   g0=OGM_ToVect3d(Geom0,OGM_ARRAY0);
+   g1=OGM_ToVect3d(Geom1,OGM_ARRAY1);
 
    if (!g0 || !g1)
       return(0);
 
    for(n0=0;n0<g0-1;n0++) {
-      Vect_Assign(v0[0],GPC_Geom[0][n0]);
-      Vect_Assign(v0[1],GPC_Geom[0][n0+1]);
+      Vect_Assign(v0[0],OGM_Geom[0][n0]);
+      Vect_Assign(v0[1],OGM_Geom[0][n0+1]);
 
       for(n1=0;n1<g1-1;n1++) {
-         Vect_Assign(v1[0],GPC_Geom[1][n1]);
-         Vect_Assign(v1[1],GPC_Geom[1][n1+1]);
+         Vect_Assign(v1[0],OGM_Geom[1][n1]);
+         Vect_Assign(v1[1],OGM_Geom[1][n1+1]);
 
          /*Check for segment intersection*/
-         if ((GPC_SegmentIntersect(v0[0],v0[1],v1[0],v1[1],NULL)==1)) {
+         if ((OGM_SegmentIntersect(v0[0],v0[1],v1[0],v1[1],NULL)==1)) {
             return(1);
          }
       }
@@ -754,7 +754,7 @@ int GPC_LinePolyIntersect(OGRGeometryH Geom0,OGRGeometryH Geom1) {
    return(0);
 }
 
-double GPC_CoordLimit(OGRGeometryH Geom,int Coord,int Mode) {
+double OGM_CoordLimit(OGRGeometryH Geom,int Coord,int Mode) {
 
    register unsigned int n=0;
    int                   g=0;
@@ -772,7 +772,7 @@ double GPC_CoordLimit(OGRGeometryH Geom,int Coord,int Mode) {
 
       /*Boucle recursive sur les sous geometrie*/
       for(g=0;g<OGR_G_GetGeometryCount(Geom);g++) {
-         valg=GPC_CoordLimit(OGR_G_GetGeometryRef(Geom,g),Coord,Mode);
+         valg=OGM_CoordLimit(OGR_G_GetGeometryRef(Geom,g),Coord,Mode);
          if (Mode==0) {
             val=valg<val?valg:val;
          } else if (Mode==1) {
@@ -782,45 +782,45 @@ double GPC_CoordLimit(OGRGeometryH Geom,int Coord,int Mode) {
          }
       }
 
-      for(n=0;n<GPC_ToVect3d(Geom,GPC_ARRAY0);n++) {
+      for(n=0;n<OGM_ToVect3d(Geom,OGM_ARRAY0);n++) {
          if (Mode==0) {
-            val=GPC_Geom[0][n][Coord]<val?GPC_Geom[0][n][Coord]:val;
+            val=OGM_Geom[0][n][Coord]<val?OGM_Geom[0][n][Coord]:val;
          } else if (Mode==1) {
-            val=GPC_Geom[0][n][Coord]>val?GPC_Geom[0][n][Coord]:val;
+            val=OGM_Geom[0][n][Coord]>val?OGM_Geom[0][n][Coord]:val;
          } else {
-            val+=GPC_Geom[0][n][Coord];
+            val+=OGM_Geom[0][n][Coord];
          }
       }
    }
    return(Mode==2?val/(n+g):val);
 }
 
-double GPC_Length(OGRGeometryH Geom) {
+double OGM_Length(OGRGeometryH Geom) {
 
    double length=0;
    int    g;
 
    /*Boucle recursive sur les sous geometrie*/
    for(g=0;g<OGR_G_GetGeometryCount(Geom);g++) {
-      length+=GPC_Length(OGR_G_GetGeometryRef(Geom,g));
+      length+=OGM_Length(OGR_G_GetGeometryRef(Geom,g));
    }
 
-   return(length+=GPC_SegmentLength(Geom));
+   return(length+=OGM_SegmentLength(Geom));
 }
 
-double GPC_SegmentLength(OGRGeometryH Geom) {
+double OGM_SegmentLength(OGRGeometryH Geom) {
 
    register int n;
    double       length=0;
 
-   for(n=0;n<GPC_ToVect3d(Geom,GPC_ARRAY0)-1;n++) {
-      Vect_Substract(GPC_Geom[0][n],GPC_Geom[0][n+1],GPC_Geom[0][n]);
-      length+=Vect_Norm(GPC_Geom[0][n]);
+   for(n=0;n<OGM_ToVect3d(Geom,OGM_ARRAY0)-1;n++) {
+      Vect_Substract(OGM_Geom[0][n],OGM_Geom[0][n+1],OGM_Geom[0][n]);
+      length+=Vect_Norm(OGM_Geom[0][n]);
    }
    return(length);
 }
 
-double GPC_PointClosest(OGRGeometryH Geom,OGRGeometryH Pick,Vect3d Vr) {
+double OGM_PointClosest(OGRGeometryH Geom,OGRGeometryH Pick,Vect3d Vr) {
 
    Vect3d vr;
    double d,dist=1e32;
@@ -828,19 +828,19 @@ double GPC_PointClosest(OGRGeometryH Geom,OGRGeometryH Pick,Vect3d Vr) {
 
    /*Boucle recursive sur les sous geometrie*/
    for(g=0;g<OGR_G_GetGeometryCount(Geom);g++) {
-      d=GPC_PointClosest(OGR_G_GetGeometryRef(Geom,g),Pick,vr);
+      d=OGM_PointClosest(OGR_G_GetGeometryRef(Geom,g),Pick,vr);
       if (d<dist) {
          dist=d;
          Vect_Assign(Vr,vr);
       }
    }
 
-   for(g=0;g<GPC_ToVect3d(Geom,GPC_ARRAY1);g++) {
-      for(n=0;n<GPC_ToVect3d(Pick,GPC_ARRAY0);n++) {
-         d=hypot(GPC_Geom[1][g][0]-GPC_Geom[0][n][0],GPC_Geom[1][g][1]-GPC_Geom[0][n][1]);
+   for(g=0;g<OGM_ToVect3d(Geom,OGM_ARRAY1);g++) {
+      for(n=0;n<OGM_ToVect3d(Pick,OGM_ARRAY0);n++) {
+         d=hypot(OGM_Geom[1][g][0]-OGM_Geom[0][n][0],OGM_Geom[1][g][1]-OGM_Geom[0][n][1]);
          if (d<dist) {
             dist=d;
-            Vect_Assign(Vr,GPC_Geom[1][g]);
+            Vect_Assign(Vr,OGM_Geom[1][g]);
          }
       }
    }
@@ -848,7 +848,7 @@ double GPC_PointClosest(OGRGeometryH Geom,OGRGeometryH Pick,Vect3d Vr) {
    return(dist);
 }
 
-int GPC_PointInside(OGRGeometryH Geom,OGRGeometryH Pick,Vect3d Vr) {
+int OGM_PointInside(OGRGeometryH Geom,OGRGeometryH Pick,Vect3d Vr) {
 
    OGRGeometryH pt;
    Vect3d       vr;
@@ -858,7 +858,7 @@ int GPC_PointInside(OGRGeometryH Geom,OGRGeometryH Pick,Vect3d Vr) {
    for(n=0;n<OGR_G_GetPointCount(Geom);n++) {
       OGR_G_GetPoint(Geom,n,&vr[0],&vr[1],&vr[2]);
       OGR_G_SetPoint(pt,0,vr[0],vr[1],vr[2]);
-      if (GPC_Intersect(pt,Pick,NULL,NULL)) {
+      if (OGM_Intersect(pt,Pick,NULL,NULL)) {
          Vect_Assign(Vr,vr);
          return(n);
       }
@@ -867,7 +867,7 @@ int GPC_PointInside(OGRGeometryH Geom,OGRGeometryH Pick,Vect3d Vr) {
 
    /*Boucle recursive sur les sous geometrie*/
    for(g=0;g<OGR_G_GetGeometryCount(Geom);g++) {
-      n=GPC_PointInside(OGR_G_GetGeometryRef(Geom,g),Pick,Vr);
+      n=OGM_PointInside(OGR_G_GetGeometryRef(Geom,g),Pick,Vr);
       return(n);
    }
 
@@ -881,7 +881,7 @@ int GPC_PointInside(OGRGeometryH Geom,OGRGeometryH Pick,Vect3d Vr) {
 /* 4----two line segments are collinear, and share one same end point.       */
 /* 5----two line segments are collinear, and overlap.                        */
 
-int GPC_SegmentIntersect(Vect3d PointA,Vect3d PointB,Vect3d PointC,Vect3d PointD,Vect3d Inter) {
+int OGM_SegmentIntersect(Vect3d PointA,Vect3d PointB,Vect3d PointC,Vect3d PointD,Vect3d Inter) {
 
    double u,v,delta;
    double t1,t2;
@@ -951,7 +951,7 @@ int GPC_SegmentIntersect(Vect3d PointA,Vect3d PointB,Vect3d PointC,Vect3d PointD
    }
 }
 
-double GPC_SegmentDist(Vect3d SegA,Vect3d SegB,Vect3d Point) {
+double OGM_SegmentDist(Vect3d SegA,Vect3d SegB,Vect3d Point) {
 
    double dx = SegB[0] - SegA[0];
    double dy = SegB[1] - SegA[1];
@@ -983,25 +983,25 @@ double GPC_SegmentDist(Vect3d SegA,Vect3d SegB,Vect3d Point) {
    return(hypot(dx,dy));
 }
 
-double GPC_Centroid2DProcess(OGRGeometryH Geom,double *X,double *Y) {
+double OGM_Centroid2DProcess(OGRGeometryH Geom,double *X,double *Y) {
 
    int    i,g,n,i1;
    double area=0,mid;
 
    /* Process current geometry */
-   n=GPC_ToVect3d(Geom,GPC_ARRAY0);
+   n=OGM_ToVect3d(Geom,OGM_ARRAY0);
 
    if (n==1) {
       /* Proccess point */
-      *X=GPC_Geom[0][0][0];
-      *Y=GPC_Geom[0][0][1];
+      *X=OGM_Geom[0][0][0];
+      *Y=OGM_Geom[0][0][1];
       return(0.0);
    } else if (n==2) {
       /* Process line */
-      *X=GPC_Geom[0][0][0];
-      *Y=GPC_Geom[0][0][1];
-      *X+=(GPC_Geom[0][1][0]-*X)/2.0;
-      *Y+=(GPC_Geom[0][1][1]-*Y)/2.0;
+      *X=OGM_Geom[0][0][0];
+      *Y=OGM_Geom[0][0][1];
+      *X+=(OGM_Geom[0][1][0]-*X)/2.0;
+      *Y+=(OGM_Geom[0][1][1]-*Y)/2.0;
       return(0.0);
    }
 
@@ -1009,21 +1009,21 @@ double GPC_Centroid2DProcess(OGRGeometryH Geom,double *X,double *Y) {
    for(i=0;i<n;i++) {
       i1=(i+1)%n;
 
-      area+=mid=GPC_Geom[0][i][0]*GPC_Geom[0][i1][1]-GPC_Geom[0][i][1]*GPC_Geom[0][i1][0];
-      *X+=(GPC_Geom[0][i][0]+GPC_Geom[0][i1][0])*mid;
-      *Y+=(GPC_Geom[0][i][1]+GPC_Geom[0][i1][1])*mid;
+      area+=mid=OGM_Geom[0][i][0]*OGM_Geom[0][i1][1]-OGM_Geom[0][i][1]*OGM_Geom[0][i1][0];
+      *X+=(OGM_Geom[0][i][0]+OGM_Geom[0][i1][0])*mid;
+      *Y+=(OGM_Geom[0][i][1]+OGM_Geom[0][i1][1])*mid;
    }
    area*=0.5;
 
    /* Process sub geometry */
    for(g=0;g<OGR_G_GetGeometryCount(Geom);g++) {
-      area+=GPC_Centroid2DProcess(OGR_G_GetGeometryRef(Geom,g),X,Y);
+      area+=OGM_Centroid2DProcess(OGR_G_GetGeometryRef(Geom,g),X,Y);
    }
 
    return(area);
 }
 
-double GPC_Centroid2D(OGRGeometryH Geom,double *X,double *Y) {
+double OGM_Centroid2D(OGRGeometryH Geom,double *X,double *Y) {
 
    OGREnvelope env;
    OGRSpatialReferenceH srs;
@@ -1032,7 +1032,7 @@ double GPC_Centroid2D(OGRGeometryH Geom,double *X,double *Y) {
    *X=0.0;
    *Y=0.0;
 
-   area=GPC_Centroid2DProcess(Geom,X,Y);
+   area=OGM_Centroid2DProcess(Geom,X,Y);
 
    if (area!=0.0) {
       d=1.0/(6.0*area);
@@ -1056,7 +1056,7 @@ double GPC_Centroid2D(OGRGeometryH Geom,double *X,double *Y) {
 // liable for any real or imagined damage resulting from its use.
 // Users of this code must verify correctness for their application.
 //
-//  GPC_SimplifyDP():
+//  OGM_SimplifyDP():
 //  This is the Douglas-Peucker recursive simplification routine
 //  It just marks vertices that are part of the simplified polyline
 //  for approximating the polyline subchain v[j] to v[k].
@@ -1064,7 +1064,7 @@ double GPC_Centroid2D(OGRGeometryH Geom,double *X,double *Y) {
 //            v[] = polyline array of vertex points
 //            j,k = indices for the subchain v[j] to v[k]
 //    Output: mk[] = array of markers matching vertex array v[]
-int GPC_SimplifyDP(double Tolerance,Vect3d *Pt,int J,int K,int *Markers) {
+int OGM_SimplifyDP(double Tolerance,Vect3d *Pt,int J,int K,int *Markers) {
 
    /*There is nothing to simplify*/
    if (K<=J+1)
@@ -1115,20 +1115,20 @@ int GPC_SimplifyDP(double Tolerance,Vect3d *Pt,int J,int K,int *Markers) {
       n++;
 
       /*Recursively simplify the two subpolylines at v[maxi]*/
-      n+=GPC_SimplifyDP(Tolerance,Pt,J,maxi,Markers);  // polyline v[j] to v[maxi]
-      n+=GPC_SimplifyDP(Tolerance,Pt,maxi,K,Markers);  // polyline v[maxi] to v[k]
+      n+=OGM_SimplifyDP(Tolerance,Pt,J,maxi,Markers);  // polyline v[j] to v[maxi]
+      n+=OGM_SimplifyDP(Tolerance,Pt,maxi,K,Markers);  // polyline v[maxi] to v[k]
    }
    /*Else the approximation is OK, so ignore intermediate vertices*/
    return(n);
 }
 
-// GPC_Simplify():
+// OGM_Simplify():
 //    Input:  tol = approximation tolerance
 //            V[] = polyline array of vertex points
 //            n   = the number of points in V[]
 //    Output: sV[]= simplified polyline vertices (max is n)
 //    Return: m   = the number of points in sV[]
-int GPC_Simplify(double Tolerance,OGRGeometryH Geom) {
+int OGM_Simplify(double Tolerance,OGRGeometryH Geom) {
 
    int    i,k,pv,n=-1,m=0;         // Misc counters
    double tol2=Tolerance*Tolerance;  // Tolerance squared
@@ -1136,10 +1136,10 @@ int GPC_Simplify(double Tolerance,OGRGeometryH Geom) {
 
    /*Simplify sub-geometry*/
    for(i=0;i<OGR_G_GetGeometryCount(Geom);i++) {
-      m=GPC_Simplify(Tolerance,OGR_G_GetGeometryRef(Geom,i));
+      m=OGM_Simplify(Tolerance,OGR_G_GetGeometryRef(Geom,i));
    }
 
-   if ((n=GPC_ToVect3d(Geom,GPC_ARRAY0))>2) {
+   if ((n=OGM_ToVect3d(Geom,OGM_ARRAY0))>2) {
       mk=(int*)calloc(n,sizeof(int));
       if (!mk) {
          App_Log(ERROR,"%s: Unable to allocate buffers\n",__func__);
@@ -1148,37 +1148,37 @@ int GPC_Simplify(double Tolerance,OGRGeometryH Geom) {
 
       /*STAGE 1: Vertex Reduction within tolerance of prior vertex cluster*/
       for(i=k=1,pv=0;i<n;i++) {
-         if (Vect_Dist2(GPC_Geom[0][i],GPC_Geom[0][pv])<tol2)
+         if (Vect_Dist2(OGM_Geom[0][i],OGM_Geom[0][pv])<tol2)
             continue;
-         Vect_Assign(GPC_Geom[1][k],GPC_Geom[0][i]);
+         Vect_Assign(OGM_Geom[1][k],OGM_Geom[0][i]);
          k++;
          pv=i;
       }
 
       /*Start at beginning and finish at the end*/
-      OGR_G_GetPoint(Geom,0,&GPC_Geom[1][0][0],&GPC_Geom[1][0][1],&GPC_Geom[1][0][2]);
+      OGR_G_GetPoint(Geom,0,&OGM_Geom[1][0][0],&OGM_Geom[1][0][1],&OGM_Geom[1][0][2]);
       if (pv<n-1) {
-         OGR_G_GetPoint(Geom,n-1,&GPC_Geom[1][k][0],&GPC_Geom[1][k][1],&GPC_Geom[1][k][2]);
+         OGR_G_GetPoint(Geom,n-1,&OGM_Geom[1][k][0],&OGM_Geom[1][k][1],&OGM_Geom[1][k][2]);
          k++;
       }
 
       /*STAGE 2: Douglas-Peucker polyline simplification*/
       mk[0]=mk[k-1]=1;       // mark the first and last vertices
       m=2;
-      if (k>2) m=GPC_SimplifyDP(Tolerance,GPC_Geom[1],0,k-1,mk);
+      if (k>2) m=OGM_SimplifyDP(Tolerance,OGM_Geom[1],0,k-1,mk);
 
       // copy marked vertices to the output simplified polyline
       OGR_G_Empty(Geom);
       if (m>=2) {
          for (i=m=0;i<k;i++) {
             if (mk[i]) {
-               OGR_G_AddPoint_2D(Geom,GPC_Geom[1][i][0],GPC_Geom[1][i][1]);
+               OGR_G_AddPoint_2D(Geom,OGM_Geom[1][i][0],OGM_Geom[1][i][1]);
                m++;
             }
          }
       } else {
-         OGR_G_AddPoint_2D(Geom,GPC_Geom[1][0][0],GPC_Geom[1][0][1]);
-         OGR_G_AddPoint_2D(Geom,GPC_Geom[1][k-1][0],GPC_Geom[1][k-1][1]);
+         OGR_G_AddPoint_2D(Geom,OGM_Geom[1][0][0],OGM_Geom[1][0][1]);
+         OGR_G_AddPoint_2D(Geom,OGM_Geom[1][k-1][0],OGM_Geom[1][k-1][1]);
       }
       free(mk);
    }

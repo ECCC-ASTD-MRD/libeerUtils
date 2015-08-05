@@ -965,7 +965,7 @@ static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,char Mode
    na=(Mode=='C' || Mode=='N' || Mode=='A');
 
    // Test for intersection
-   if ((Area>0.0 || !na) && GPC_Intersect(Geom,Def->Poly,&envg,&envp)) {
+   if ((Area>0.0 || !na) && OGM_Intersect(Geom,Def->Poly,&envg,&envp)) {
 //   if ((Area>0.0 || !na) && OGR_G_Intersects(Geom,Def->Poly)) {
 
       // If this is a single pixel
@@ -985,7 +985,7 @@ static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,char Mode
             switch(Type) {
                case 'A':  // Area mode
 //                  inter=OGR_G_Intersection(Geom,Def->Poly);
-                  inter=GPC_OnOGR(GPC_INT,Geom,Def->Poly);
+                  inter=OGM_GPCOnOGR(GPC_INT,Geom,Def->Poly);
                   if (Mode=='C' || Mode=='N') {
                      dp=OGR_G_Area(inter)/Area;
                   } else if (Mode=='A') {
@@ -995,11 +995,11 @@ static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,char Mode
 
                case 'L':  // Length mode
 //                  inter=OGR_G_Intersection(Geom,Def->Poly);
-                  inter=GPC_Clip(Geom,Def->Poly);
+                  inter=OGM_Clip(Geom,Def->Poly);
                   if (Mode=='C' || Mode=='N') {
-                     dp=GPC_Length(inter)/Area;
+                     dp=OGM_Length(inter)/Area;
                   } else if (Mode=='A') {
-                     dp=GPC_Length(inter);
+                     dp=OGM_Length(inter);
                   }
                   break;
 
@@ -1012,7 +1012,7 @@ static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,char Mode
          }
 
          // Are we within
-         if (Mode!='W' || GPC_Within(Def->Poly,Geom,&envp,&envg)) {
+         if (Mode!='W' || OGM_Within(Def->Poly,Geom,&envp,&envg)) {
             Def_Set(Def,0,idx3,val);
 
             if (Mode=='N' && Def->Buffer) {
@@ -1254,24 +1254,24 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
             } else if (fld==-3) {
                value=OGR_G_Area(utmgeom);
             } else if (fld==-4) {
-               value=GPC_Length(geom);
+               value=OGM_Length(geom);
             } else if (fld==-5) {
-               value=GPC_Length(utmgeom);
+               value=OGM_Length(utmgeom);
             } else if (fld==-6) {
                value=f;
             } else if (fld==-7) {
-               value=GPC_CoordLimit(geom,2,0);
+               value=OGM_CoordLimit(geom,2,0);
             } else if (fld==-8) {
-               value=GPC_CoordLimit(geom,2,1);
+               value=OGM_CoordLimit(geom,2,1);
             } else if (fld==-9) {
-               value=GPC_CoordLimit(geom,2,2);
+               value=OGM_CoordLimit(geom,2,2);
             } else {
                value=Value;
             }
 
             // In centroid mode, just project the coordinate into field and set value
             if (Mode==IV_CENTROID) {
-               GPC_Centroid2D(geom,&vr[0],&vr[1]);
+               OGM_Centroid2D(geom,&vr[0],&vr[1]);
                LayerRef->Project(LayerRef,vr[0],vr[1],&co.Lat,&co.Lon,1,1);
                ToRef->UnProject(ToRef,&vr[0],&vr[1],co.Lat,co.Lon,1,1);
                n=(int)vr[1]*ToDef->NI+(int)vr[0];
@@ -1280,7 +1280,7 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
             } else {
 
                // Transform geometry to field referential
-               GPC_OGRProject(geom,LayerRef,ToRef);
+               OGM_OGRProject(geom,LayerRef,ToRef);
 
                // Use enveloppe limits to initialize the initial lookup range
                OGR_G_GetEnvelope(geom,&env);
@@ -1300,9 +1300,9 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
                         case IV_ALIASED                        : mode='A'; type='A'; area=1.0; break;
                         case IV_CONSERVATIVE                   : mode='C'; type='A'; area=OGR_G_Area(geom); break;
                         case IV_NORMALIZED_CONSERVATIVE        : mode='N'; type='A'; area=OGR_G_Area(geom); break;
-                        case IV_LENGTH_CONSERVATIVE            : mode='C'; type='L'; area=GPC_Length(geom); break;
-                        case IV_LENGTH_NORMALIZED_CONSERVATIVE : mode='N'; type='L'; area=GPC_Length(geom); break;
-                        case IV_LENGTH_ALIASED                 : mode='A'; type='L'; area=GPC_Length(geom); break;
+                        case IV_LENGTH_CONSERVATIVE            : mode='C'; type='L'; area=OGM_Length(geom); break;
+                        case IV_LENGTH_NORMALIZED_CONSERVATIVE : mode='N'; type='L'; area=OGM_Length(geom); break;
+                        case IV_LENGTH_ALIASED                 : mode='A'; type='L'; area=OGM_Length(geom); break;
                         case IV_POINT_CONSERVATIVE             : mode='C'; type='P'; area=1.0; break;
                      }
 
