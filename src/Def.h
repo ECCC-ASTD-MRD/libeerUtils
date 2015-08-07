@@ -308,6 +308,7 @@ typedef struct TDef {
    char   *Mask;              // Masque a appliquer au traitement sur le champs
    char   *Data[4];           // Composantes du champs (Pointeurs sur les donnees)
    char   *Mode;              // Module des champs Data is vectoriel
+   char   *Dir;               // Direction si vectoriel
    float  *Pres,*Height;      // Pression au sol
    float  *Sub;               // Sub grid resolutions values
    OGRGeometryH *Pick,*Poly;  // Geometry used in various interpolation method

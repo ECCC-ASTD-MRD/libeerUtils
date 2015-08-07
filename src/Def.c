@@ -123,7 +123,7 @@ void Def_Clear(TDef *Def){
 */
 int Def_Compat(TDef *DefTo,TDef *DefFrom) {
 
-   int ch=1;
+   int ch=1,n,nijk;
 
    if (DefFrom->Idx) {
       return(0);
@@ -133,65 +133,23 @@ int Def_Compat(TDef *DefTo,TDef *DefFrom) {
       free(DefTo->Mode);
    }
    DefTo->Mode=NULL;
-
+   DefTo->Dir=NULL;
+   
    // Verifier la dimension verticale
-   if (DefTo->NK!=DefFrom->NK) {
-      if (DefTo->Data[1]) {
-         free(DefTo->Data[1]);
-         DefTo->Data[1]=NULL;
-      }
-      if (DefTo->Data[2]) {
-         free(DefTo->Data[2]);
-         DefTo->Data[2]=NULL;
-      }
-      if (DefTo->Data[1]) {
-         free(DefTo->Data[1]);
-         DefTo->Data[1]=NULL;
-      }
-      if (DefTo->Data[0]) {
-         free(DefTo->Data[0]);
-         DefTo->Data[0]=NULL;
-      }
+   if (DefTo->NK!=DefFrom->NK || DefTo->NC!=DefFrom->NC) {
+      free(DefTo->Data[0]);
+      DefTo->Data[0]=DefTo->Data[1]=DefTo->Data[2]=DefTo->Data[3]=NULL;
+      
       DefTo->NK=DefFrom->NK;
-      if (!(DefTo->Data[0]=(char*)calloc(FSIZE3D(DefTo),TDef_Size[DefTo->Type]))) {
+      DefTo->NC=DefFrom->NC;
+      nijk=FSIZE3D(DefTo);
+      if (!(DefTo->Data[0]=(char*)calloc(nijk*DefTo->NC,TDef_Size[DefTo->Type]))) {
          return(0);
       }
+      for(n=1;n<DefTo->NC;n++) {
+         DefTo->Data[n]=&DefTo->Data[0][nijk*n];
+      }
       ch=0;
-   }
-
-   // Verifier la 2ieme composantes
-   if (DefFrom->Data[1]) {
-      if (!DefTo->Data[1]) {
-         if (!(DefTo->Data[1]=(char*)calloc(FSIZE3D(DefTo),TDef_Size[DefTo->Type]))) {
-            return(0);
-         }
-      }
-
-      // Verifier la 3ieme composantes
-      if (DefFrom->Data[2]) {
-         if (!DefTo->Data[2]) {
-            if (!(DefTo->Data[2]=(char*)calloc(FSIZE3D(DefTo),TDef_Size[DefTo->Type]))) {
-               return(0);
-            }
-         }
-         DefTo->NC=3;
-      } else {
-         if (DefTo->Data[2]) {
-            free(DefTo->Data[2]);
-            DefTo->Data[2]=NULL;
-         }
-         DefTo->NC=2;
-      }
-   } else {
-     if (DefTo->Data[1]) {
-         free(DefTo->Data[1]);
-         DefTo->Data[1]=NULL;
-      }
-      if (DefTo->Data[2]) {
-         free(DefTo->Data[2]);
-         DefTo->Data[2]=NULL;
-      }
-      DefTo->NC=1;
    }
 
    return(ch);
@@ -215,7 +173,7 @@ int Def_Compat(TDef *DefTo,TDef *DefFrom) {
 */
 TDef *Def_Copy(TDef *Def){
 
-   int       i;
+   int   n,nijk;
    TDef *def=NULL;
 
    if (!Def->Idx) {
@@ -249,18 +207,18 @@ TDef *Def_Copy(TDef *Def){
          def->CoordLimits[1][0]=Def->CoordLimits[1][0];
          def->CoordLimits[1][1]=Def->CoordLimits[1][1];
 
-         for(i=0;i<4;i++) {
-            if (def->Alias) {
-               def->Data[i]=Def->Data[i];
-            } else {
-               if (Def->Data[i] && (def->Data[i]=(char*)malloc(FSIZE3D(Def)*TDef_Size[Def->Type]))) {
-                  memcpy(def->Data[i],Def->Data[i],FSIZE3D(Def)*TDef_Size[Def->Type]);
-               } else {
-                  def->Data[i]=NULL;
-               }
+         nijk=FSIZE3D(Def);
+         def->Data[0]=def->Data[1]=def->Data[2]=def->Data[3]=NULL;
+         if (def->Alias) {
+            for(n=0;n<def->NC;n++) def->Data[n]=Def->Data[n];
+         } else {
+            memcpy(def->Data[0],Def->Data[0],nijk*def->NC*TDef_Size[Def->Type]);
+            for(n=1;n<def->NC;n++) {
+               def->Data[n]=&def->Data[0][nijk*n];
             }
          }
          def->Mode=def->Data[0];
+         def->Dir=NULL;
       }
    }
    return(def);
@@ -268,7 +226,7 @@ TDef *Def_Copy(TDef *Def){
 
 TDef *Def_CopyPromote(TDef *Def,TDef_Type Type){
 
-   int       i;
+   int   n,nijk;
    TDef *def=NULL;
 
    if (!Def->Idx) {
@@ -302,14 +260,18 @@ TDef *Def_CopyPromote(TDef *Def,TDef_Type Type){
          def->CoordLimits[1][0]=Def->CoordLimits[1][0];
          def->CoordLimits[1][1]=Def->CoordLimits[1][1];
 
-         for(i=0;i<4;i++) {
-            if (Def->Data[i]) {
-               def->Data[i]=(char*)calloc(FSIZE3D(Def),TDef_Size[def->Type]);
-            } else {
-               def->Data[i]=NULL;
-            }
+         nijk=FSIZE3D(Def);
+         def->Data[0]=def->Data[1]=def->Data[2]=def->Data[3]=NULL;
+         if (!(def->Data[0]=(char*)calloc(nijk*def->NC,TDef_Size[def->Type]))) {
+            Def_Free(def);
+            return(NULL);
          }
+         for(n=1;n<def->NC;n++) {
+            def->Data[n]=&def->Data[0][nijk*n];
+         }
+
          def->Mode=def->Data[0];
+         def->Dir=NULL;
       }
    }
 
@@ -336,10 +298,7 @@ void Def_Free(TDef *Def){
    if (Def) {
       if (!Def->Alias && !Def->Idx) {
          if (Def->Mode && Def->Mode!=Def->Data[0]) free(Def->Mode);
-         if (Def->Data[0])            free(Def->Data[0]);
-         if (Def->Data[1])            free(Def->Data[1]);
-         if (Def->Data[2])            free(Def->Data[2]);
-         if (Def->Data[3])            free(Def->Data[3]);
+         if (Def->Data[0])                         free(Def->Data[0]);
       }
 
       if (Def->Buffer)             free(Def->Buffer);
@@ -381,7 +340,7 @@ void Def_Free(TDef *Def){
 */
 TDef *Def_New(int NI,int NJ,int NK,int Dim,TDef_Type Type) {
 
-   int       i;
+   int   n,nijk;
    TDef *def;
 
    if (!(def=(TDef*)malloc(sizeof(TDef))))
@@ -412,8 +371,6 @@ TDef *Def_New(int NI,int NJ,int NK,int Dim,TDef_Type Type) {
 
    def->SubSample=def->Sample=1;
 
-   // Allocate data vector
-   def->Data[0]=def->Data[1]=def->Data[2]=def->Data[3]=NULL;
    def->Type=Type;
    def->Buffer=NULL;
    def->Aux=NULL;
@@ -425,13 +382,21 @@ TDef *Def_New(int NI,int NJ,int NK,int Dim,TDef_Type Type) {
    def->Height=NULL;
    def->Pick=def->Poly=NULL;
 
-   for(i=0;i<Dim;i++) {
-      if (!(def->Data[i]=(char*)calloc(FSIZE3D(def),TDef_Size[Type]))) {
+   // Allocate a single buffer and set component pointer to right address
+   nijk=FSIZE3D(def);
+   def->Data[0]=def->Data[1]=def->Data[2]=def->Data[3]=def->Dir=NULL;
+   
+   if (!def->Alias) {
+      if (!(def->Data[0]=(char*)calloc(nijk*def->NC,TDef_Size[Type]))) {
          Def_Free(def);
          return(NULL);
       }
+      
+      for(n=1;n<def->NC;n++) {
+         def->Data[n]=&def->Data[0][nijk*n];
+      }
+      def->Mode=def->Data[0];
    }
-   def->Mode=def->Data[0];
 
    return(def);
 }
@@ -457,7 +422,7 @@ TDef *Def_New(int NI,int NJ,int NK,int Dim,TDef_Type Type) {
 */
 TDef *Def_Resize(TDef *Def,int NI,int NJ,int NK){
 
-   int i;
+   int n,nijk;
 
    if (!Def)
      return(NULL);
@@ -487,16 +452,19 @@ TDef *Def_Resize(TDef *Def,int NI,int NJ,int NK){
          Def->Mode=NULL;
       }
 
-      for(i=0;i<4;i++) {
-         if (Def->Data[i]) {
-            if (!(Def->Data[i]=(char*)realloc(Def->Data[i],FSIZE3D(Def)*TDef_Size[Def->Type]))) {
-               Def_Free(Def);
-               return(NULL);
-            }
-         }
+      // Allocate a single buffer and set component pointer to right address
+      Def->Data[1]=Def->Data[2]=Def->Data[3]=NULL;
+      nijk=FSIZE3D(Def);
+      if (!(Def->Data[0]=(char*)realloc(Def->Data[0],nijk*Def->NC*TDef_Size[Def->Type]))) {
+         Def_Free(Def);
+         return(NULL);
+      }
+      for(n=1;n<Def->NC;n++) {
+         Def->Data[n]=&Def->Data[0][nijk*n];
       }
       Def->Mode=Def->Data[0];
-
+      Def->Dir=NULL;
+      
       if (Def->Buffer)             free(Def->Buffer); Def->Buffer=NULL;
       if (Def->Aux)                free(Def->Aux);    Def->Aux=NULL;
       if (Def->Accum)              free(Def->Accum);  Def->Accum=NULL;
