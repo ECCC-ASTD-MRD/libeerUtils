@@ -120,7 +120,6 @@
 #define FARENOUGH(DT,X0,Y0,X1,Y1)         (hypot((Y1-Y0),(X1-X0))>DT)
 #define LOG2(V)                           (log10(V)/0.301029995663981198017)
 
-#define DSIZE(D)                          (D[0]?(D[1]?(D[2]?3:2):1):0)
 #define FSIZE2D(D)                        ((unsigned long)(D->NI)*D->NJ)
 #define FSIZE3D(D)                        ((unsigned long)(D->NI)*D->NJ*D->NK)
 #define FSIZECHECK(D0,D1)                 (D0->NI==D1->NI && D0->NJ==D1->NJ && D0->NK==D1->NK)

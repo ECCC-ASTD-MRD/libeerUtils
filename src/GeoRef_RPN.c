@@ -180,14 +180,29 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
 
          if (Mode=='N') {
             n=(b[0]>b[1]?(b[0]>b[2]?0:2):(b[1]>b[2]?1:2));
-            Def_Get(Def,C,GRef->Idx[ix+n],v[0]);
-            *Length=v[0];
+            Def_Get(Def,C,GRef->Idx[ix+n],x);
          } else {
             Def_Get(Def,C,GRef->Idx[ix],v[0]);
             Def_Get(Def,C,GRef->Idx[ix+1],v[1]);
             Def_Get(Def,C,GRef->Idx[ix+2],v[2]);
 
-            *Length=Bary_InterpV(b,v);
+            x=Bary_InterpV(b,v);
+         }
+         *Length=x;
+         
+         if (Def->NC==2 && !C) {
+            if (Mode=='N') {
+               n=(b[0]>b[1]?(b[0]>b[2]?0:2):(b[1]>b[2]?1:2));
+               Def_Get(Def,1,GRef->Idx[ix+n],y);
+            } else {
+               Def_Get(Def,1,GRef->Idx[ix],v[0]);
+               Def_Get(Def,1,GRef->Idx[ix+1],v[1]);
+               Def_Get(Def,1,GRef->Idx[ix+2],v[2]);
+
+               y=Bary_InterpV(b,v);
+            }
+            *Length=hypot(x,y);
+            *ThetaXY=180+RAD2DEG(atan2(x,y));
          }
          return(1);
       } else {
@@ -384,7 +399,7 @@ int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
 
                   *X=n+b[0];
                   *Y=n+b[1];
-                  return(1);
+                 return(1);
                }
             }
             return(0);
@@ -426,7 +441,7 @@ int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
       lon=Lon;
       lat=Lat;
 
-      /*Extraire la valeur du point de grille*/
+      // Extraire la valeur du point de grille
 //      RPN_IntLock();
       c_gdxyfll(GRef->Ids[GRef->NId],&i,&j,&lat,&lon,1);
 //      RPN_IntUnlock();
@@ -437,7 +452,7 @@ int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
       // Fix for G grid 0-360 1/5 gridpoint problem
       if (GRef->Grid[0]=='G' && *X>GRef->X1+0.5) *X-=(GRef->X1+1);
 
-      /*Si on est a l'interieur de la grille*/
+      // Si on est a l'interieur de la grille
       if (*X>(GRef->X1+0.5) || *Y>(GRef->Y1+0.5) || *X<(GRef->X0-0.5) || *Y<(GRef->Y0-0.5)) {
          if (!Extrap) {
             *X=-1.0;

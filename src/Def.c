@@ -71,7 +71,7 @@ void Def_Clear(TDef *Def){
 
    int n,i;
 
-   for(n=0;n<DSIZE(Def->Data);n++) {
+   for(n=0;n<Def->NC;n++) {
       for(i=0;i<FSIZE3D(Def);i++) {
          Def_Set(Def,n,i,Def->NoData);
       }
@@ -147,7 +147,7 @@ int Def_Compat(TDef *DefTo,TDef *DefFrom) {
          return(0);
       }
       for(n=1;n<DefTo->NC;n++) {
-         DefTo->Data[n]=&DefTo->Data[0][nijk*n];
+         DefTo->Data[n]=&DefTo->Data[0][nijk*n*TDef_Size[DefTo->Type]];
       }
       ch=0;
    }
@@ -214,7 +214,7 @@ TDef *Def_Copy(TDef *Def){
          } else {
             memcpy(def->Data[0],Def->Data[0],nijk*def->NC*TDef_Size[Def->Type]);
             for(n=1;n<def->NC;n++) {
-               def->Data[n]=&def->Data[0][nijk*n];
+               def->Data[n]=&def->Data[0][nijk*n*TDef_Size[Def->Type]];
             }
          }
          def->Mode=def->Data[0];
@@ -267,7 +267,7 @@ TDef *Def_CopyPromote(TDef *Def,TDef_Type Type){
             return(NULL);
          }
          for(n=1;n<def->NC;n++) {
-            def->Data[n]=&def->Data[0][nijk*n];
+            def->Data[n]=&def->Data[0][nijk*n*TDef_Size[def->Type]];
          }
 
          def->Mode=def->Data[0];
@@ -393,7 +393,7 @@ TDef *Def_New(int NI,int NJ,int NK,int Dim,TDef_Type Type) {
       }
       
       for(n=1;n<def->NC;n++) {
-         def->Data[n]=&def->Data[0][nijk*n];
+         def->Data[n]=&def->Data[0][nijk*n*TDef_Size[def->Type]];
       }
       def->Mode=def->Data[0];
    }
@@ -460,7 +460,7 @@ TDef *Def_Resize(TDef *Def,int NI,int NJ,int NK){
          return(NULL);
       }
       for(n=1;n<Def->NC;n++) {
-         Def->Data[n]=&Def->Data[0][nijk*n];
+         Def->Data[n]=&Def->Data[0][nijk*n*TDef_Size[Def->Type]];
       }
       Def->Mode=Def->Data[0];
       Def->Dir=NULL;
