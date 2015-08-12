@@ -137,6 +137,10 @@ int Def_Compat(TDef *DefTo,TDef *DefFrom) {
    
    // Verifier la dimension verticale
    if (DefTo->NK!=DefFrom->NK || DefTo->NC!=DefFrom->NC) {
+      if (DefTo->Idx) {
+         App_Log(ERROR,"%s: Cannot change the data size for a sub 'U' grid\n",__func__);
+         return(0);
+      }
       free(DefTo->Data[0]);
       DefTo->Data[0]=DefTo->Data[1]=DefTo->Data[2]=DefTo->Data[3]=NULL;
       
@@ -212,6 +216,10 @@ TDef *Def_Copy(TDef *Def){
          if (def->Alias) {
             for(n=0;n<def->NC;n++) def->Data[n]=Def->Data[n];
          } else {
+            if (!(def->Data[0]=(char*)malloc(nijk*def->NC*TDef_Size[def->Type]))) {
+               Def_Free(def);
+               return(NULL);
+            }
             memcpy(def->Data[0],Def->Data[0],nijk*def->NC*TDef_Size[Def->Type]);
             for(n=1;n<def->NC;n++) {
                def->Data[n]=&def->Data[0][nijk*n*TDef_Size[Def->Type]];

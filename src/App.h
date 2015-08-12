@@ -167,5 +167,6 @@ int   App_ParseDate(char *Param,char *Value,time_t *Var);
 int   App_ParseDateSplit(char *Param,char *Value,int *Year,int *Month,int *Day,int *Hour,int *Min);
 int   App_ParseCoords(char *Param,char *Value,double *Lat,double *Lon,int Index);
 void  App_SeedInit(void);
+char* App_ErrorGet(void);
 
 #endif
