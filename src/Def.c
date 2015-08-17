@@ -141,7 +141,7 @@ int Def_Compat(TDef *DefTo,TDef *DefFrom) {
          App_Log(ERROR,"%s: Cannot change the data size for a sub 'U' grid\n",__func__);
          return(0);
       }
-      free(DefTo->Data[0]);
+      if (DefTo->Data[0]) free(DefTo->Data[0]);
       DefTo->Data[0]=DefTo->Data[1]=DefTo->Data[2]=DefTo->Data[3]=NULL;
       
       DefTo->NK=DefFrom->NK;
@@ -403,8 +403,8 @@ TDef *Def_New(int NI,int NJ,int NK,int Dim,TDef_Type Type) {
       for(n=1;n<def->NC;n++) {
          def->Data[n]=&def->Data[0][nijk*n*TDef_Size[def->Type]];
       }
-      def->Mode=def->Data[0];
    }
+   def->Mode=def->Data[0];
 
    return(def);
 }

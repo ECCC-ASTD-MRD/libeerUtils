@@ -473,7 +473,7 @@ int GeoRef_Free(TGeoRef *Ref) {
   if (!Ref)
       return(0);
 
-   if (__sync_sub_and_fetch(&Ref->NRef,1)>0) {
+   if (__sync_sub_and_fetch(&Ref->NRef,1)!=0) {
       return(0);
    }
 
@@ -517,68 +517,70 @@ void GeoRef_Clear(TGeoRef *Ref,int New) {
 
    int n;
 
-   if (Ref->String)       free(Ref->String);       Ref->String=NULL;
-   if (Ref->Transform)    free(Ref->Transform);    Ref->Transform=NULL;
-   if (Ref->InvTransform) free(Ref->InvTransform); Ref->InvTransform=NULL;
-   if (Ref->Lat)          free(Ref->Lat);          Ref->Lat=NULL;
-   if (Ref->Lon)          free(Ref->Lon);          Ref->Lon=NULL;
-   if (Ref->Hgt)          free(Ref->Hgt);          Ref->Hgt=NULL;
-   if (Ref->Idx)          free(Ref->Idx);          Ref->Idx=NULL; Ref->NIdx=0;
-   if (Ref->AX)           free(Ref->AX);           Ref->AX=NULL;
-   if (Ref->AY)           free(Ref->AY);           Ref->AY=NULL;
+   if (Ref) {
+      if (Ref->String)       free(Ref->String);       Ref->String=NULL;
+      if (Ref->Transform)    free(Ref->Transform);    Ref->Transform=NULL;
+      if (Ref->InvTransform) free(Ref->InvTransform); Ref->InvTransform=NULL;
+      if (Ref->Lat)          free(Ref->Lat);          Ref->Lat=NULL;
+      if (Ref->Lon)          free(Ref->Lon);          Ref->Lon=NULL;
+      if (Ref->Hgt)          free(Ref->Hgt);          Ref->Hgt=NULL;
+      if (Ref->Idx)          free(Ref->Idx);          Ref->Idx=NULL; Ref->NIdx=0;
+      if (Ref->AX)           free(Ref->AX);           Ref->AX=NULL;
+      if (Ref->AY)           free(Ref->AY);           Ref->AY=NULL;
 
-   Ref->IG1=Ref->IG2=Ref->IG3=Ref->IG4=0;
+      Ref->IG1=Ref->IG2=Ref->IG3=Ref->IG4=0;
 
-   if (New) {
-      if (Ref->Name)      free(Ref->Name);         Ref->Name=NULL;
-   }
+      if (New) {
+         if (Ref->Name)      free(Ref->Name);         Ref->Name=NULL;
+      }
 
 #ifdef HAVE_RMN
-   // Release ezscint sub-grid
-   if (Ref->Ids) {
-      for(n=0;n<Ref->NbId+1;n++) {
-         if (Ref->Ids[n]>-1)
-            RPN_IntIdFree(Ref->Ids[n]);
+      // Release ezscint sub-grid
+      if (Ref->Ids) {
+         for(n=0;n<Ref->NbId+1;n++) {
+            if (Ref->Ids[n]>-1)
+               RPN_IntIdFree(Ref->Ids[n]);
+         }
+         free(Ref->Ids);  Ref->Ids=NULL;
       }
-      free(Ref->Ids);  Ref->Ids=NULL;
-   }
 #endif
 
 #ifdef HAVE_GDAL
-   if (Ref->GCPTransform) {
-      GDALDestroyGCPTransformer(Ref->GCPTransform);
-      Ref->GCPTransform=NULL;
-   }
-   if (Ref->TPSTransform) {
-      GDALDestroyTPSTransformer(Ref->TPSTransform);
-      Ref->TPSTransform=NULL;
-   }
-   if (Ref->RPCTransform) {
-      GDALDestroyRPCTransformer(Ref->RPCTransform);
-      Ref->RPCTransform=NULL;
-   }
+      if (Ref->GCPTransform) {
+         GDALDestroyGCPTransformer(Ref->GCPTransform);
+         Ref->GCPTransform=NULL;
+      }
+      if (Ref->TPSTransform) {
+         GDALDestroyTPSTransformer(Ref->TPSTransform);
+         Ref->TPSTransform=NULL;
+      }
+      if (Ref->RPCTransform) {
+         GDALDestroyRPCTransformer(Ref->RPCTransform);
+         Ref->RPCTransform=NULL;
+      }
 
-   if (Ref->Spatial) {
-      OSRDestroySpatialReference(Ref->Spatial);
-   }
+      if (Ref->Spatial) {
+         OSRDestroySpatialReference(Ref->Spatial);
+      }
 
-   if (Ref->Function) {
-      OCTDestroyCoordinateTransformation(Ref->Function);
-      Ref->Function=NULL;
-   }
+      if (Ref->Function) {
+         OCTDestroyCoordinateTransformation(Ref->Function);
+         Ref->Function=NULL;
+      }
 
-   if (Ref->InvFunction) {
-      OCTDestroyCoordinateTransformation(Ref->InvFunction);
-      Ref->InvFunction=NULL;
-   }
+      if (Ref->InvFunction) {
+         OCTDestroyCoordinateTransformation(Ref->InvFunction);
+         Ref->InvFunction=NULL;
+      }
 #endif
 
-   Ref->RefFrom=NULL;
-   Ref->Project=NULL;
-   Ref->UnProject=NULL;
-   Ref->Value=NULL;
-   Ref->Distance=NULL;
-   Ref->Height=NULL;
+      Ref->RefFrom=NULL;
+      Ref->Project=NULL;
+      Ref->UnProject=NULL;
+      Ref->Value=NULL;
+      Ref->Distance=NULL;
+      Ref->Height=NULL;
+   }
 }
 
 void GeoRef_Qualify(TGeoRef *Ref) {
@@ -709,19 +711,21 @@ TGeoRef *GeoRef_Reference(TGeoRef *Ref) {
 
    ref=GeoRef_New();
 
-   GeoRef_Incr(Ref);
-   ref->RefFrom=Ref;
-   ref->Project=Ref->Project;
-   ref->UnProject=Ref->UnProject;
-   ref->Value=Ref->Value;
-   ref->Distance=Ref->Distance;
+   if (Ref) {
+      GeoRef_Incr(Ref);
+      ref->RefFrom=Ref;
+      ref->Project=Ref->Project;
+      ref->UnProject=Ref->UnProject;
+      ref->Value=Ref->Value;
+      ref->Distance=Ref->Distance;
 
-   ref->Loc.Lat=Ref->Loc.Lat;
-   ref->Loc.Lon=Ref->Loc.Lon;
-   ref->Loc.Elev=Ref->Loc.Elev;
-   ref->R=Ref->R;
-   ref->ResR=Ref->ResR;
-   ref->ResA=Ref->ResA;
+      ref->Loc.Lat=Ref->Loc.Lat;
+      ref->Loc.Lon=Ref->Loc.Lon;
+      ref->Loc.Elev=Ref->Loc.Elev;
+      ref->R=Ref->R;
+      ref->ResR=Ref->ResR;
+      ref->ResA=Ref->ResA;
+   }
    ref->NbId=1;
    ref->NId=0;
 
@@ -736,43 +740,44 @@ TGeoRef *GeoRef_HardCopy(TGeoRef *Ref) {
    ref=GeoRef_New();
    GeoRef_Size(ref,Ref->X0,Ref->Y0,Ref->X1,Ref->Y1,Ref->BD);
 
-   ref->Grid[0]=Ref->Grid[0];
-   ref->Grid[1]=Ref->Grid[1];
-   ref->Project=Ref->Project;
-   ref->UnProject=Ref->UnProject;
-   ref->Value=Ref->Value;
-   ref->Distance=Ref->Distance;
-   ref->Type=Ref->Type;
-   ref->NbId=Ref->NbId;
-   ref->NId=Ref->NId;
+   if (Ref) {
+      ref->Grid[0]=Ref->Grid[0];
+      ref->Grid[1]=Ref->Grid[1];
+      ref->Project=Ref->Project;
+      ref->UnProject=Ref->UnProject;
+      ref->Value=Ref->Value;
+      ref->Distance=Ref->Distance;
+      ref->Type=Ref->Type;
+      ref->NbId=Ref->NbId;
+      ref->NId=Ref->NId;
 
 #ifdef HAVE_RMN
-   if (Ref->Ids) {
-      ref->Ids=(int*)malloc(Ref->NbId*sizeof(int));
-      memcpy(ref->Ids,Ref->Ids,Ref->NbId*sizeof(int));
-      for(i=0;i<ref->NbId;i++)
-         c_ez_refgrid(ref->Ids[i]);
-   }
+      if (Ref->Ids) {
+         ref->Ids=(int*)malloc(Ref->NbId*sizeof(int));
+         memcpy(ref->Ids,Ref->Ids,Ref->NbId*sizeof(int));
+         for(i=0;i<ref->NbId;i++)
+            c_ez_refgrid(ref->Ids[i]);
+      }
 #endif
 
-   ref->IG1=Ref->IG1;
-   ref->IG2=Ref->IG2;
-   ref->IG3=Ref->IG3;
-   ref->IG4=Ref->IG4;
+      ref->IG1=Ref->IG1;
+      ref->IG2=Ref->IG2;
+      ref->IG3=Ref->IG3;
+      ref->IG4=Ref->IG4;
 
-   switch(ref->Grid[0]) {
-      case 'R' :
-         ref->Loc.Lat=Ref->Loc.Lat;
-         ref->Loc.Lon=Ref->Loc.Lon;
-         ref->Loc.Elev=Ref->Loc.Elev;
-         ref->R=Ref->R;
-         ref->ResR=Ref->ResR;
-         ref->ResA=Ref->ResA;
-      case 'W' :
-         GeoRef_WKTSet(ref,Ref->String,Ref->Transform,Ref->InvTransform,Ref->Spatial);
-  }
-
-  return(ref);
+      switch(ref->Grid[0]) {
+         case 'R' :
+            ref->Loc.Lat=Ref->Loc.Lat;
+            ref->Loc.Lon=Ref->Loc.Lon;
+            ref->Loc.Elev=Ref->Loc.Elev;
+            ref->R=Ref->R;
+            ref->ResR=Ref->ResR;
+            ref->ResA=Ref->ResA;
+         case 'W' :
+            GeoRef_WKTSet(ref,Ref->String,Ref->Transform,Ref->InvTransform,Ref->Spatial);
+      }
+   }
+   return(ref);
 }
 
 TGeoRef *GeoRef_Resize(TGeoRef *Ref,int NI,int NJ) {
@@ -791,6 +796,8 @@ TGeoRef *GeoRef_Resize(TGeoRef *Ref,int NI,int NJ) {
 
 int GeoRef_Project(TGeoRef *Ref,double X,double Y,double *Lat,double *Lon,int Extrap,int Transform) {
 
+   if (!Ref) return(0);
+   
    if (X>Ref->X1 || Y>Ref->Y1 || X<Ref->X0 || Y<Ref->Y0) {
       if (!Extrap) {
          *Lon=-999.0;
@@ -806,6 +813,8 @@ int GeoRef_Project(TGeoRef *Ref,double X,double Y,double *Lat,double *Lon,int Ex
 
 int GeoRef_UnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double Lon,int Extrap,int Transform) {
 
+   if (!Ref) return(0);
+   
    *X=Lon*(Ref->X1-Ref->X0);
    *Y=Lat*(Ref->Y1-Ref->Y0);
 
@@ -905,6 +914,8 @@ int GeoRef_Intersect(TGeoRef *Ref0,TGeoRef *Ref1,int *X0,int *Y0,int *X1,int *Y1
    double lat,lon,di,dj,in=0;
    double x0,y0,x1,y1;
    int    x,y;
+
+   if (!Ref0 || !Ref1) return(0);
 
    /*Source grid Y*/
    if (Ref1->Grid[0]=='Y') {
@@ -1038,6 +1049,8 @@ int GeoRef_Limits(TGeoRef *Ref,double *Lat0,double *Lon0,double *Lat1,double *Lo
    *Lat0=*Lon0=1e32;
    *Lat1=*Lon1=-1e32;
 
+   if (!Ref) return(0);
+   
    /*Source grid Y*/
    if (Ref->Grid[0]=='Y' || Ref->Grid[1]=='Y' || Ref->Grid[0]=='X' || Ref->Grid[1]=='X') {
       for(x=0;x<((Ref->X1-Ref->X0)+1)*((Ref->Y1-Ref->Y0)+1);x++) {
@@ -1094,6 +1107,8 @@ int GeoRef_Within(TGeoRef *Ref0,TGeoRef *Ref1) {
    double lat,lon,di,dj;
    int    x,y;
 
+   if (!Ref0 || !Ref1) return(0);
+   
    /*Project Ref0 Border within Ref1 and get limits*/
    for(x=Ref0->X0,y=Ref0->Y0;x<=Ref0->X1;x++) {
       Ref0->Project(Ref0,x,y,&lat,&lon,0,1);
@@ -1130,6 +1145,8 @@ int GeoRef_WithinRange(TGeoRef *Ref,double Lat0,double Lon0,double Lat1,double L
    double lat[4],lon[4],dl;
    int    d0,d1,d2,d3;
 
+   if (!Ref) return(0);
+   
    if (Lon0*Lon1<0) {
       dl=Lon1-Lon0;
    } else {
@@ -1192,7 +1209,8 @@ int GeoRef_BoundingBox(TGeoRef *Ref,double Lat0,double Lon0,double Lat1,double L
 
    double di,dj;
 
-
+   if (!Ref) return(0);
+   
    *I0=*J0=1000000;
    *I1=*J1=-1000000;
 
@@ -1257,6 +1275,8 @@ int GeoRef_Valid(TGeoRef *Ref) {
 
    Coord co[2];
 
+   if (!Ref) return(0);
+   
    Ref->Project(Ref,Ref->X0,Ref->Y0,&co[0].Lat,&co[0].Lon,1,1);
    Ref->Project(Ref,Ref->X1,Ref->Y1,&co[1].Lat,&co[1].Lon,1,1);
 
@@ -1288,9 +1308,7 @@ int GeoRef_Positional(TGeoRef *Ref,TDef *XDef,TDef *YDef) {
 
    int d,dx,dy,nx,ny;
 
-   if (!Ref) {
-      return(0);
-   }
+   if (!Ref) return(0);
 
    /* Check the dimensions */
    nx=FSIZE2D(XDef);
@@ -1386,6 +1404,8 @@ int GeoRef_Coords(TGeoRef *Ref,float *Lat,float *Lon) {
 #ifdef HAVE_RMN
    int x,y,nxy;
    double lat,lon;
+   
+   if (!Ref) return(0);
    
    nxy=Ref->NX*Ref->NY;
    

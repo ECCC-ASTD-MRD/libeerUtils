@@ -158,7 +158,7 @@ TZRef* ZRef_Define(int Type,int NbLevels,float *Levels) {
  */
 int ZRef_Free(TZRef *ZRef) {
 
-   if (ZRef && ZRef_Decr(ZRef)<=0) {
+   if (ZRef && !ZRef_Decr(ZRef)) {
 
       if (ZRef->Levels) free(ZRef->Levels); ZRef->Levels=NULL;
       if (ZRef->A)      free(ZRef->A);      ZRef->A=NULL;
@@ -192,6 +192,9 @@ int ZRef_Free(TZRef *ZRef) {
  */
 int ZRef_Equal(TZRef *ZRef0,TZRef *ZRef1) {
 
+   if (!ZRef0 || !ZRef1)
+      return(0);
+      
    if ((ZRef0->LevelNb!=ZRef1->LevelNb) || (ZRef0->Type!=ZRef1->Type) || (ZRef0->Levels && memcmp(ZRef0->Levels,ZRef1->Levels,ZRef0->LevelNb*sizeof(float))!=0))
       return(0);
 
@@ -216,7 +219,7 @@ int ZRef_Equal(TZRef *ZRef0,TZRef *ZRef1) {
  */
 TZRef* ZRef_Copy(TZRef *ZRef) {
 
-   ZRef_Incr(ZRef);
+   if (ZRef) ZRef_Incr(ZRef);
    
    return(ZRef);
 }
@@ -285,6 +288,10 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
    double    *buf=NULL;
    float     *pt=NULL;
 
+   if (!ZRef) {
+      return(0);
+   }
+      
    if (ZRef->Type==LVL_PRES || ZRef->Type==LVL_UNDEF) {
      return(1);
    }
