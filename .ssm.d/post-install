@@ -15,21 +15,8 @@ rm -f ${profilePath} ${loginPath}
 mkdir -p ${profileDirPath}
 
 cat > ${profilePath} << EOF
-export SPI_LIB="${packageHome}"
 export EC_INCLUDE_PATH="${packageHome}/include \${EC_INCLUDE_PATH}"
 export EC_LD_LIBRARY_PATH="${packageHome}/lib \${EC_LD_LIBRARY_PATH}"
-
-#----- GDAL data
-export GDAL_DATA=\${SPI_LIB}/share/gdal
-export GDAL_PAM_ENABLED=NO
-export CPL_LOG=/dev/null
-
-#----- PROJ4 data
-export PROJ_LIB=\${SPI_LIB}/share/proj
-
-#----- Force GRIB API Tables
-export GRIB_SAMPLES_PATH=\${SPI_LIB}/share/grib_api/samples
-export GRIB_DEFINITION_PATH=\${SPI_LIB}/share/grib_api/definitions
 
 #----- GDB data
 if [ -z \${GDB_PATH} ]; then
@@ -43,21 +30,8 @@ fi
 EOF
 
 cat > ${loginPath} << EOF
-setenv SPI_LIB="${packageHome}"
 setenv EC_INCLUDE_PATH="${packageHome}/include \${EC_INCLUDE_PATH}"
 setenv EC_LD_LIBRARY_PATH="${packageHome}/lib \${EC_LD_LIBRARY_PATH}"
-
-#----- GDAL data
-setenv GDAL_DATA=\${SPI_LIB}/share/gdal
-setenv GDAL_PAM_ENABLED=NO
-setenv CPL_LOG=/dev/null
-
-#----- PROJ4 data
-setenv PROJ_LIB=\${SPI_LIB}/share/proj
-
-#----- Force GRIB API Tables
-setenv GRIB_SAMPLES_PATH=\${SPI_LIB}/share/grib_api/samples
-setenv GRIB_DEFINITION_PATH=\${SPI_LIB}/share/grib_api/definitions
 
 #----- GDB data
 if [ -z \${GDB_PATH} ]; then

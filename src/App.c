@@ -571,6 +571,7 @@ inline int App_GetArgs(TApp_Arg *AArg,char *Value) {
          printf("Too many values for parametre -%s, --%s\n",AArg->Short,AArg->Long);
          exit(EXIT_FAILURE);
       }
+      
       switch(AArg->Type&(~APP_FLAG)) {
          case APP_CHAR :  LST_ASSIGN(char**,        AArg->Var,Value);                   break;
          case APP_UINT32: LST_ASSIGN(unsigned int*, AArg->Var,strtol(Value,&endptr,10));break;
@@ -667,7 +668,7 @@ int App_ParseArgs(TApp_Arg *AArgs,int argc,char *argv[],int Flags) {
             aarg=AArgs;
             while(aarg->Short) {        
                if ((aarg->Short && tok[1]==aarg->Short[0] && tok[2]=='\0') || (aarg->Long && strcasecmp(&tok[2],aarg->Long)==0)) {
-                  ok=(aarg->Type==APP_FLAG?(*(int*)aarg->Var)=TRUE:App_GetArgs(aarg,env?strtok(str," "):argv[++i]));
+                  ok=(aarg->Type==APP_FLAG?(*(int*)aarg->Var)=TRUE:App_GetArgs(aarg,env?strtok(str," "):((i+1<argc && argv[i+1][0]!='-')?argv[++i]:NULL)));
                   ptok=aarg->Type==APP_FLAG?NULL:tok;
                   break;
                }

@@ -178,8 +178,8 @@ int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
             if (x<=X1 && y<=Y1) {
                Scan->V[Scan->N++]=idx;
             }
-            ((float*)Scan->X)[n]=FromRef->Lon[idx];
-            ((float*)Scan->Y)[n]=FromRef->Lat[idx];
+            ((float*)Scan->X)[n]=FromRef->AX[idx];
+            ((float*)Scan->Y)[n]=FromRef->AY[idx];
          }
       }
       d=1;
@@ -1054,8 +1054,8 @@ int GeoRef_Limits(TGeoRef *Ref,double *Lat0,double *Lon0,double *Lat1,double *Lo
    /*Source grid Y*/
    if (Ref->Grid[0]=='Y' || Ref->Grid[1]=='Y' || Ref->Grid[0]=='X' || Ref->Grid[1]=='X') {
       for(x=0;x<((Ref->X1-Ref->X0)+1)*((Ref->Y1-Ref->Y0)+1);x++) {
-         *Lat0=FMIN(*Lat0,Ref->Lat[x]); *Lon0=FMIN(*Lon0,Ref->Lon[x]);
-         *Lat1=FMAX(*Lat1,Ref->Lat[x]); *Lon1=FMAX(*Lon1,Ref->Lon[x]);
+         *Lat0=FMIN(*Lat0,Ref->AY[x]); *Lon0=FMIN(*Lon0,Ref->AX[x]);
+         *Lat1=FMAX(*Lat1,Ref->AY[x]); *Lon1=FMAX(*Lon1,Ref->AX[x]);
       }
       return(1);
    }
@@ -1307,7 +1307,8 @@ int GeoRef_Valid(TGeoRef *Ref) {
 int GeoRef_Positional(TGeoRef *Ref,TDef *XDef,TDef *YDef) {
 
    int d,dx,dy,nx,ny;
-
+   float **x,**y;
+   
    if (!Ref) return(0);
 
    /* Check the dimensions */

@@ -711,10 +711,10 @@ TQTree* EZGrid_BuildIndex(TGrid* __restrict const Grid) {
    lat1=lon1=-1e10;
    
    for(n=0;n<Grid->GRef->NX;n++) {
-      lat0=FMIN(lat0,Grid->GRef->Lat[n]);
-      lon0=FMIN(lon0,Grid->GRef->Lon[n]);
-      lat1=FMAX(lat1,Grid->GRef->Lat[n]);
-      lon1=FMAX(lon1,Grid->GRef->Lon[n]);
+      lat0=FMIN(lat0,Grid->GRef->AY[n]);
+      lon0=FMIN(lon0,Grid->GRef->AX[n]);
+      lat1=FMAX(lat1,Grid->GRef->AY[n]);
+      lon1=FMAX(lon1,Grid->GRef->AX[n]);
    }
       
    // Create the tree on the data limits
@@ -727,9 +727,9 @@ TQTree* EZGrid_BuildIndex(TGrid* __restrict const Grid) {
    idx=Grid->GRef->Idx;
    for(nt=0;nt<Grid->GRef->NIdx-3;nt+=3) {     
       
-      tr[0][0]=Grid->GRef->Lat[idx[nt]];     tr[0][1]=Grid->GRef->Lon[idx[nt]];
-      tr[1][0]=Grid->GRef->Lat[idx[nt+1]];   tr[1][1]=Grid->GRef->Lon[idx[nt+1]];
-      tr[2][0]=Grid->GRef->Lat[idx[nt+2]];   tr[2][1]=Grid->GRef->Lon[idx[nt+2]];
+      tr[0][0]=Grid->GRef->AY[idx[nt]];     tr[0][1]=Grid->GRef->AX[idx[nt]];
+      tr[1][0]=Grid->GRef->AY[idx[nt+1]];   tr[1][1]=Grid->GRef->AX[idx[nt+1]];
+      tr[2][0]=Grid->GRef->AY[idx[nt+2]];   tr[2][1]=Grid->GRef->AX[idx[nt+2]];
       
       // Put it in the quadtree, in any child nodes intersected
       res=8;
@@ -865,11 +865,11 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
       Grid->GRef->NY=Grid->H.NJ;
 
       Grid->GRef->Idx=(unsigned int*)malloc(Grid->GRef->NIdx*sizeof(unsigned int));
-      Grid->GRef->Lat=(float*)malloc(Grid->GRef->NX*sizeof(float));
-      Grid->GRef->Lon=(float*)malloc(Grid->GRef->NX*sizeof(float));
+      Grid->GRef->AY=(float*)malloc(Grid->GRef->NX*sizeof(float));
+      Grid->GRef->AX=(float*)malloc(Grid->GRef->NX*sizeof(float));
 
-      cs_fstlir(Grid->GRef->Lat,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","^^");
-      cs_fstlir(Grid->GRef->Lon,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"",">>");
+      cs_fstlir(Grid->GRef->AY,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","^^");
+      cs_fstlir(Grid->GRef->AX,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"",">>");
       cs_fstlir(Grid->GRef->Idx,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","##");
       
       EZGrid_BuildIndex(Grid);
@@ -1732,7 +1732,7 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,float Lat,float Lon,int K0,in
             idx=(unsigned int*)QTree_GetData(node,n);
             
             // if the Barycentric coordinates are within this triangle, get its interpolated value
-            if (Bary_Get(bary,Lat,Lon,Grid->GRef->Lat[*idx],Grid->GRef->Lon[*idx],Grid->GRef->Lat[*(idx+1)],Grid->GRef->Lon[*(idx+1)],Grid->GRef->Lat[*(idx+2)],Grid->GRef->Lon[*(idx+2)])) {
+            if (Bary_Get(bary,Lat,Lon,Grid->GRef->AY[*idx],Grid->GRef->AX[*idx],Grid->GRef->AY[*(idx+1)],Grid->GRef->AX[*(idx+1)],Grid->GRef->AY[*(idx+2)],Grid->GRef->AX[*(idx+2)])) {
                *Value=Bary_Interp(bary,t->Data[K0][*idx],t->Data[K0][*(idx+1)],t->Data[K0][*(idx+2)]);                    
                return(TRUE);
             }

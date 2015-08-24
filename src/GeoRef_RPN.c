@@ -329,10 +329,10 @@ int GeoRef_RPNProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,in
    }
 
    if (GRef->Type&GRID_SPARSE) {
-      if (GRef->Lon && GRef->Lat) {
+      if (GRef->AX && GRef->AY) {
          idx=Y*(GRef->X1-GRef->X0)+X;
-         *Lat=GRef->Lat[idx];
-         *Lon=GRef->Lon[idx];
+         *Lat=GRef->AY[idx];
+         *Lon=GRef->AX[idx];
          return(1);
       } else {
          return(0);
@@ -391,11 +391,11 @@ int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
 
 #ifdef HAVE_RMN
    if (GRef->Type&GRID_SPARSE) {
-      if (GRef->Lon && GRef->Lat) {
+      if (GRef->AX && GRef->AY) {
          if (GRef->Grid[0]=='M') {
             for(n=0;n<GRef->NIdx-3;n+=3) {
-               if (Bary_Get(b,Lon,Lat,GRef->Lon[GRef->Idx[n]],GRef->Lat[GRef->Idx[n]],
-                  GRef->Lon[GRef->Idx[n+1]],GRef->Lat[GRef->Idx[n+1]],GRef->Lon[GRef->Idx[n+2]],GRef->Lat[GRef->Idx[n+2]])) {
+               if (Bary_Get(b,Lon,Lat,GRef->AX[GRef->Idx[n]],GRef->AY[GRef->Idx[n]],
+                  GRef->AX[GRef->Idx[n+1]],GRef->AY[GRef->Idx[n+1]],GRef->AX[GRef->Idx[n+2]],GRef->AY[GRef->Idx[n+2]])) {
 
                   *X=n+b[0];
                   *Y=n+b[1];
@@ -411,7 +411,7 @@ int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
             for(dj=0;dj<=nj;dj++) {
                for(di=0;di<=ni;di++) {
 
-                  dx=hypot(Lon-GRef->Lon[idx],Lat-GRef->Lat[idx]);
+                  dx=hypot(Lon-GRef->AX[idx],Lat-GRef->AY[idx]);
                   idx++;
 
                   if (dx<0.1 && dx<d) {

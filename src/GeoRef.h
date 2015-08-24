@@ -133,8 +133,8 @@ typedef struct TGeoRef {
    int    R;                                              // (Radar) Rayon autour du centre de reference en bin
    double ResR,ResA;                                      // (Radar) Resolutions en distance et azimuth
 
-   float        *Lat,*Lon,*Hgt;                           // Coordonnees des points de grilles (Spherical)
-   float        *AX,*AY;                                  // Axes de deformation
+   float        *Lat,*Lon;                                // Coordonnees des points de grilles (Spherical)
+   float        *AX,*AY,*Hgt;                             // Axes de positionnement / deformation
    unsigned int *Idx,NIdx;                                // Index dans les positions
 
    char                          Grid[3];                 // Type de grille
