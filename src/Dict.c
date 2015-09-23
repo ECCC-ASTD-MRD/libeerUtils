@@ -448,7 +448,7 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encodin
    }
 
    if ((tmpc=(char*)xmlGetProp(Node,"date"))) {
-      sscanf(tmpc,"%i-%i-%i",&y,&m,&d);
+      sscanf(tmpc,"%u-%u-%u",&y,&m,&d);
       metvar->Date=System_DateTime2Seconds(y*10000+m*100+d,0,TRUE);
    }
 
@@ -649,7 +649,7 @@ static int Dict_ParseType(xmlDocPtr Doc, xmlNsPtr NS, xmlNodePtr Node,TDict_Enco
    }
 
    if ((tmpc=(char*)xmlGetProp(Node,"date"))) {
-      sscanf(tmpc,"%i-%i-%i",&y,&m,&d);
+      sscanf(tmpc,"%u-%u-%u",&y,&m,&d);
       type->Date=System_DateTime2Seconds(y*10000+m*100+d,0,TRUE);
    }
 
