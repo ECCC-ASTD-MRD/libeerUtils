@@ -1050,7 +1050,7 @@ TGrid *EZGrid_Copy(TGrid *Master,int Level) {
    TGrid *new=NULL;
    int    n;
 
-   if (Master && (new=(TGrid*)malloc(sizeof(TGrid)))) {
+   if (Master && (Level<0 || Level<Master->ZRef->LevelNb) && (new=(TGrid*)malloc(sizeof(TGrid)))) {
       pthread_mutex_init(&new->Mutex,NULL);
       new->Master=0;
       new->Data=NULL;
@@ -1079,11 +1079,18 @@ TGrid *EZGrid_Copy(TGrid *Master,int Level) {
          new->Tiles[n].KBurn=-1;
          pthread_mutex_init(&new->Tiles[n].Mutex,NULL);
       }
-      new->ZRef=ZRef_Copy(Master->ZRef);
-      new->GRef=GeoRef_Copy(Master->GRef);
+      
       new->QTree=Master->QTree;
-      new->H.NK=new->ZRef->LevelNb;
+      new->GRef=GeoRef_Copy(Master->GRef);
+      new->ZRef=ZRef_Copy(Master->ZRef);
 
+      if (Level>=0) {
+         new->H.IP1=ZRef_Level2IP(new->ZRef->Levels[Level],new->ZRef->Type,new->ZRef->Style);
+         new->H.NK=1;
+      } else {         
+         new->H.NK=new->ZRef->LevelNb;
+      }
+      
       // Force memory allocation of all tiles
       EZGrid_LoadAll(new);
    }
