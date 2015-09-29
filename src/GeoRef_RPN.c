@@ -210,10 +210,10 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
       }
    }
 
-   /*Si on est a l'interieur de la grille ou que l'extrapolation est activee*/
+   // Si on est a l'interieur de la grille ou que l'extrapolation est activee
    if (C<Def->NC && X>=(GRef->X0-0.5) && Y>=(GRef->Y0-0.5) && Z>=0 && X<(GRef->X1+0.5) && Y<(GRef->Y1+0.5) && Z<=Def->NK-1) {
 
-      /*Index memoire du niveau desire*/
+      // Index memoire du niveau desire
       mem=Def->NIJ*(int)Z;
 
       x=X+1.0;
@@ -260,7 +260,7 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
             Y=iy;
          }
 
-         // G grids have something weire which measn we have to use ezscint
+         // G grids have something weird which means we have to use ezscint
          if ((Def->Type<TD_Float32 || Mode=='N' || (X==ix && Y==iy)) && GRef->Grid[0]!='G') {
             mem+=idx;
             Def_Get(Def,C,mem,*Length);
@@ -274,9 +274,9 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
                ix=trunc(X);
                iy=trunc(Y);
                mem=idx;
-               if (              ((float*)p0)[mem]==Def->NoData)                         { return(valid); }
-               if (ix<GRef->X1 && ((float*)p0)[mem+1]==Def->NoData)                       { return(valid); }
-               if (iy<GRef->Y1 && ((float*)p0)[mem+Def->NI]==Def->NoData)                 { return(valid); }
+               if (               ((float*)p0)[mem]==Def->NoData)                          { return(valid); }
+               if (ix<GRef->X1 && ((float*)p0)[mem+1]==Def->NoData)                        { return(valid); }
+               if (iy<GRef->Y1 && ((float*)p0)[mem+Def->NI]==Def->NoData)                  { return(valid); }
                if (iy<GRef->Y1 && ix<GRef->X1 && ((float*)p0)[mem+Def->NI+1]==Def->NoData) { return(valid); }
 
 //               RPN_IntLock();
