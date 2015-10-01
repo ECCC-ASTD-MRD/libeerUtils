@@ -499,7 +499,7 @@ int RPN_CopyDesc(int FIdTo,TRPNHeader* const H) {
          if (key<0) {
             key=c_fstinf(H->FID,&ni,&nj,&nk,-1,"",ip1,ip2,-1,"",desc);
             if (key>=0) {
-               if (ni*ni>sz) {
+               if (ni*nj>sz) {
                   data=(char*)realloc(data,ni*nj*sizeof(float));
                   sz=ni*nj;
                }
@@ -515,7 +515,7 @@ int RPN_CopyDesc(int FIdTo,TRPNHeader* const H) {
       }
 
       pthread_mutex_unlock(&RPNFieldMutex);
-      free(data);
+      if (data) free(data);
    }
 
    return(TRUE);
