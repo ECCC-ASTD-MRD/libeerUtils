@@ -2322,7 +2322,7 @@ int EZGrid_GetDelta(TGrid* __restrict const Grid,int Invert,float* DX,float* DY,
    float        di[4],dj[4],dlat[4],dlon[4];
    double       fx,fy,dx[4],dy[4];
 
-   if (!Grid) {
+   if (!Grid || Grid->H.GRTYP[0]=='M' || Grid->H.GRTYP[0]=='X' || Grid->H.GRTYP[0]=='Y') {
       App_Log(ERROR,"%s: Invalid grid\n",__func__);
       return(FALSE);
    }

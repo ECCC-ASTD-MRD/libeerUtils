@@ -605,7 +605,7 @@ void GeoRef_Qualify(TGeoRef *Ref) {
          Ref->Type|=GRID_TILE;
       }
    
-      if (Ref->Grid[0]=='A' || Ref->Grid[0]=='G') {
+      if (Ref->Grid[0]=='A' || Ref->Grid[0]=='B' || Ref->Grid[0]=='G') {
          Ref->Type|=GRID_WRAP;
       } else if (Ref->Grid[0]!='V' && Ref->X0!=Ref->X1 && Ref->Y0!=Ref->Y1) {
          // Check if north is up by looking at longitude variation on an Y increment at grid limits
