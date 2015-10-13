@@ -2388,7 +2388,7 @@ int EZGrid_GetLL(TGrid* __restrict const Grid,float* Lat,float* Lon,float* I,flo
    int i,ok=0;
    float fi,fj;
 
-   if (Grid->GID>=0) {
+   if (Grid && Grid->GID>=0) {
    //   RPN_IntLock();
       for(i=0;i<Nb;i++) {
          fi=I[i]+1.0;
@@ -2426,7 +2426,7 @@ int EZGrid_GetIJ(TGrid* __restrict const Grid,float* Lat,float* Lon,float* I,flo
 
    int i,ok=0;
 
-   if (Grid->GID>=0) {
+   if (Grid && Grid->GID>=0) {
    //   RPN_IntLock();
       ok=c_gdxyfll(Grid->GID,I,J,Lat,Lon,Nb);
    //   RPN_IntUnlock();
