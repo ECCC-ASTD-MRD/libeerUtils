@@ -1724,7 +1724,7 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,float Lat,float Lon,int K0,in
       return(FALSE);
    }
 
-   if (Grid->H.GRTYP[0]=='M') {
+   if (EZGrid_IsMesh(Grid)) {
       // This is a triangle mesh
       idx=Grid->GRef->Idx;
       t=&Grid->Tiles[0];
@@ -2318,44 +2318,85 @@ int f77name(ezgrid_getdelta)(wordint *gdid,wordint *k,ftnfloat *dx,ftnfloat *dy,
 
 int EZGrid_GetDelta(TGrid* __restrict const Grid,int Invert,float* DX,float* DY,float* DA) {
 
-   unsigned int i,gi,j,gj,idx;
+   unsigned int i,gi,j,gj,idx,tidx;
    float        di[4],dj[4],dlat[4],dlon[4];
-   double       fx,fy,dx[4],dy[4];
+   double       fx,fy,fz,dx[4],dy[4],s;
 
-   if (!Grid || Grid->H.GRTYP[0]=='M' || Grid->H.GRTYP[0]=='X' || Grid->H.GRTYP[0]=='Y') {
+   if (!Grid || Grid->H.GRTYP[0]=='X' || Grid->H.GRTYP[0]=='Y') {
       App_Log(ERROR,"%s: Invalid grid\n",__func__);
       return(FALSE);
    }
 
 //   RPN_IntLock();
+   if (EZGrid_IsMesh(Grid)) {
+      
+      if (DX || DY) {
+         App_Log(WARNING,"%s: DX and DY cannot be calculated on an M grid\n",__func__);        
+      }
+      
+      if (DA) {
+         for(idx=0;idx<Grid->H.NI-3;idx+=3) {
+            
+            dx[0]=DEG2RAD(Grid->GRef->AX[idx]);   dy[0]=DEG2RAD(Grid->GRef->AY[idx]);
+            dx[1]=DEG2RAD(Grid->GRef->AX[idx+1]); dy[1]=DEG2RAD(Grid->GRef->AY[idx+1]);
+            dx[2]=DEG2RAD(Grid->GRef->AX[idx+2]); dy[2]=DEG2RAD(Grid->GRef->AY[idx+2]);
+            fx=DIST(0.0,dy[0],dx[0],dy[1],dx[1]);
+            fy=DIST(0.0,dy[1],dx[1],dy[2],dx[2]);
+            fz=DIST(0.0,dy[2],dx[2],dy[0],dx[0]);
+            
+            // Get triangle area using heron's formula
+//            if (fx>fy) s=fy; fy=fx; fx=s;
+//            if (fy>fz) s=fz; fz=fy; fy=s;
+//            if (fx>fy) s=fy; fy=fx; fx=s;          
+//            s=0.25*sqrt((fx+(fy+fz))*(fz-(fx-fy))*(fz+(fx-fy))*(fx+(fy-fz)));
+            
+            dx[0]=s=(fx+fy+fz)*0.5;
+            dx[1]=s*(s-fx)*(s-fy)*(s-fz);
+            s=sqrt(fabs(s*(s-fx)*(s-fy)*(s-fz)));
 
-   for(j=0,gj=1;j<Grid->H.NJ;j++,gj++) {
-      idx=j*Grid->H.NI;
-      for(i=0,gi=1;i<Grid->H.NI;i++,idx++,gi++) {
-         di[0]=gi-0.5; dj[0]=gj;
-         di[1]=gi+0.5; dj[1]=gj;
-         di[2]=gi;     dj[2]=gj-0.5;
-         di[3]=gi;     dj[3]=gj+0.5;
+            // Split area over 3 vertices
+            s/=3.0;
+            DA[idx]+=s;
+            DA[idx+1]+=s;
+            DA[idx+2]+=s;          
+         }
 
-         // Reproject gridpoint length coordinates os segments crossing center of cell
-         c_gdllfxy(Grid->GID,dlat,dlon,di,dj,4);
-         dx[0]=DEG2RAD(dlon[0]); dy[0]=DEG2RAD(dlat[0]);
-         dx[1]=DEG2RAD(dlon[1]); dy[1]=DEG2RAD(dlat[1]);
+         if (Invert) {
+            for(idx=0;idx<Grid->H.NI;idx++) DA[idx]=1.0/DA[idx];
+         }
+      }
 
-         dx[2]=DEG2RAD(dlon[2]); dy[2]=DEG2RAD(dlat[2]);
-         dx[3]=DEG2RAD(dlon[3]); dy[3]=DEG2RAD(dlat[3]);
+   } else {
+            
+      for(j=0,gj=1;j<Grid->H.NJ;j++,gj++) {
+         idx=j*Grid->H.NI;
+         for(i=0,gi=1;i<Grid->H.NI;i++,idx++,gi++) {
+            
+            di[0]=gi-0.5; dj[0]=gj;
+            di[1]=gi+0.5; dj[1]=gj;
+            di[2]=gi;     dj[2]=gj-0.5;
+            di[3]=gi;     dj[3]=gj+0.5;
 
-         // Get distance in meters
-         fx=DIST(0.0,dy[0],dx[0],dy[1],dx[1]);
-         fy=DIST(0.0,dy[2],dx[2],dy[3],dx[3]);
+            // Reproject gridpoint length coordinates os segments crossing center of cell
+            c_gdllfxy(Grid->GID,dlat,dlon,di,dj,4);
+            dx[0]=DEG2RAD(dlon[0]); dy[0]=DEG2RAD(dlat[0]);
+            dx[1]=DEG2RAD(dlon[1]); dy[1]=DEG2RAD(dlat[1]);
 
-         // If x distance is null, we crossed the pole
-         if (fx==0.0)
-            fx=(M_PI*fy)/Grid->H.NI;
+            dx[2]=DEG2RAD(dlon[2]); dy[2]=DEG2RAD(dlat[2]);
+            dx[3]=DEG2RAD(dlon[3]); dy[3]=DEG2RAD(dlat[3]);
 
-         if (DX) DX[idx]=(Invert?1.0/fx:fx);
-         if (DY) DY[idx]=(Invert?1.0/fy:fy);
-         if (DA) DA[idx]=(Invert?1.0/(fx*fy):(fx*fy));
+            // Get distance in meters
+            fx=DIST(0.0,dy[0],dx[0],dy[1],dx[1]);
+            fy=DIST(0.0,dy[2],dx[2],dy[3],dx[3]);
+
+            // If x distance is null, we crossed the pole
+            if (fx==0.0)
+               fx=(M_PI*fy)/Grid->H.NI;
+
+            if (DX) DX[idx]=(Invert?1.0/fx:fx);
+            if (DY) DY[idx]=(Invert?1.0/fy:fy);
+            if (DA) DA[idx]=(Invert?1.0/(fx*fy):(fx*fy));
+         }
       }
    }
 //   RPN_IntUnlock();
@@ -2398,6 +2439,11 @@ int EZGrid_GetLL(TGrid* __restrict const Grid,float* Lat,float* Lon,float* I,flo
          }
       }
    //   RPN_IntUnlock();
+   } else {
+      for(i=0;i<Nb;i++) {
+         Lon[i]=I[i];
+         Lat[i]=J[i];
+      }    
    }
    return(ok==0);
 }
@@ -2424,8 +2470,8 @@ int EZGrid_GetLL(TGrid* __restrict const Grid,float* Lat,float* Lon,float* I,flo
 */
 int EZGrid_GetIJ(TGrid* __restrict const Grid,float* Lat,float* Lon,float* I,float* J,int Nb) {
 
-   int i,ok=0;
-
+   int i,ok=0,n;
+      
    if (Grid && Grid->GID>=0) {
    //   RPN_IntLock();
       ok=c_gdxyfll(Grid->GID,I,J,Lat,Lon,Nb);
@@ -2435,8 +2481,66 @@ int EZGrid_GetIJ(TGrid* __restrict const Grid,float* Lat,float* Lon,float* I,flo
          I[i]-=1.0;
          J[i]-=1.0;
       }
+   } else {
+      for(i=0;i<Nb;i++) {
+         I[i]=Lon[i];
+         J[i]=Lat[i];
+      }    
    }
    return(ok==0);
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <EZGrid_GetBary>
+ * Creation : Octobre 2015 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Obtenir les coordonnees barycentrique et index associe a partir de latlon
+ *
+ * Parametres :
+ *   <Grid>       : Grille
+ *   <Lat>        : Latitudes
+ *   <Lon>        : Longitudes
+ *   <Bary>       : Coordonne barycentrique
+ *   <Index>      : Index des vertices associees aux coordonnees (Optionnel)
+ *
+ * Retour:
+ *   <int>       : Code d'erreur (0=erreur, 1=ok)
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+*/
+int EZGrid_GetBary(TGrid* __restrict const Grid,float Lat,float Lon,Vect3d Bary,Vect3i Index) {
+
+   TQTree       *node;
+   unsigned int *idx,n;
+
+   // Is this a triangle mesh
+   if (Grid && EZGrid_IsMesh(Grid)) {
+      idx=Grid->GRef->Idx;
+      Lon=CLAMPLON(Lon);
+      
+      // Find enclosing triangle
+      if ((node=QTree_Find(Grid->QTree,Lat,Lon)) && node->NbData) {
+         
+         // Loop on this nodes data payload
+         for(n=0;n<node->NbData;n++) {
+            idx=(unsigned int*)QTree_GetData(node,n);
+            
+            // if the Barycentric coordinates are within this triangle, get its interpolated value
+            if (Bary_Get(Bary,Lat,Lon,Grid->GRef->AY[*idx],Grid->GRef->AX[*idx],Grid->GRef->AY[*(idx+1)],Grid->GRef->AX[*(idx+1)],Grid->GRef->AY[*(idx+2)],Grid->GRef->AX[*(idx+2)])) {
+               if (Index) {
+                  Index[0]=*idx;                    
+                  Index[1]=*(idx+1);                    
+                  Index[2]=*(idx+2);                    
+               }
+               return(TRUE);
+            }
+         }
+      }
+   }
+   
+   // We must be out of the tin
+   return(FALSE);
 }
 
 #endif

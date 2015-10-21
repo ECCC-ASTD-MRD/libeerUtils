@@ -660,17 +660,15 @@ int GeoRef_Equal(TGeoRef *Ref0,TGeoRef *Ref1) {
    if (Ref0->IG1!=Ref1->IG1 || Ref0->IG2!=Ref1->IG2 || Ref0->IG3!=Ref1->IG3 || Ref0->IG4!=Ref1->IG4)
      return(0);
 
-   /*Pacth temporaire du au lagrangien qui doivent avoir des GeoRef differents*/
+   // Patch temporaire du au lagrangien qui doivent avoir des GeoRef differents*/
    if (Ref0->Grid[0]=='M' || Ref0->Grid[0]=='X' || Ref0->Grid[0]=='Y' || Ref0->Grid[1]=='Y' || Ref0->Grid[0]=='#')
       return(0);
 
    if (Ref1->Grid[0]=='M' || Ref1->Grid[0]=='X' || Ref1->Grid[0]=='Y' || Ref1->Grid[1]=='Y' || Ref1->Grid[0]=='#')
       return(0);
 
-   /*Test for limits but only for ther refs with transforms (bands)*/
-   if (Ref0->Transform || Ref1->Transform)
-      if (Ref0->BD!=Ref1->BD || Ref0->X0!=Ref1->X0 || Ref0->X1!=Ref1->X1 || Ref0->Y0!=Ref1->Y0 || Ref0->Y1!=Ref1->Y1)
-         return(0);
+    if (Ref0->BD!=Ref1->BD || Ref0->X0!=Ref1->X0 || Ref0->X1!=Ref1->X1 || Ref0->Y0!=Ref1->Y0 || Ref0->Y1!=Ref1->Y1)
+      return(0);
 
    if (Ref0->Grid[0]!=Ref1->Grid[0] || Ref0->Grid[1]!=Ref1->Grid[1])
       return(0);

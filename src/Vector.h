@@ -70,6 +70,7 @@ typedef double Vect2d[2];
 typedef float  Vect4f[4];
 typedef float  Vect3f[3];
 typedef float  Vect2f[2];
+typedef int    Vect3i[3];
 typedef int    Vect2i[2];
 
 void Vect3f_CrossProduct(Vect3f V1,Vect3f V2,Vect3f V3);

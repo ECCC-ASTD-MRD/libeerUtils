@@ -52,7 +52,9 @@
 
 #define EZGrid_IsSame(GRID0,GRID1)     (GRID0 && GRID1 && GRID0->GID==GRID1->GID)
 #define EZGrid_IsLoaded(TILE,Z)        (TILE->Data && TILE->Data[Z] && !isnan(TILE->Data[Z][0]))
-#define EZGrid_IsInside(GRID,X,Y)      (!GRID || (X>=0 && Y>=0 && (GRID->Wrap || (X<GRID->H.NI-1 && Y<GRID->H.NJ-1))))
+#define EZGrid_IsInside(GRID,X,Y)      (GRID->H.GRTYP[0]=='M' || (X>=0 && Y>=0 && (GRID->Wrap || (X<GRID->H.NI-1 && Y<GRID->H.NJ-1))))
+#define EZGrid_IsMesh(GRID)            (GRID->H.GRTYP[0]=='M')
+
 #define EZGrid_Size(GRID)              (GRID->H.NJ*GRID->H.NI)
 #define EZGrid_TileValue(TILE,X,Y,Z)   (TILE->Data[Z][((int)Y-TILE->HJ)*TILE->HNI+((int)X-TILE->HI)])
 
@@ -145,6 +147,7 @@ int    EZGrid_GetRange(const TGrid* restrict const Grid,int I0,int J0,int K0,int
 int    EZGrid_GetDelta(TGrid* restrict const Grid,int Invert,float* DX,float* DY,float* DA);
 int    EZGrid_GetLL(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float* J,int Nb);
 int    EZGrid_GetIJ(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float* J,int Nb);
+int    EZGrid_GetBary(TGrid* __restrict const Grid,float Lat,float Lon,Vect3d Bary,Vect3i Index);
 
 int    EZGrid_TileGrid(int FIdTo,int NI, int NJ,int Halo,TGrid* restrict const Grid);
 int    EZGrid_UnTile(int FIdTo,int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2);

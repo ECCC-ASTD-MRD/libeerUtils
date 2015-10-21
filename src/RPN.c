@@ -39,7 +39,7 @@
 #include "EZTile.h"
 #include "fnom.h"
 
-static const char *RPN_Desc[]={ ">>","^^","^>","!!","HY","PROJ","MTRX",NULL };
+static const char *RPN_Desc[]={ ">>","^^","^>","!!","##","HY","PROJ","MTRX",NULL };
 
 static char FGFDTLock[1000];
 
