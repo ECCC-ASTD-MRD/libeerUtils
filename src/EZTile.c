@@ -2318,7 +2318,7 @@ int f77name(ezgrid_getdelta)(wordint *gdid,wordint *k,ftnfloat *dx,ftnfloat *dy,
 
 int EZGrid_GetDelta(TGrid* __restrict const Grid,int Invert,float* DX,float* DY,float* DA) {
 
-   unsigned int i,gi,j,gj,idx,tidx;
+   unsigned int i,gi,j,gj,idx,*tidx;
    float        di[4],dj[4],dlat[4],dlon[4];
    double       fx,fy,fz,dx[4],dy[4],s;
 
@@ -2335,30 +2335,30 @@ int EZGrid_GetDelta(TGrid* __restrict const Grid,int Invert,float* DX,float* DY,
       }
       
       if (DA) {
-         for(idx=0;idx<Grid->H.NI-3;idx+=3) {
+         tidx=Grid->GRef->Idx;
+         for(idx=0;idx<Grid->GRef->NIdx-3;idx+=3) {
             
-            dx[0]=DEG2RAD(Grid->GRef->AX[idx]);   dy[0]=DEG2RAD(Grid->GRef->AY[idx]);
-            dx[1]=DEG2RAD(Grid->GRef->AX[idx+1]); dy[1]=DEG2RAD(Grid->GRef->AY[idx+1]);
-            dx[2]=DEG2RAD(Grid->GRef->AX[idx+2]); dy[2]=DEG2RAD(Grid->GRef->AY[idx+2]);
-            fx=DIST(0.0,dy[0],dx[0],dy[1],dx[1]);
-            fy=DIST(0.0,dy[1],dx[1],dy[2],dx[2]);
-            fz=DIST(0.0,dy[2],dx[2],dy[0],dx[0]);
+            dx[0]=DEG2RAD(Grid->GRef->AX[tidx[idx]]);   dy[0]=DEG2RAD(Grid->GRef->AY[tidx[idx]]);
+            dx[1]=DEG2RAD(Grid->GRef->AX[tidx[idx+1]]); dy[1]=DEG2RAD(Grid->GRef->AY[tidx[idx+1]]);
+            dx[2]=DEG2RAD(Grid->GRef->AX[tidx[idx+2]]); dy[2]=DEG2RAD(Grid->GRef->AY[tidx[idx+2]]);
             
-            // Get triangle area using heron's formula
-//            if (fx>fy) s=fy; fy=fx; fx=s;
-//            if (fy>fz) s=fz; fz=fy; fy=s;
-//            if (fx>fy) s=fy; fy=fx; fx=s;          
-//            s=0.25*sqrt((fx+(fy+fz))*(fz-(fx-fy))*(fz+(fx-fy))*(fx+(fy-fz)));
-            
-            dx[0]=s=(fx+fy+fz)*0.5;
-            dx[1]=s*(s-fx)*(s-fy)*(s-fz);
-            s=sqrt(fabs(s*(s-fx)*(s-fy)*(s-fz)));
+            // Get triangle area using heron's formula            
+//            fx=DIST(0.0,dy[0],dx[0],dy[1],dx[1]);
+//            fy=DIST(0.0,dy[1],dx[1],dy[2],dx[2]);
+//            fz=DIST(0.0,dy[2],dx[2],dy[0],dx[0]);
+//            s=(fx+fy+fz)*0.5;
+//            s=sqrt(fabs(s*(s-fx)*(s-fy)*(s-fz)));
 
+            s =(dx[1]-dx[0])*(2+sin(dy[0])+sin(dy[1]));
+            s+=(dx[2]-dx[1])*(2+sin(dy[1])+sin(dy[2]));
+            s+=(dx[0]-dx[2])*(2+sin(dy[2])+sin(dy[0]));          
+            s*=(EARTHRADIUS*EARTHRADIUS)*-0.5;
+//            
             // Split area over 3 vertices
             s/=3.0;
-            DA[idx]+=s;
-            DA[idx+1]+=s;
-            DA[idx+2]+=s;          
+            DA[tidx[idx]]+=s;
+            DA[tidx[idx+1]]+=s;
+            DA[tidx[idx+2]]+=s;          
          }
 
          if (Invert) {
