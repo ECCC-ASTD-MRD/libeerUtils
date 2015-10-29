@@ -196,6 +196,7 @@ void App_Start(void) {
       MPI_Comm_size(MPI_COMM_WORLD,&App->NbMPI);
       MPI_Comm_rank(MPI_COMM_WORLD,&App->RankMPI);
 
+      App->TotalsMPI=(int*)malloc((App->NbMPI+1)*sizeof(int));
       App->CountsMPI=(int*)malloc((App->NbMPI+1)*sizeof(int));
       App->DisplsMPI=(int*)malloc((App->NbMPI+1)*sizeof(int));
    }
