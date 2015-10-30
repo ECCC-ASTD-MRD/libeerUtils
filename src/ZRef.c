@@ -673,15 +673,8 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
                break;
 
             case LVL_HYBRID:
-               rtop=ptop/pref;
-               for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
-                  pk=pref*ZRef->Levels[k];
-                  pr=ZRef->Levels[k]-rtop;
-                  pr=powf((pr<0?1e-32:pr)/(1.0-rtop),ZRef->RCoef[0]);
-                  for (ij=0;ij<NIJ;ij++) {
-                     Pres[idxk+ij]=pk+(P0[ij]-pref)*pr;
-                  }
-               }
+               ij=1;
+               f77name(hyb_to_pres)(Pres,ZRef->Levels,&ptop,&ZRef->RCoef[0],&pref,&ij,P0,&NIJ,&ij,&ZRef->LevelNb);
                break;
 
             case LVL_UNDEF:
