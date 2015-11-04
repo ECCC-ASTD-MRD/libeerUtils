@@ -249,7 +249,7 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
             /*If it's 3D, use the mode for speed since c_gdxywdval only uses 2D*/
             if (Def->Data[2])
                c_gdxysval(GRef->Ids[GRef->NId],&valf,(float*)&Def->Mode[mem],&x,&y,1);
-            *Length=valf;
+               *Length=valf;
             if (ThetaXY)
                *ThetaXY=valdf;
 //            RPN_IntUnlock();

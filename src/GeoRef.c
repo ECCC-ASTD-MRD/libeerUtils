@@ -104,12 +104,12 @@ void GeoScan_Init(TGeoScan *Scan) {
  *
  *---------------------------------------------------------------------------------------------------------------
 */
-int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *FromDef,int X0,int Y0,int X1,int Y1,int Dim,char *Degree) {
+int _GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *FromDef,int X0,int Y0,int X1,int Y1,int Dim,char *Degree) {
 
    register int idx,x,y,n=0;
    int          d=0,sz,dd;
-   double       x0,y0,v;
-
+   double       x0,y0,v,th;
+   
    if (!Scan || !ToRef || !FromRef) {
       return(0);
    }
@@ -120,7 +120,7 @@ int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
    X1=FMIN(X1,FromRef->X1);
    Y1=FMIN(Y1,FromRef->Y1);
 
-   /*Adjust scan buffer sizes*/
+   // Adjust scan buffer sizes
    Scan->DX=X1-X0+1;
    Scan->DY=Y1-Y0+1;
    dd=(Scan->DX+1)*(Scan->DY+1);
@@ -141,7 +141,7 @@ int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
    dd=Dim-1;
    Scan->N=0;
 
-   /*WKT grid type*/
+   // WKT grid type
    if (FromRef->Grid[0]=='W') {
 #ifdef HAVE_GDAL
       for(y=Y0;y<=Y1+dd;y++) {
@@ -170,7 +170,7 @@ int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
       d=dd?2:1;
       sz=8;
 
-   /*Y Grid type*/
+   // Y Grid type
    } else if (FromRef->Grid[0]=='Y') {
       for(y=Y0;y<=Y1;y++) {
          idx=(y-FromRef->Y0)*FromDef->NI+(X0-FromRef->X0);
@@ -185,7 +185,7 @@ int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
       d=1;
       sz=4;
 
-   /*Other RPN grids*/
+   // Other RPN grids
    } else {
 #ifdef HAVE_RMN
       for(y=Y0;y<=Y1+dd;y++) {
@@ -209,7 +209,135 @@ int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
 #endif
    }
 
-   /*Project to destination grid*/
+   // Project to destination grid
+   for(x=n-1;x>=0;x--) {
+      if (sz==4) {
+         x0=(double)((float*)Scan->X)[x];
+         y0=(double)((float*)Scan->Y)[x];
+      } else {
+         x0=Scan->X[x];
+         y0=Scan->Y[x];
+      }
+      
+      if (ToDef) {
+         Scan->D[x]=ToDef->NoData;
+      }
+
+      // If we're inside
+      if (ToRef->UnProject(ToRef,&Scan->X[x],&Scan->Y[x],y0,x0,0,1) && ToDef) {
+         ToRef->Value(ToRef,ToDef,Degree?Degree[0]:'L',0,Scan->X[x],Scan->Y[x],0,&v,NULL);
+         Scan->D[x]=v;
+      }
+   }
+   return(d);
+}
+
+int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *FromDef,int X0,int Y0,int X1,int Y1,int Dim,char *Degree) {
+
+   register int idx,x,y,n=0;
+   int          d=0,sz,dd;
+   double       x0,y0,v,th;
+   
+   if (!Scan || !ToRef || !FromRef) {
+      return(0);
+   }
+
+   // Check limits
+   X0=FMAX(X0,FromRef->X0);
+   Y0=FMAX(Y0,FromRef->Y0);
+   X1=FMIN(X1,FromRef->X1);
+   Y1=FMIN(Y1,FromRef->Y1);
+
+   // Adjust scan buffer sizes
+   Scan->DX=X1-X0+1;
+   Scan->DY=Y1-Y0+1;
+   dd=(Scan->DX+1)*(Scan->DY+1);
+   sz=Scan->DX*Scan->DY;
+
+   if (Scan->S<sz) {
+      if (!(Scan->X=(double*)realloc(Scan->X,dd*sizeof(double))))
+         return(0);
+      if (!(Scan->Y=(double*)realloc(Scan->Y,dd*sizeof(double))))
+         return(0);
+      if (!(Scan->V=(unsigned int*)realloc(Scan->V,sz*sizeof(unsigned int))))
+         return(0);
+      if (!(Scan->D=(float*)realloc(Scan->D,sz*sizeof(float))))
+         return(0);
+      Scan->S=sz;
+   }
+
+   dd=Dim-1;
+   Scan->N=0;
+
+   // WKT grid type
+   if (FromRef->Grid[0]=='W') {
+#ifdef HAVE_GDAL
+      for(y=Y0;y<=Y1+dd;y++) {
+         idx=(y-FromRef->Y0)*FromDef->NI+(X0-FromRef->X0);
+         for(x=X0;x<=X1+dd;x++,idx++,n++) {
+            if (x<=X1 && y<=Y1) {
+               Scan->V[Scan->N++]=idx;
+            }
+
+            x0=dd?x-0.5:x;
+            y0=dd?y-0.5:y;
+            if (FromRef->Transform) {
+               Scan->X[n]=FromRef->Transform[0]+FromRef->Transform[1]*x0+FromRef->Transform[2]*y0;
+               Scan->Y[n]=FromRef->Transform[3]+FromRef->Transform[4]*x0+FromRef->Transform[5]*y0;
+            } else {
+               Scan->X[n]=x0;
+               Scan->Y[n]=y0;
+            }
+         }
+      }
+
+      if (FromRef->Function) {
+         OCTTransform(FromRef->Function,n,Scan->X,Scan->Y,NULL);
+      }
+#endif
+      d=dd?2:1;
+      sz=8;
+
+   // Y Grid type
+   } else if (FromRef->Grid[0]=='Y') {
+      for(y=Y0;y<=Y1;y++) {
+         idx=(y-FromRef->Y0)*FromDef->NI+(X0-FromRef->X0);
+         for(x=X0;x<=X1;x++,idx++,n++) {
+            if (x<=X1 && y<=Y1) {
+               Scan->V[Scan->N++]=idx;
+            }
+            ((float*)Scan->X)[n]=FromRef->AX[idx];
+            ((float*)Scan->Y)[n]=FromRef->AY[idx];
+         }
+      }
+      d=1;
+      sz=4;
+
+   // Other RPN grids
+   } else {
+#ifdef HAVE_RMN
+      for(y=Y0;y<=Y1+dd;y++) {
+         idx=(y-FromRef->Y0)*FromDef->NI+(X0-FromRef->X0);
+         for(x=X0;x<=X1+dd;x++,idx++,n++) {
+            if (x<=X1 && y<=Y1) {
+               Scan->V[Scan->N++]=idx;
+            }
+            ((float*)Scan->X)[n]=dd?x+0.5:x+1.0;
+            ((float*)Scan->Y)[n]=dd?y+0.5:y+1.0;
+         }
+      }
+//      RPN_IntLock();
+      c_gdllfxy(FromRef->Ids[FromRef->NId],(float*)Scan->Y,(float*)Scan->X,(float*)Scan->X,(float*)Scan->Y,n);
+//      RPN_IntUnlock();
+
+      d=dd?2:1;
+      sz=4;
+#else
+      App_Log(ERROR,"%s: RMNLIB support not included\n",__func__);
+#endif
+   }
+
+   // Project to destination grid
    if (ToRef->Grid[0]=='W') {
 #ifdef HAVE_GDAL
       for(x=n-1;x>=0;x--) {
@@ -259,7 +387,7 @@ int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
 #ifdef HAVE_RMN
       if (sz==8) {
          for(x=0;x<n;x++) {
-            /*RPN functions go from 0 to 360 instead of -180 to 180*/
+            // RPN functions go from 0 to 360 instead of -180 to 180
             x0=Scan->X[x]<0?Scan->X[x]+360:Scan->X[x];
             y0=Scan->Y[x];
             ((float*)Scan->X)[x]=x0;
@@ -271,21 +399,29 @@ int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
       c_gdxyfll(ToRef->Ids[ToRef->NId],(float*)Scan->X,(float*)Scan->Y,(float*)Scan->Y,(float*)Scan->X,n);
 //      RPN_IntUnlock();
 //EZFIX
-      /*If we have the data of source, get it's values right now*/
-      if (ToDef) {
+      // If we have the data of source and they're float, get it's values right now
+      if (ToDef && ToDef->Type==TD_Float32) {
          if (Degree)
             c_ezsetopt("INTERP_DEGREE",Degree);
-         c_gdxysval(ToRef->Ids[ToRef->NId],Scan->D,(float*)ToDef->Mode,(float*)Scan->X,(float*)Scan->Y,n);
+         
+         c_gdxysval(ToRef->Ids[ToRef->NId],Scan->D,(float*)ToDef->Mode,(float*)Scan->X,(float*)Scan->Y,n);         
       }
 
-      /*Cast back to double (Start from end since type is double, not to overlap values*/
+      // Cast back to double (Start from end since type is double, not to overlap values
       for(x=n-1;x>=0;x--) {
          Scan->X[x]=(double)((float*)Scan->X)[x]-1.0;
          Scan->Y[x]=(double)((float*)Scan->Y)[x]-1.0;
 
-         /*If we're outside, set to nodata*/
-         if (ToDef && (!FIN2D(ToDef,Scan->X[x],Scan->Y[x]) || (ToDef->Mask && !ToDef->Mask[FIDX2D(ToDef,lrint(Scan->X[x]),lrint(Scan->Y[x]))]))) {
-            Scan->D[x]=ToDef->NoData;
+         if (ToDef) {
+            idx=FIDX2D(ToDef,lrint(Scan->X[x]),lrint(Scan->Y[x]));
+            
+            if (!FIN2D(ToDef,Scan->X[x],Scan->Y[x]) || (ToDef->Mask && !ToDef->Mask[idx])) {
+               // If we're outside, set to nodata
+               Scan->D[x]=ToDef->NoData;
+            } else if (ToDef->Type<TD_Float32) {
+               // Otherwise, set nearest data if not floats
+               Def_GetMod(ToDef,idx,Scan->D[x]);
+            }
          }
       }
 #else
