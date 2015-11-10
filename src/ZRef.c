@@ -1103,21 +1103,22 @@ int ZRef_Level2IP(float Level,int Type,TZRef_IP1Mode Mode) {
    if (Type<0) {
       return(Level);
    } else {
-      /*ETA | THETA -> SIGMA*/
+      mode=Mode==DEFAULT?ZREF_IP1MODE:Mode;
+         
+      // ETA | THETA -> SIGMA
       if (Type==LVL_ETA || Type==LVL_THETA) {
          Type=LVL_SIGMA;
       }
 
-      /*GALCHEN -> MASL*/
+      // GALCHEN -> MAGL
       if (Type==LVL_GALCHEN) {
-         Type=LVL_MAGL;
+         // MAGL can't be encoded in old style so set to MASL in this galchen case
+         Type=mode==3?LVL_MASL:LVL_MAGL;
       }
 
-      /*Convertir en niveau reel*/
+      // Hybrid and MAGL can't be encoded in old style so force new style
       if (Type==LVL_HYBRID || Type==LVL_MAGL) {
          mode=2;
-      } else {
-         mode=Mode==DEFAULT?ZREF_IP1MODE:Mode;
       }
 
 #ifdef HAVE_RMN

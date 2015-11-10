@@ -2377,7 +2377,7 @@ int EZGrid_GetDelta(TGrid* __restrict const Grid,int Invert,float* DX,float* DY,
             di[2]=gi;     dj[2]=gj-0.5;
             di[3]=gi;     dj[3]=gj+0.5;
 
-            // Reproject gridpoint length coordinates os segments crossing center of cell
+            // Reproject gridpoint length coordinates of segments crossing center of cell
             c_gdllfxy(Grid->GID,dlat,dlon,di,dj,4);
             dx[0]=DEG2RAD(dlon[0]); dy[0]=DEG2RAD(dlat[0]);
             dx[1]=DEG2RAD(dlon[1]); dy[1]=DEG2RAD(dlat[1]);
