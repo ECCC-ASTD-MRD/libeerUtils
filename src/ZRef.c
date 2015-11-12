@@ -987,25 +987,47 @@ double ZRef_Pressure2Level(TZRef* restrict const ZRef,double P0,double Pressure)
  */
 double ZRef_Level2Meter(double Level,int Type) {
 
-   /* Dans le cas d'un niveau 0 et type SIGMA, on force a ETA*/
+   double m=0.0;
+   
+   // Dans le cas d'un niveau 0 et type SIGMA, on force a ETA
    if (Level==0 && Type==LVL_SIGMA) {
       Type=LVL_ETA;
    }
 
    switch(Type) {
-      case LVL_MASL    : return (Level); break;
-      case LVL_ETA     : return (ETA2METER(Level)); break;
-      case LVL_SIGMA   : return (SIGMA2METER(Level)); break;
-      case LVL_PRES    : return (PRESS2METER(Level)); break;
-      case LVL_UNDEF   : return (Level); break;
-      case LVL_MAGL    : return (Level); break;
-      case LVL_HYBRID  : return (ETA2METER(Level)); break;
-      case LVL_THETA   : return (ETA2METER(Level)); break;
-      case LVL_GALCHEN : return (Level); break;
-      case LVL_ANGLE   : return (Level); break;
+      case LVL_MASL    : m=Level; break;
+      
+      case LVL_ETA     : m=ETA2METER(Level); break;
+      
+      case LVL_SIGMA   : m=SIGMA2METER(Level); break;
+      
+      case LVL_PRES    : if (Level>226.3203) {
+                            m=44330.8*(1-pow(Level/1013.25,0.190263));
+                         } else if (Level>54.749) {
+                            m=11000.0-6341.624*log(Level/226.3202);
+                         } else if (Level>8.68) {
+                            m=20000.0+216650.0*(pow(Level/54.749,-0.0292173)-1);
+                         } else if (Level>0) {
+                            m=32000.0+81660.7*(pow(Level/8.680157,-0.0819469)-1);
+                         } else {
+                            m=0;
+                         }
+                         break;
+                         
+      case LVL_UNDEF   : m=Level; break;
+      
+      case LVL_MAGL    : m=Level; break;
+      
+      case LVL_HYBRID  : m=ETA2METER(Level); break;
+      
+      case LVL_THETA   : m=ETA2METER(Level); break;
+      
+      case LVL_GALCHEN : m=Level; break;
+      
+      case LVL_ANGLE   : m=Level; break;
    }
 
-   return(0.0);
+   return(m);
 }
 
 /*----------------------------------------------------------------------------
@@ -1029,12 +1051,12 @@ double ZRef_IP2Meter(int IP) {
    float level=0.0;
    char  format;
 
-   /*Si c'est 0 on force a 0 metre car 0 mb=outter space*/
+   // Si c'est 0 on force a 0 metre car 0 mb=outter space
    if (IP==0)
       return(0);
 
 #ifdef HAVE_RMN
-   /*Convertir en niveau reel*/
+   // Convertir en niveau reel
    f77name(convip)(&IP,&level,&kind,&mode,&format,&flag);
 #else
    App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
@@ -1067,7 +1089,7 @@ double ZRef_IP2Level(int IP,int *Type) {
    char   format;
 
 #ifdef HAVE_RMN
-   /*Convertir en niveau reel*/
+   // Convertir en niveau reel
    f77name(convip)(&IP,&level,Type,&mode,&format,&flag);
 #else
    App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
