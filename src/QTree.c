@@ -356,7 +356,7 @@ TQTree* QTree_AddTriangle(TQTree* restrict Node,Vect2d T[3],unsigned int MaxDept
             new=Node;
          }
       }  else {
-         // If there's no child yet at thi node and depth
+         // If there's no child yet at this node and depth
          if (!Node->Childs[0]) {
             // Split node in 4.
             center.X = Node->BBox[0].X+(Node->BBox[1].X-Node->BBox[0].X)*0.5;

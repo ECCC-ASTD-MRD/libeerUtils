@@ -336,7 +336,7 @@ TDef *Def_CopyPromote(TDef *Def,TDef_Type Type);
 void  Def_Free(TDef *Def);
 TDef *Def_New(int NI,int NJ,int NK,int Dim,TDef_Type Type);
 TDef *Def_Resize(TDef *Def,int NI,int NJ,int NK);
-int   Def_Tile(TDef *DefTo,TDef *DefTile,int X0,int Y0);
+int   Def_Paste(TDef *DefTo,TDef *DefPaste,int X0,int Y0);
 
 int   Def_Rasterize(TDef *Def,struct TGeoRef *Ref,OGRGeometryH Geom,double Value,TDef_Combine Comb);
 int   Def_GridCell2OGR(OGRGeometryH Geom,struct TGeoRef *RefTo,struct TGeoRef *RefFrom,int I,int J,int Seg);

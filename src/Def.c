@@ -485,14 +485,14 @@ TDef *Def_Resize(TDef *Def,int NI,int NJ,int NK){
 }
 
 /*----------------------------------------------------------------------------
- * Nom      : <Def_Tile>
+ * Nom      : <Def_Paste>
  * Creation : Novembre 2007- J.P. Gauthier - CMC/CMOE
  *
- * But      : Copier les donnees d'un TDef dans un autres (Tiling).
+ * But      : Copier les donnees d'un TDef dans un autres (Paste).
  *
  * Parametres :
  *  <DefTo>   : Destination
- *  <DefTile> : Tuile
+ *  <DefPaste>: Paste
  *  <X0>      : Point de depart de la tuile en X
  *  <Y0>      : Point de depart de la tuile en Y
  *
@@ -503,33 +503,42 @@ TDef *Def_Resize(TDef *Def,int NI,int NJ,int NK){
  *
  *----------------------------------------------------------------------------
 */
-int Def_Tile(TDef *DefTo,TDef *DefTile,int X0, int Y0) {
+int Def_Paste(TDef *DefTo,TDef *DefPaste,int X0, int Y0) {
 
-   int    x,y,dx,dy,x0,y0,x1,y1,c;
+   int    x,y,dx,dy,x0,y0,x1,y1,c,nc,a=1;
    unsigned long idxf,idxd;
    double val;
 
+   // Check limits
    x0=X0<0?-X0:0;
    y0=Y0<0?-Y0:0;
 
-   x1=DefTile->NI+X0>DefTo->NI?DefTo->NI:DefTile->NI;
-   y1=DefTile->NJ+Y0>DefTo->NJ?DefTo->NJ:DefTile->NJ;
+   x1=DefPaste->NI+X0>DefTo->NI?DefTo->NI:DefPaste->NI;
+   y1=DefPaste->NJ+Y0>DefTo->NJ?DefTo->NJ:DefPaste->NJ;
 
+   // If paste is out of destination
    if (x0>DefTo->NI || x1<0 || y0>DefTo->NJ || y1<0) {
       return(0);
    }
 
+   // Maximum number of band to paste
+   nc=FMIN(DefTo->NC,DefPaste->NC);
+   
    dy=Y0;
-   for (y=y0;y<=y1;y++) {
+   for (y=y0;y<y1;y++) {
       dx=X0;
-      for (x=x0;x<=x1;x++) {
-         for(c=0;c<DefTile->NC;c++) {
-            if (DefTo->Data[c]) {
-               idxf=FIDX2D(DefTile,x,y);
-               Def_Get(DefTile,0,idxf,val);
-
-               idxd=FIDX2D(DefTo,dx,dy);
-               Def_Set(DefTo,0,idxd,val);
+      for (x=x0;x<x1;x++) {
+         idxf=FIDX2D(DefPaste,x,y);
+         idxd=FIDX2D(DefTo,dx,dy);
+         
+         if (DefPaste->NC==4) {
+            Def_Get(DefPaste,3,idxf,a);
+         }
+         
+         if (a) {
+            for(c=0;c<nc;c++) {
+               Def_Get(DefPaste,c,idxf,val);
+               Def_Set(DefTo,c,idxd,val);
             }
          }
          dx++;

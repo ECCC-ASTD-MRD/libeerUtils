@@ -709,6 +709,7 @@ TQTree* EZGrid_BuildIndex(TGrid* __restrict const Grid) {
    // Check data limits   
    lat0=lon0=1e10;
    lat1=lon1=-1e10;
+   res=8;
    
    for(n=0;n<Grid->GRef->NX;n++) {
       lat0=FMIN(lat0,Grid->GRef->AY[n]);
@@ -732,7 +733,6 @@ TQTree* EZGrid_BuildIndex(TGrid* __restrict const Grid) {
       tr[2][0]=Grid->GRef->AY[idx[nt+2]];   tr[2][1]=Grid->GRef->AX[idx[nt+2]];
       
       // Put it in the quadtree, in any child nodes intersected
-      res=8;
       if (!QTree_AddTriangle(Grid->QTree,tr,res,&Grid->GRef->Idx[nt])) {
          App_Log(ERROR,"%s: failed to add node\n",__func__);
          return(NULL);
