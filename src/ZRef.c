@@ -87,7 +87,7 @@ TZRef* ZRef_New(void) {
    zref->Style=NEW;
    zref->Type=LVL_UNDEF;
    zref->LevelNb=0;
-   zref->PTop=zref->PRef=zref->ETop=0.0;
+   zref->POff=zref->PTop=zref->PRef=zref->ETop=0.0;
    zref->RCoef[0]=zref->RCoef[1]=1.0;
    zref->P0=zref->PCube=zref->A=zref->B=NULL;
    zref->Version=-1;
@@ -609,7 +609,7 @@ double ZRef_K2Pressure(TZRef* restrict const ZRef,double P0,int K) {
          App_Log(ERROR,"%s: Invalid level version (%i)\n",__func__,ZRef->Version);
    }
 
-   return(pres);
+   return(pres+ZRef->POff);
 }
 
 /*----------------------------------------------------------------------------
@@ -726,8 +726,9 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
       default:
          App_Log(ERROR,"%s: Invalid level type (%i)\n",__func__,ZRef->Type);
    }
-
-   if (Log) for (ij=0;ij<NIJ*ZRef->LevelNb;ij++) Pres[ij]=logf(Pres[ij]);
+   
+   if (ZRef->POff>0.0) for (ij=0;ij<NIJ*ZRef->LevelNb;ij++) Pres[ij]+=ZRef->POff;
+   if (Log)            for (ij=0;ij<NIJ*ZRef->LevelNb;ij++) Pres[ij]=logf(Pres[ij]);
 
    return(1);
 }

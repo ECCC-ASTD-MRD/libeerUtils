@@ -75,6 +75,7 @@ typedef struct TZRef {
    int    Type;          // Type of levels
    float *Levels;        // Levels list
    int    LevelNb;       // Number of Levels
+   float  POff;          // Pressure offset from level
    float  PTop;          // Pressure at top of atmosphere
    float  PRef;          // Reference pressure
    float  RCoef[2];      // Hybrid level coefficient
