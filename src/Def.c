@@ -505,9 +505,9 @@ TDef *Def_Resize(TDef *Def,int NI,int NJ,int NK){
 */
 int Def_Paste(TDef *DefTo,TDef *DefPaste,int X0, int Y0) {
 
-   int    x,y,dx,dy,x0,y0,x1,y1,c,nc,a=1;
-   unsigned long idxf,idxd;
-   double val;
+   int           x,y,dx,dy,x0,y0,x1,y1,c,nc;
+   unsigned long idxs,idxd;
+   double        a=1.0,src,dst;
 
    // Check limits
    x0=X0<0?-X0:0;
@@ -528,18 +528,21 @@ int Def_Paste(TDef *DefTo,TDef *DefPaste,int X0, int Y0) {
    for (y=y0;y<y1;y++) {
       dx=X0;
       for (x=x0;x<x1;x++) {
-         idxf=FIDX2D(DefPaste,x,y);
+         idxs=FIDX2D(DefPaste,x,y);
          idxd=FIDX2D(DefTo,dx,dy);
          
          if (DefPaste->NC==4) {
-            Def_Get(DefPaste,3,idxf,a);
+            Def_Get(DefPaste,3,idxs,a);
          }
-         
-         if (a) {
-            for(c=0;c<nc;c++) {
-               Def_Get(DefPaste,c,idxf,val);
-               Def_Set(DefTo,c,idxd,val);
+
+         for(c=0;c<nc;c++) {               
+            Def_Get(DefPaste,c,idxs,src);
+            
+            if (DefPaste->NC==4) {
+               Def_Get(DefTo,c,idxd,dst);
+               src=src*a+dst*(1.0-a);
             }
+            Def_Set(DefTo,c,idxd,src);
          }
          dx++;
       }
