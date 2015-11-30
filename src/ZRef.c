@@ -727,8 +727,8 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
          App_Log(ERROR,"%s: Invalid level type (%i)\n",__func__,ZRef->Type);
    }
    
-   if (ZRef->POff>0.0) for (ij=0;ij<NIJ*ZRef->LevelNb;ij++) Pres[ij]+=ZRef->POff;
-   if (Log)            for (ij=0;ij<NIJ*ZRef->LevelNb;ij++) Pres[ij]=logf(Pres[ij]);
+   if (ZRef->POff!=0.0) for (ij=0;ij<NIJ*ZRef->LevelNb;ij++) Pres[ij]+=ZRef->POff;
+   if (Log)             for (ij=0;ij<NIJ*ZRef->LevelNb;ij++) Pres[ij]=logf(Pres[ij]);
 
    return(1);
 }
