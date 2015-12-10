@@ -99,14 +99,19 @@ static inline TQTree* QTree_FindChild(const TQTree* const restrict Node,double X
  *  <Bool>   : False on failed allocation  
  *
  * Remarks : 
- *      
+ *    Box numbering is
+ *         ----- 
+ *       | 0 | 1 |
+ *       |---+---| 
+ *       | 2 | 3 |  
+ *         ----- 
  *----------------------------------------------------------------------------
  */
 static inline int QTree_Split(TQTree* const restrict Node,const TPoint2D* const restrict Center) {
    
    Node->Childs[0] = QTree_New(Node->BBox[0].X,Node->BBox[0].Y, Center->X, Center->Y,Node);
-   Node->Childs[1] = QTree_New(Node->BBox[0].X,Center->Y,Center->X, Node->BBox[1].Y,Node);
-   Node->Childs[2] = QTree_New(Center->X,Node->BBox[0].Y,Node->BBox[1].X, Center->Y,Node); 
+   Node->Childs[1] = QTree_New(Center->X,Node->BBox[0].Y,Node->BBox[1].X, Center->Y,Node); 
+   Node->Childs[2] = QTree_New(Node->BBox[0].X,Center->Y,Center->X, Node->BBox[1].Y,Node);
    Node->Childs[3] = QTree_New(Center->X,Center->Y,Node->BBox[1].X, Node->BBox[1].Y,Node);
 
    return(Node->Childs[0] && Node->Childs[1] && Node->Childs[2] && Node->Childs[3]);
@@ -131,7 +136,7 @@ static inline int QTree_Split(TQTree* const restrict Node,const TPoint2D* const 
  *              
  *----------------------------------------------------------------------------
  */
-static inline int QTree_AddData(TQTree* const restrict Node,double X,double Y,void *Data) {
+int QTree_AddData(TQTree* const restrict Node,double X,double Y,void *Data) {
 
   if (Data) {
      Node->NbData++;
@@ -164,7 +169,7 @@ static inline int QTree_AddData(TQTree* const restrict Node,double X,double Y,vo
  *      
  *----------------------------------------------------------------------------
  */
-static inline void QTree_DelData(TQTree* const Node) {
+void QTree_DelData(TQTree* const Node) {
 
    Node->NbData=0;
    Node->Size=0;
@@ -376,6 +381,61 @@ TQTree* QTree_AddTriangle(TQTree* restrict Node,Vect2d T[3],unsigned int MaxDept
    }
 
    return(new);
+}
+
+/*----------------------------------------------------------------------------
+ * Name     : <QTree_Neighbors>
+ * Creation : July 2015 - J.P.Gauthier - CMC/CMOE
+ *
+ * Purpose  : Find all neighbors of a quad cell
+ *
+ * Args :
+ *   <Node>      : TQTree object pointer to the cell from which we want neighbors
+ *   <Neighbors> : Neighbors list
+ *   <Nb>        : Number of neightbors to find (4 or 8 for corners).
+ *
+ * Return:
+ *
+ * Remarks : 
+ *   - The neighbor numbering is as follow
+ *
+ *     4   0   5
+ *        --- 
+ *     3 |   | 1
+ *        --- 
+ *     7   2   6
+ *----------------------------------------------------------------------------
+ */
+void QTree_Neighbors(TQTree* Node,TQTree** Neighbors,int Nb) {
+
+   TQTree *root,*node;
+   double  dx,dy;
+   int     d=0;;
+   
+   if (Nb!=4 || Nb!=8) {
+      for(int n=0;n<Nb;n++) Neighbors[n]=NULL;
+   }
+   
+   dx=(Node->BBox[1].X-Node->BBox[0].X)*0.5;
+   dy=(Node->BBox[1].Y-Node->BBox[0].Y)*0.5;
+
+   // Climb back up the tree
+   node=Node;
+   while(node=node->Parent) { d++; root=node; }      
+         
+   // Find neighbors
+   Neighbors[0]=QTree_Find(root,Node->BBox[0].X+dx,Node->BBox[0].Y-dy);
+   Neighbors[1]=QTree_Find(root,Node->BBox[1].X+dx,Node->BBox[0].Y+dy);
+   Neighbors[2]=QTree_Find(root,Node->BBox[0].X+dx,Node->BBox[1].Y+dy);
+   Neighbors[3]=QTree_Find(root,Node->BBox[0].X-dx,Node->BBox[0].Y+dy);
+   
+   // If corners asked
+   if (Nb==8) {
+      Neighbors[4]=QTree_Find(root,Node->BBox[0].X-dx,Node->BBox[0].Y-dy);
+      Neighbors[5]=QTree_Find(root,Node->BBox[1].X+dx,Node->BBox[0].Y-dy);
+      Neighbors[6]=QTree_Find(root,Node->BBox[1].X+dx,Node->BBox[1].Y+dy);
+      Neighbors[7]=QTree_Find(root,Node->BBox[0].X-dx,Node->BBox[0].Y+dy);      
+   }
 }
 
 /*----------------------------------------------------------------------------

@@ -52,8 +52,9 @@
 
 #define EZGrid_IsSame(GRID0,GRID1)     (GRID0 && GRID1 && GRID0->GID==GRID1->GID)
 #define EZGrid_IsLoaded(TILE,Z)        (TILE->Data && TILE->Data[Z] && !isnan(TILE->Data[Z][0]))
-#define EZGrid_IsInside(GRID,X,Y)      (GRID->H.GRTYP[0]=='M' || (X>=0 && Y>=0 && (GRID->Wrap || (X<GRID->H.NI-1 && Y<GRID->H.NJ-1))))
+#define EZGrid_IsInside(GRID,X,Y)      (GRID->H.GRTYP[0]=='M' || GRID->H.GRTYP[0]=='Y' || (X>=0 && Y>=0 && (GRID->Wrap || (X<GRID->H.NI-1 && Y<GRID->H.NJ-1))))
 #define EZGrid_IsMesh(GRID)            (GRID->H.GRTYP[0]=='M')
+#define EZGrid_IsRegular(GRID)         (GRID->H.GRTYP[0]!='M' && GRID->H.GRTYP[0]!='Y')
 
 #define EZGrid_Size(GRID)              (GRID->H.NJ*GRID->H.NI)
 #define EZGrid_TileValue(TILE,X,Y,Z)   (TILE->Data[Z][((int)Y-TILE->HJ)*TILE->HNI+((int)X-TILE->HI)])
@@ -96,6 +97,7 @@ typedef struct TGrid {
    TZRef          *ZRef;                 // Vertical referential
    TGeoRef        *GRef;                 // Geographic referential
    TQTree         *QTree;                // Quad tree index
+   int             QRes;                 // Quad tree resolution
    int             Wrap;                 // Flag indicating grid globe wrap-around (global grids)
    float           Pole[2];              // Pole coverage
 

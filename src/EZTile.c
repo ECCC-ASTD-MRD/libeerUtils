@@ -59,7 +59,7 @@ int EZGrid_Wrap(TGrid* __restrict const Grid) {
    Grid->Wrap=0;
    Grid->Pole[0]=Grid->Pole[1]=0.0f;
 
-   if (Grid->H.GRTYP[0]!='M' && Grid->H.GRTYP[0]!='W') {
+   if (Grid->H.GRTYP[0]!='M' && Grid->H.GRTYP[0]!='W' && Grid->H.GRTYP[0]!='Y') {
    
    //   RPN_IntLock();
       // Check for south pole coverage
@@ -393,7 +393,7 @@ static TGrid* EZGrid_CacheFind(TGrid *Grid) {
                   pthread_mutex_unlock(&CacheMutex);
                   return(GridCache[n]);
                }
-            } else if (Grid->H.GRTYP[0]=='Z' || Grid->H.GRTYP[0]=='M') {
+            } else if (Grid->H.GRTYP[0]=='Z' || Grid->H.GRTYP[0]=='M' || Grid->H.GRTYP[0]=='Y') {
                if (GridCache[n]->IP1==Grid->H.IG1 && GridCache[n]->IP2==Grid->H.IG2 && GridCache[n]->IP3==Grid->H.IG3) {
                   pthread_mutex_unlock(&CacheMutex);
                   return(GridCache[n]);
@@ -699,9 +699,9 @@ int EZGrid_UnTile(int FIdTo,int FIdFrom,char* Var,char* TypVar,char* Etiket,int 
  *    - La procedure fonctionne aussi pour les champs non tuile. Dans ce cas on a une seule tuile.
  *----------------------------------------------------------------------------
 */
-TQTree* EZGrid_BuildIndex(TGrid* __restrict const Grid) {
+TQTree* EZGrid_BuildIndexM(TGrid* __restrict const Grid) {
 
-   unsigned int  n,nt,res=0;
+   unsigned int  n,nt;
    unsigned int *idx;
    double        lat0,lon0,lat1,lon1;
    Vect2d        tr[3];
@@ -709,7 +709,7 @@ TQTree* EZGrid_BuildIndex(TGrid* __restrict const Grid) {
    // Check data limits   
    lat0=lon0=1e10;
    lat1=lon1=-1e10;
-   res=8;
+   Grid->QRes=8;
    
    for(n=0;n<Grid->GRef->NX;n++) {
       lat0=FMIN(lat0,Grid->GRef->AY[n]);
@@ -733,12 +733,60 @@ TQTree* EZGrid_BuildIndex(TGrid* __restrict const Grid) {
       tr[2][0]=Grid->GRef->AY[idx[nt+2]];   tr[2][1]=Grid->GRef->AX[idx[nt+2]];
       
       // Put it in the quadtree, in any child nodes intersected
-      if (!QTree_AddTriangle(Grid->QTree,tr,res,&Grid->GRef->Idx[nt])) {
+      if (!QTree_AddTriangle(Grid->QTree,tr,Grid->QRes,&Grid->GRef->Idx[nt])) {
          App_Log(ERROR,"%s: failed to add node\n",__func__);
          return(NULL);
       }      
    }
    
+   return(Grid->QTree);
+}
+
+TQTree* EZGrid_BuildIndexY(TGrid* __restrict const Grid) {
+
+   unsigned int  n,x,y;
+   double        dx,dy,lat0,lon0,lat1,lon1;
+   Vect2d        pt;
+
+   // Check data limits   
+   lat0=lon0=1e10;
+   lat1=lon1=-1e10;
+   
+   for(n=0;n<Grid->GRef->NX;n++) {
+      lat0=FMIN(lat0,Grid->GRef->AY[n]);
+      lon0=FMIN(lon0,Grid->GRef->AX[n]);
+      lat1=FMAX(lat1,Grid->GRef->AY[n]);
+      lon1=FMAX(lon1,Grid->GRef->AX[n]);
+   }
+   
+   Grid->QRes=100;
+   
+   // Create the array on the data limits
+   dy=(lat1-lat0)/Grid->QRes;
+   dx=(lon1-lon0)/Grid->QRes;
+   
+   if (!(Grid->QTree=(TQTree*)calloc((Grid->QRes+1)*(Grid->QRes+1),sizeof(TQTree)))) {
+      App_Log(ERROR,"%s: failed to create QTree index\n",__func__);
+      return(NULL);
+   }
+
+   Grid->QTree[0].BBox[0].X=lon0;
+   Grid->QTree[0].BBox[0].Y=lat0;
+   Grid->QTree[0].BBox[1].X=lon1;
+   Grid->QTree[0].BBox[1].Y=lat1;
+     
+   // Loop on points
+   for(n=0;n<Grid->GRef->NX;n++) {     
+      
+      pt[0]=Grid->GRef->AX[n];
+      pt[1]=Grid->GRef->AY[n];  
+      
+      x=(pt[0]-lon0)/dx;
+      y=(pt[1]-lat0)/dy;
+     
+      QTree_AddData(&Grid->QTree[y*Grid->QRes+x],pt[0],pt[1],(void*)n);
+   }
+      
    return(Grid->QTree);
 }
 
@@ -769,6 +817,7 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
    Grid->Tiles=(TGridTile*)malloc(Grid->NbTiles*sizeof(TGridTile));
    Grid->Data=NULL;
    Grid->QTree=NULL;
+   Grid->QRes=0;
    Grid->GRef=NULL;
    Grid->Halo=0;
    Grid->NTI=Grid->NTJ=0;
@@ -855,27 +904,44 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
       h.GRTYP[0]=Grid->H.GRTYP[0];
    }
 
-   if (Grid->H.GRTYP[0]=='M') {
-      Grid->GRef=GeoRef_New();
-  
-      cs_fstinf(Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","##");
-      
-      Grid->GRef->NIdx=ni*nj*nk;
-      Grid->GRef->NX=Grid->H.NI;
-      Grid->GRef->NY=Grid->H.NJ;
+   switch(Grid->H.GRTYP[0]) {
+      case 'M':
+         Grid->GRef=GeoRef_New();
+   
+         cs_fstinf(Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","##");
+         
+         Grid->GRef->NIdx=ni*nj*nk;
+         Grid->GRef->NX=Grid->H.NI;
+         Grid->GRef->NY=Grid->H.NJ;
 
-      Grid->GRef->Idx=(unsigned int*)malloc(Grid->GRef->NIdx*sizeof(unsigned int));
-      Grid->GRef->AY=(float*)malloc(Grid->GRef->NX*sizeof(float));
-      Grid->GRef->AX=(float*)malloc(Grid->GRef->NX*sizeof(float));
+         Grid->GRef->Idx=(unsigned int*)malloc(Grid->GRef->NIdx*sizeof(unsigned int));
+         Grid->GRef->AY=(float*)malloc(Grid->GRef->NX*sizeof(float));
+         Grid->GRef->AX=(float*)malloc(Grid->GRef->NX*sizeof(float));
 
-      cs_fstlir(Grid->GRef->AY,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","^^");
-      cs_fstlir(Grid->GRef->AX,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"",">>");
-      cs_fstlir(Grid->GRef->Idx,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","##");
-      
-      EZGrid_BuildIndex(Grid);
-   } else {
-      Grid->GID=RPN_IntIdNew(Grid->H.NI,Grid->H.NJ,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,Grid->H.FID);
-      Grid->Wrap=EZGrid_Wrap(Grid);
+         cs_fstlir(Grid->GRef->AY,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","^^");
+         cs_fstlir(Grid->GRef->AX,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"",">>");
+         cs_fstlir(Grid->GRef->Idx,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","##");
+         
+         EZGrid_BuildIndexM(Grid);
+         break;
+   
+      case 'Y':
+         Grid->GRef=GeoRef_New();
+   
+         Grid->GRef->NX=Grid->H.NIJ;
+         Grid->GRef->NY=Grid->H.NIJ;
+
+         Grid->GRef->AY=(float*)malloc(Grid->GRef->NY*sizeof(float));
+         Grid->GRef->AX=(float*)malloc(Grid->GRef->NX*sizeof(float));
+
+         cs_fstlir(Grid->GRef->AY,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","^^");
+         cs_fstlir(Grid->GRef->AX,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"",">>");
+         EZGrid_BuildIndexY(Grid);
+         break;
+         
+      default:
+         Grid->GID=RPN_IntIdNew(Grid->H.NI,Grid->H.NJ,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,Grid->H.FID);
+         Grid->Wrap=EZGrid_Wrap(Grid);
    }
 
    return(Grid);
@@ -1014,6 +1080,7 @@ TGrid *EZGrid_New(void) {
       new->ZRef=NULL;
       new->GRef=NULL;
       new->QTree=NULL;
+      new->QRes=0;
       new->Wrap=0;
       new->Halo=0;
       new->H.NI=0;
@@ -1081,6 +1148,7 @@ TGrid *EZGrid_Copy(TGrid *Master,int Level) {
       }
       
       new->QTree=Master->QTree;
+      new->QRes=Master->QRes;
       new->GRef=GeoRef_Copy(Master->GRef);
       new->ZRef=ZRef_Copy(Master->ZRef);
 
@@ -1306,6 +1374,7 @@ TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr) {
       new->ZRef=mst->ZRef;
       new->GRef=mst->GRef;
       new->QTree=mst->QTree;
+      new->QRes=mst->QRes;
       new->Wrap=mst->Wrap;
       new->Halo=mst->Halo;
       new->H.NI=mst->H.NI;
@@ -1703,7 +1772,8 @@ float EZGrid_GetPressure(const TGrid* __restrict const Grid,float Level,float P0
  *
  * Remarques :
  *
- *   - On effectue une interpolation lineaire
+ *   - On effectue une in         nx=(node->BBox[1].X-node->BBox[0].X)/Grid->QRes;
+terpolation lineaire
  *   - Cette fonction permet de recuperer un profile
  *----------------------------------------------------------------------------
 */
@@ -1713,48 +1783,134 @@ wordint f77name(ezgrid_llgetvalue)(wordint *gdid,ftnfloat *lat,ftnfloat *lon,wor
 int EZGrid_LLGetValue(TGrid* __restrict const Grid,float Lat,float Lon,int K0,int K1,float* __restrict Value) {
 
    TGridTile *t;
-   TQTree *node;
-   Vect3d  bary;
-   float i,j;
-   int   v,n,m;
+   TQTree    *node;
+   Vect3d     bary;
+   float      i,j;
+   double     d,dx,dy,dmax,l,len;
+   int        v,n,m,axy,dxy,x,y,xd,yd,nx,ny,nn;
    unsigned int *idx;
+   
    
    if (!Grid) {
       App_Log(ERROR,"%s: Invalid grid\n",__func__);
       return(FALSE);
    }
+   
+   switch(Grid->H.GRTYP[0]) {
+      case 'Y':
 
-   if (EZGrid_IsMesh(Grid)) {
-      // This is a triangle mesh
-      idx=Grid->GRef->Idx;
-      t=&Grid->Tiles[0];
-      EZGrid_TileGetData(Grid,t,K0,0);
-      CLAMPLON(Lon);
-      
-      // Find enclosing triangle
-      if ((node=QTree_Find(Grid->QTree,Lat,Lon)) && node->NbData) {
+         // This is a point cloud
+         t=&Grid->Tiles[0];
+         EZGrid_TileGetData(Grid,t,K0,0);
+         CLAMPLON(Lon);
          
-         // Loop on this nodes data payload
-         for(n=0;n<node->NbData;n++) {
-            idx=(unsigned int*)QTree_GetData(node,n);
+         dxy=0;
+         axy=-1;
+         l=len=1e32;
+
+//          // Find closest by loopin in akk parcels         
+//          for(nn=0;nn<Grid->GRef->NX;nn++) {
+//             dx=Lon-Grid->GRef->AX[nn];
+//             dy=Lat-Grid->GRef->AY[nn];
+//             
+//             l=dx*dx+dy*dy;
+//             if (l<len) {
+//                len=l;
+//                axy=nn;
+//             }
+//          }
+// 
+//          // Return found value
+//          if (axy>-1) {
+//             *Value=t->Data[K0][axy];
+//             return(TRUE);
+//          }
+//          break;
+        
+         // Find the closest by circling method
+         node=&Grid->QTree[0];
+
+         dx=(node->BBox[1].X-node->BBox[0].X)/Grid->QRes;
+         dy=(node->BBox[1].Y-node->BBox[0].Y)/Grid->QRes;
+         xd=(Lon-node->BBox[0].X)/dx;
+         yd=(Lat-node->BBox[0].Y)/dy;
+         
+         // Find the closest point by circling larger around cell
+         while(1 && dxy<Grid->QRes<<2) {
             
-            // if the Barycentric coordinates are within this triangle, get its interpolated value
-            if (Bary_Get(bary,Lat,Lon,Grid->GRef->AY[*idx],Grid->GRef->AX[*idx],Grid->GRef->AY[*(idx+1)],Grid->GRef->AX[*(idx+1)],Grid->GRef->AY[*(idx+2)],Grid->GRef->AX[*(idx+2)])) {
-               *Value=Bary_Interp(bary,t->Data[K0][*idx],t->Data[K0][*(idx+1)],t->Data[K0][*(idx+2)]);                    
-               return(TRUE);
+            // Y circling increment
+            for(y=yd-dxy;y<=yd+dxy;y++) {
+               if (y<0)            continue;
+               if (y>Grid->QRes) break;
+               
+               // X Circling increment (avoid revisiting previous cells
+               for(x=xd-dxy;x<=xd+dxy;x+=((y==yd-dxy||y==yd+dxy)?1:(dxy+dxy))) {
+                  if (x<0)            continue;
+                  if (x>Grid->QRes) break;
+                  node=&Grid->QTree[y*Grid->QRes+x];
+
+                  // Loop on points in this cell and get closest point
+                  for(n=0;n<node->NbData;n++) {
+                     nn=(int)node->Data[n].Ptr-1;
+                     dx=Lon-Grid->GRef->AX[nn];
+                     dy=Lat-Grid->GRef->AY[nn];
+                     
+                     l=dx*dx+dy*dy;
+                     if (l<len) {
+                        len=l;
+                        axy=nn;
+                     }
+                  }
+               }            
+            }
+            
+            // If we made at least one run and found something
+            if (axy>-1 && dxy) 
+               break;
+            dxy++;
+         }
+         
+         // Return found value
+         if (axy>-1) {
+            *Value=t->Data[K0][axy];
+            return(TRUE);
+         }
+         break;
+         
+      case 'M':
+         // This is a triangle mesh
+         idx=Grid->GRef->Idx;
+         t=&Grid->Tiles[0];
+         EZGrid_TileGetData(Grid,t,K0,0);
+         CLAMPLON(Lon);
+         
+         // Find enclosing triangle
+         if ((node=QTree_Find(Grid->QTree,Lat,Lon)) && node->NbData) {
+            
+            // Loop on this nodes data payload
+            for(n=0;n<node->NbData;n++) {
+               idx=(unsigned int*)QTree_GetData(node,n);
+               
+               // if the Barycentric coordinates are within this triangle, get its interpolated value
+               if (Bary_Get(bary,Lat,Lon,Grid->GRef->AY[*idx],Grid->GRef->AX[*idx],Grid->GRef->AY[*(idx+1)],Grid->GRef->AX[*(idx+1)],Grid->GRef->AY[*(idx+2)],Grid->GRef->AX[*(idx+2)])) {
+                  *Value=Bary_Interp(bary,t->Data[K0][*idx],t->Data[K0][*(idx+1)],t->Data[K0][*(idx+2)]);                    
+                  return(TRUE);
+               }
             }
          }
-      }
-      // We must be out of the tin
-      return(FALSE);
-   } else {
-      // This is a regular RPN grid
-   //   RPN_IntLock();
-      c_gdxyfll(Grid->GID,&i,&j,&Lat,&Lon,1);
-   //   RPN_IntUnlock();
+         break;
+         
+      default:
+         // This is a regular RPN grid
+         // RPN_IntLock();
+         c_gdxyfll(Grid->GID,&i,&j,&Lat,&Lon,1);
+         // RPN_IntUnlock();
 
-      return(EZGrid_IJGetValue(Grid,i-1.0f,j-1.0f,K0,K1,Value));
+         return(EZGrid_IJGetValue(Grid,i-1.0f,j-1.0f,K0,K1,Value));
+         
    }
+   
+   return(FALSE);
 }
 
 /*----------------------------------------------------------------------------
@@ -2328,7 +2484,7 @@ int EZGrid_GetDelta(TGrid* __restrict const Grid,int Invert,float* DX,float* DY,
    }
 
 //   RPN_IntLock();
-   if (EZGrid_IsMesh(Grid)) {
+   if (Grid->H.GRTYP[0]=='M') {
       
       if (DX || DY) {
          App_Log(WARNING,"%s: DX and DY cannot be calculated on an M grid\n",__func__);        
@@ -2515,7 +2671,7 @@ int EZGrid_GetBary(TGrid* __restrict const Grid,float Lat,float Lon,Vect3d Bary,
    unsigned int *idx,n;
 
    // Is this a triangle mesh
-   if (Grid && EZGrid_IsMesh(Grid)) {
+   if (Grid && Grid->H.GRTYP[0]=='M') {
       idx=Grid->GRef->Idx;
       Lon=CLAMPLON(Lon);
       

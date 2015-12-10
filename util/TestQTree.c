@@ -87,7 +87,6 @@ int QTree_TestBasic(void) {
    while ((node=QTree_Iterate(NULL,it))) {
       QTree_Parse(node,NULL,0);
    }
-   
 }
 
 TQTree* EZGrid_Build(TGeoRef *Ref) {
@@ -237,7 +236,73 @@ int QTree_TestTIN(void) {
       App_Log(INFO,"   Tree TIN value test outside: OK\n");
    }
 }
+
+#define XC 0.0
+#define YC 9.0
+int QTree_TestCloud(void) {
    
+   TQTree   *tree,*node;
+   int      axy,d,x,y,xd,yd,n,nx,ny,nn,res=9;
+   double   l,len,dx,dy;
+   double   pts[4][2]= { { 5,5 }, { 1,1 }, { 9,9 }, { 6,6 } };
+   
+   App_Log(INFO,"Testing point cloud:\n");
+   
+   // Create the array on the data limits
+   dy=9.0/res;
+   dx=9.0/res;
+   
+   if (!(tree=(TQTree*)calloc((res+1)*(res+1),sizeof(TQTree)))) {
+      App_Log(ERROR,"%s: failed to create QTree index\n",__func__);
+      return(0);
+   }
+      
+   // Loop on points
+   for(n=0;n<4;n++) {     
+            
+      x=(pts[n][0])/dx;
+      y=(pts[n][1])/dy;
+      
+      node=&tree[y*res+x];
+      QTree_AddData(node,pts[n][0],pts[n][1],(void*)(n+1));
+   }
+   
+   d=0;
+   axy=-1;
+   l=len=1e32;
+   xd=(XC)/dx;
+   yd=(YC)/dy;
+
+   while(1) {
+      for(y=yd-d;y<=yd+d;y++) {
+          if (y<0)    continue;
+         if (y>res) break;
+         
+         for(x=xd-d;x<=xd+d;x+=((y==yd-d||y==yd+d)?1:(d+d))) {
+            if (x<0)    continue;
+            if (x>res) break;
+            node=&tree[y*res+x];
+
+            for(n=0;n<node->NbData;n++) {
+               nn=(int)node->Data[n].Ptr-1;
+               nx=XC-pts[nn][0];
+               ny=YC-pts[nn][1];
+               l=nx*nx+ny*ny;
+               if (l<len) {
+                  l=len;
+                  axy=nn;
+               }
+            }
+         }            
+      }
+      if (axy>-1 && d) 
+         break;
+      d++;
+   }
+   
+   App_Log(INFO,"   Closest is (%f,%f)\n",pts[axy][0],pts[axy][1]);
+}
+
 int main(int argc, char *argv[]) {
 
    int      ok=TRUE;
@@ -248,6 +313,7 @@ int main(int argc, char *argv[]) {
    
    QTree_TestBasic();
    QTree_TestTIN();
+   QTree_TestCloud();
    
    App_End(ok!=1);
    App_Free();

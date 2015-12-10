@@ -65,14 +65,19 @@ typedef void (QTree_ParseProc) (void *Data);
 
 TQTree* QTree_New(double X0,double Y0,double X1,double Y1,TQTree *Parent);
 TQTree* QTree_Add(TQTree* restrict Node,double X,double Y,unsigned int MaxDepth,void* restrict Data);
-TQTree* QTree_AddTriangle(TQTree* restrict Node,Vect2d T[3],unsigned int MaxDepth,void* restrict Data);
+int     QTree_AddData(TQTree* const restrict Node,double X,double Y,void *Data);
 void    QTree_Del(TQTree* restrict Node);
+void    QTree_DelData(TQTree* const Node);
 TQTree* QTree_Find(TQTree* restrict Node,double X,double Y);
 void    QTree_Parse(TQTree* restrict Node,QTree_ParseProc *Proc,unsigned Depth);
+void    QTree_Neighbors(TQTree* Node,TQTree** Neighbors,int Nb);
 
 TQTree*         QTree_Iterate(TQTree* restrict Node,TQTreeIterator *Iter);
 TQTree*         QTree_IterateFilled(TQTree* restrict Node,TQTreeIterator *Iter);
 TQTreeIterator* QTree_IteratorNew(void);
+
+// Helper function for M
+TQTree* QTree_AddTriangle(TQTree* restrict Node,Vect2d T[3],unsigned int MaxDepth,void* restrict Data);
 
 static inline char* QTree_GetData(TQTree* const restrict Node,int Index) {
 
