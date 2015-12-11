@@ -239,7 +239,7 @@ int QTree_TestTIN(void) {
 
 #define XC 700.0
 #define YC 300.0
-#define QRES    100
+#define QRES    1000
 #define QDIM    1000
 #define QSAMPLE 10000000
 
@@ -266,7 +266,8 @@ int QTree_TestCloud(void) {
       
    // Loop on points
    pts=(Vect2d*)malloc(QSAMPLE*sizeof(Vect2d));
-//   srand((unsigned) time(&t));
+
+   gettimeofday(&time0,NULL);
    for(n=0;n<QSAMPLE;n++) {     
             
       pts[n][0]=(double)rand()/RAND_MAX*QDIM;
@@ -277,7 +278,10 @@ int QTree_TestCloud(void) {
       node=&tree[y*QRES+x];
       QTree_AddData(node,pts[n][0],pts[n][1],(void*)(n+1));
    }
-   
+   gettimeofday(&time1,NULL);
+   System_TimeValSubtract(&time0,&time1,&time0);
+   App_Log(INFO,"   Creation time: %.6f\n",time0.tv_sec+((double)time0.tv_usec)*1e-6);
+  
    // Search loop
    gettimeofday(&time0,NULL);
    
@@ -294,7 +298,7 @@ int QTree_TestCloud(void) {
    }
    gettimeofday(&time1,NULL);
    System_TimeValSubtract(&time0,&time1,&time0);
-   App_Log(INFO,"   Loop mode: %.5f s, closest is (%f,%f)\n",time0.tv_sec+((double)time0.tv_usec)*1e-6,pts[axy][0],pts[axy][1]);
+   App_Log(INFO,"   Loop mode: %.6f s, closest is (%f,%f)\n",time0.tv_sec+((double)time0.tv_usec)*1e-6,pts[axy][0],pts[axy][1]);
    
    // Search Circling
    gettimeofday(&time0,NULL);
@@ -334,7 +338,7 @@ int QTree_TestCloud(void) {
    
    gettimeofday(&time1,NULL);
    System_TimeValSubtract(&time0,&time1,&time0);
-   App_Log(INFO,"   Circ mode: %.5f s, closest is (%f,%f)\n",time0.tv_sec+((double)time0.tv_usec)*1e-6,pts[axy][0],pts[axy][1]);
+   App_Log(INFO,"   Circ mode: %.6f s, closest is (%f,%f)\n",time0.tv_sec+((double)time0.tv_usec)*1e-6,pts[axy][0],pts[axy][1]);
 }
 
 int main(int argc, char *argv[]) {

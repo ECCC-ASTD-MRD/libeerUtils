@@ -759,7 +759,7 @@ TQTree* EZGrid_BuildIndexY(TGrid* __restrict const Grid) {
       lon1=FMAX(lon1,Grid->GRef->AX[n]);
    }
    
-   Grid->QRes=100;
+   Grid->QRes=1000;
    
    // Create the array on the data limits
    dy=(lat1-lat0)/Grid->QRes;
@@ -1847,6 +1847,7 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,float Lat,float Lon,int K0,in
                for(x=xd-dxy;x<=xd+dxy;x+=((y==yd-dxy||y==yd+dxy)?1:(dxy+dxy))) {
                   if (x<0)            continue;
                   if (x>Grid->QRes) break;
+                  
                   node=&Grid->QTree[y*Grid->QRes+x];
 
                   // Loop on points in this cell and get closest point
