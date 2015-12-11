@@ -237,36 +237,68 @@ int QTree_TestTIN(void) {
    }
 }
 
-#define XC 0.0
-#define YC 9.0
+#define XC 700.0
+#define YC 300.0
+#define QRES    100
+#define QDIM    1000
+#define QSAMPLE 10000000
+
 int QTree_TestCloud(void) {
    
    TQTree   *tree,*node;
-   int      axy,d,x,y,xd,yd,n,nx,ny,nn,res=9;
-   double   l,len,dx,dy;
-   double   pts[4][2]= { { 5,5 }, { 1,1 }, { 9,9 }, { 6,6 } };
+   int      axy,d,x,y,xd,yd,n,nc,nn,res=9;
+   double   l,len,dx,dy,rx,ry,nx,ny;
+   Vect2d  *pts;
+   struct timeval time0,time1;
+   time_t  t;
    
-   App_Log(INFO,"Testing point cloud:\n");
+   App_Log(INFO,"Testing point cloud with %i samples:\n",QSAMPLE);
    
    // Create the array on the data limits
-   dy=9.0/res;
-   dx=9.0/res;
-   
-   if (!(tree=(TQTree*)calloc((res+1)*(res+1),sizeof(TQTree)))) {
+   if (!(tree=(TQTree*)calloc((QRES+1)*(QRES+1),sizeof(TQTree)))) {
       App_Log(ERROR,"%s: failed to create QTree index\n",__func__);
       return(0);
    }
+     
+   // Add random data
+   dy=QDIM/QRES;
+   dx=QDIM/QRES;
       
    // Loop on points
-   for(n=0;n<4;n++) {     
+   pts=(Vect2d*)malloc(QSAMPLE*sizeof(Vect2d));
+//   srand((unsigned) time(&t));
+   for(n=0;n<QSAMPLE;n++) {     
             
-      x=(pts[n][0])/dx;
-      y=(pts[n][1])/dy;
-      
-      node=&tree[y*res+x];
+      pts[n][0]=(double)rand()/RAND_MAX*QDIM;
+      pts[n][1]=(double)rand()/RAND_MAX*QDIM;
+      x=pts[n][0]/dx;
+      y=pts[n][1]/dy;
+
+      node=&tree[y*QRES+x];
       QTree_AddData(node,pts[n][0],pts[n][1],(void*)(n+1));
    }
    
+   // Search loop
+   gettimeofday(&time0,NULL);
+   
+   axy=-1;
+   l=len=1e32;
+   for(nn=0;nn<QSAMPLE;nn++) {     
+      nx=XC-pts[nn][0];
+      ny=YC-pts[nn][1];
+      l=nx*nx+ny*ny;
+      if (l<len) {
+         len=l;
+         axy=nn;
+      }     
+   }
+   gettimeofday(&time1,NULL);
+   System_TimeValSubtract(&time0,&time1,&time0);
+   App_Log(INFO,"   Loop mode: %.5f s, closest is (%f,%f)\n",time0.tv_sec+((double)time0.tv_usec)*1e-6,pts[axy][0],pts[axy][1]);
+   
+   // Search Circling
+   gettimeofday(&time0,NULL);
+
    d=0;
    axy=-1;
    l=len=1e32;
@@ -276,12 +308,12 @@ int QTree_TestCloud(void) {
    while(1) {
       for(y=yd-d;y<=yd+d;y++) {
           if (y<0)    continue;
-         if (y>res) break;
+         if (y>QRES) break;
          
          for(x=xd-d;x<=xd+d;x+=((y==yd-d||y==yd+d)?1:(d+d))) {
             if (x<0)    continue;
-            if (x>res) break;
-            node=&tree[y*res+x];
+            if (x>QRES) break;
+            node=&tree[y*QRES+x];
 
             for(n=0;n<node->NbData;n++) {
                nn=(int)node->Data[n].Ptr-1;
@@ -289,7 +321,7 @@ int QTree_TestCloud(void) {
                ny=YC-pts[nn][1];
                l=nx*nx+ny*ny;
                if (l<len) {
-                  l=len;
+                  len=l;
                   axy=nn;
                }
             }
@@ -300,7 +332,9 @@ int QTree_TestCloud(void) {
       d++;
    }
    
-   App_Log(INFO,"   Closest is (%f,%f)\n",pts[axy][0],pts[axy][1]);
+   gettimeofday(&time1,NULL);
+   System_TimeValSubtract(&time0,&time1,&time0);
+   App_Log(INFO,"   Circ mode: %.5f s, closest is (%f,%f)\n",time0.tv_sec+((double)time0.tv_usec)*1e-6,pts[axy][0],pts[axy][1]);
 }
 
 int main(int argc, char *argv[]) {
