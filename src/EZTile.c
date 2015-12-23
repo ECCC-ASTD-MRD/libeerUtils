@@ -1810,7 +1810,7 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,float Lat,float Lon,int K0,in
          CLAMPLON(Lon);
          
          // Find 4 nearest points
-         if ((nb=QArray_Find(Grid->QTree,Grid->QRes,Lon,Lat,idxs,dists,1))) {
+         if ((nb=QArray_Find(Grid->QTree,Grid->QRes,Lon,Lat,idxs,dists,4))) {
             if (nb==1) {
                // For a single nearest, return value
                *Value+=t->Data[K0][idxs[0]];
