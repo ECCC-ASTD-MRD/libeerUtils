@@ -619,7 +619,7 @@ TQTree* QTree_IterateFilled(TQTree* restrict Node,TQTreeIterator *Iter) {
  * Args :
  *   <Node>  : TQTree object pointer which we want to parse
  *   <Proc>  : Proc to apply to all nodes data (typedef QTree_ParseProc).
- *   <Depth> : Use 0 for starer
+ *   <Depth> : Use 0 for starter
  *
  * Return:
  *
@@ -645,4 +645,114 @@ void QTree_Parse(TQTree* restrict Node,QTree_ParseProc *Proc,unsigned Depth) {
          QTree_Parse(Node->Childs[c],Proc,Depth+1);
       }
    }
+}
+
+
+/*----------------------------------------------------------------------------
+ * Name     : <QArray_Find>
+ * Creation : Decembre 2015 - J.P. Gauthier - CMC/CMOE
+ *
+ * Purpose  : Find nearest neighbors in the QArray
+ *
+ * Args :
+ *   <Tree>  : TQTree object pointer to array
+ *   <Res>   : Array resolution (Size)
+ *   <X>     : X Position
+ *   <Y>     : Y Position
+ *   <Idxs>  : Pointer to neighbors index found
+ *   <Dists> : Squared distances from the neighbors found
+ *   <NbNear>: Numbre of nearest neighbors to find
+ *
+ * Return:
+ *
+ * Remarks : 
+ *----------------------------------------------------------------------------
+ */
+int QArray_Find(TQTree *Tree,int Res,double X,double Y,int *Idxs,double *Dists,int NbNear) {
+   
+   TQTree    *node;
+   double     dx,dy,l;
+   int        x,y,xd,yd,dxy,n,nn,nnear,nr;
+
+   if (!NbNear || !Idxs || !Dists) return(0);
+   
+   Dists[0]=l=1e32;
+   dxy=nnear=0;
+   
+//          // Find closest by looping in all parcels         
+//          for(nn=0;nn<Grid->GRef->NX;nn++) {
+//             dx=Lon-Grid->GRef->AX[nn];
+//             dy=Lat-Grid->GRef->AY[nn];
+//             
+//             l=dx*dx+dy*dy;
+//             if (l<len) {
+//                len=l;
+//                axy=nn;
+//             }
+//          }
+// 
+//          // Return found value
+//          if (axy>-1) {
+//             *Value=t->Data[K0][axy];
+//             return(TRUE);
+//          }
+//          break;
+   
+   // Find the closest by circling method
+   node=&Tree[0];
+
+   dx=(node->BBox[1].X-node->BBox[0].X)/Res;
+   dy=(node->BBox[1].Y-node->BBox[0].Y)/Res;
+   xd=(X-node->BBox[0].X)/dx;
+   yd=(Y-node->BBox[0].Y)/dy;
+   
+   // Find the closest point(s) by circling larger around cell
+   while(dxy<Res<<2) {
+      
+      // Y circling increment
+      for(y=yd-dxy;y<=yd+dxy;y++) {
+         if (y<0)    continue;
+         if (y>=Res) break;
+         
+         // X Circling increment (avoid revisiting previous cells)
+         for(x=xd-dxy;x<=xd+dxy;x+=((y==yd-dxy||y==yd+dxy)?1:(dxy+dxy))) {
+            if (x<0)    continue;
+            if (x>=Res) break;
+            
+            node=&Tree[y*Res+x];
+
+            // Loop on points in this cell and get closest point
+            for(n=0;n<node->NbData;n++) {
+               dx=X-node->Data[n].Pos.X;
+               dy=Y-node->Data[n].Pos.Y;
+               l=dx*dx+dy*dy;
+               
+               // Loop on number of nearest to find
+               for(nn=0;nn<NbNear;nn++) {
+                  if (l<Dists[nn]) {
+                     
+                     // Move farther nearest in order
+                     for(nr=NbNear-1;nr>nn;nr--) {
+                        Dists[nr]=Dists[nr-1];
+                        Idxs[nr]=Idxs[nr-1];                       
+                     }
+                     
+                     // Assign found nearest
+                     Dists[nn]=l;
+                     Idxs[nn]=(int)node->Data[n].Ptr-1; // Remove false pointer increment
+                     nnear++;
+                     break;
+                  }
+               }
+            }
+         }            
+      }
+      
+      // If we made at least one cycle and found enough nearest
+      if (nnear>=NbNear && dxy) 
+         break;
+      dxy++;
+   }
+   
+   return(nnear>NbNear?NbNear:nnear);
 }

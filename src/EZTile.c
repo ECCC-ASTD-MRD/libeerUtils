@@ -703,7 +703,7 @@ TQTree* EZGrid_BuildIndexM(TGrid* __restrict const Grid) {
 
    unsigned int  n,nt;
    unsigned int *idx;
-   double        lat0,lon0,lat1,lon1;
+   double        dx,dy,lat0,lon0,lat1,lon1;
    Vect2d        tr[3];
    
    // Check data limits   
@@ -712,10 +712,12 @@ TQTree* EZGrid_BuildIndexM(TGrid* __restrict const Grid) {
    Grid->QRes=8;
    
    for(n=0;n<Grid->GRef->NX;n++) {
-      lat0=FMIN(lat0,Grid->GRef->AY[n]);
-      lon0=FMIN(lon0,Grid->GRef->AX[n]);
-      lat1=FMAX(lat1,Grid->GRef->AY[n]);
-      lon1=FMAX(lon1,Grid->GRef->AX[n]);
+      dy=Grid->GRef->AY[n];
+      dx=CLAMPLON(Grid->GRef->AX[n]);
+      lat0=FMIN(lat0,dy);
+      lon0=FMIN(lon0,dx);
+      lat1=FMAX(lat1,dy);
+      lon1=FMAX(lon1,dx);
    }
       
    // Create the tree on the data limits
@@ -728,9 +730,9 @@ TQTree* EZGrid_BuildIndexM(TGrid* __restrict const Grid) {
    idx=Grid->GRef->Idx;
    for(nt=0;nt<Grid->GRef->NIdx-3;nt+=3) {     
       
-      tr[0][0]=Grid->GRef->AY[idx[nt]];     tr[0][1]=Grid->GRef->AX[idx[nt]];
-      tr[1][0]=Grid->GRef->AY[idx[nt+1]];   tr[1][1]=Grid->GRef->AX[idx[nt+1]];
-      tr[2][0]=Grid->GRef->AY[idx[nt+2]];   tr[2][1]=Grid->GRef->AX[idx[nt+2]];
+      tr[0][0]=Grid->GRef->AY[idx[nt]];     tr[0][1]=CLAMPLON(Grid->GRef->AX[idx[nt]]);
+      tr[1][0]=Grid->GRef->AY[idx[nt+1]];   tr[1][1]=CLAMPLON(Grid->GRef->AX[idx[nt+1]]);
+      tr[2][0]=Grid->GRef->AY[idx[nt+2]];   tr[2][1]=CLAMPLON(Grid->GRef->AX[idx[nt+2]]);
       
       // Put it in the quadtree, in any child nodes intersected
       if (!QTree_AddTriangle(Grid->QTree,tr,Grid->QRes,&Grid->GRef->Idx[nt])) {
@@ -753,10 +755,12 @@ TQTree* EZGrid_BuildIndexY(TGrid* __restrict const Grid) {
    lat1=lon1=-1e10;
    
    for(n=0;n<Grid->GRef->NX;n++) {
-      lat0=FMIN(lat0,Grid->GRef->AY[n]);
-      lon0=FMIN(lon0,Grid->GRef->AX[n]);
-      lat1=FMAX(lat1,Grid->GRef->AY[n]);
-      lon1=FMAX(lon1,Grid->GRef->AX[n]);
+      dy=Grid->GRef->AY[n];
+      dx=CLAMPLON(Grid->GRef->AX[n]);
+      lat0=FMIN(lat0,dy);
+      lon0=FMIN(lon0,dx);
+      lat1=FMAX(lat1,dy);
+      lon1=FMAX(lon1,dx);
    }
    
    Grid->QRes=1000;
@@ -764,7 +768,7 @@ TQTree* EZGrid_BuildIndexY(TGrid* __restrict const Grid) {
    // Create the array on the data limits
    dy=(lat1-lat0)/Grid->QRes;
    dx=(lon1-lon0)/Grid->QRes;
-   
+
    if (!(Grid->QTree=(TQTree*)calloc((Grid->QRes+1)*(Grid->QRes+1),sizeof(TQTree)))) {
       App_Log(ERROR,"%s: failed to create QTree index\n",__func__);
       return(NULL);
@@ -778,13 +782,14 @@ TQTree* EZGrid_BuildIndexY(TGrid* __restrict const Grid) {
    // Loop on points
    for(n=0;n<Grid->GRef->NX;n++) {     
       
-      pt[0]=Grid->GRef->AX[n];
+      pt[0]=CLAMPLON(Grid->GRef->AX[n]);
       pt[1]=Grid->GRef->AY[n];  
       
       x=(pt[0]-lon0)/dx;
       y=(pt[1]-lat0)/dy;
      
-      QTree_AddData(&Grid->QTree[y*Grid->QRes+x],pt[0],pt[1],(void*)n);
+      // Add location and set false pointer increment (+1);
+      QTree_AddData(&Grid->QTree[y*Grid->QRes+x],pt[0],pt[1],(void*)(n+1));
    }
       
    return(Grid->QTree);
@@ -1780,14 +1785,15 @@ terpolation lineaire
 wordint f77name(ezgrid_llgetvalue)(wordint *gdid,ftnfloat *lat,ftnfloat *lon,wordint *k0,wordint *k1,ftnfloat *val) {
    return(EZGrid_LLGetValue(GridCache[*gdid],*lat,*lon,*k0-1,*k1-1,val));
 }
+
 int EZGrid_LLGetValue(TGrid* __restrict const Grid,float Lat,float Lon,int K0,int K1,float* __restrict Value) {
 
    TGridTile *t;
    TQTree    *node;
    Vect3d     bary;
    float      i,j;
-   double     d,dx,dy,dmax,l,len;
-   int        v,n,m,axy,dxy,x,y,xd,yd,nx,ny,nn;
+   double     dx,dy,r,w,wt,dists[4];
+   int        n,nb,idxs[4];
    unsigned int *idx;
    
    
@@ -1797,89 +1803,40 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,float Lat,float Lon,int K0,in
    }
    
    switch(Grid->H.GRTYP[0]) {
-      case 'Y':
-
-         // This is a point cloud
+      case 'Y': // This is a point cloud
+         
          t=&Grid->Tiles[0];
          EZGrid_TileGetData(Grid,t,K0,0);
          CLAMPLON(Lon);
          
-         dxy=0;
-         axy=-1;
-         l=len=1e32;
-
-//          // Find closest by loopin in akk parcels         
-//          for(nn=0;nn<Grid->GRef->NX;nn++) {
-//             dx=Lon-Grid->GRef->AX[nn];
-//             dy=Lat-Grid->GRef->AY[nn];
-//             
-//             l=dx*dx+dy*dy;
-//             if (l<len) {
-//                len=l;
-//                axy=nn;
-//             }
-//          }
-// 
-//          // Return found value
-//          if (axy>-1) {
-//             *Value=t->Data[K0][axy];
-//             return(TRUE);
-//          }
-//          break;
-        
-         // Find the closest by circling method
-         node=&Grid->QTree[0];
-
-         dx=(node->BBox[1].X-node->BBox[0].X)/Grid->QRes;
-         dy=(node->BBox[1].Y-node->BBox[0].Y)/Grid->QRes;
-         xd=(Lon-node->BBox[0].X)/dx;
-         yd=(Lat-node->BBox[0].Y)/dy;
-         
-         // Find the closest point by circling larger around cell
-         while(1 && dxy<Grid->QRes<<2) {
-            
-            // Y circling increment
-            for(y=yd-dxy;y<=yd+dxy;y++) {
-               if (y<0)            continue;
-               if (y>Grid->QRes) break;
+         // Find 4 nearest points
+         if ((nb=QArray_Find(Grid->QTree,Grid->QRes,Lon,Lat,idxs,dists,1))) {
+            if (nb==1) {
+               // For a single nearest, return value
+               *Value+=t->Data[K0][idxs[0]];
+            } else {
+               // Otherwise, do a Cressman interpolation
+               *Value=0.0;
+               wt=0;
                
-               // X Circling increment (avoid revisiting previous cells
-               for(x=xd-dxy;x<=xd+dxy;x+=((y==yd-dxy||y==yd+dxy)?1:(dxy+dxy))) {
-                  if (x<0)            continue;
-                  if (x>Grid->QRes) break;
-                  
-                  node=&Grid->QTree[y*Grid->QRes+x];
-
-                  // Loop on points in this cell and get closest point
-                  for(n=0;n<node->NbData;n++) {
-                     nn=(int)node->Data[n].Ptr-1;
-                     dx=Lon-Grid->GRef->AX[nn];
-                     dy=Lat-Grid->GRef->AY[nn];
-                     
-                     l=dx*dx+dy*dy;
-                     if (l<len) {
-                        len=l;
-                        axy=nn;
-                     }
-                  }
-               }            
+               // Get search radius from farthest point
+               r=1.001*dists[nb-1];
+               
+               // Sum values modulated by weight
+               for(n=0;n<nb;n++) {                  
+                  w=(r-dists[n])/(r+dists[n]);
+                  wt+=w;
+                  *Value+=t->Data[K0][idxs[n]]*w;
+               }
+               *Value/=wt;
             }
             
-            // If we made at least one run and found something
-            if (axy>-1 && dxy) 
-               break;
-            dxy++;
-         }
-         
-         // Return found value
-         if (axy>-1) {
-            *Value=t->Data[K0][axy];
-            return(TRUE);
-         }
+            return(TRUE);            
+         }            
          break;
          
-      case 'M':
-         // This is a triangle mesh
+      case 'M': // This is a triangle mesh
+         
          idx=Grid->GRef->Idx;
          t=&Grid->Tiles[0];
          EZGrid_TileGetData(Grid,t,K0,0);
@@ -1901,8 +1858,8 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,float Lat,float Lon,int K0,in
          }
          break;
          
-      default:
-         // This is a regular RPN grid
+      default: // This is a regular RPN grid
+         
          // RPN_IntLock();
          c_gdxyfll(Grid->GID,&i,&j,&Lat,&Lon,1);
          // RPN_IntUnlock();

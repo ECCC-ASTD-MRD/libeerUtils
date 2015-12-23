@@ -17,7 +17,7 @@ INSTALL_DIR = $(HOME)
 TCL_DIR     = /users/dor/afsr/ops/Links/devfs/Archive/tcl8.6.3
 
 #----- Uncoment to use dev libs
-#LIB_DIR     = ${SSM_DEV}/workspace/libSPI_7.10.0_${ORDENV_PLAT}
+LIB_DIR     = ${SSM_DEV}/workspace/libSPI_7.10.2_${ORDENV_PLAT}
 
 LIBS        := -L$(LIB_DIR)/lib -L$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g')
 INCLUDES    := -I$(LIB_DIR)/include -I$(shell echo $(EC_INCLUDE_PATH) | sed 's/\s* / -I/g')
@@ -61,7 +61,7 @@ else
 
    AR          = ar rv
    LD          = ld
-   LINK_EXEC   = -lxlf90 -lxlsmp -lc -lpthread -lm
+   LINK_EXEC   = -lxlf90 -lxlsmp -lpthread -lm
 
    CCOPTIONS   = -std=c99 -O3 -qtls -qnohot -qstrict -Q -v -qkeyword=restrict -qcache=auto -qtune=auto -qarch=auto -qinline 
    ifdef OMPI

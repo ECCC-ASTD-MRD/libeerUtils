@@ -76,8 +76,11 @@ TQTree*         QTree_Iterate(TQTree* restrict Node,TQTreeIterator *Iter);
 TQTree*         QTree_IterateFilled(TQTree* restrict Node,TQTreeIterator *Iter);
 TQTreeIterator* QTree_IteratorNew(void);
 
-// Helper function for M
+// Helper function for M grids (Triangle meshes)
 TQTree* QTree_AddTriangle(TQTree* restrict Node,Vect2d T[3],unsigned int MaxDepth,void* restrict Data);
+
+// Helper function fo Y grids (Point cloud);
+int QArray_Find(TQTree *Tree,int Res,double X,double Y,int *Idxs,double *Dists,int NbNear);
 
 static inline char* QTree_GetData(TQTree* const restrict Node,int Index) {
 

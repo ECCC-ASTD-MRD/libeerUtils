@@ -138,6 +138,7 @@ extern int f77name(mscale) (ftnfloat *r,ftnfloat *d60,ftnfloat *pi,ftnfloat *pj,
 extern int f77name(wkoffit)(char *filename,int size);
 extern int f77name(fstlnk) (int *list,int *size);
 extern int f77name(fstunl) (int *list,int *size);
+extern int f77name(hyb_to_pres)(ftnfloat *pres,ftnfloat *hyb,ftnfloat *ptop,ftnfloat *rcoef,ftnfloat *pref,int *kind,ftnfloat *ps,int *NI,int *NJ,int *NK);
 
 // RPN 1d interpolation functions
 extern void f77name (interp1d_findpos) ();
