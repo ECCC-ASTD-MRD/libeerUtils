@@ -321,7 +321,7 @@ int GeoRef_WKTUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
             return(0);
          }
       }
-
+      
       // No negative longitude (GRIB2 LL grid)
       if (GRef->Type&GRID_NOXNEG) {
          x=x<0?x+360:x;
@@ -341,127 +341,127 @@ int GeoRef_WKTUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
          } else if (GRef->RPCTransform) {
             GDALRPCTransform(GRef->RPCTransform,TRUE,1,X,Y,&z,&ok);
          }
-      }
 
-      // In case of non-uniform grid, figure out where in the position vector we are 
-      if (GRef->Grid[1]=='Z') {
-         if (GRef->AX && GRef->AY) {
-            s=GRef->X0;
-            // Check if vector is increasing
-            if (GRef->AX[s]<GRef->AX[s+1]) {
-               while(s<=GRef->X1 && *X>GRef->AX[s]) s++;
-            } else {
-               while(s<=GRef->X1 && *X<GRef->AX[s]) s++;
-            }
-            if (s>GRef->X0) {
-               // We're in so interpolate postion
-               if (s<=GRef->X1) {
-                  *X=(*X-GRef->AX[s-1])/(GRef->AX[s]-GRef->AX[s-1])+s-1;
+         // In case of non-uniform grid, figure out where in the position vector we are 
+         if (GRef->Grid[1]=='Z') {
+            if (GRef->AX && GRef->AY) {
+               s=GRef->X0;
+               // Check if vector is increasing
+               if (GRef->AX[s]<GRef->AX[s+1]) {
+                  while(s<=GRef->X1 && *X>GRef->AX[s]) s++;
                } else {
-                  *X=(*X-GRef->AX[GRef->X1])/(GRef->AX[GRef->X1]-GRef->AX[GRef->X1-1])+s-1;
+                  while(s<=GRef->X1 && *X<GRef->AX[s]) s++;
                }
-            } else {
-               // We're out so extrapolate position
-               *X=GRef->X0+(*X-GRef->AX[0])/(GRef->AX[1]-GRef->AX[0]);
-            }
-
-            s=GRef->Y0;dx=ni;
-            // Check if vector is increasing
-            if (GRef->AY[s*ni]<GRef->AY[(s+1)*ni]) {
-               while(s<=GRef->Y1 && *Y>GRef->AY[s*ni]) s++;
-            } else {
-               while(s<=GRef->Y1 && *Y<GRef->AY[s*ni]) s++;
-            }
-            if (s>GRef->Y0) {
-               // We're in so interpolate postion
-               if (s<=GRef->Y1) {
-                  *Y=(*Y-GRef->AY[(s-1)*ni])/(GRef->AY[s*ni]-GRef->AY[(s-1)*ni])+s-1;
-               } else {
-                  *Y=(*Y-GRef->AY[GRef->Y1*ni])/(GRef->AY[GRef->Y1*ni]-GRef->AY[(GRef->Y1-1)*ni])+s-1;
-               }
-            } else {
-               // We're out so extrapolate position
-               *Y=GRef->Y0+(*Y-GRef->AY[0])/(GRef->AY[ni]-GRef->AY[0]);
-            }
-         }
-      } else if (GRef->Grid[1]=='Y') {
-         if (GRef->AX && GRef->AY) {
-            idx=0;
-
-            // Loop on all point to find the closest
-            lx[0]=DEG2RAD(*X); ly[0]=DEG2RAD(*Y);
-            for(dy=0;dy<nj;dy++) {
-               for(dx=0;dx<ni;dx++) {
-                  lx[1]=DEG2RAD(GRef->AX[idx]); ly[1]=DEG2RAD(GRef->AY[idx]);
-                  sd=DIST(0,ly[0],lx[0],ly[1],lx[1]);
-
-                  if (sd<d) {
-                     x=dx;y=dy;d=sd;ok=idx;
+               if (s>GRef->X0) {
+                  // We're in so interpolate postion
+                  if (s<=GRef->X1) {
+                     *X=(*X-GRef->AX[s-1])/(GRef->AX[s]-GRef->AX[s-1])+s-1;
+                  } else {
+                     *X=(*X-GRef->AX[GRef->X1])/(GRef->AX[GRef->X1]-GRef->AX[GRef->X1-1])+s-1;
                   }
-                  idx++;
-               }
-            }
-
-            *X=x;
-            *Y=y;
-         }
-      } else if (GRef->Grid[1]=='X') {
-         int x0,y0,x1,y1;
-
-         if (GRef->AX && GRef->AY) {
-            x0=0;y0=0;
-            x1=ni-1;y1=nj-1;
-            dx=x1;dy=y1;
-
-            // Parse as a quadtree to find enclosing cell
-            while (dx || dy) {
-
-               idx=y0*ni+x0; lx[0]=GRef->AX[idx]; ly[0]=GRef->AY[idx];
-               idx=y0*ni+x1; lx[1]=GRef->AX[idx]; ly[1]=GRef->AY[idx];
-               idx=y1*ni+x1; lx[2]=GRef->AX[idx]; ly[2]=GRef->AY[idx];
-               idx=y1*ni+x0; lx[3]=GRef->AX[idx]; ly[3]=GRef->AY[idx];
-
-               Vertex_Map(lx,ly,X,Y,Lon,Lat);
-
-               // If not within [0,1] then we're outside
-               if (*X<-0.5 || *Y<-0.5 || *X>1.5 || *Y>1.5) {
-                  *X=-1.0;
-                  *Y=-1.0;
-                  break;
-               }
-
-               // Calculate new sub-division
-               dx=(x1-x0)>>1;
-               dy=(y1-y0)>>1;
-
-               if (*X<0.5) {
-                  x1-=dx;
                } else {
-                  x0+=dx;
+                  // We're out so extrapolate position
+                  *X=GRef->X0+(*X-GRef->AX[0])/(GRef->AX[1]-GRef->AX[0]);
                }
 
-               if (*Y<0.5) {
-                  y1-=dy;
+               s=GRef->Y0;dx=ni;
+               // Check if vector is increasing
+               if (GRef->AY[s*ni]<GRef->AY[(s+1)*ni]) {
+                  while(s<=GRef->Y1 && *Y>GRef->AY[s*ni]) s++;
                } else {
-                  y0+=dy;
+                  while(s<=GRef->Y1 && *Y<GRef->AY[s*ni]) s++;
+               }
+               if (s>GRef->Y0) {
+                  // We're in so interpolate postion
+                  if (s<=GRef->Y1) {
+                     *Y=(*Y-GRef->AY[(s-1)*ni])/(GRef->AY[s*ni]-GRef->AY[(s-1)*ni])+s-1;
+                  } else {
+                     *Y=(*Y-GRef->AY[GRef->Y1*ni])/(GRef->AY[GRef->Y1*ni]-GRef->AY[(GRef->Y1-1)*ni])+s-1;
+                  }
+               } else {
+                  // We're out so extrapolate position
+                  *Y=GRef->Y0+(*Y-GRef->AY[0])/(GRef->AY[ni]-GRef->AY[0]);
                }
             }
+         } else if (GRef->Grid[1]=='Y') {
+            if (GRef->AX && GRef->AY) {
+               idx=0;
 
-            if (*X!=-1) {
-               *X=x0+*X;
-               *Y=y0+*Y;
+               // Loop on all point to find the closest
+               lx[0]=DEG2RAD(*X); ly[0]=DEG2RAD(*Y);
+               for(dy=0;dy<nj;dy++) {
+                  for(dx=0;dx<ni;dx++) {
+                     lx[1]=DEG2RAD(GRef->AX[idx]); ly[1]=DEG2RAD(GRef->AY[idx]);
+                     sd=DIST(0,ly[0],lx[0],ly[1],lx[1]);
+
+                     if (sd<d) {
+                        x=dx;y=dy;d=sd;ok=idx;
+                     }
+                     idx++;
+                  }
+               }
+
+               *X=x;
+               *Y=y;
+            }
+         } else if (GRef->Grid[1]=='X') {
+            int x0,y0,x1,y1;
+
+            if (GRef->AX && GRef->AY) {
+               x0=0;y0=0;
+               x1=ni-1;y1=nj-1;
+               dx=x1;dy=y1;
+
+               // Parse as a quadtree to find enclosing cell
+               while (dx || dy) {
+
+                  idx=y0*ni+x0; lx[0]=GRef->AX[idx]; ly[0]=GRef->AY[idx];
+                  idx=y0*ni+x1; lx[1]=GRef->AX[idx]; ly[1]=GRef->AY[idx];
+                  idx=y1*ni+x1; lx[2]=GRef->AX[idx]; ly[2]=GRef->AY[idx];
+                  idx=y1*ni+x0; lx[3]=GRef->AX[idx]; ly[3]=GRef->AY[idx];
+
+                  Vertex_Map(lx,ly,X,Y,Lon,Lat);
+
+                  // If not within [0,1] then we're outside
+                  if (*X<-0.5 || *Y<-0.5 || *X>1.5 || *Y>1.5) {
+                     *X=-1.0;
+                     *Y=-1.0;
+                     break;
+                  }
+
+                  // Calculate new sub-division
+                  dx=(x1-x0)>>1;
+                  dy=(y1-y0)>>1;
+
+                  if (*X<0.5) {
+                     x1-=dx;
+                  } else {
+                     x0+=dx;
+                  }
+
+                  if (*Y<0.5) {
+                     y1-=dy;
+                  } else {
+                     y0+=dy;
+                  }
+               }
+
+               if (*X!=-1) {
+                  *X=x0+*X;
+                  *Y=y0+*Y;
+               }
             }
          }
-      }
 
-      // Check the grid limits
-      d=1.0;
-      if (*X>(GRef->X1+d) || *Y>(GRef->Y1+d) || *X<(GRef->X0-d) || *Y<(GRef->Y0-d)) {
-         if (!Extrap) {
-            *X=-1.0;
-            *Y=-1.0;
+         // Check the grid limits
+         d=1.0;
+         if (*X>(GRef->X1+d) || *Y>(GRef->Y1+d) || *X<(GRef->X0-d) || *Y<(GRef->Y0-d)) {
+            if (!Extrap) {
+               *X=-1.0;
+               *Y=-1.0;
+            }
+            return(0);
          }
-         return(0);
       }
    } else {
       *X=-1.0;
