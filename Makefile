@@ -1,6 +1,6 @@
 NAME       = eerUtils
 DESC       = SMC-CMC-CMOE Utility librairie package.
-VERSION    = 2.2.0
+VERSION    = 3.0.0
 MAINTAINER = $(USER)
 OS         = $(shell uname -s)
 PROC       = $(shell uname -m | tr _ -)

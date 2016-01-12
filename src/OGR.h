@@ -114,7 +114,7 @@ void         OGM_GPCNew(gpc_polygon *Poly);
 Vect3d*      OGM_GetVect3d(unsigned int Size,unsigned int No);
 void         OGM_ClearVect3d(void);
 void         OGM_OGRProject(OGRGeometryH Geom,TGeoRef *FromRef,TGeoRef *ToRef);
-int          OGM_QSortInter(const Vect3d *A,const Vect3d *B);
+int          OGM_QSortInter(const void *A,const void *B);
 int          OGM_Within(OGRGeometryH Geom0,OGRGeometryH Geom1,OGREnvelope *Env0,OGREnvelope *Env1);
 int          OGM_Intersect(OGRGeometryH Geom0,OGRGeometryH Geom1,OGREnvelope *Env0,OGREnvelope *Env1);
 int          OGM_PointPointIntersect(OGRGeometryH Geom0,OGRGeometryH Geom1,int All);

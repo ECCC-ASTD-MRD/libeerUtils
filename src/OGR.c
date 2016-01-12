@@ -80,11 +80,11 @@ static inline int OGM_ToVect3d(OGRGeometryH Geom,unsigned int No) {
    return(0);
 }
 
-int OGM_QSortInter(const Vect3d *A,const Vect3d *B){
+int OGM_QSortInter(const void *A,const void *B){
 
-   if (*A[2]<*B[2]) {
+   if ((*(const Vect3d*)A)[2]<(*(const Vect3d*)B)[2]) {
       return(-1);
-   } else if (*A[2]>*B[2]) {
+   } else if ((*(const Vect3d*)A)[2]>(*(const Vect3d*)B)[2]) {
       return(1);
    } else {
       return(0);

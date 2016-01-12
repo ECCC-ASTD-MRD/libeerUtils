@@ -668,6 +668,7 @@ void QTree_Parse(TQTree* restrict Node,QTree_ParseProc *Proc,unsigned Depth) {
  * Remarks : 
  *----------------------------------------------------------------------------
  */
+
 int QArray_Find(TQTree *Tree,int Res,double X,double Y,int *Idxs,double *Dists,int NbNear) {
    
    TQTree    *node;
@@ -678,26 +679,7 @@ int QArray_Find(TQTree *Tree,int Res,double X,double Y,int *Idxs,double *Dists,i
    
    Dists[0]=l=1e32;
    dxy=nnear=0;
-   
-//          // Find closest by looping in all parcels         
-//          for(nn=0;nn<Grid->GRef->NX;nn++) {
-//             dx=Lon-Grid->GRef->AX[nn];
-//             dy=Lat-Grid->GRef->AY[nn];
-//             
-//             l=dx*dx+dy*dy;
-//             if (l<len) {
-//                len=l;
-//                axy=nn;
-//             }
-//          }
-// 
-//          // Return found value
-//          if (axy>-1) {
-//             *Value=t->Data[K0][axy];
-//             return(TRUE);
-//          }
-//          break;
-   
+    
    // Find the closest by circling method
    node=&Tree[0];
 

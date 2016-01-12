@@ -41,14 +41,16 @@
 #include "QTree.h"
 #include "Triangle.h"
 
-#define GRIDCACHEMAX 2048
-#define GRIDOWNMAX   15
+#define EZGRID_CACHEMAX     2048
+#define EZGRID_YLINEARCOUNT 4
+#define EZGRID_YQTREESIZE   1000
+#define EZGRID_MQTREEDEPTH  8
 
-#define GRID_CENTER 0x0
-#define GRID_LEFT   0x1
-#define GRID_RIGHT  0x2
-#define GRID_BOTTOM 0x4
-#define GRID_TOP    0x8
+#define EZGRID_CENTER 0x0
+#define EZGRID_LEFT   0x1
+#define EZGRID_RIGHT  0x2
+#define EZGRID_BOTTOM 0x4
+#define EZGRID_TOP    0x8
 
 #define EZGrid_IsSame(GRID0,GRID1)     (GRID0 && GRID1 && GRID0->GID==GRID1->GID)
 #define EZGrid_IsLoaded(TILE,Z)        (TILE->Data && TILE->Data[Z] && !isnan(TILE->Data[Z][0]))
@@ -77,6 +79,8 @@
       } \
    } \
 }
+
+typedef enum { EZ_NEAREST, EZ_LINEAR } TGridInterpMode;
 
 typedef struct TGridTile {
    float **Data;                        // Data pointer
@@ -139,10 +143,10 @@ int    EZGrid_Wrap(TGrid* restrict const Grid);
 void   EZGrid_Factor(TGrid* restrict Grid,float Factor);
 int    EZGrid_GetValue(const TGrid* restrict const Grid,int I,int J,int K0,int K1,float* restrict Value);
 int    EZGrid_GetValues(const TGrid* restrict const Grid,int Nb,float* restrict const I,float* restrict const J,float* restrict const K,float* restrict Value);
-int    EZGrid_IJGetValue(TGrid* restrict const Grid,float I,float J,int K0,int K1,float* restrict Value);
-int    EZGrid_IJGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,float I,float J,int K0,int K1,float *UU,float* restrict VV);
-int    EZGrid_LLGetValue(TGrid* restrict const Grid,float Lat,float Lon,int K0,int K1,float* restrict Value);
-int    EZGrid_LLGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,float Lat,float Lon,int K0,int K1,float* restrict UU,float* restrict VV);
+int    EZGrid_IJGetValue(TGrid* restrict const Grid,TGridInterpMode Mode,float I,float J,int K0,int K1,float* restrict Value);
+int    EZGrid_IJGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,TGridInterpMode Mode,float I,float J,int K0,int K1,float *UU,float* restrict VV);
+int    EZGrid_LLGetValue(TGrid* restrict const Grid,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* restrict Value);
+int    EZGrid_LLGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* restrict UU,float* restrict VV);
 int    EZGrid_GetArray(TGrid* restrict const Grid,int K,float* restrict Value);
 float* EZGrid_GetArrayPtr(TGrid* restrict const Grid,int K);
 int    EZGrid_GetRange(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1,int J1,int K1,float* restrict Value);

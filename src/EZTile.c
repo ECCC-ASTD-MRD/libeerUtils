@@ -35,7 +35,7 @@
 #include "EZTile.h"
 
 static pthread_mutex_t CacheMutex=PTHREAD_MUTEX_INITIALIZER;
-static TGrid          *GridCache[GRIDCACHEMAX];
+static TGrid          *GridCache[EZGRID_CACHEMAX];
 
 /*----------------------------------------------------------------------------
  * Nom      : <EZGrid_Wrap>
@@ -373,7 +373,7 @@ static TGrid* EZGrid_CacheFind(TGrid *Grid) {
    if (Grid) {
 
       pthread_mutex_lock(&CacheMutex);
-      for(n=0;n<GRIDCACHEMAX;n++) {
+      for(n=0;n<EZGRID_CACHEMAX;n++) {
          if (GridCache[n]) {
 
             // Check for same level type and definitions
@@ -430,7 +430,7 @@ static inline int EZGrid_CacheIdx(const TGrid* __restrict const Grid) {
 
    if (Grid) {
       pthread_mutex_lock(&CacheMutex);
-      for(n=0;n<GRIDCACHEMAX;n++) {
+      for(n=0;n<EZGRID_CACHEMAX;n++) {
          if (GridCache[n]==Grid) {
             i=n;
             break;
@@ -462,7 +462,7 @@ static inline int EZGrid_CacheAdd(TGrid* __restrict const Grid) {
 
    if (Grid) {
       pthread_mutex_lock(&CacheMutex);
-      for(n=0;n<GRIDCACHEMAX;n++) {
+      for(n=0;n<EZGRID_CACHEMAX;n++) {
          if (!GridCache[n]) {
             GridCache[n]=Grid;
             i=n;
@@ -495,7 +495,7 @@ static inline int EZGrid_CacheDel(const TGrid* __restrict const Grid) {
 
    if (Grid) {
       pthread_mutex_lock(&CacheMutex);
-      for(n=0;n<GRIDCACHEMAX;n++) {
+      for(n=0;n<EZGRID_CACHEMAX;n++) {
          if (GridCache[n]==Grid) {
             GridCache[n]=NULL;
             break;
@@ -709,7 +709,7 @@ TQTree* EZGrid_BuildIndexM(TGrid* __restrict const Grid) {
    // Check data limits   
    lat0=lon0=1e10;
    lat1=lon1=-1e10;
-   Grid->QRes=8;
+   Grid->QRes=EZGRID_MQTREEDEPTH;
    
    for(n=0;n<Grid->GRef->NX;n++) {
       dy=Grid->GRef->AY[n];
@@ -763,7 +763,7 @@ TQTree* EZGrid_BuildIndexY(TGrid* __restrict const Grid) {
       lon1=FMAX(lon1,dx);
    }
    
-   Grid->QRes=1000;
+   Grid->QRes=EZGRID_YQTREESIZE;
    
    // Create the array on the data limits
    dy=(lat1-lat0)/Grid->QRes;
@@ -858,7 +858,7 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
       tile->HDJ   = 0;
       tile->Data  = NULL;
       tile->KBurn = -1;
-      tile->Side  = GRID_CENTER;
+      tile->Side  = EZGRID_CENTER;
       pthread_mutex_init(&tile->Mutex,NULL);
 
       tile->GID =RPN_IntIdNew(h.NI,h.NJ,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,Grid->H.FID);
@@ -869,14 +869,14 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
          tile->HJ=tile->J=h.IG4-1;
 
          /*Set the border tile flags and count the number of tiles in I,J*/
-         if (h.IG3==1)                { tile->Side|=GRID_LEFT;   Grid->NTJ++; }
-         if (h.IG3+h.NI+2>Grid->H.NI) { tile->Side|=GRID_RIGHT; }
-         if (h.IG4==1)                { tile->Side|=GRID_BOTTOM; Grid->NTI++; ni+=h.NI; }
-         if (h.IG4+h.NJ+2>Grid->H.NJ) { tile->Side|=GRID_TOP; }
+         if (h.IG3==1)                { tile->Side|=EZGRID_LEFT;   Grid->NTJ++; }
+         if (h.IG3+h.NI+2>Grid->H.NI) { tile->Side|=EZGRID_RIGHT; }
+         if (h.IG4==1)                { tile->Side|=EZGRID_BOTTOM; Grid->NTI++; ni+=h.NI; }
+         if (h.IG4+h.NJ+2>Grid->H.NJ) { tile->Side|=EZGRID_TOP; }
       } else {
          tile->HI=tile->I=0;
          tile->HJ=tile->J=0;
-         tile->Side|=GRID_LEFT|GRID_RIGHT|GRID_BOTTOM|GRID_TOP;
+         tile->Side|=EZGRID_LEFT|EZGRID_RIGHT|EZGRID_BOTTOM|EZGRID_TOP;
          Grid->NTI=Grid->NTJ=Grid->NbTiles=1;
          break;
       }
@@ -891,12 +891,12 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
       for(n=0;n<Grid->NbTiles;n++) {
          tile=&Grid->Tiles[n];
 
-         tile->HDI = (tile->Side&GRID_LEFT?0:Grid->Halo);
-         tile->HDJ = (tile->Side&GRID_BOTTOM?0:Grid->Halo);
+         tile->HDI = (tile->Side&EZGRID_LEFT?0:Grid->Halo);
+         tile->HDJ = (tile->Side&EZGRID_BOTTOM?0:Grid->Halo);
          tile->I  += tile->HDI;
          tile->J  += tile->HDJ;
-         tile->NI -= tile->HDI+(tile->Side&GRID_RIGHT?0:Grid->Halo);
-         tile->NJ -= tile->HDJ+(tile->Side&GRID_TOP?0:Grid->Halo);
+         tile->NI -= tile->HDI+(tile->Side&EZGRID_RIGHT?0:Grid->Halo);
+         tile->NJ -= tile->HDJ+(tile->Side&EZGRID_TOP?0:Grid->Halo);
          tile->NIJ = tile->NI*tile->NJ;
       }
    }
@@ -980,28 +980,28 @@ int EZGrid_BoundaryCopy(TGrid* __restrict const Grid,int Width) {
       tile=&Grid->Tiles[n];
 
       for(k=0;k<Grid->ZRef->LevelNb;k++) {
-         if (tile->Side&GRID_BOTTOM) {
+         if (tile->Side&EZGRID_BOTTOM) {
             for(i=0,idx=0;i<tile->HNI;i++,idx++) {
                if (Width==2)
                   tile->Data[k][idx+tile->HNI]=tile->Data[k][idx+tile->HNI+tile->HNI];
                tile->Data[k][idx]=tile->Data[k][idx+tile->HNI];
             }
          }
-         if (tile->Side&GRID_TOP) {
+         if (tile->Side&EZGRID_TOP) {
             for(i=0,idx=tile->HNIJ-tile->HNI-1;i<tile->HNI;i++,idx++) {
                if (Width==2)
                   tile->Data[k][idx-tile->HNI]=tile->Data[k][idx-tile->HNI-tile->HNI];
                tile->Data[k][idx]=tile->Data[k][idx-tile->HNI];
             }
          }
-         if (tile->Side&GRID_LEFT) {
+         if (tile->Side&EZGRID_LEFT) {
             for(j=0,idx=0;j<tile->HNJ;j++,idx+=tile->HNI) {
                if (Width==2)
                   tile->Data[k][idx+1]=tile->Data[k][idx+2];
                tile->Data[k][idx]=tile->Data[k][idx+1];
             }
          }
-         if (tile->Side&GRID_RIGHT) {
+         if (tile->Side&EZGRID_RIGHT) {
             for(j=0,idx=tile->HNI-1;j<tile->HNJ;j++,idx+=tile->HNI) {
                if (Width==2)
                   tile->Data[k][idx-1]=tile->Data[k][idx-2];
@@ -1766,6 +1766,7 @@ float EZGrid_GetPressure(const TGrid* __restrict const Grid,float Level,float P0
  *
  * Parametres :
  *   <Grid>       : Grille
+ *   <Mode>       : Interpolarion mode (EZ_NEAREST,EZ_LINEAR)
  *   <Lat>        : Latitude
  *   <Lon>        : Longitude
  *   <K0>         : Index du niveau 0
@@ -1777,16 +1778,46 @@ float EZGrid_GetPressure(const TGrid* __restrict const Grid,float Level,float P0
  *
  * Remarques :
  *
- *   - On effectue une in         nx=(node->BBox[1].X-node->BBox[0].X)/Grid->QRes;
-terpolation lineaire
+ *   - On effectue une interpolation lineaire
  *   - Cette fonction permet de recuperer un profile
+ *   - Gere les grille Y (Cloud point) et M (Triangle meshes)
  *----------------------------------------------------------------------------
 */
-wordint f77name(ezgrid_llgetvalue)(wordint *gdid,ftnfloat *lat,ftnfloat *lon,wordint *k0,wordint *k1,ftnfloat *val) {
-   return(EZGrid_LLGetValue(GridCache[*gdid],*lat,*lon,*k0-1,*k1-1,val));
+wordint f77name(ezgrid_llgetvalue)(wordint *gdid,wordint *mode,ftnfloat *lat,ftnfloat *lon,wordint *k0,wordint *k1,ftnfloat *val) {
+   return(EZGrid_LLGetValue(GridCache[*gdid],*mode,*lat,*lon,*k0-1,*k1-1,val));
 }
 
-int EZGrid_LLGetValue(TGrid* __restrict const Grid,float Lat,float Lon,int K0,int K1,float* __restrict Value) {
+// int EZGrid_FindNearest(TGrid* __restrict const Grid,float I,float J) {
+// 
+//    double dx,dy,l,len=1e32;
+//    int    i,j,nn,axy=-1;
+//    
+//    if (Grid->H.GRTYP[0]=='Y' || Grid->H.GRTYP[0]=='M') {
+//       // Point cloud: Find closest by looping in all points     
+//       for(nn=0;nn<Grid->GRef->NX;nn++) {
+//          dx=I-Grid->GRef->AX[nn];
+//          dy=J-Grid->GRef->AY[nn];
+//          
+//          l=dx*dx+dy*dy;
+//          if (l<len) {
+//             len=l;
+//             axy=nn;
+//          }
+//       }
+//    } else {
+//       // Grid: Find closest by clamping to grid limits     
+//       i=ROUND(I);
+//       j=ROUND(J);
+//       i=CLAMP(i,0,Grid->GRef->NX); 
+//       j=CLAMP(j,0,Grid->GRef->NY); 
+//       axy=j*Grid->GRef->NX+i;
+//    }
+// 
+//    // Return found index
+//    return(axy);
+// }
+
+int EZGrid_LLGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* __restrict Value) {
 
    TGridTile *t;
    TQTree    *node;
@@ -1795,7 +1826,6 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,float Lat,float Lon,int K0,in
    double     dx,dy,r,w,wt,dists[4];
    int        n,nb,idxs[4];
    unsigned int *idx;
-   
    
    if (!Grid) {
       App_Log(ERROR,"%s: Invalid grid\n",__func__);
@@ -1810,7 +1840,7 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,float Lat,float Lon,int K0,in
          CLAMPLON(Lon);
          
          // Find 4 nearest points
-         if ((nb=QArray_Find(Grid->QTree,Grid->QRes,Lon,Lat,idxs,dists,4))) {
+         if ((nb=QArray_Find(Grid->QTree,Grid->QRes,Lon,Lat,idxs,dists,Mode==EZ_NEAREST?1:EZGRID_YLINEARCOUNT))) {
             if (nb==1) {
                // For a single nearest, return value
                *Value+=t->Data[K0][idxs[0]];
@@ -1851,7 +1881,26 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,float Lat,float Lon,int K0,in
                
                // if the Barycentric coordinates are within this triangle, get its interpolated value
                if (Bary_Get(bary,Lat,Lon,Grid->GRef->AY[*idx],Grid->GRef->AX[*idx],Grid->GRef->AY[*(idx+1)],Grid->GRef->AX[*(idx+1)],Grid->GRef->AY[*(idx+2)],Grid->GRef->AX[*(idx+2)])) {
-                  *Value=Bary_Interp(bary,t->Data[K0][*idx],t->Data[K0][*(idx+1)],t->Data[K0][*(idx+2)]);                    
+                  if (Mode==EZ_NEAREST) {
+                     dx=Lat-Grid->GRef->AY[*idx];
+                     dy=Lon-Grid->GRef->AX[*idx];
+                     dists[0]=dx*dx+dy*dy;
+                     dx=Lat-Grid->GRef->AY[*idx+1];
+                     dy=Lon-Grid->GRef->AX[*idx+1];
+                     dists[1]=dx*dx+dy*dy;
+                     dx=Lat-Grid->GRef->AY[*idx+2];
+                     dy=Lon-Grid->GRef->AX[*idx]+2;
+                     dists[2]=dx*dx+dy*dy;
+                     if (dists[0]<dists[1] && dists[0]<dists[2]) {
+                        *Value=t->Data[K0][*idx];
+                     } else if (dists[1]<dists[0] && dists[1]<dists[2]) {
+                        *Value=t->Data[K0][*idx+1];
+                     } else {
+                        *Value=t->Data[K0][*idx+2];
+                     }
+                  } else {
+                     *Value=Bary_Interp(bary,t->Data[K0][*idx],t->Data[K0][*(idx+1)],t->Data[K0][*(idx+2)]);                    
+                  }
                   return(TRUE);
                }
             }
@@ -1864,7 +1913,7 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,float Lat,float Lon,int K0,in
          c_gdxyfll(Grid->GID,&i,&j,&Lat,&Lon,1);
          // RPN_IntUnlock();
 
-         return(EZGrid_IJGetValue(Grid,i-1.0f,j-1.0f,K0,K1,Value));
+         return(EZGrid_IJGetValue(Grid,Mode,i-1.0f,j-1.0f,K0,K1,Value));
          
    }
    
@@ -1880,6 +1929,7 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,float Lat,float Lon,int K0,in
  * Parametres :
  *   <GridU>      : Grille de la composante U
  *   <GridV>      : Grille de la composante V
+ *   <Mode>       : Interpolarion mode (EZ_NEAREST,EZ_LINEAR)
  *   <Lat>        : Latitude
  *   <Lon>        : Longitude
  *   <K0>         : Index du niveau 0
@@ -1895,10 +1945,10 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,float Lat,float Lon,int K0,in
  *   - Cette fonction permet de recuperer un profile
  *----------------------------------------------------------------------------
 */
-wordint f77name(ezgrid_llgetuvvalue)(wordint *gdidu,wordint *gdidv,ftnfloat *lat,ftnfloat *lon,wordint *k0,wordint *k1,ftnfloat *uu,ftnfloat *vv) {
-   return(EZGrid_LLGetUVValue(GridCache[*gdidu],GridCache[*gdidv],*lat,*lon,*k0-1,*k1-1,uu,vv));
+wordint f77name(ezgrid_llgetuvvalue)(wordint *gdidu,wordint *gdidv,wordint *mode,ftnfloat *lat,ftnfloat *lon,wordint *k0,wordint *k1,ftnfloat *uu,ftnfloat *vv) {
+   return(EZGrid_LLGetUVValue(GridCache[*gdidu],GridCache[*gdidv],*mode,*lat,*lon,*k0-1,*k1-1,uu,vv));
 }
-int EZGrid_LLGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const GridV,float Lat,float Lon,int K0,int K1,float* __restrict UU,float* __restrict VV) {
+int EZGrid_LLGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const GridV,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* __restrict UU,float* __restrict VV) {
 
    float i,j;
 
@@ -1911,7 +1961,7 @@ int EZGrid_LLGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const Gr
    c_gdxyfll(GridU->GID,&i,&j,&Lat,&Lon,1);
 //   RPN_IntUnlock();
 
-   return(EZGrid_IJGetUVValue(GridU,GridV,i-1.0f,j-1.0f,K0,K1,UU,VV));
+   return(EZGrid_IJGetUVValue(GridU,GridV,Mode,i-1.0f,j-1.0f,K0,K1,UU,VV));
 }
 
 /*----------------------------------------------------------------------------
@@ -1922,6 +1972,7 @@ int EZGrid_LLGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const Gr
  *
  * Parametres :
  *   <Grid>       : Grille
+ *   <Mode>       : Interpolarion mode (EZ_NEAREST,EZ_LINEAR)
  *   <I>          : Coordonnee en X
  *   <J>          : Coordonnee en Y
  *   <K0>         : Index du niveau 0
@@ -1938,10 +1989,10 @@ int EZGrid_LLGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const Gr
  *----------------------------------------------------------------------------
 */
 
-wordint f77name(ezgrid_ijgetvalue)(wordint *gdid,ftnfloat *i,ftnfloat *j,wordint *k0,wordint *k1,ftnfloat *val) {
-   return(EZGrid_IJGetValue(GridCache[*gdid],*i-1,*j-1,*k0-1,*k1-1,val));
+wordint f77name(ezgrid_ijgetvalue)(wordint *gdid,wordint *mode,ftnfloat *i,ftnfloat *j,wordint *k0,wordint *k1,ftnfloat *val) {
+   return(EZGrid_IJGetValue(GridCache[*gdid],*mode,*i-1,*j-1,*k0-1,*k1-1,val));
 }
-int EZGrid_IJGetValue(TGrid* __restrict const Grid,float I,float J,int K0,int K1,float* __restrict Value) {
+int EZGrid_IJGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float I,float J,int K0,int K1,float* __restrict Value) {
 
    TGridTile *t,*tw=NULL;
    int        i,j,k,ik=0,idx,idxj,idxw,idxwj,wrap=0;
@@ -1952,13 +2003,13 @@ int EZGrid_IJGetValue(TGrid* __restrict const Grid,float I,float J,int K0,int K1
       return(FALSE);
    }
 
-   /*Check inclusion in master grid limits*/
+   // Check inclusion in master grid limits
    if (I<0 || J<0 || K0<0 || K1<0 || J>=Grid->H.NJ || K0>=Grid->H.NK || K1>=Grid->H.NK) {
       App_Log(ERROR,"%s: Coordinates out of range (%s): I(%f) J(%f) K(%i,%i)\n",__func__,Grid->H.NOMVAR,I,J,K0,K1);
       return(FALSE);
    }
 
-   if (I>=Grid->H.NI-1) {
+   if (I>=Grid->H.NI) {
       if (Grid->Wrap) {
          wrap=1;
       } else {
@@ -1970,6 +2021,12 @@ int EZGrid_IJGetValue(TGrid* __restrict const Grid,float I,float J,int K0,int K1
    if (!(t=EZGrid_TileGet(Grid,I,J))) {
       App_Log(ERROR,"%s: Tile not found (%s) I(%.f) J(%f)\n",__func__,Grid->H.NOMVAR,I,J);
       return(FALSE);
+   }
+
+   if (Mode==EZ_NEAREST) {
+      I=ROUND(I);
+      J=ROUND(J);
+      wrap=0;
    }
 
    // Calculate in-tile indexes and limits
@@ -2000,22 +2057,26 @@ int EZGrid_IJGetValue(TGrid* __restrict const Grid,float I,float J,int K0,int K1
       if (!EZGrid_IsLoaded(t,k)) {
          EZGrid_TileGetData(Grid,t,k,0);
       }
-
       d[0]=t->Data[k][idx];
-      d[2]=t->Data[k][idxj];
 
-      if (tw) {
-         if (!EZGrid_IsLoaded(tw,k))
-            EZGrid_TileGetData(Grid,tw,k,0);
-
-         d[1]=tw->Data[k][idxw];
-         d[3]=tw->Data[k][idxwj];
+      if (Mode==EZ_NEAREST) {
+         Value[ik]=d[0];
       } else {
-         d[1]=t->Data[k][idx+1];
-         d[3]=t->Data[k][idxj+1];
-      }
+         d[2]=t->Data[k][idxj];
 
-      Value[ik]=d[0] + (d[1]-d[0])*dx + (d[2]-d[0])*dy + (d[3]-d[1]-d[2]+d[0])*dx*dy;
+         if (tw) {
+            if (!EZGrid_IsLoaded(tw,k))
+               EZGrid_TileGetData(Grid,tw,k,0);
+
+            d[1]=tw->Data[k][idxw];
+            d[3]=tw->Data[k][idxwj];
+         } else {
+            d[1]=t->Data[k][idx+1];
+            d[3]=t->Data[k][idxj+1];
+         }
+
+         Value[ik]=d[0] + (d[1]-d[0])*dx + (d[2]-d[0])*dy + (d[3]-d[1]-d[2]+d[0])*dx*dy;
+      }
 
       ik++;
 //         RPN_IntLock();
@@ -2092,6 +2153,7 @@ int EZGrid_Interp(TGrid* __restrict const To, TGrid* __restrict const From) {
  * Parametres :
  *   <GridU>      : Grille de la composante U
  *   <GridV>      : Grille de la composante V
+ *   <Mode>       : Interpolarion mode (EZ_NEAREST,EZ_LINEAR)
  *   <I>          : Coordonnee en X
  *   <J>          : Coordonnee en Y
  *   <K0>         : Index du niveau 0
@@ -2107,10 +2169,10 @@ int EZGrid_Interp(TGrid* __restrict const To, TGrid* __restrict const From) {
  *   - Cette fonction permet de recuperer un profile
  *----------------------------------------------------------------------------
 */
-wordint f77name(ezgrid_ijgetuvvalue)(wordint *gdidu,wordint *gdidv,ftnfloat *i,ftnfloat *j,wordint *k0,wordint *k1,ftnfloat *uu,ftnfloat *vv) {
-   return(EZGrid_IJGetUVValue(GridCache[*gdidu],GridCache[*gdidv],*i-1,*j-1,*k0-1,*k1-1,uu,vv));
+wordint f77name(ezgrid_ijgetuvvalue)(wordint *gdidu,wordint *gdidv,wordint *mode,ftnfloat *i,ftnfloat *j,wordint *k0,wordint *k1,ftnfloat *uu,ftnfloat *vv) {
+   return(EZGrid_IJGetUVValue(GridCache[*gdidu],GridCache[*gdidv],*mode,*i-1,*j-1,*k0-1,*k1-1,uu,vv));
 }
-int EZGrid_IJGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const GridV,float I,float J,int K0,int K1,float *UU,float* __restrict VV) {
+int EZGrid_IJGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const GridV,TGridInterpMode Mode,float I,float J,int K0,int K1,float *UU,float* __restrict VV) {
 
    TGridTile *tu,*tv;
    float      d,v,i,j;
@@ -2442,7 +2504,9 @@ int EZGrid_GetDelta(TGrid* __restrict const Grid,int Invert,float* DX,float* DY,
    }
 
 //   RPN_IntLock();
-   if (Grid->H.GRTYP[0]=='M') {
+   if (Grid->H.GRTYP[0]=='Y') {
+      App_Log(WARNING,"%s: DX, DY and DA cannot be calculated on a Y grid\n",__func__);        
+   } else if (Grid->H.GRTYP[0]=='M') {
       
       if (DX || DY) {
          App_Log(WARNING,"%s: DX and DY cannot be calculated on an M grid\n",__func__);        
