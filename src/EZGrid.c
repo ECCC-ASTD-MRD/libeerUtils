@@ -32,7 +32,7 @@
 #ifdef HAVE_RMN
 
 #include "App.h"
-#include "EZTile.h"
+#include "EZGrid.h"
 
 static pthread_mutex_t CacheMutex=PTHREAD_MUTEX_INITIALIZER;
 static TGrid          *GridCache[EZGRID_CACHEMAX];
@@ -2175,7 +2175,7 @@ wordint f77name(ezgrid_ijgetuvvalue)(wordint *gdidu,wordint *gdidv,wordint *mode
 int EZGrid_IJGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const GridV,TGridInterpMode Mode,float I,float J,int K0,int K1,float *UU,float* __restrict VV) {
 
    TGridTile *tu,*tv;
-   float      d,v,i,j;
+   double     d,v;
    int        ik=0,k;
 
    if (!GridU || !GridV) {
@@ -2216,8 +2216,8 @@ int EZGrid_IJGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const Gr
       d=DEG2RAD(VV[ik]);
       v=UU[ik]*0.515f;
 
-      UU[ik]=-v*sinf(d);
-      VV[ik]=-v*cosf(d);
+      UU[ik]=-v*sin(d);
+      VV[ik]=-v*cos(d);
       ik++;
    } while ((K0<=K1?k++:k--)!=K1);
 

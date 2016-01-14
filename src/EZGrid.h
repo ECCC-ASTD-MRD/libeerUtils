@@ -30,8 +30,8 @@
  *==============================================================================
  */
 
-#ifndef _EZTile_h
-#define _EZTile_h
+#ifndef _EZGrid_h
+#define _EZGrid_h
 
 #include <pthread.h>
 #include "eerUtils.h"

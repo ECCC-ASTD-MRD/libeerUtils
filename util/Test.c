@@ -101,7 +101,7 @@ int main(int argc, char *argv[]) {
    }
 
    fprintf(stderr,"(DEBUG) Profile UU values at LL:\n   ");
-   EZGrid_LLGetValue(fld0,45.39,-79.9,0,57,vals);
+   EZGrid_LLGetValue(fld0,EZ_LINEAR,45.39,-79.9,0,57,vals);
    for(j=0;j<=57;j++) {
       printf("%f ",vals[j]);
    }

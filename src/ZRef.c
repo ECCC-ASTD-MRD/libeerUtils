@@ -702,7 +702,7 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
       case 5001:                                                      // Hybrid
          for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
             for (ij=0;ij<NIJ;ij++) {
-               Pres[idxk+ij]=(ZRef->A[k]+ZRef->B[k]*P0[ij]*100.0)*0.01;
+               Pres[idxk+ij]=(ZRef->A[k]+ZRef->B[k]*P0[ij]*100.0f)*0.01f;
             }
          }
          break;
@@ -710,7 +710,7 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
       case 2001:                                                      // Pressure
          for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
             for (ij=0;ij<NIJ;ij++) {
-               Pres[idxk+ij]=ZRef->A[k]*0.01;
+               Pres[idxk+ij]=ZRef->A[k]*0.01f;
             }
          }
          break;
@@ -718,7 +718,7 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
       case 5003:                                                     // Hybrid momentum
          for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
             for (ij=0;ij<NIJ;ij++) {
-               Pres[idxk+ij]=exp(ZRef->A[k]+ZRef->B[k]*logf(P0[ij]/pref))*0.01;
+               Pres[idxk+ij]=exp(ZRef->A[k]+ZRef->B[k]*log(P0[ij]/pref))*0.01f;
             }
          }
          break;
@@ -728,7 +728,7 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
    }
    
    if (ZRef->POff!=0.0) for (ij=0;ij<NIJ*ZRef->LevelNb;ij++) Pres[ij]+=ZRef->POff;
-   if (Log)             for (ij=0;ij<NIJ*ZRef->LevelNb;ij++) Pres[ij]=logf(Pres[ij]);
+   if (Log)             for (ij=0;ij<NIJ*ZRef->LevelNb;ij++) Pres[ij]=log(Pres[ij]);
 
    return(1);
 }

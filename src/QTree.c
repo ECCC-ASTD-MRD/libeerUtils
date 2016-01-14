@@ -306,19 +306,19 @@ TQTree* QTree_Add(TQTree* restrict Node,double X,double Y,unsigned int MaxDepth,
 #define CS_Intersect(A,B) (!(A&B)) // Do theses code intersect
 
 // Cohen–Sutherland algorithm 
-// Compute the bit code for a point (x, y) using the clip rectangle
-// bounded diagonally by (xmin, ymin), and (xmax, ymax)
+// Compute the bit code for a point (X,Y) using the clip rectangle
+// bounded diagonally by (X0,Y0), and (X1,Y1)
 int CS_Code(double X, double Y,double X0,double Y0,double X1,double Y1) {
    
-   int code=CS_INSIDE;                    // Initialised as being inside of clip window
+   int code=CS_INSIDE;                     // Initialised as being inside of clip window
 
    if      (X<X0) { code |= CS_LEFT; }     // Left of clip window 
    else if (X>X1) { code |= CS_RIGHT; }    // Right of clip window
             
-   if      (Y<Y0) { code |= CS_BOTTOM; }    // Below the clip window           
+   if      (Y<Y0) { code |= CS_BOTTOM; }   // Below the clip window           
    else if (Y>Y1) { code |= CS_TOP; }      // Above the clip window
             
-   return code;
+   return(code);
 }
 
 /*----------------------------------------------------------------------------

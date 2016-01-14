@@ -36,7 +36,7 @@
 #include "App.h"
 #include "GeoRef.h"
 #include "Def.h"
-#include "EZTile.h"
+#include "EZGrid.h"
 #include "fnom.h"
 
 static const char *RPN_Desc[]={ ">>","^^","^>","!!","##","HY","PROJ","MTRX",NULL };

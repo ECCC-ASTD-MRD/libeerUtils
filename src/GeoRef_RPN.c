@@ -37,7 +37,7 @@
 #include "Def.h"
 #include "RPN.h"
 #include "Vertex.h"
-#include "EZTile.h"
+#include "EZGrid.h"
 
 void     GeoRef_Expand(TGeoRef *GRef);
 double   GeoRef_RPNDistance(TGeoRef *GRef,double X0,double Y0,double X1, double Y1);
