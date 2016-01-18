@@ -719,7 +719,7 @@ void GeoRef_Clear(TGeoRef *Ref,int New) {
    }
 }
 
-void GeoRef_Qualify(TGeoRef *Ref) {
+void GeoRef_Qualify(TGeoRef* __restrict const Ref) {
 
    Coord co[2];
    double d[2];
@@ -787,7 +787,7 @@ void GeoRef_Qualify(TGeoRef *Ref) {
    }
 }
 
-int GeoRef_Equal(TGeoRef *Ref0,TGeoRef *Ref1) {
+int GeoRef_Equal(TGeoRef* __restrict const Ref0,TGeoRef* __restrict const Ref1) {
 
    if (!Ref0 || !Ref1) {
       return(0);
@@ -833,13 +833,13 @@ int GeoRef_Equal(TGeoRef *Ref0,TGeoRef *Ref1) {
    return(1);
 }
 
-TGeoRef *GeoRef_Copy(TGeoRef *Ref) {
+TGeoRef *GeoRef_Copy(TGeoRef* __restrict const Ref) {
 
    GeoRef_Incr(Ref);
    return(Ref);
 }
 
-TGeoRef *GeoRef_Reference(TGeoRef *Ref) {
+TGeoRef *GeoRef_Reference(TGeoRef* __restrict const Ref) {
 
    TGeoRef *ref;
 
@@ -866,7 +866,7 @@ TGeoRef *GeoRef_Reference(TGeoRef *Ref) {
    return(ref);
 }
 
-TGeoRef *GeoRef_HardCopy(TGeoRef *Ref) {
+TGeoRef *GeoRef_HardCopy(TGeoRef* __restrict const Ref) {
 
    TGeoRef *ref;
    int      i;
@@ -914,7 +914,7 @@ TGeoRef *GeoRef_HardCopy(TGeoRef *Ref) {
    return(ref);
 }
 
-TGeoRef *GeoRef_Resize(TGeoRef *Ref,int NI,int NJ) {
+TGeoRef *GeoRef_Resize(TGeoRef* __restrict const Ref,int NI,int NJ) {
 
    TGeoRef *ref;
 
@@ -928,7 +928,7 @@ TGeoRef *GeoRef_Resize(TGeoRef *Ref,int NI,int NJ) {
    return(ref);
 }
 
-int GeoRef_Project(TGeoRef *Ref,double X,double Y,double *Lat,double *Lon,int Extrap,int Transform) {
+int GeoRef_Project(TGeoRef* __restrict const Ref,double X,double Y,double *Lat,double *Lon,int Extrap,int Transform) {
 
    if (!Ref) return(0);
    
@@ -945,7 +945,7 @@ int GeoRef_Project(TGeoRef *Ref,double X,double Y,double *Lat,double *Lon,int Ex
    return(1);
 }
 
-int GeoRef_UnProject(TGeoRef *Ref,double *X,double *Y,double Lat,double Lon,int Extrap,int Transform) {
+int GeoRef_UnProject(TGeoRef* __restrict const Ref,double *X,double *Y,double Lat,double Lon,int Extrap,int Transform) {
 
    if (!Ref) return(0);
    
@@ -1025,6 +1025,63 @@ TGeoRef* GeoRef_New() {
 }
 
 /*--------------------------------------------------------------------------------------------------------------
+ * Nom          : <GeoRef_Nearest>
+ * Creation     : Janvier 2015 J.P. Gauthier - CMC/CMOE
+ *
+ * But          : Trouver le(s) point(s) de grille les plus proches.
+ *
+ * Parametres :
+ *   <Ref>    : Pointeur sur la reference geographique
+ *   <X>      : X Position
+ *   <Y>      : Y Position
+ *   <Idxs>   : Pointer to neighbors index found
+ *   <Dists>  : Squared distances from the neighbors found
+ *   <NbNear> : Number of nearest neighbors to find
+ *
+ * Retour     :
+ *   <nbnear> : Nombre de points trouvé trié du plus près vers le plus loin
+ *
+ * Remarques  :
+ *
+ *---------------------------------------------------------------------------------------------------------------
+*/
+int GeoRef_Nearest(TGeoRef* __restrict const Ref,float X,float Y,int *Idxs,double *Dists,int NbNear) {
+
+   double dx,dy,l;
+   int    i,j,n,nn,nr,nnear;
+   
+   Dists[0]=l=1e32;
+   nnear=0;
+
+   // Point cloud: Find closest by looping in all points     
+   for(n=0;n<Ref->NX;n++) {
+      dx=X-Ref->AX[n];
+      dy=Y-Ref->AY[n];
+      l=dx*dx+dy*dy;
+         
+      for(nn=0;nn<NbNear;nn++) {
+         if (l<Dists[nn]) {
+               
+            // Move farther nearest in order
+            for(nr=NbNear-1;nr>nn;nr--) {
+               Dists[nr]=Dists[nr-1];
+               Idxs[nr]=Idxs[nr-1];                       
+            }
+            
+            // Assign found nearest
+            Dists[nn]=l;
+            Idxs[nn]=n;
+            nnear++;
+            break;
+         }
+      }
+   }
+
+   // Return found index
+   return(nnear>NbNear?NbNear:nnear);
+}
+
+/*--------------------------------------------------------------------------------------------------------------
  * Nom          : <GeoRef_Intersect>
  * Creation     : Aout 2006 J.P. Gauthier - CMC/CMOE
  *
@@ -1043,7 +1100,7 @@ TGeoRef* GeoRef_New() {
  *
  *---------------------------------------------------------------------------------------------------------------
 */
-int GeoRef_Intersect(TGeoRef *Ref0,TGeoRef *Ref1,int *X0,int *Y0,int *X1,int *Y1,int BD) {
+int GeoRef_Intersect(TGeoRef* __restrict const Ref0,TGeoRef* __restrict const Ref1,int *X0,int *Y0,int *X1,int *Y1,int BD) {
 
    double lat,lon,di,dj,in=0;
    double x0,y0,x1,y1;
@@ -1175,7 +1232,7 @@ int GeoRef_Intersect(TGeoRef *Ref0,TGeoRef *Ref1,int *X0,int *Y0,int *X1,int *Y1
  *
  *---------------------------------------------------------------------------------------------------------------
 */
-int GeoRef_Limits(TGeoRef *Ref,double *Lat0,double *Lon0,double *Lat1,double *Lon1) {
+int GeoRef_Limits(TGeoRef* __restrict const Ref,double *Lat0,double *Lon0,double *Lat1,double *Lon1) {
 
    int x,y;
    double di,dj,lat,lon;
@@ -1236,7 +1293,7 @@ int GeoRef_Limits(TGeoRef *Ref,double *Lat0,double *Lon0,double *Lat1,double *Lo
    return(1);
 }
 
-int GeoRef_Within(TGeoRef *Ref0,TGeoRef *Ref1) {
+int GeoRef_Within(TGeoRef* __restrict const Ref0,TGeoRef* __restrict const Ref1) {
 
    double lat,lon,di,dj;
    int    x,y;
@@ -1274,7 +1331,7 @@ int GeoRef_Within(TGeoRef *Ref0,TGeoRef *Ref1) {
    return(1);
 }
 
-int GeoRef_WithinRange(TGeoRef *Ref,double Lat0,double Lon0,double Lat1,double Lon1,int In) {
+int GeoRef_WithinRange(TGeoRef* __restrict const Ref,double Lat0,double Lon0,double Lat1,double Lon1,int In) {
 
    double lat[4],lon[4],dl;
    int    d0,d1,d2,d3;
@@ -1339,7 +1396,7 @@ int GeoRef_WithinRange(TGeoRef *Ref,double Lat0,double Lon0,double Lat1,double L
    return(0);
 }
 
-int GeoRef_BoundingBox(TGeoRef *Ref,double Lat0,double Lon0,double Lat1,double Lon1,double *I0,double *J0,double *I1,double *J1) {
+int GeoRef_BoundingBox(TGeoRef* __restrict const Ref,double Lat0,double Lon0,double Lat1,double Lon1,double *I0,double *J0,double *I1,double *J1) {
 
    double di,dj;
 
@@ -1405,7 +1462,7 @@ int GeoRef_BoundingBox(TGeoRef *Ref,double Lat0,double Lon0,double Lat1,double L
  *    - On projete la bounding box et si les latitudes sont en dehors de -90 90 alors c'est pas bon
  *---------------------------------------------------------------------------------------------------------------
 */
-int GeoRef_Valid(TGeoRef *Ref) {
+int GeoRef_Valid(TGeoRef* __restrict const Ref) {
 
    Coord co[2];
 

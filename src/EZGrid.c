@@ -722,7 +722,7 @@ TQTree* EZGrid_BuildIndexM(TGrid* __restrict const Grid) {
       
    // Create the tree on the data limits
    if (!(Grid->QTree=QTree_New(lat0,lon0,lat1,lon1,NULL))) {
-      App_Log(ERROR,"%s: failed to create QTree index\n",__func__);
+      App_Log(ERROR,"%s: Failed to create QTree index\n",__func__);
       return(NULL);
    }
 
@@ -736,7 +736,7 @@ TQTree* EZGrid_BuildIndexM(TGrid* __restrict const Grid) {
       
       // Put it in the quadtree, in any child nodes intersected
       if (!QTree_AddTriangle(Grid->QTree,tr,Grid->QRes,&Grid->GRef->Idx[nt])) {
-         App_Log(ERROR,"%s: failed to add node\n",__func__);
+         App_Log(ERROR,"%s: Failed to add node\n",__func__);
          return(NULL);
       }      
    }
@@ -750,6 +750,10 @@ TQTree* EZGrid_BuildIndexY(TGrid* __restrict const Grid) {
    double        dx,dy,lat0,lon0,lat1,lon1;
    Vect2d        pt;
 
+   if (Grid->GRef->NX<5000) {
+      return(NULL);
+   }
+   
    // Check data limits   
    lat0=lon0=1e10;
    lat1=lon1=-1e10;
@@ -770,7 +774,7 @@ TQTree* EZGrid_BuildIndexY(TGrid* __restrict const Grid) {
    dx=(lon1-lon0)/Grid->QRes;
 
    if (!(Grid->QTree=(TQTree*)calloc((Grid->QRes+1)*(Grid->QRes+1),sizeof(TQTree)))) {
-      App_Log(ERROR,"%s: failed to create QTree index\n",__func__);
+      App_Log(ERROR,"%s: Failed to create QTree index\n",__func__);
       return(NULL);
    }
 
@@ -912,9 +916,9 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
    switch(Grid->H.GRTYP[0]) {
       case 'M':
          Grid->GRef=GeoRef_New();
+         Grid->GRef->Grid[0]='M';
    
          cs_fstinf(Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","##");
-         
          Grid->GRef->NIdx=ni*nj*nk;
          Grid->GRef->NX=Grid->H.NI;
          Grid->GRef->NY=Grid->H.NJ;
@@ -932,6 +936,7 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
    
       case 'Y':
          Grid->GRef=GeoRef_New();
+         Grid->GRef->Grid[0]='Y';
    
          Grid->GRef->NX=Grid->H.NIJ;
          Grid->GRef->NY=Grid->H.NIJ;
@@ -1787,36 +1792,6 @@ wordint f77name(ezgrid_llgetvalue)(wordint *gdid,wordint *mode,ftnfloat *lat,ftn
    return(EZGrid_LLGetValue(GridCache[*gdid],*mode,*lat,*lon,*k0-1,*k1-1,val));
 }
 
-// int EZGrid_FindNearest(TGrid* __restrict const Grid,float I,float J) {
-// 
-//    double dx,dy,l,len=1e32;
-//    int    i,j,nn,axy=-1;
-//    
-//    if (Grid->H.GRTYP[0]=='Y' || Grid->H.GRTYP[0]=='M') {
-//       // Point cloud: Find closest by looping in all points     
-//       for(nn=0;nn<Grid->GRef->NX;nn++) {
-//          dx=I-Grid->GRef->AX[nn];
-//          dy=J-Grid->GRef->AY[nn];
-//          
-//          l=dx*dx+dy*dy;
-//          if (l<len) {
-//             len=l;
-//             axy=nn;
-//          }
-//       }
-//    } else {
-//       // Grid: Find closest by clamping to grid limits     
-//       i=ROUND(I);
-//       j=ROUND(J);
-//       i=CLAMP(i,0,Grid->GRef->NX); 
-//       j=CLAMP(j,0,Grid->GRef->NY); 
-//       axy=j*Grid->GRef->NX+i;
-//    }
-// 
-//    // Return found index
-//    return(axy);
-// }
-
 int EZGrid_LLGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* __restrict Value) {
 
    TGridTile *t;
@@ -1840,7 +1815,13 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float La
          CLAMPLON(Lon);
          
          // Find 4 nearest points
-         if ((nb=QArray_Find(Grid->QTree,Grid->QRes,Lon,Lat,idxs,dists,Mode==EZ_NEAREST?1:EZGRID_YLINEARCOUNT))) {
+         if (Grid->QTree) {
+            nb=QArray_Find(Grid->QTree,Grid->QRes,Lon,Lat,idxs,dists,Mode==EZ_NEAREST?1:EZGRID_YLINEARCOUNT);
+         } else {
+            nb=GeoRef_Nearest(Grid->GRef,Lon,Lat,idxs,dists,Mode==EZ_NEAREST?1:EZGRID_YLINEARCOUNT);
+         }
+         
+         if (nb) {
             if (nb==1) {
                // For a single nearest, return value
                *Value+=t->Data[K0][idxs[0]];

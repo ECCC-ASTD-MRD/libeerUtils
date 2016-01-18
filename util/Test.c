@@ -29,7 +29,7 @@
  *
  *==============================================================================
  */
-#include "EZTile.h"
+#include "EZGrid.h"
 
 int main(int argc, char *argv[]) {
   

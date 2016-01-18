@@ -242,6 +242,7 @@ int QTree_TestTIN(void) {
 #define QRES    1000
 #define QDIM    1000
 #define QSAMPLE 10000000
+#define QSAMPLE 10000
 
 int QTree_TestCloud(void) {
    
@@ -259,10 +260,16 @@ int QTree_TestCloud(void) {
       App_Log(ERROR,"%s: failed to create QTree index\n",__func__);
       return(0);
    }
-     
+   
+   res=sqrt(QSAMPLE);
+   res=QRES;
+   res=1000;
+//   res=QSAMPLE/100.0;
+   App_Log(INFO,"Index dimension is %i\n",res);
+
    // Add random data
-   dy=QDIM/QRES;
-   dx=QDIM/QRES;
+   dy=QDIM/res;
+   dx=QDIM/res;
       
    // Loop on points
    pts=(Vect2d*)malloc(QSAMPLE*sizeof(Vect2d));
@@ -275,7 +282,7 @@ int QTree_TestCloud(void) {
       x=pts[n][0]/dx;
       y=pts[n][1]/dy;
 
-      node=&tree[y*QRES+x];
+      node=&tree[y*res+x];
       QTree_AddData(node,pts[n][0],pts[n][1],(void*)(n+1));
    }
    gettimeofday(&time1,NULL);
@@ -298,7 +305,7 @@ int QTree_TestCloud(void) {
    }
    gettimeofday(&time1,NULL);
    System_TimeValSubtract(&time0,&time1,&time0);
-   App_Log(INFO,"   Loop mode: %.6f s, closest is (%f,%f)\n",time0.tv_sec+((double)time0.tv_usec)*1e-6,pts[axy][0],pts[axy][1]);
+   App_Log(INFO,"   Loop mode: %.10f s, closest is (%f,%f)\n",time0.tv_sec+((double)time0.tv_usec)*1e-6,pts[axy][0],pts[axy][1]);
    
    // Search Circling
    gettimeofday(&time0,NULL);
@@ -338,7 +345,7 @@ int QTree_TestCloud(void) {
    
    gettimeofday(&time1,NULL);
    System_TimeValSubtract(&time0,&time1,&time0);
-   App_Log(INFO,"   Circ mode: %.6f s, closest is (%f,%f)\n",time0.tv_sec+((double)time0.tv_usec)*1e-6,pts[axy][0],pts[axy][1]);
+   App_Log(INFO,"   Circ mode: %.10f s, closest is (%f,%f)\n",time0.tv_sec+((double)time0.tv_usec)*1e-6,pts[axy][0],pts[axy][1]);
 }
 
 int main(int argc, char *argv[]) {
