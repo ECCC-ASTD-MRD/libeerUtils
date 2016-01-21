@@ -12,6 +12,13 @@
  * Description: Fonctions génériques à toute les applications.
  *
  * Remarques :
+ *    This package can uses the following environment variables if defined
+ *       APP_PARAMS       : List of parameters for the appliaction (instead of givins on command line) 
+ *       APP_VERBOSE      : Define verbose level (ERROR,WARNING,INFO,DEBUG,EXTRA or 0-4)
+ *       APP_VERBOSECOLOR : Use color in log messages
+ * 
+ *       CMCLNG           : Language tu use (francais,english)
+ *       OMP_NUM_THREADS  : Number of openMP threads
  *
  * License      :
  *    This library is free software; you can redistribute it and/or
@@ -37,7 +44,7 @@
 #include "eerUtils.h"
 #include "RPN.h"
 
-TApp AppInstance;                                // Static App instance
+static TApp AppInstance;                         // Static App instance
 __thread TApp *App=&AppInstance;                 // Per thread App pointer
 static __thread char APP_ERROR[APP_ERRORSIZE];   // Last error is accessible through this
 
@@ -93,11 +100,19 @@ TApp *App_Init(int Type,char *Name,char *Version,char *Desc,char* Stamp) {
    App->OMPSeed=NULL;
    App->Seed=time(NULL);
 
+   // Check the log parameters in the environment 
+   if ((c=getenv("APP_VERBOSE"))) {
+      App_LogLevel(c);
+   }
+   if ((c=getenv("APP_VERBOSECOLOR"))) {
+      App->LogColor=TRUE;
+   }
+   
    // Check the language in the environment 
-   if (!(c=getenv("CMCLNG"))) {
-      App->Language=APP_EN;
-   } else {
+   if ((c=getenv("CMCLNG"))) {
       App->Language=(c[0]=='f' || c[0]=='F')?APP_FR:APP_EN;
+   } else {
+      App->Language=APP_EN;
    }
  
    return(App);
@@ -477,20 +492,22 @@ void App_Progress(float Percent,const char *Format,...) {
 */
 int App_LogLevel(char *Val) {
 
-   if (strcasecmp(Val,"ERROR")==0) {
-      App->LogLevel=0;
-   } else if (strcasecmp(Val,"WARNING")==0) {
-      App->LogLevel=1;
-   } else if (strcasecmp(Val,"INFO")==0) {
-      App->LogLevel=2;
-   } else if (strcasecmp(Val,"DEBUG")==0) {
-      App->LogLevel=3;
-   } else if (strcasecmp(Val,"EXTRA")==0) {
-      App->LogLevel=4;
-   } else {
-      App->LogLevel=(TApp_LogLevel)atoi(Val);
+   if (Val) {
+      if (strcasecmp(Val,"ERROR")==0) {
+         App->LogLevel=0;
+      } else if (strcasecmp(Val,"WARNING")==0) {
+         App->LogLevel=1;
+      } else if (strcasecmp(Val,"INFO")==0) {
+         App->LogLevel=2;
+      } else if (strcasecmp(Val,"DEBUG")==0) {
+         App->LogLevel=3;
+      } else if (strcasecmp(Val,"EXTRA")==0) {
+         App->LogLevel=4;
+      } else {
+         App->LogLevel=(TApp_LogLevel)atoi(Val);
+      }
    }
-   return(1);
+   return(App->LogLevel);
 }
 
 /*----------------------------------------------------------------------------
