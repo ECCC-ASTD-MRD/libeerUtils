@@ -1811,7 +1811,8 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float La
       case 'Y': // This is a point cloud
          
          t=&Grid->Tiles[0];
-         EZGrid_TileGetData(Grid,t,K0,0);
+         if (!EZGrid_IsLoaded(t,K0))
+            EZGrid_TileGetData(Grid,t,K0,0);
          CLAMPLON(Lon);
          
          // Find 4 nearest points
@@ -1850,7 +1851,8 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float La
          
          idx=Grid->GRef->Idx;
          t=&Grid->Tiles[0];
-         EZGrid_TileGetData(Grid,t,K0,0);
+         if (!EZGrid_IsLoaded(t,K0))
+            EZGrid_TileGetData(Grid,t,K0,0);
          CLAMPLON(Lon);
          
          // Find enclosing triangle
@@ -2035,9 +2037,9 @@ int EZGrid_IJGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float I,
 
    k=K0;
    do {
-      if (!EZGrid_IsLoaded(t,k)) {
+      if (!EZGrid_IsLoaded(t,k))
          EZGrid_TileGetData(Grid,t,k,0);
-      }
+ 
       d[0]=t->Data[k][idx];
 
       if (Mode==EZ_NEAREST) {
@@ -2593,7 +2595,7 @@ int EZGrid_GetLL(TGrid* __restrict const Grid,float* Lat,float* Lon,float* I,flo
       for(i=0;i<Nb;i++) {
          fi=I[i]+1.0;
          fj=J[i]+1.0;
-         if ((ok=c_gdllfxy(Grid->GID,Lat,Lon,&fi,&fj,1))<0) {
+         if ((ok=c_gdllfxy(Grid->GID,&Lat[i],&Lon[i],&fi,&fj,1))<0) {
             break;
          }
       }
