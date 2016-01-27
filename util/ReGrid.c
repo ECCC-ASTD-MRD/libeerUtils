@@ -41,9 +41,8 @@
 
 int ReGrid(char *In,char *Out,char *Grid,char **Vars) {
 
-   TRPNField *in,*grid,*out,*idx;
-   int  fin,fout,fgrid,n;
-   char *var,*tok;
+   TRPNField *in,*grid,*idx;
+   int  fin,fout,fgrid;
    float *index=NULL;
    
   if ((fin=cs_fstouv(In,"STD+RND+R/O"))<0) {

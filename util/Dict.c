@@ -184,7 +184,7 @@ int Dict_CheckCFG(char *CFGFile){
    TDictVar *var;
    TList    *unknown,*known;
    char      buf[APP_BUFMAX],*idx,*values,*value,*valuesave;
-   int       d,nb_unknown=0,nb_known=0;
+   int       nb_unknown=0,nb_known=0;
    
    if (!(fp=fopen(CFGFile,"r"))) {
       App_Log(ERROR,"Unable to open config file: %s\n",CFGFile);
@@ -209,7 +209,7 @@ int Dict_CheckCFG(char *CFGFile){
          
          // Parse all var separated by ,
          valuesave=NULL;
-         while(value=strtok_r(values,",",&valuesave)) {
+         while((value=strtok_r(values,",",&valuesave))) {
             strtrim(value,' ');
             
             App_Log(DEBUG,"Found variable: %s\n",value);
@@ -237,7 +237,7 @@ int Dict_CheckCFG(char *CFGFile){
       
    if (known) {
       printf("Known variables (%i)\n-------------------------------------------------------------------------------------\n",nb_known);
-      while(known=TList_Find(known,NULL,"")) {
+      while((known=TList_Find(known,NULL,""))) {
          var=(TDictVar*)(known->Data);        
          Dict_PrintVar(var,DICT_SHORT,App->Language);
          known=known->Next;
@@ -247,7 +247,7 @@ int Dict_CheckCFG(char *CFGFile){
    
    if (unknown) {
       printf("Unknown variables (%i)\n-------------------------------------------------------------------------------------\n",nb_unknown);
-      while(unknown=TList_Find(unknown,NULL,"")) {
+      while((unknown=TList_Find(unknown,NULL,""))) {
          var=(TDictVar*)(unknown->Data);       
          printf("%-4s\n",var->Name);        
          unknown=unknown->Next;
@@ -349,7 +349,7 @@ int Dict_CheckRPN(char **RPNFile){
    
    if (known) {
       printf("Known variables (%i)\n-------------------------------------------------------------------------------------\n",nb_known);
-      while(known=TList_Find(known,NULL,"")) {
+      while((known=TList_Find(known,NULL,""))) {
          var=(TDictVar*)(known->Data);        
          Dict_PrintVar(var,DICT_SHORT,App->Language);
          known=known->Next;
@@ -359,7 +359,7 @@ int Dict_CheckRPN(char **RPNFile){
    
    if (unknown) {
       printf("Unknown variables (%i) with 10 first IP1s\n-------------------------------------------------------------------------------------\n",nb_unknown);
-      while(unknown=TList_Find(unknown,NULL,"")) {
+      while((unknown=TList_Find(unknown,NULL,""))) {
          var=(TDictVar*)(unknown->Data);
          
          fid=cs_fstouv(RPNFile[var->NCodes],"STD+RND+R/O");

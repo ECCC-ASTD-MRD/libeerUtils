@@ -736,7 +736,7 @@ int App_ParseArgs(TApp_Arg *AArgs,int argc,char *argv[],int Flags) {
 int App_ParseInput(void *Def,char *File,TApp_InputParseProc *ParseProc) {
 
    FILE *fp;
-   int   n=0,seq;
+   int   n=0,seq=0;
    char  token[256],*parse,*values,*value,*valuesave,*idx,*buf,*tokensave;
 
    if (!(fp=fopen(File,"r"))) {
@@ -754,11 +754,11 @@ int App_ParseInput(void *Def,char *File,TApp_InputParseProc *ParseProc) {
       //Check for comments
       strtrim(buf,'\n');
       strrep(buf,'\t',' ');
-      if (idx=index(buf,'#')) *idx='\0';
+      if ((idx=index(buf,'#'))) *idx='\0';
 
       //Parse the token
       parse=NULL;
-      if (idx=index(buf,'=')) {
+      if ((idx=index(buf,'='))) {
          tokensave=NULL;
          parse=strtok_r(buf,"=",&tokensave);
       }
@@ -768,8 +768,8 @@ int App_ParseInput(void *Def,char *File,TApp_InputParseProc *ParseProc) {
          strtrim(parse,' ');
          strncpy(token,parse,256);
          values=strtok_r(NULL,"=",&tokensave);
-         n++;
          seq=0;
+         n++;
       } else {
         // Otherwise, keep the last token and get a new value for it
          values=buf;
@@ -779,7 +779,7 @@ int App_ParseInput(void *Def,char *File,TApp_InputParseProc *ParseProc) {
       // Loop on possible space separated values
       if (values && strlen(values)>1) {
          valuesave=NULL;
-         while(value=strtok_r(values," ",&valuesave)) {
+         while((value=strtok_r(values," ",&valuesave))) {
             if (seq) {
                App_Log(DEBUG,"Input parameters: %s(%i) = %s\n",token,seq,value);
             } else {

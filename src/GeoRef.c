@@ -108,7 +108,7 @@ int _GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef
 
    register int idx,x,y,n=0;
    int          d=0,sz,dd;
-   double       x0,y0,v,th;
+   double       x0,y0,v;
    
    if (!Scan || !ToRef || !FromRef) {
       return(0);
@@ -236,7 +236,7 @@ int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
 
    register int idx,x,y,n=0;
    int          d=0,sz,dd;
-   double       x0,y0,v,th;
+   double       x0,y0,v;
    
    if (!Scan || !ToRef || !FromRef) {
       return(0);
@@ -338,7 +338,7 @@ int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
    }
 
    // Project to destination grid
-   if (ToRef->Grid[0]=='W') {
+   if (ToRef->Grid[0]=='W' || ToRef->Grid[0]=='M') {
 #ifdef HAVE_GDAL
       for(x=n-1;x>=0;x--) {
          if (sz==4) {
@@ -354,7 +354,6 @@ int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
          }
 
          if (ToRef->UnProject(ToRef,&Scan->X[x],&Scan->Y[x],y0,x0,0,1)) {
-
             if (ToDef) {
               ToRef->Value(ToRef,ToDef,Degree?Degree[0]:'L',0,Scan->X[x],Scan->Y[x],0,&v,NULL);
               Scan->D[x]=v;
@@ -663,6 +662,7 @@ void GeoRef_Clear(TGeoRef *Ref,int New) {
       if (Ref->Idx)          free(Ref->Idx);          Ref->Idx=NULL; Ref->NIdx=0;
       if (Ref->AX)           free(Ref->AX);           Ref->AX=NULL;
       if (Ref->AY)           free(Ref->AY);           Ref->AY=NULL;
+      if (Ref->QTree)        QTree_Free(Ref->QTree);  Ref->QTree=NULL;
 
       Ref->IG1=Ref->IG2=Ref->IG3=Ref->IG4=0;
 
@@ -793,20 +793,20 @@ int GeoRef_Equal(TGeoRef* __restrict const Ref0,TGeoRef* __restrict const Ref1) 
       return(0);
    }
 
+   if (Ref0->Grid[0]!=Ref1->Grid[0] || Ref0->Grid[1]!=Ref1->Grid[1])
+      return(0);
+   
    if (Ref0->IG1!=Ref1->IG1 || Ref0->IG2!=Ref1->IG2 || Ref0->IG3!=Ref1->IG3 || Ref0->IG4!=Ref1->IG4)
      return(0);
 
    // Patch temporaire du au lagrangien qui doivent avoir des GeoRef differents*/
-   if (Ref0->Grid[0]=='M' || Ref0->Grid[0]=='X' || Ref0->Grid[0]=='Y' || Ref0->Grid[1]=='Y' || Ref0->Grid[0]=='#')
+   if (Ref0->Grid[0]=='X' || Ref0->Grid[0]=='Y' || Ref0->Grid[1]=='Y')
       return(0);
 
-   if (Ref1->Grid[0]=='M' || Ref1->Grid[0]=='X' || Ref1->Grid[0]=='Y' || Ref1->Grid[1]=='Y' || Ref1->Grid[0]=='#')
+   if (Ref1->Grid[0]=='X' || Ref1->Grid[0]=='Y' || Ref1->Grid[1]=='Y')
       return(0);
 
     if (Ref0->BD!=Ref1->BD || Ref0->X0!=Ref1->X0 || Ref0->X1!=Ref1->X1 || Ref0->Y0!=Ref1->Y0 || Ref0->Y1!=Ref1->Y1)
-      return(0);
-
-   if (Ref0->Grid[0]!=Ref1->Grid[0] || Ref0->Grid[1]!=Ref1->Grid[1])
       return(0);
 
    if (Ref0->Ids && Ref1->Ids && Ref0->Ids[Ref0->NId]!=Ref1->Ids[Ref1->NId])
@@ -884,7 +884,8 @@ TGeoRef *GeoRef_HardCopy(TGeoRef* __restrict const Ref) {
       ref->Type=Ref->Type;
       ref->NbId=Ref->NbId;
       ref->NId=Ref->NId;
-
+      ref->QTree=NULL;
+      
 #ifdef HAVE_RMN
       if (Ref->Ids) {
          ref->Ids=(int*)malloc(Ref->NbId*sizeof(int));
@@ -984,6 +985,7 @@ TGeoRef* GeoRef_New() {
    ref->AX=NULL;
    ref->AY=NULL;
    ref->RefFrom=NULL;
+   ref->QTree=NULL;
    ref->Grid[0]='X';
    ref->Grid[1]='\0';
    ref->Grid[2]='\0';
@@ -1025,6 +1027,99 @@ TGeoRef* GeoRef_New() {
 }
 
 /*--------------------------------------------------------------------------------------------------------------
+ * Nom          : <GeoRef_BuildIndex>
+ * Creation     : Janvier 2016 J.P. Gauthier - CMC/CMOE
+ *
+ * But          : Creer un index spatial (QTree)
+ *
+ * Parametres   :
+ *   <Ref>      : Pointeur sur la reference geographique
+ *
+ * Retour       : Quad tree index
+ *
+ * Remarques    :
+ *
+ *---------------------------------------------------------------------------------------------------------------
+*/
+TQTree* GeoRef_BuildIndex(TGeoRef* __restrict const Ref) {
+
+   unsigned int  n,x,y;
+   double        dx,dy,lat0,lon0,lat1,lon1;
+   Vect2d        tr[3],pt;
+   
+   // Check data limits   
+   lat0=lon0=1e10;
+   lat1=lon1=-1e10;
+   
+   for(n=0;n<Ref->NX;n++) {
+      dy=Ref->AY[n];
+      dx=CLAMPLON(Ref->AX[n]);
+      lat0=FMIN(lat0,dy);
+      lon0=FMIN(lon0,dx);
+      lat1=FMAX(lat1,dy);
+      lon1=FMAX(lon1,dx);
+   }
+      
+   if (Ref->Grid[0]=='M') {
+      
+      // Create the tree on the data limits
+      if (!(Ref->QTree=QTree_New(lon0,lat0,lon1,lat1,NULL))) {
+         App_Log(ERROR,"%s: Failed to create QTree index\n",__func__);
+         return(NULL);
+      }
+
+      // Loop on triangles
+      for(n=0;n<Ref->NIdx-3;n+=3) {          
+         tr[0][0]=CLAMPLON(Ref->AX[Ref->Idx[n]]);     tr[0][1]=Ref->AY[Ref->Idx[n]];
+         tr[1][0]=CLAMPLON(Ref->AX[Ref->Idx[n+1]]);   tr[1][1]=Ref->AY[Ref->Idx[n+1]];
+         tr[2][0]=CLAMPLON(Ref->AX[Ref->Idx[n+2]]);   tr[2][1]=Ref->AY[Ref->Idx[n+2]];
+         
+         // Put it in the quadtree, in any child nodes intersected and set false pointer increment (+1)
+         if (!QTree_AddTriangle(Ref->QTree,tr,GRID_MQTREEDEPTH,(void*)(n+1))) {
+            App_Log(ERROR,"%s: Failed to add node\n",__func__);
+            return(NULL);
+         }      
+      }
+   } else  if (Ref->Grid[0]=='Y') {
+
+      // Useless for less than a few thousand points
+      if (Ref->NX<5000) {
+         return(NULL);
+      }
+      
+      // Create the array on the data limits
+      dy=(lat1-lat0)/GRID_YQTREESIZE;
+      dx=(lon1-lon0)/GRID_YQTREESIZE;
+
+      if (!(Ref->QTree=(TQTree*)calloc((GRID_YQTREESIZE+1)*(GRID_YQTREESIZE+1),sizeof(TQTree)))) {
+         App_Log(ERROR,"%s: Failed to create QTree index\n",__func__);
+         return(NULL);
+      }
+
+      // Store tree limit on first node
+      Ref->QTree[0].BBox[0].X=lon0;
+      Ref->QTree[0].BBox[0].Y=lat0;
+      Ref->QTree[0].BBox[1].X=lon1;
+      Ref->QTree[0].BBox[1].Y=lat1;
+      
+      // Loop on points
+      for(n=0;n<Ref->NX;n++) {     
+         
+         pt[0]=CLAMPLON(Ref->AX[n]);
+         pt[1]=Ref->AY[n];  
+         
+         x=(pt[0]-lon0)/dx;
+         y=(pt[1]-lat0)/dy;
+      
+         // Add location and set false pointer increment (+1);
+         QTree_AddData(&Ref->QTree[y*GRID_YQTREESIZE+x],pt[0],pt[1],(void*)(n+1));
+      }
+   }
+   
+   return(Ref->QTree);
+}
+
+/*--------------------------------------------------------------------------------------------------------------
  * Nom          : <GeoRef_Nearest>
  * Creation     : Janvier 2015 J.P. Gauthier - CMC/CMOE
  *
@@ -1048,7 +1143,7 @@ TGeoRef* GeoRef_New() {
 int GeoRef_Nearest(TGeoRef* __restrict const Ref,float X,float Y,int *Idxs,double *Dists,int NbNear) {
 
    double dx,dy,l;
-   int    i,j,n,nn,nr,nnear;
+   int    n,nn,nr,nnear;
    
    Dists[0]=l=1e32;
    nnear=0;
@@ -1498,7 +1593,6 @@ int GeoRef_Valid(TGeoRef* __restrict const Ref) {
 int GeoRef_Positional(TGeoRef *Ref,TDef *XDef,TDef *YDef) {
 
    int d,dx,dy,nx,ny;
-   float **x,**y;
    
    if (!Ref) return(0);
 

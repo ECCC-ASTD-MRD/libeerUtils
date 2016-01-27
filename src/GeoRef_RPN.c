@@ -382,9 +382,10 @@ int GeoRef_RPNProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,in
 */
 int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,int Extrap,int Transform) {
 
-   float  i,j,lat,lon,d=1e32,dx=1.0;
-   int    n,di,dj,idx,ni,nj;
-   Vect3d b;
+   float         i,j,lat,lon,d=1e32,dx=1.0;
+   int           n,di,dj,idx,ni,nj;
+   Vect3d        b;
+   TQTree       *node;
 
    *X=-1.0;
    *Y=-1.0;
@@ -393,16 +394,38 @@ int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
    if (GRef->Type&GRID_SPARSE) {
       if (GRef->AX && GRef->AY) {
          if (GRef->Grid[0]=='M') {
-            for(n=0;n<GRef->NIdx-3;n+=3) {
-               if (Bary_Get(b,Lon,Lat,GRef->AX[GRef->Idx[n]],GRef->AY[GRef->Idx[n]],
-                  GRef->AX[GRef->Idx[n+1]],GRef->AY[GRef->Idx[n+1]],GRef->AX[GRef->Idx[n+2]],GRef->AY[GRef->Idx[n+2]])) {
-
-                  *X=n+b[0];
-                  *Y=n+b[1];
-                 return(1);
+ 
+            if (GRef->QTree) {
+               // If there's an index use it
+               if ((node=QTree_Find(GRef->QTree,Lon,Lat)) && node->NbData) {
+                  
+                  // Loop on this nodes data payload
+                  for(n=0;n<node->NbData;n++) {
+                     idx=(int)node->Data[n].Ptr-1; // Remove false pointer increment
+                     if (Bary_Get(b,Lon,Lat,GRef->AX[GRef->Idx[idx]],GRef->AY[GRef->Idx[idx]],
+                        GRef->AX[GRef->Idx[idx+1]],GRef->AY[GRef->Idx[idx+1]],GRef->AX[GRef->Idx[idx+2]],GRef->AY[GRef->Idx[idx+2]])) {
+                        
+                        // Return coordinate as triangle index + barycentric coefficient
+                        *X=idx+b[0];
+                        *Y=idx+b[1];
+                        return(1);
+                     }
+                  }
                }
-            }
-            return(0);
+            } else {
+               // Otherwise loop on all
+               for(idx=0;idx<GRef->NIdx-3;idx+=3) {
+                  if (Bary_Get(b,Lon,Lat,GRef->AX[GRef->Idx[idx]],GRef->AY[GRef->Idx[idx]],
+                     GRef->AX[GRef->Idx[idx+1]],GRef->AY[GRef->Idx[idx+1]],GRef->AX[GRef->Idx[idx+2]],GRef->AY[GRef->Idx[idx+2]])) {
+
+                     // Return coordinate as triangle index + barycentric coefficient
+                     *X=idx+b[0];
+                     *Y=idx+b[1];
+                     return(1);
+                  }
+               }
+               return(0);
+            } 
          } else {
             ni=GRef->X1-GRef->X0;
             nj=GRef->Y1-GRef->Y0;
@@ -426,9 +449,8 @@ int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
                return(0);
             }
          }
-      } else {
-         return(0);
-      }
+      } 
+      return(0);
    }
 
    if (!GRef->Ids) {

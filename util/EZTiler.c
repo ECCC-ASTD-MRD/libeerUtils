@@ -76,7 +76,7 @@ int TileVar(int FIdTo,int NI, int NJ,int Halo,int FIdFrom,char* Var,char* TypVar
 int Tile(char *In,char *Out,int Size,int Halo,char **Vars) {
 
    int  in,out,v=0;
-   char *var,*tok;
+   char *var;
    
    App_Log(INFO,"Tiling file %s to %s\n",In,Out);
    if ((in=cs_fstouv(In,"STD+RND+R/O"))<0) {
@@ -93,7 +93,7 @@ int Tile(char *In,char *Out,int Size,int Halo,char **Vars) {
       App_Log(DEBUG,"Tiling everything\n");
       TileVar(out,Size,Size,Halo,in,"","","",-1,-1,-1);
    } else {
-      while(var=Vars[v++]) {
+      while((var=Vars[v++])) {
          App_Log(DEBUG,"Tiling var %s\n",var);
          TileVar(out,Size,Size,Halo,in,var,"","",-1,-1,-1);
       }
@@ -108,7 +108,7 @@ int Tile(char *In,char *Out,int Size,int Halo,char **Vars) {
 int main(int argc, char *argv[]) {
 
    int      ok=0,size=0,halo=0;
-   char     *in=NULL,*out=NULL,*val=NULL,*vars[APP_LISTMAX];
+   char     *in=NULL,*out=NULL,*vars[APP_LISTMAX];
 
    TApp_Arg appargs[]=
       { { APP_CHAR,  &in,   1,             "i", "input",  "Input file" },

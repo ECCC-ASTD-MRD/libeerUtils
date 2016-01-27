@@ -64,6 +64,7 @@ typedef struct TQTreeIterator {
 typedef void (QTree_ParseProc) (void *Data);
 
 TQTree* QTree_New(double X0,double Y0,double X1,double Y1,TQTree *Parent);
+void    QTree_Free(TQTree *Parent);
 TQTree* QTree_Add(TQTree* restrict Node,double X,double Y,unsigned int MaxDepth,void* restrict Data);
 int     QTree_AddData(TQTree* const restrict Node,double X,double Y,void *Data);
 void    QTree_Del(TQTree* restrict Node);

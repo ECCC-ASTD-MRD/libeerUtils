@@ -100,8 +100,6 @@ typedef struct TGrid {
    TRPNHeader      H;                    // RPN Standard file header
    TZRef          *ZRef;                 // Vertical referential
    TGeoRef        *GRef;                 // Geographic referential
-   TQTree         *QTree;                // Quad tree index
-   int             QRes;                 // Quad tree resolution
    int             Wrap;                 // Flag indicating grid globe wrap-around (global grids)
    float           Pole[2];              // Pole coverage
 

@@ -68,7 +68,7 @@ void RPN_IntUnlock() {
    pthread_mutex_unlock(&RPNIntMutex);
 }
 
-int cs_fstunlockid(int Unit) {
+void cs_fstunlockid(int Unit) {
    pthread_mutex_lock(&RPNFileMutex);
    FGFDTLock[Unit-1]=0;
    pthread_mutex_unlock(&RPNFileMutex);
@@ -335,7 +335,7 @@ TRPNField* RPN_FieldReadIndex(int FileId,int Index,TRPNField *Fld) {
 
    h.FID=FileId;
    h.KEY=Index;
-   h.GRTYP[0]=h.GRTYP[1]=h.GRTYP[2]='\0';
+   h.GRTYP[0]=h.GRTYP[1]='\0';
 
    strcpy(h.NOMVAR,"    ");
    strcpy(h.TYPVAR,"  ");
@@ -488,7 +488,7 @@ int RPN_CopyDesc(int FIdTo,TRPNHeader* const H) {
 
       pthread_mutex_lock(&RPNFieldMutex);
 
-      while(desc=RPN_Desc[d++]) {
+      while((desc=RPN_Desc[d++])) {
          if (strncmp(desc,"HY",2)==0) {
             ip1=-1;ip2=-1;
          } else {
@@ -526,7 +526,7 @@ int RPN_IsDesc(char *Var) {
    const char *desc;
    int         d=0;
 
-   while(desc=RPN_Desc[d++]) {
+   while((desc=RPN_Desc[d++])) {
       if (!strncmp(Var,desc,4)) {
          return(TRUE);
       }

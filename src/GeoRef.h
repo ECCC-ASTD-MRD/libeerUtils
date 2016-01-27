@@ -38,6 +38,7 @@
 #include "eerUtils.h"
 #include "Vector.h"
 #include "ZRef.h"
+#include "QTree.h"
 
 #ifdef HAVE_GDAL
 #include "gdal.h"
@@ -60,6 +61,9 @@
 #define GRID_PSEUDO   0x100      // Pseudocylindrical
 #define GRID_NOXNEG   0x200      // No negative longitude
 #define GRID_NUNORTH  0x400      // North is not up
+
+#define GRID_YQTREESIZE   1000
+#define GRID_MQTREEDEPTH  8
 
 //#define REFDEFAULT "GEOGCS[\"GCS_North_American_1983\",DATUM[\"D_North_American_1983\",SPHEROID[\"GRS_1980\",6378137.0,298.257222101]],PRIMEM[\"Greenwich\",0.0],UNIT[\"Degree\",0.0174532925199433]]"
 //#define REFDEFAULT "GEOGCS[\"NAD83",DATUM[\"North_American_Datum_1983\",SPHEROID[\"GRS 1980\",6378137,298.257222101]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433]]"
@@ -146,6 +150,7 @@ typedef struct TGeoRef {
    void                         *GCPTransform;            // GPC derivative transform (1,2,3 order)
    void                         *TPSTransform;            // GPC Thin Spline transform
    void                         *RPCTransform;            // GPC Rigorous Projection Model transform
+   TQTree                       *QTree;                   // Quadtree index
 
    struct TGeoRef    *RefFrom;                            // Georeference de reference (coupe verticale,...)
 
@@ -205,6 +210,7 @@ TGeoRef* GeoRef_RDRCheck(double Lat,double Lon,double Height,double Radius,doubl
 void     GeoRef_Expand(TGeoRef *Ref);
 int      GeoRef_Positional(TGeoRef *Ref,struct TDef *XDef,struct TDef *YDef);
 int      GeoRef_Coords(TGeoRef *Ref,float *Lat,float *Lon);
+TQTree*  GeoRef_BuildIndex(TGeoRef* __restrict const Ref);
 
 void GeoScan_Init(TGeoScan *Scan);
 void GeoScan_Clear(TGeoScan *Scan);

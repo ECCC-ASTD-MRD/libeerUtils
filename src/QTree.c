@@ -224,6 +224,17 @@ TQTree* QTree_New(double X0,double Y0,double X1,double Y1,TQTree *Parent) {
    return(node);
 }
 
+void QTree_Free(TQTree *Node) {
+   
+   if (Node->Childs[0]) QTree_Free(Node->Childs[0]);
+   if (Node->Childs[1]) QTree_Free(Node->Childs[1]);
+   if (Node->Childs[2]) QTree_Free(Node->Childs[2]);
+   if (Node->Childs[3]) QTree_Free(Node->Childs[3]);
+   
+   QTree_DelData(Node);
+   free(Node);
+}
+
 /*----------------------------------------------------------------------------
  * Name     : <QTree_Add>
  * Creation : November 2008 - G.Mercier - CMC/CMOE
@@ -245,7 +256,7 @@ TQTree* QTree_New(double X0,double Y0,double X1,double Y1,TQTree *Parent) {
  */
 TQTree* QTree_Add(TQTree* restrict Node,double X,double Y,unsigned int MaxDepth,void* restrict Data) {
 
-   int      d,ok=1;
+   int      ok=1;
    TPoint2D center;
    TQTree  *new=Node;
 
@@ -420,8 +431,9 @@ void QTree_Neighbors(TQTree* Node,TQTree** Neighbors,int Nb) {
    dy=(Node->BBox[1].Y-Node->BBox[0].Y)*0.5;
 
    // Climb back up the tree
+   root=NULL;
    node=Node;
-   while(node=node->Parent) { d++; root=node; }      
+   while((node=node->Parent)) { d++; root=node; }      
          
    // Find neighbors
    Neighbors[0]=QTree_Find(root,Node->BBox[0].X+dx,Node->BBox[0].Y-dy);

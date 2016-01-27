@@ -589,6 +589,7 @@ static void inline Def_SetValue(TDef *Def,int X, int Y,double Value,TDef_Combine
             case CB_MIN    : if (Value<val) Def_Set(Def,0,idx,Value); break;
             case CB_MAX    : if (Value>val) Def_Set(Def,0,idx,Value); break;
             case CB_AVERAGE: Def->Accum[idx]++; Value+=val;    Def_Set(Def,0,idx,Value); break;
+            case CB_REPLACE: break;
          }
       }
    }
@@ -1681,7 +1682,7 @@ int Def_GridInterpSub(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *FromDef,
 int Def_GridInterpConservative(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *FromDef,TDef_InterpR Mode,int Final,int Prec,float *Index) {
 
 #ifdef HAVE_GDAL
-   int          i,j,n,nt=0,p=0,pt,pi,pj,idx2,idx3,wrap,k=0;
+   int          i,j,n,nt=0,p=0,pi,pj,idx2,idx3,wrap,k=0;
    double       val0,val1,area,x,y,z,dp;
    float       *ip=NULL;
    OGRGeometryH cell,ring;

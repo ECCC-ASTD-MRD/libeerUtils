@@ -487,9 +487,8 @@ int ZRef_AddRestrictLevel(float Level) {
 int ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Order) {
 
    TRPNHeader h;
-   int        l,key,ip1=0,flag=0,mode=-1,idlst[RPNMAX];
+   int        l,key,ip1=0,idlst[RPNMAX];
    int        k,k2,kx;
-   char       format;
 
 #ifdef HAVE_RMN
 
@@ -634,7 +633,7 @@ double ZRef_K2Pressure(TZRef* restrict const ZRef,double P0,int K) {
 int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,float *Pres) {
 
    unsigned int k,idxk=0,ij;
-   float        pref,ptop,rtop,pk,pr;
+   float        pref,ptop;
 
    if (!P0 && ZRef->Type!=LVL_PRES) {
       App_Log(ERROR,"%s: Surface pressure is required\n",__func__);
@@ -908,7 +907,7 @@ double ZRef_Pressure2Level(TZRef* restrict const ZRef,double P0,double Pressure)
 
    double level=-1.0;
    double a,b,c,d,r,l,err;
-   float  p,pres,pres0=0,pres1;
+   float  pres,pres0=0,pres1;
    int    z;
 
    switch(ZRef->Type) {
