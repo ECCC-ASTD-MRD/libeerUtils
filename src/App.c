@@ -417,7 +417,7 @@ void App_Log(TApp_LogLevel Level,const char *Format,...) {
       
       if (Level>=0) {
 #ifdef _MPI
-         if (App->NbMPI)
+         if (App_IsMPI())
             fprintf(App->LogStream,"%s#%02d (%s) ",color,App->RankMPI,levels[Level]);
          else 
 #endif     
