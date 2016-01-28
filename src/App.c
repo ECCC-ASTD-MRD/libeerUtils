@@ -416,6 +416,11 @@ void App_Log(TApp_LogLevel Level,const char *Format,...) {
       color=App->LogColor?colors[Level]:colors[INFO];
       
       if (Level>=0) {
+#ifdef _MPI
+         if (App->NbMPI)
+            fprintf(App->LogStream,"%s#%02d (%s) ",color,App->RankMPI,levels[Level]);
+         else 
+#endif     
          fprintf(App->LogStream,"%s(%s) ",color,levels[Level]);
       }
       
