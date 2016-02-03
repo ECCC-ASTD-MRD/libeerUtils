@@ -286,14 +286,16 @@ void App_Start(void) {
 void App_End(int Status) {
 
    struct timeval end,dif;
-   int            nb;
 
 #ifdef _MPI
    if (App->NbMPI>1) {
-      MPI_Reduce(&App->LogWarning,&nb,1,MPI_INT,MPI_SUM,0,MPI_COMM_WORLD);
-      App->LogWarning=nb;
-      MPI_Reduce(&App->LogError,&nb,1,MPI_INT,MPI_SUM,0,MPI_COMM_WORLD);
-      App->LogError=nb;
+      if( !App->RankMPI ) {
+         MPI_Reduce(MPI_IN_PLACE,&App->LogWarning,1,MPI_INT,MPI_SUM,0,MPI_COMM_WORLD);
+         MPI_Reduce(MPI_IN_PLACE,&App->LogError,1,MPI_INT,MPI_SUM,0,MPI_COMM_WORLD);
+      } else {
+         MPI_Reduce(&App->LogWarning,NULL,1,MPI_INT,MPI_SUM,0,MPI_COMM_WORLD);
+         MPI_Reduce(&App->LogError,NULL,1,MPI_INT,MPI_SUM,0,MPI_COMM_WORLD);
+      }
    }
 #endif
 
