@@ -719,6 +719,7 @@ char* strpath(char *Path,char *File) {
    strncpy(new,Path,(c-Path));
    strcat(new,"/");
    strcat(new,File);
+   
    return(new);
 }
 
@@ -799,6 +800,25 @@ int strrindex(char *Str) {
       }
       Str[k]='\0';
       free(l);
+   }
+   return(n);
+}
+
+int strtok_count(char *Str,char Sep) {
+ 
+   int n=0,s=1;
+   
+   while(Str++!='\0') {
+      if (*Str=='\n') break;
+      
+      if (*Str!=Sep) {
+         if (s) {
+            s=0;
+            n++;
+         }
+      } else {
+         s=1;
+      }
    }
    return(n);
 }

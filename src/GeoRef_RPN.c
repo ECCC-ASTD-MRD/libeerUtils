@@ -170,7 +170,7 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
    *Length=Def->NoData;
 
 #ifdef HAVE_RMN
-   /*In case of triangle meshe*/
+   // In case of triangle meshe
    if (GRef->Grid[0]=='M') {
       if (C<Def->NC && X>=0 && Y>=0) {
          b[0]=X-(int)X;
