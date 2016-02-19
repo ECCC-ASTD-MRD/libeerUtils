@@ -48,8 +48,8 @@ int Dict_CheckCFG(char *CFGFile);
 int main(int argc, char *argv[]) {
 
    TDict_Encoding coding=DICT_UTF8;
-   int            ok=1,desc=DICT_SHORT,search=DICT_EXACT,st=DICT_ALL,ip1,ip2,ip3;
-   char          *var,*type,*lang,*encoding,*origin,*etiket,*state,*dicfile,*rpnfile[APP_LISTMAX],*cfgfile,dicdef[APP_BUFMAX],*env;
+   int            ok=1,desc=DICT_SHORT,search=DICT_EXACT,st=DICT_ALL,ip1,ip2,ip3,d=0;
+   char          *var,*type,*lang,*encoding,*origin,*etiket,*state,*dicfile[APP_LISTMAX],*rpnfile[APP_LISTMAX],*cfgfile,dicdef[APP_BUFMAX],*env;
    
    TApp_Arg appargs[]=
       { { APP_CHAR|APP_FLAG, &var,      1,             "n", "nomvar"      , "Search variable name ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
@@ -62,13 +62,14 @@ int main(int argc, char *argv[]) {
         { APP_FLAG,          &desc,     1,             "l", "long"        , "use long description" },
         { APP_FLAG,          &search,   1,             "g", "glob"        , "use glob search pattern" },
         { APP_CHAR,          &encoding, 1,             "e", "encoding"    , "encoding type (iso8859-1,"APP_COLOR_GREEN"utf8"APP_COLOR_RESET",ascii)" },
-        { APP_CHAR,          &dicfile,  1,             "d", "dictionnary" , "dictionnary file ("APP_COLOR_GREEN"$AFSISIO/datafiles/constants/ops.variable_dictionary.xml"APP_COLOR_RESET")" },
+        { APP_CHAR,          dicfile,   APP_LISTMAX-1, "d", "dictionnary" , "dictionnary file(s) ("APP_COLOR_GREEN"$AFSISIO/datafiles/constants/ops.variable_dictionary.xml"APP_COLOR_RESET")" },
         { APP_CHAR,          rpnfile,   APP_LISTMAX-1, "f", "fstd"        , "Check RPN standard file(s) for unknow variables" },
         { APP_CHAR,          &cfgfile,  1,             "c", "cfg"         , "Check GEM configuration file for unknow variables" },
         { 0 } };
         
    memset(rpnfile,0x0,APP_LISTMAX*sizeof(rpnfile[0]));
-   var=type=lang=encoding=dicfile=cfgfile=origin=etiket=state=NULL;
+   memset(dicfile,0x0,APP_LISTMAX*sizeof(dicfile[0]));
+   var=type=lang=encoding=cfgfile=origin=etiket=state=NULL;
    ip1=ip2=ip3=-1;
    
    App_Init(APP_MASTER,APP_NAME,VERSION,APP_DESC,__TIMESTAMP__);
@@ -123,32 +124,41 @@ int main(int argc, char *argv[]) {
       App_Start();
    }
    
-   // Check for AFSISIO 
-   if (!(env=getenv("AFSISIO"))) {
-      App_Log(ERROR,"Environment variable AFSISIO not defined, source the CMOI base domain.\n");
-      exit(EXIT_FAILURE);   
+   // Check for default dicfile
+   if (!dicfile[0]) {
+      // Check for AFSISIO 
+      if (!(env=getenv("AFSISIO"))) {
+         App_Log(ERROR,"Environment variable AFSISIO not defined, source the CMOI base domain.\n");
+         exit(EXIT_FAILURE);   
+      }
+
+      snprintf(dicdef,APP_BUFMAX, "%s%s",env,"/datafiles/constants/ops.variable_dictionary.xml");
+      if (!(ok=Dict_Parse(dicdef,coding))) {
+         exit(EXIT_FAILURE);            
+      }
+      fprintf(stderr,"%s\n",Dict_Version());
    }
    
-   // Check for default dicfile
-   snprintf(dicdef,APP_BUFMAX, "%s%s",env,"/datafiles/constants/ops.variable_dictionary.xml");
-   if((ok=Dict_Parse(dicdef,coding))) {
-      fprintf(stderr,"%s\n",Dict_Version());
-   
-      if (!dicfile || ((ok=Dict_Parse(dicfile,coding)) && fprintf(stderr,"%s\n",Dict_Version()))) {
-         
-         fprintf(stderr,"\n");
-         
-         if (rpnfile[0]) {
-            ok=Dict_CheckRPN(rpnfile);
-         } else if (cfgfile) {
-            ok=Dict_CheckCFG(cfgfile);
-         } else {
-            if (var)  Dict_PrintVars(var,desc,App->Language); 
-            if (type) Dict_PrintTypes(type,desc,App->Language);
-            
-            if (!etiket && search!=DICT_GLOB) fprintf(stderr,"\n%s* %s%s\n",APP_COLOR_MAGENTA,THINT[App->Language],APP_COLOR_RESET); 
-         }
+   // Check for optional dicfile(s)
+   while(dicfile[d]) {   
+      if (!(ok=Dict_Parse(dicfile[d],coding))) {
+          exit(EXIT_FAILURE);            
       }
+      fprintf(stderr,"%s\n",Dict_Version());
+      d++;
+   }        
+          
+   fprintf(stderr,"\n");
+   
+   if (rpnfile[0]) {
+      ok=Dict_CheckRPN(rpnfile);
+   } else if (cfgfile) {
+      ok=Dict_CheckCFG(cfgfile);
+   } else {
+      if (var)  Dict_PrintVars(var,desc,App->Language); 
+      if (type) Dict_PrintTypes(type,desc,App->Language);
+      
+      if (!etiket && search!=DICT_GLOB) fprintf(stderr,"\n%s* %s%s\n",APP_COLOR_MAGENTA,THINT[App->Language],APP_COLOR_RESET); 
    }
 
    if (rpnfile[0] || cfgfile) {
