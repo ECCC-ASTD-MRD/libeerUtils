@@ -1276,15 +1276,15 @@ TDictVar* Dict_ApplyModifier(TDictVar *Var,char *Modifier) {
          if (!strncmp(c,"MIN___",6)) {
             strcpy(l,TMIN[lang]); l+=strlen(TMIN[lang]);
          } else if (!strncmp(c,"MAX___",6)) {
-            strcpy(l,TMAX[lang]); l+=strlen(TMIN[lang]);
+            strcpy(l,TMAX[lang]); l+=strlen(TMAX[lang]);
          } else if (!strncmp(c,"SSTD__",6)) {
-            strcpy(l,TSSTD[lang]); l+=strlen(TMIN[lang]);
+            strcpy(l,TSSTD[lang]); l+=strlen(TSSTD[lang]);
          } else if (!strncmp(c,"PSTD__",6)) {
-            strcpy(l,TPSTD[lang]); l+=strlen(TMIN[lang]);
+            strcpy(l,TPSTD[lang]); l+=strlen(TPSTD[lang]);
          } else if (!strncmp(c,"MEAN__",6)) {
-            strcpy(l,TMEAN[lang]); l+=strlen(TMIN[lang]);
+            strcpy(l,TMEAN[lang]); l+=strlen(TMEAN[lang]);
          } else if (!strncmp(c,"EFI___",6)) {
-            strcpy(l,TEFI[lang]); l+=strlen(TMIN[lang]);
+            strcpy(l,TEFI[lang]); l+=strlen(TEFI[lang]);
          } else {
 
             // Decode operator
