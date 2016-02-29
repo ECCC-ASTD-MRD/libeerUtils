@@ -92,7 +92,7 @@ TApp *App_Init(int Type,char *Name,char *Version,char *Desc,char* Stamp) {
    App->LogLevel=INFO;
    App->State=STOP;
    App->Percent=0.0;
-   App->NbThread=1;
+   App->NbThread=0;
    App->NbMPI=1;
    App->RankMPI=0;
    App->CountsMPI=NULL;
@@ -219,7 +219,7 @@ void App_Start(void) {
 
    // Initialize OpenMP
 #ifdef _OPENMP
-   if (App->NbThread>1) {
+   if (App->NbThread) {
       // If a number of thread was specified on the command line
       omp_set_num_threads(App->NbThread);
    } else {
@@ -232,7 +232,7 @@ void App_Start(void) {
    }
    
    // We need to initialize the per thread app pointer
-   th=App->NbThread;
+   th=App->NbThread=App->NbThread==0?1:App->NbThread;
    #pragma omp parallel for 
    for(t=0;t<th;t++) {
       App=&AppInstance;
