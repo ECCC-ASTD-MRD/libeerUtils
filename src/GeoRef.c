@@ -806,11 +806,12 @@ int GeoRef_Equal(TGeoRef* __restrict const Ref0,TGeoRef* __restrict const Ref1) 
    if (Ref1->Grid[0]=='X' || Ref1->Grid[0]=='Y' || Ref1->Grid[1]=='Y')
       return(0);
 
-    if (Ref0->BD!=Ref1->BD || Ref0->X0!=Ref1->X0 || Ref0->X1!=Ref1->X1 || Ref0->Y0!=Ref1->Y0 || Ref0->Y1!=Ref1->Y1)
+   // Check on grid limits (exclude U grids since they can be switched internally and they'll be tested earlier anyway)
+   if (Ref0->BD!=Ref1->BD || (Ref0->Grid[0]!='U' && (Ref0->X0!=Ref1->X0 || Ref0->X1!=Ref1->X1 || Ref0->Y0!=Ref1->Y0 || Ref0->Y1!=Ref1->Y1)))
       return(0);
-
-   if (Ref0->Ids && Ref1->Ids && Ref0->Ids[Ref0->NId]!=Ref1->Ids[Ref1->NId])
-      return(0);
+   
+   if (Ref0->Ids && Ref1->Ids && Ref0->Ids[0]!=Ref1->Ids[0])
+       return(0);
 
    if (Ref0->R!=Ref1->R || Ref0->ResR!=Ref1->ResR || Ref0->ResA!=Ref1->ResA || Ref0->Loc.Lat!=Ref1->Loc.Lat || Ref0->Loc.Lon!=Ref1->Loc.Lon || Ref0->Loc.Elev!=Ref1->Loc.Elev)
       return(0);
@@ -818,7 +819,7 @@ int GeoRef_Equal(TGeoRef* __restrict const Ref0,TGeoRef* __restrict const Ref1) 
    if ((Ref0->Spatial && !Ref1->Spatial) || (!Ref0->Spatial && Ref1->Spatial))
       return(0);
 
-#ifdef HAVE_GDAL
+#ifdef HAVE_GDAL 
    if (Ref0->Spatial && Ref1->Spatial && !OSRIsSame(Ref0->Spatial,Ref1->Spatial))
       return(0);
 #endif

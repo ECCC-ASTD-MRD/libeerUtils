@@ -196,7 +196,6 @@ void     GeoRef_Size(TGeoRef *Ref,int X0,int Y0,int X1,int Y1,int BD);
 TGeoRef* GeoRef_Resize(TGeoRef* __restrict const Ref,int NI,int NJ);
 int      GeoRef_Free(TGeoRef *Ref);
 void     GeoRef_Clear(TGeoRef *Ref,int New);
-TGeoRef* GeoRef_Find(TGeoRef *Ref);
 void     GeoRef_Qualify(TGeoRef* __restrict const Ref);
 int      GeoRef_Limits(TGeoRef* __restrict const Ref,double *Lat0,double *Lon0,double *Lat1,double *Lon1);
 int      GeoRef_BoundingBox(TGeoRef* __restrict const Ref,double Lat0,double Lon0,double Lat1,double Lon1,double *I0,double *J0,double *I1,double *J1);
