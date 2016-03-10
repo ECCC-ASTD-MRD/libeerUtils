@@ -70,7 +70,7 @@ int Bary_Get(Vect3d B,double X,double Y,double X0,double Y0,double X1,double Y1,
    B[1]=(x2*y0-x0*y2)*b;
    B[2]=1.0-B[0]-B[1];
 
-   return(B[0]>=0.0 && B[1]>=0.0 && B[2]>=0.0);
+   return(B[0]>=-BARY_PREC && B[1]>=-BARY_PREC && B[2]>=-BARY_PREC);
 }
 
 /*--------------------------------------------------------------------------------------------------------------

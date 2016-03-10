@@ -37,6 +37,8 @@
 
 #include "Vector.h"
 
+#define BARY_PREC 1e-5
+
 #define Bary_InterpV(B,V)       (B[0]*V[0]+B[1]*V[1]+B[2]*V[2])
 #define Bary_Interp(B,V0,V1,V2) (B[0]*V0+B[1]*V1+B[2]*V2);
 #define Bary_Nearest(B)         (B[0]>B[1]?(B[0]>B[2]?0:2):(B[1]>B[2]?1:2))
