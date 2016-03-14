@@ -119,7 +119,7 @@ double GeoRef_WKTDistance(TGeoRef *GRef,double X0,double Y0,double X1, double Y1
 */
 int GeoRef_WKTValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,double Z,double *Length,double *ThetaXY){
 
-   double       x,y,d;
+   double       x,y,d,ddir=0.0;
    int          valid=0,mem,ix,iy;
    unsigned int idx;
 
@@ -146,16 +146,27 @@ int GeoRef_WKTValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
       }
 
       valid=1;
+      
+      // Reproject vector orientation by adding grid projection's north difference
+      if (Def->Data[1] && GRef->Type&GRID_NUNORTH) { 
+         double latd[2],lond[2];
+         GRef->Project(GRef,X,Y,&latd[0],&lond[0],1,1);
+         GRef->Project(GRef,X,Y+1,&latd[1],&lond[1],1,1);
+
+         latd[0]=DEG2RAD(latd[0]); lond[0]=DEG2RAD(lond[0]);
+         latd[1]=DEG2RAD(latd[1]); lond[1]=DEG2RAD(lond[1]);
+         ddir=COURSE(latd[0],lond[0],latd[1],lond[1]);
+      }
 
       if (Def->Type<=9 || Mode=='N' || (X==ix && Y==iy)) {
          mem+=idx;
-        Def_GetMod(Def,mem,*Length);
+         Def_GetMod(Def,mem,*Length);
 
          // Pour un champs vectoriel
          if (Def->Data[1] && ThetaXY) {
             Def_Get(Def,0,mem,x);
             Def_Get(Def,1,mem,y);
-            *ThetaXY=180+RAD2DEG(atan2(x,y));
+            *ThetaXY=180+RAD2DEG(atan2(x,y)-ddir);
          }
       } else {
          *Length=VertexVal(Def,-1,X,Y,Z);
@@ -163,7 +174,7 @@ int GeoRef_WKTValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
          if (Def->Data[1] && ThetaXY) {
             x=VertexVal(Def,0,X,Y,Z);
             y=VertexVal(Def,1,X,Y,Z);
-            *ThetaXY=180+RAD2DEG(atan2(x,y));
+            *ThetaXY=180+RAD2DEG(atan2(x,y)-ddir);
          }
       }
    }
@@ -321,7 +332,7 @@ int GeoRef_WKTUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
             return(0);
          }
       }
-      
+
       // No negative longitude (GRIB2 LL grid)
       if (GRef->Type&GRID_NOXNEG) {
          x=x<0?x+360:x;
