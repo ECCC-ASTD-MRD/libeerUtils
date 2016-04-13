@@ -226,12 +226,11 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
       }
 
       // Point cloud
-      if (GRef->Grid[0]=='Y' || GRef->Grid[0]=='P') {
+      if (GRef->Grid[0]=='Y' || GRef->Grid[0]=='P' || Def->NI==1 || Def->NJ==1) {
          mem+=idx;
          Def_Get(Def,C,mem,*Length);
          if (Def->Data[1] && ThetaXY && !C)
             Def_Get(Def,1,mem,*ThetaXY);
-         
          return(TRUE);
       } 
 
