@@ -1152,3 +1152,44 @@ int ZRef_Level2IP(float Level,int Type,TZRef_IP1Mode Mode) {
       return(ip);
    }
 }
+
+/*----------------------------------------------------------------------------
+ * Nom      : <ZRef_IPFormat>
+ * Creation : Mai 2003 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Formatter un IP en niveau et unite
+ *
+ * Parametres :
+ *  <Buf>     : Chaine a remplir
+ *  <IP>      : IP a formatter
+ *
+ * Retour:
+ *  <Type>    : Type de niveau
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
+int ZRef_IPFormat(char *Buf,int IP,int Interval) {
+
+   int   type=-1;
+   float lvl;
+   
+   if (Interval && IP<=32000) {
+      sprintf(Buf," %8i %-2s",IP,ZRef_Units[LVL_UNDEF]);
+   } else {
+      lvl=ZRef_IP2Level(IP,&type);
+
+      switch(type) {
+         case LVL_MASL  : sprintf(Buf," %8.1f %-2s",lvl,ZRef_Units[type]); break;
+         case LVL_SIGMA : sprintf(Buf," %8.4f %-2s",lvl,ZRef_Units[type]); break;
+         case LVL_PRES  : sprintf(Buf," %8.1f %-2s",lvl,ZRef_Units[type]); break;
+         case LVL_UNDEF : sprintf(Buf," %8.1f %-2s",lvl,ZRef_Units[type]); break;
+         case LVL_MAGL  : sprintf(Buf," %8.1f %-2s",lvl,ZRef_Units[type]); break;
+         case LVL_HYBRID: sprintf(Buf," %8.6f %-2s",lvl,ZRef_Units[type]); break;
+         case LVL_THETA : sprintf(Buf," %8.4f %-2s",lvl,ZRef_Units[type]); break;
+         case LVL_HOUR  : sprintf(Buf," %8.1f %-2s",lvl,ZRef_Units[type]); break;
+      }
+   }
+   return(type);
+}

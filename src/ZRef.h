@@ -113,6 +113,7 @@ double ZRef_IP2Meter(int IP);
 double ZRef_Level2Meter(double Level,int Type);
 double ZRef_IP2Level(int IP,int *Type);
 int    ZRef_Level2IP(float Level,int Type,TZRef_IP1Mode Mode);
+int    ZRef_IPFormat(char *Buf,int IP,int Interval);
 
 const char** ZRef_LevelNames();
 const char*  ZRef_LevelName(int Type);
