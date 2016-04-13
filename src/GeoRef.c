@@ -1170,14 +1170,13 @@ int GeoRef_Nearest(TGeoRef* __restrict const Ref,double X,double Y,int *Idxs,dou
       yd=(Y-node->BBox[0].Y)/dy;
                   
       while(dxy<(GRID_YQTREESIZE>>1)) {
-         
          // Y circling increment
          for(y=yd-dxy;y<=yd+dxy;y++) {
             if (y<0) continue;
             if (y>=GRID_YQTREESIZE) break;
             
             // X Circling increment (avoid revisiting previous cells)
-            for(x=xd-dxy;x<=xd+dxy;x+=((y==yd-dxy || y==yd+dxy)?1:(dxy+dxy))) {
+            for(x=xd-dxy;x<=xd+dxy;x+=((!dxy || y==yd-dxy || y==yd+dxy)?1:(dxy+dxy))) {
                if (x<0) continue;
                if (x>=GRID_YQTREESIZE) break;
                
@@ -1613,8 +1612,7 @@ int GeoRef_WithinCell(TGeoRef *GRef,Vect2d Pos,Vect2d Pt[4],int Idx0,int Idx1,in
    return(0);
 }
                      
-
-                     int GeoRef_BoundingBox(TGeoRef* __restrict const Ref,double Lat0,double Lon0,double Lat1,double Lon1,double *I0,double *J0,double *I1,double *J1) {
+int GeoRef_BoundingBox(TGeoRef* __restrict const Ref,double Lat0,double Lon0,double Lat1,double Lon1,double *I0,double *J0,double *I1,double *J1) {
 
    double di,dj;
 
