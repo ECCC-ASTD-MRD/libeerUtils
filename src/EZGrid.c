@@ -1698,11 +1698,7 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float La
          CLAMPLON(Lon);
          
          // Find 4 nearest points
-         if (Grid->GRef->QTree) {
-            nb=QArray_Find(Grid->GRef->QTree,GRID_YQTREESIZE,Lon,Lat,idxs,dists,Mode==EZ_NEAREST?1:EZGRID_YLINEARCOUNT);
-         } else {
-            nb=GeoRef_Nearest(Grid->GRef,Lon,Lat,idxs,dists,Mode==EZ_NEAREST?1:EZGRID_YLINEARCOUNT);
-         }
+         nb=GeoRef_Nearest(Grid->GRef,Lon,Lat,idxs,dists,Mode==EZ_NEAREST?1:EZGRID_YLINEARCOUNT);
          
          if (nb) {
             if (nb==1) {

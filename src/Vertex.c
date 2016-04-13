@@ -41,8 +41,7 @@
  * But          : Arbitrary quadrilateral location interpolation
  *
  * Parametres    :
- *   <X>         : Cell longitude coordinate vector
- *   <Y>         : Cell latitude coordinate vector
+ *   <Pt>        : Cell coordinates
  *   <LX>        : Output X grid coordinate 
  *   <LY>        : Output Y grid coordinate 
  *   <WX>        : Longitude
@@ -50,60 +49,53 @@
  *
  * Retour       : Inside (1 si a l'interieur du domaine).
  *
- * Remarques   :
- *
+ * Remarques   :  
+ *     The unit cell L(x,y) is oriented as:
+ *     L0(x=0,y=0),L1(0,1), L2(1,1), L3(1,0).  The order matters.
+ * 
+ *     ref: http://math.stackexchange.com/questions/13404/mapping-irregular-quadrilateral-to-a-rectangle
  *---------------------------------------------------------------------------------------------------------------
 */
-void Vertex_Map(double X[4] ,double Y[4],double *LX,double *LY,double WX,double WY) {
+void Vertex_Map(Vect2d P[4],double *LX,double *LY,double WX,double WY) {
 
-   double a,b,c,d,u,v;
-   
-   // Quadratic equation coeffs
-   c = (Y[0]-WY) * (X[3]-WX) - (X[0]-WX) * (Y[3]-WY);
-   b = (Y[0]-WY) * (X[2]-X[3]) + (Y[1]-Y[0]) * (X[3]-WX) - (X[0]-WX) * (Y[2]-Y[3]) - (X[1]-X[0]) * (Y[3]-WY);
-   a = (Y[1]-Y[0]) * (X[2]-X[3]) - (X[1]-X[0]) * (Y[2]-Y[3]);
+    double ax,a2x,a3x,ay,a1y,a2y,bx,b2x,b3x,by,b1y,b2y;
+    double wydy,y3dy,y2dy,wxdx,x1dx,x2dx,wxy,xy0,xy1,xy2,xy3;
+    
+    if (P[0][1]==P[1][1]) P[0][1]-=1e-5;
+    if (P[0][0]==P[3][0]) P[0][0]-=1e-5;
+        
+    wydy=(WY      - P[0][1]) / (P[0][1] - P[1][1]);
+    y3dy=(P[3][1] - P[0][1]) / (P[0][1] - P[1][1]);
+    y2dy=(P[2][1] - P[0][1]) / (P[0][1] - P[1][1]);
+    wxdx=(WX      - P[0][0]) / (P[0][0] - P[3][0]);
+    x1dx=(P[1][0] - P[0][0]) / (P[0][0] - P[3][0]);
+    x2dx=(P[2][0] - P[0][0]) / (P[0][0] - P[3][0]);
+    wxy=WX * WY;
+    xy0=P[0][0] * P[0][1];
+    xy1=P[1][0] * P[1][1];
+    xy2=P[2][0] * P[2][1];
+    xy3=P[3][0] * P[3][1];
+    
+    ax  = (WX      - P[0][0]) + (P[1][0] - P[0][0]) * wydy;
+    a3x = (P[3][0] - P[0][0]) + (P[1][0] - P[0][0]) * y3dy;
+    a2x = (P[2][0] - P[0][0]) + (P[1][0] - P[0][0]) * y2dy;
+    ay  = (WY      - P[0][1]) + (P[3][1] - P[0][1]) * wxdx;
+    a1y = (P[1][1] - P[0][1]) + (P[3][1] - P[0][1]) * x1dx;
+    a2y = (P[2][1] - P[0][1]) + (P[3][1] - P[0][1]) * x2dx;
+    bx  = wxy - xy0 + (xy1 - xy0) * wydy;
+    b3x = xy3 - xy0 + (xy1 - xy0) * y3dy;
+    b2x = xy2 - xy0 + (xy1 - xy0) * y2dy;
+    by  = wxy - xy0 + (xy3 - xy0) * wxdx;
+    b1y = xy1 - xy0 + (xy3 - xy0) * x1dx;
+    b2y = xy2 - xy0 + (xy3 - xy0) * x2dx;
 
-   // Compute u = (-b+sqrt(b^2-4ac))/(2a)
-   d = b*b-4*a*c;
-   u = (-b-sqrt(d))/(2*a);
-
-   // Compute v
-   a = X[0]+(X[1]-X[0])*u;
-   b = X[3]+(X[2]-X[3])*u;
-   v = (WX-a)/(b-a);
-                        
-   *LX=u;
-   *LY=v;
-}
-
-void Vertex_Map2(double X[4] ,double Y[4],double *LX,double *LY,double WX,double WY) {
-
-   double M[4][4]={{1.0,-1.0,-1.0,1.0},{0.0,1.0,0.0,-1.0},{0.0,0.0,0.0,1.0},{0.0,0.0,1.0,-1.0}};
-   double aa,bb,cc,m,l,a[4],b[4];
-   
-   a[0]=M[0][0]*X[0]+M[1][0]*X[1]+M[2][0]*X[2]+M[3][0]*X[3];
-   a[1]=M[0][1]*X[0]+M[1][1]*X[1]+M[2][1]*X[2]+M[3][1]*X[3];
-   a[2]=M[0][2]*X[0]+M[1][2]*X[1]+M[2][2]*X[2]+M[3][2]*X[3];
-   a[3]=M[0][3]*X[0]+M[1][3]*X[1]+M[2][3]*X[2]+M[3][3]*X[3];
-   
-   b[0]=M[0][0]*Y[0]+M[1][0]*Y[1]+M[2][0]*Y[2]+M[3][0]*Y[3];
-   b[1]=M[0][1]*Y[0]+M[1][1]*Y[1]+M[2][1]*Y[2]+M[3][1]*Y[3];
-   b[2]=M[0][2]*Y[0]+M[1][2]*Y[1]+M[2][2]*Y[2]+M[3][2]*Y[3];
-   b[3]=M[0][3]*Y[0]+M[1][3]*Y[1]+M[2][3]*Y[2]+M[3][3]*Y[3];
-
-   //quadratic equation coeffs, aa*mm^2+bb*m+cc=0
-    aa = a[3]*b[2] - a[2]*b[3];
-    bb = a[3]*b[0] -a[0]*b[3] + a[1]*b[2] - a[2]*b[1] + WX*b[3] - WY*a[3];
-    cc = a[1]*b[0] -a[0]*b[1] + WX*b[1] - WY*a[1];
- 
-    //compute m = (-b+sqrt(b^2-4ac))/(2a)
-    m = (-bb+sqrt(bb*bb - 4*aa*cc))/(2*aa);
- 
-    //compute l
-    l = (WX-a[0]-a[2]*m)/(a[1]+a[3]*m);
-
-   *LX=l;
-   *LY=m;
+    ax /=a3x;
+    ay /=a1y;
+    a2x/=a3x;
+    a2y/=a1y;
+    
+    *LX = ax + (1 - a2x) * (bx - b3x * ax) / (b2x - b3x * a2x);
+    *LY = ay + (1 - a2y) * (by - b1y * ay) / (b2y - b1y * a2y);
 }
 
 /*----------------------------------------------------------------------------
@@ -258,6 +250,51 @@ int VertexLoc(Vect3d **Pos,TDef *Def,Vect3d Vr,double X,double Y,double Z) {
 }
 
 /*----------------------------------------------------------------------------
+ * Nom      : <VertexAvg>
+ * Creation : Avril 2016 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Moyenne la valeur d'un point de grille masque avec ses voisins
+ *
+ * Parametres :
+ *   <Def>    : Definition des donnees
+ *   <Idx>    : Composantes (-1=mode)
+ *   <X>      : Position en X
+ *   <Y>      : Position en Y
+ *   <Z>      : Position en Z (z<0, Interpolation 2D seulement)
+ *
+ * Retour:
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+*/
+static inline double VertexAvg(TDef *Def,int Idx,int X,int Y,int Z) {
+   
+   unsigned long n,i,j,idx;
+   double        v,val;
+   
+   n=0;
+   val=0.0;
+   
+   for(j=Y-1;j<=Y+1;j++) {
+      for(i=X-1;i<=X+1;i++) {
+         idx=j*Def->NI+i;
+
+         if (idx>=0 && idx<Def->NIJ && Def->Mask[idx]) {
+            if (Idx==-1) {
+               Def_GetMod(Def,idx,v);
+            } else {
+               Def_Get(Def,Idx,idx,v);
+            }
+            val+=v;
+            n++;
+         }
+      }
+   }
+   return(n?val/n:Def->NoData);
+}
+
+/*----------------------------------------------------------------------------
  * Nom      : <VertexVal>
  * Creation : Septembre 2001 - J.P. Gauthier - CMC/CMOE
  *
@@ -303,11 +340,19 @@ float VertexVal(TDef *Def,int Idx,double X,double Y,double Z) {
       Def_GetQuad(Def,Idx,idx,cube[0]);
    }
    
+   // Check for masked values
+   if (Def->Mask) {
+      if (!Def->Mask[idx[0]]) cube[0][0]=VertexAvg(Def,Idx,i,  j,  k);
+      if (!Def->Mask[idx[1]]) cube[0][1]=VertexAvg(Def,Idx,i+1,j,  k);
+      if (!Def->Mask[idx[2]]) cube[0][2]=VertexAvg(Def,Idx,i+1,j+1,k);
+      if (!Def->Mask[idx[3]]) cube[0][3]=VertexAvg(Def,Idx,i,  j+1,k);
+   }
+   
    // If either value is nodata then interpolation will be nodata as well
    if (cube[0][0]==Def->NoData || cube[0][1]==Def->NoData || cube[0][2]==Def->NoData || cube[0][3]==Def->NoData) {
       return(Def->NoData);
    }
-   
+     
    // 3D Interpolation case
    if (Z>TINY_VALUE) {
 
@@ -320,6 +365,15 @@ float VertexVal(TDef *Def,int Idx,double X,double Y,double Z) {
       } else {
          Def_GetQuad(Def,Idx,idx,cube[1]);
       }
+      
+      // Check for masked values
+      if (Def->Mask) {
+         if (!Def->Mask[idx[0]]) cube[1][0]=VertexAvg(Def,Idx,i,  j,  k);
+         if (!Def->Mask[idx[1]]) cube[1][1]=VertexAvg(Def,Idx,i+1,j,  k);
+         if (!Def->Mask[idx[2]]) cube[1][2]=VertexAvg(Def,Idx,i+1,j+1,k);
+         if (!Def->Mask[idx[3]]) cube[1][3]=VertexAvg(Def,Idx,i,  j+1,k);
+      }
+      
       // If either value is nodata then interpolation will be nodata as well
       if (cube[1][0]==Def->NoData || cube[1][1]==Def->NoData || cube[1][2]==Def->NoData || cube[1][3]==Def->NoData) {
          return(Def->NoData);

@@ -37,6 +37,7 @@
 
 #include "eerUtils.h"
 #include "Vector.h"
+#include "Triangle.h"
 #include "ZRef.h"
 #include "QTree.h"
 
@@ -185,9 +186,9 @@ int      GeoRef_Incr(TGeoRef *Ref);
 void     GeoRef_Decr(TGeoRef *Ref);
 int      GeoRef_Within(TGeoRef* __restrict const Ref0,TGeoRef* __restrict const Ref1);
 int      GeoRef_WithinRange(TGeoRef* __restrict const Ref,double Lat0,double Lon0,double Lat1,double Lon1,int In);
+int      GeoRef_WithinCell(TGeoRef *GRef,Vect2d Pos,Vect2d Pt[4],int Idx0,int Idx1,int Idx2,int Idx3);
 int      GeoRef_Intersect(TGeoRef* __restrict const Ref0,TGeoRef* __restrict const Ref1,int *X0,int *Y0,int *X1,int *Y1,int BD);
 int      GeoRef_Equal(TGeoRef* __restrict const Ref0,TGeoRef* __restrict const Ref1);
-int      GeoRef_Nearest(TGeoRef* __restrict const Ref,float X,float Y,int *Idxs,double *Dists,int NbNear);
 TGeoRef* GeoRef_New();
 TGeoRef* GeoRef_Copy(TGeoRef* __restrict const Ref);
 TGeoRef *GeoRef_HardCopy(TGeoRef* __restrict const Ref);
@@ -210,6 +211,7 @@ void     GeoRef_Expand(TGeoRef *Ref);
 int      GeoRef_Positional(TGeoRef *Ref,struct TDef *XDef,struct TDef *YDef);
 int      GeoRef_Coords(TGeoRef *Ref,float *Lat,float *Lon);
 TQTree*  GeoRef_BuildIndex(TGeoRef* __restrict const Ref);
+int      GeoRef_Nearest(TGeoRef* __restrict const Ref,double X,double Y,int *Idxs,double *Dists,int NbNear);
 
 void GeoScan_Init(TGeoScan *Scan);
 void GeoScan_Clear(TGeoScan *Scan);
@@ -219,4 +221,15 @@ double GeoFunc_RadialPointRatio(Coord C1,Coord C2,Coord C3);
 int    GeoFunc_RadialPointOn(Coord C1,Coord C2,Coord C3,Coord *CR);
 int    GeoFunc_RadialIntersect(Coord C1,Coord C2,double CRS13,double CRS23,Coord *C3);
 
+static inline double GeoRef_GeoDir(TGeoRef* __restrict const Ref,double X, double Y) {
+   double latd[2],lond[2];
+   
+   // Reproject vector orientation by adding grid projection's north difference
+   Ref->Project(Ref,X,Y,&latd[0],&lond[0],1,1);
+   Ref->Project(Ref,X,Y+1,&latd[1],&lond[1],1,1);
+
+   latd[0]=DEG2RAD(latd[0]); lond[0]=DEG2RAD(lond[0]);
+   latd[1]=DEG2RAD(latd[1]); lond[1]=DEG2RAD(lond[1]);
+   return(COURSE(latd[0],lond[0],latd[1],lond[1]));
+}
 #endif

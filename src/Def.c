@@ -1364,7 +1364,7 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
 }
 
 /*--------------------------------------------------------------------------------------------------------------
- * Nom          : <Data_GridInterp>
+ * Nom          : <Def_GridInterp>
  * Creation     : Aout 2006 J.P. Gauthier - CMC/CMOE
  *
  * But          : Interpolate une bande raster dans un champs de donnees

@@ -584,8 +584,8 @@ void GeoRef_Size(TGeoRef *Ref,int X0,int Y0,int X1,int Y1,int BD) {
    Ref->Y0=Y0;
    Ref->Y1=Y1;
    Ref->BD=BD;
-   Ref->NX=X1-X0;
-   Ref->NY=Y1-Y0;
+   Ref->NX=X1-X0+1;
+   Ref->NY=Y1-Y0+1;
 }
 
 /*--------------------------------------------------------------------------------------------------------------
@@ -727,11 +727,7 @@ void GeoRef_Qualify(TGeoRef* __restrict const Ref) {
    if (Ref) {
       Ref->Type=GRID_NONE;
 
-      if (Ref->Grid[0]=='X') {
-         return;
-      }
-
-      if (Ref->Grid[0]=='M' || Ref->Grid[0]=='Y' || Ref->Grid[1]=='X' || Ref->Grid[1]=='Y' || Ref->Grid[1]=='Z') {
+      if (Ref->Grid[0]=='M' || Ref->Grid[0]=='Y' || Ref->Grid[0]=='X' || Ref->Grid[1]=='X' || Ref->Grid[1]=='Y' || Ref->Grid[1]=='Z') {
          Ref->Type|=GRID_SPARSE;
       } else {
          Ref->Type|=GRID_REGULAR;
@@ -799,11 +795,11 @@ int GeoRef_Equal(TGeoRef* __restrict const Ref0,TGeoRef* __restrict const Ref1) 
    if (Ref0->IG1!=Ref1->IG1 || Ref0->IG2!=Ref1->IG2 || Ref0->IG3!=Ref1->IG3 || Ref0->IG4!=Ref1->IG4)
      return(0);
 
-   // Patch temporaire du au lagrangien qui doivent avoir des GeoRef differents*/
-   if (Ref0->Grid[0]=='X' || Ref0->Grid[0]=='Y' || Ref0->Grid[1]=='Y')
+   // Cloud point should never be tested as equal
+   if (Ref0->Grid[0]=='Y' || Ref0->Grid[1]=='Y')
       return(0);
 
-   if (Ref1->Grid[0]=='X' || Ref1->Grid[0]=='Y' || Ref1->Grid[1]=='Y')
+   if (Ref1->Grid[0]=='Y' || Ref1->Grid[1]=='Y')
       return(0);
 
    // Check on grid limits (exclude U grids since they can be switched internally and they'll be tested earlier anyway)
@@ -1052,7 +1048,7 @@ TQTree* GeoRef_BuildIndex(TGeoRef* __restrict const Ref) {
    lat0=lon0=1e10;
    lat1=lon1=-1e10;
    
-   for(n=0;n<Ref->NX;n++) {
+   for(n=0;n<Ref->NX*Ref->NY;n++) {
       dy=Ref->AY[n];
       dx=CLAMPLON(Ref->AX[n]);
       lat0=FMIN(lat0,dy);
@@ -1081,10 +1077,10 @@ TQTree* GeoRef_BuildIndex(TGeoRef* __restrict const Ref) {
             return(NULL);
          }      
       }
-   } else  if (Ref->Grid[0]=='Y') {
+   } else  if (Ref->Grid[0]=='Y' || Ref->Grid[0]=='X' || Ref->Grid[1]=='Y' || Ref->Grid[1]=='X') {
 
       // Useless for less than a few thousand points
-      if (Ref->NX<5000) {
+      if ((Ref->NX*Ref->NY)<500) {
          return(NULL);
       }
       
@@ -1104,16 +1100,26 @@ TQTree* GeoRef_BuildIndex(TGeoRef* __restrict const Ref) {
       Ref->QTree[0].BBox[1].Y=lat1;
       
       // Loop on points
-      for(n=0;n<Ref->NX;n++) {     
+      for(n=0;n<Ref->NX*Ref->NY;n++) {     
          
          pt[0]=CLAMPLON(Ref->AX[n]);
          pt[1]=Ref->AY[n];  
          
          x=(pt[0]-lon0)/dx;
          y=(pt[1]-lat0)/dy;
-      
+               
          // Add location and set false pointer increment (+1);
          QTree_AddData(&Ref->QTree[y*GRID_YQTREESIZE+x],pt[0],pt[1],(void*)(n+1));
+
+         // Wrapped grid need to repeat border pixels
+         if (Ref->Type&GRID_WRAP) {
+            if (pt[0]+dx>180) {
+               QTree_AddData(&Ref->QTree[y*GRID_YQTREESIZE],pt[0]-360,pt[1],(void*)(n+1));
+            }
+            if (pt[0]-dx<-180) {
+               QTree_AddData(&Ref->QTree[y*GRID_YQTREESIZE+(GRID_YQTREESIZE-1)],pt[0]+360,pt[1],(void*)(n+1));
+            }
+         }
       }
    }
    
@@ -1141,34 +1147,116 @@ TQTree* GeoRef_BuildIndex(TGeoRef* __restrict const Ref) {
  *
  *---------------------------------------------------------------------------------------------------------------
 */
-int GeoRef_Nearest(TGeoRef* __restrict const Ref,float X,float Y,int *Idxs,double *Dists,int NbNear) {
+int GeoRef_Nearest(TGeoRef* __restrict const Ref,double X,double Y,int *Idxs,double *Dists,int NbNear) {
 
-   double dx,dy,l;
-   int    n,nn,nr,nnear;
-   
-   Dists[0]=l=1e32;
-   nnear=0;
+   double       dx,dy,l;
+   unsigned int dxy,n,nn,nr,nnear;
+   TQTree      *node;
+   int          x,y,xd,yd,rep;
+  
+   if (!NbNear || !Idxs || !Dists) return(0);
 
-   // Point cloud: Find closest by looping in all points     
-   for(n=0;n<Ref->NX;n++) {
-      dx=X-Ref->AX[n];
-      dy=Y-Ref->AY[n];
-      l=dx*dx+dy*dy;
+   Dists[0]=1e32;
+   dxy=nnear=0;
+
+   if (Ref->QTree) {      
+      // Find the closest point(s) by circling larger around cell
+
+      node=&Ref->QTree[0];
+
+      dx=(node->BBox[1].X-node->BBox[0].X)/GRID_YQTREESIZE;
+      dy=(node->BBox[1].Y-node->BBox[0].Y)/GRID_YQTREESIZE;
+      xd=(X-node->BBox[0].X)/dx;
+      yd=(Y-node->BBox[0].Y)/dy;
+                  
+      while(dxy<(GRID_YQTREESIZE>>1)) {
          
-      for(nn=0;nn<NbNear;nn++) {
-         if (l<Dists[nn]) {
-               
-            // Move farther nearest in order
-            for(nr=NbNear-1;nr>nn;nr--) {
-               Dists[nr]=Dists[nr-1];
-               Idxs[nr]=Idxs[nr-1];                       
-            }
+         // Y circling increment
+         for(y=yd-dxy;y<=yd+dxy;y++) {
+            if (y<0) continue;
+            if (y>=GRID_YQTREESIZE) break;
             
-            // Assign found nearest
-            Dists[nn]=l;
-            Idxs[nn]=n;
-            nnear++;
+            // X Circling increment (avoid revisiting previous cells)
+            for(x=xd-dxy;x<=xd+dxy;x+=((y==yd-dxy || y==yd+dxy)?1:(dxy+dxy))) {
+               if (x<0) continue;
+               if (x>=GRID_YQTREESIZE) break;
+               
+               node=&Ref->QTree[y*GRID_YQTREESIZE+x];
+
+               // Loop on points in this cell and get closest point
+               for(n=0;n<node->NbData;n++) {
+
+                  // Wrapped grid repeat some point on adjacent index cell
+                  if (NbNear>1 && Ref->Type&GRID_WRAP) {
+                     rep=0;
+                     for(nn=0;nn<(nnear>NbNear?NbNear:nnear);nn++) {
+                        if (Idxs[nn]==(int)node->Data[n].Ptr-1) { rep=1; break; } 
+                     }
+                     if (rep) continue;
+                  }
+                      
+                  dx=X-node->Data[n].Pos.X;
+                  dy=Y-node->Data[n].Pos.Y;
+                  l=dx*dx+dy*dy;
+
+                  // Loop on number of nearest to find
+                  for(nn=0;nn<NbNear;nn++) {
+                     
+                     // If this is closer
+                     if (l<Dists[nn]) {
+
+                        // Move farther nearest in order
+                        for(nr=NbNear-1;nr>nn;nr--) {
+                           Dists[nr]=Dists[nr-1];
+                           Idxs[nr]=Idxs[nr-1];                       
+                        }
+                           
+                        // Assign found nearest
+                        Dists[nn]=l;
+                        Idxs[nn]=(int)node->Data[n].Ptr-1; // Remove false pointer increment
+                        nnear++;
+                        break;
+                     }
+                  }
+               }
+            }            
+         }
+         
+         // If we made at least one cycle and found enough nearest
+         if (nnear>=NbNear && dxy) 
             break;
+         dxy++;
+      }
+   } else {
+      // Find closest by looping in all points   
+      
+      for(n=0;n<Ref->NX*Ref->NY;n++) {
+         dx=X-Ref->AX[n];
+         dy=Y-Ref->AY[n];
+         
+         if (Ref->Type&GRID_WRAP) {
+            if (dx>180)  dx-=360;
+            if (dx<-180) dx+=360;
+         }
+         
+         l=dx*dx+dy*dy;
+         
+         for(nn=0;nn<NbNear;nn++) {
+            if (l<Dists[nn]) {
+                  
+               // Move farther nearest in order
+               for(nr=NbNear-1;nr>nn;nr--) {
+                  Dists[nr]=Dists[nr-1];
+                  Idxs[nr]=Idxs[nr-1];
+               }
+               
+               // Assign found nearest
+               Dists[nn]=l;
+               Idxs[nn]=n;
+               
+               nnear++;
+               break;
+            }
          }
       }
    }
@@ -1492,7 +1580,41 @@ int GeoRef_WithinRange(TGeoRef* __restrict const Ref,double Lat0,double Lon0,dou
    return(0);
 }
 
-int GeoRef_BoundingBox(TGeoRef* __restrict const Ref,double Lat0,double Lon0,double Lat1,double Lon1,double *I0,double *J0,double *I1,double *J1) {
+int GeoRef_WithinCell(TGeoRef *GRef,Vect2d Pos,Vect2d Pt[4],int Idx0,int Idx1,int Idx2,int Idx3) {
+ 
+   Vect3d b;
+   int    t0,t1,sz=GRef->NX*GRef->NY;
+   
+   if (Idx0<sz && Idx1<sz && Idx2<sz && Idx3<sz && Idx0>=0 && Idx1>=0 && Idx2>=0 && Idx3>=0) {
+      
+      Pt[0][0]=GRef->AX[Idx0]; Pt[0][1]=GRef->AY[Idx0];
+      Pt[1][0]=GRef->AX[Idx1]; Pt[1][1]=GRef->AY[Idx1];
+      Pt[2][0]=GRef->AX[Idx2]; Pt[2][1]=GRef->AY[Idx2];
+      Pt[3][0]=GRef->AX[Idx3]; Pt[3][1]=GRef->AY[Idx3];
+      
+      // Make sure all coordinates are on same side of -180/180
+      if (Pos[0]>90) {
+         if (Pt[0][0]<0) Pt[0][0]+=360;   
+         if (Pt[1][0]<0) Pt[1][0]+=360;   
+         if (Pt[2][0]<0) Pt[2][0]+=360;   
+         if (Pt[3][0]<0) Pt[3][0]+=360;         
+      } else if (Pos[0]<-90) {
+         if (Pt[0][0]>0) Pt[0][0]-=360;   
+         if (Pt[1][0]>0) Pt[1][0]-=360;   
+         if (Pt[2][0]>0) Pt[2][0]-=360;   
+         if (Pt[3][0]>0) Pt[3][0]-=360;        
+      }
+      
+      t0=Bary_Get(b,Pos[0],Pos[1],Pt[0][0],Pt[0][1],Pt[1][0],Pt[1][1],Pt[2][0],Pt[2][1]);
+      t1=Bary_Get(b,Pos[0],Pos[1],Pt[0][0],Pt[0][1],Pt[2][0],Pt[2][1],Pt[3][0],Pt[3][1]);
+
+      return(t0 || t1);
+   }
+   return(0);
+}
+                     
+
+                     int GeoRef_BoundingBox(TGeoRef* __restrict const Ref,double Lat0,double Lon0,double Lat1,double Lon1,double *I0,double *J0,double *I1,double *J1) {
 
    double di,dj;
 

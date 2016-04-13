@@ -38,8 +38,7 @@
 #include "GeoRef.h"
 #include "Def.h"
 
-void Vertex_Map(double X[4] ,double Y[4],double *LX,double *LY,double WX,double WY);
-
+void   Vertex_Map(Vect2d P[4],double *LX,double *LY,double WX,double WY);
 void   VertexGradient(TDef *Def,Vect3d Nr);
 float  VertexVal(TDef *Def,int Idx,double X,double Y,double Z);
 double VertexValV(TDef *Def,double X,double Y,double Z,Vect3d V);

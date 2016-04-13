@@ -149,13 +149,7 @@ int GeoRef_WKTValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
       
       // Reproject vector orientation by adding grid projection's north difference
       if (Def->Data[1] && GRef->Type&GRID_NUNORTH) { 
-         double latd[2],lond[2];
-         GRef->Project(GRef,X,Y,&latd[0],&lond[0],1,1);
-         GRef->Project(GRef,X,Y+1,&latd[1],&lond[1],1,1);
-
-         latd[0]=DEG2RAD(latd[0]); lond[0]=DEG2RAD(lond[0]);
-         latd[1]=DEG2RAD(latd[1]); lond[1]=DEG2RAD(lond[1]);
-         ddir=COURSE(latd[0],lond[0],latd[1],lond[1]);
+         ddir=GeoRef_GeoDir(GRef,X,Y);
       }
 
       if (Def->Type<=9 || Mode=='N' || (X==ix && Y==iy)) {
@@ -311,9 +305,11 @@ int GeoRef_WKTUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
 
 #ifdef HAVE_GDAL
    double x,y,z=0.0,d=1e32,sd;
-   int    s,dx,dy,ok,idx,ni,nj;
-   double lx[4],ly[4];
-
+   int    n,nd,s,dx,dy,ok,idx,idxs[8],ni,nj;
+   double dists[8];
+   Vect2d pts[4],pt;
+   Vect3d b;
+   
    if (Lat<=90.0 && Lat>=-90.0 && Lon!=-999.0) {
 
       // Longitude from -180 to 180
@@ -395,71 +391,63 @@ int GeoRef_WKTUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
                }
             }
          } else if (GRef->Grid[1]=='Y') {
-            if (GRef->AX && GRef->AY) {
-               idx=0;
-
-               // Loop on all point to find the closest
-               lx[0]=DEG2RAD(*X); ly[0]=DEG2RAD(*Y);
-               for(dy=0;dy<nj;dy++) {
-                  for(dx=0;dx<ni;dx++) {
-                     lx[1]=DEG2RAD(GRef->AX[idx]); ly[1]=DEG2RAD(GRef->AY[idx]);
-                     sd=DIST(0,ly[0],lx[0],ly[1],lx[1]);
-
-                     if (sd<d) {
-                        x=dx;y=dy;d=sd;ok=idx;
-                     }
-                     idx++;
-                  }
+            // Get nearest point
+            if (GeoRef_Nearest(GRef,Lon,Lat,&idx,dists,1)) {
+               if (dists[0]<1.0) {
+                  *Y=(int)(idx/GRef->NX);
+                  *X=idx-(*Y)*GRef->NX;
+                  return(TRUE);
                }
-
-               *X=x;
-               *Y=y;
             }
          } else if (GRef->Grid[1]=='X') {
-            int x0,y0,x1,y1;
+            // Get nearest points
+            if ((nd=GeoRef_Nearest(GRef,Lon,Lat,idxs,dists,8))) {
+               
+               pt[0]=Lon;
+               pt[1]=Lat;
 
-            if (GRef->AX && GRef->AY) {
-               x0=0;y0=0;
-               x1=ni-1;y1=nj-1;
-               dx=x1;dy=y1;
+               // Find which cell includes coordinates
+               for(n=0;n<nd;n++) {
+                  idx=idxs[n];
 
-               // Parse as a quadtree to find enclosing cell
-               while (dx || dy) {
-
-                  idx=y0*ni+x0; lx[0]=GRef->AX[idx]; ly[0]=GRef->AY[idx];
-                  idx=y0*ni+x1; lx[1]=GRef->AX[idx]; ly[1]=GRef->AY[idx];
-                  idx=y1*ni+x1; lx[2]=GRef->AX[idx]; ly[2]=GRef->AY[idx];
-                  idx=y1*ni+x0; lx[3]=GRef->AX[idx]; ly[3]=GRef->AY[idx];
-
-                  Vertex_Map(lx,ly,X,Y,Lon,Lat);
-
-                  // If not within [0,1] then we're outside
-                  if (*X<-0.5 || *Y<-0.5 || *X>1.5 || *Y>1.5) {
-                     *X=-1.0;
-                     *Y=-1.0;
+                  // Find within which quad
+                  dx=-1;dy=-1;
+                  if (!GeoRef_WithinCell(GRef,pt,pts,idx-GRef->NX-1,idx-1,idx,idx-GRef->NX)) {
+                 
+                     dx=0;dy=-1;
+                     if (!GeoRef_WithinCell(GRef,pt,pts,idx-GRef->NX,idx,idx+1,idx-GRef->NX+1)) {
+                        
+                        dx=-1;dy=0;
+                        if (!GeoRef_WithinCell(GRef,pt,pts,idx-1,idx+GRef->NX-1,idx+GRef->NX,idx)) {
+                     
+                           dx=0;dy=0;
+                           if (!GeoRef_WithinCell(GRef,pt,pts,idx,idx+GRef->NX,idx+GRef->NX+1,idx+1)) {
+                              idx=-1;
+                           }
+                        }
+                     }
+                  }
+                  
+                  // If found, exit loop
+                  if (idx!=-1) {
                      break;
                   }
-
-                  // Calculate new sub-division
-                  dx=(x1-x0)>>1;
-                  dy=(y1-y0)>>1;
-
-                  if (*X<0.5) {
-                     x1-=dx;
-                  } else {
-                     x0+=dx;
-                  }
-
-                  if (*Y<0.5) {
-                     y1-=dy;
-                  } else {
-                     y0+=dy;
-                  }
                }
-
-               if (*X!=-1) {
-                  *X=x0+*X;
-                  *Y=y0+*Y;
+               
+               if (idx!=-1) {
+                  // Map coordinates to grid
+                  Vertex_Map(pts,X,Y,Lon,Lat);
+                  
+                  if (!isnan(*X) && !isnan(*Y)) {
+                     y=idx/GRef->NX;
+                     x=idx-y*GRef->NX;
+                     *Y+=y+dy;
+                     *X+=x+dx; 
+                  } else {
+                     *X=-1,0;
+                     *Y=-1.0;
+                     return(FALSE);
+                  }
                }
             }
          }

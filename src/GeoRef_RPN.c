@@ -162,9 +162,9 @@ double GeoRef_RPNDistance(TGeoRef *GRef,double X0,double Y0,double X1, double Y1
 int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,double Z,double *Length,double *ThetaXY) {
 
    Vect3d       b,v;
-   float        x,y,valf,valdf;
+   float        x,y,valf,valdf,ddir;
    void        *p0,*p1;
-   int          valid=0,mem,ix,iy,n;
+   int          mem,ix,iy,n;
    unsigned int idx;
 
    *Length=Def->NoData;
@@ -190,7 +190,7 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
          }
          *Length=x;
          
-         if (Def->NC==2 && !C) {
+         if (Def->Data[1] && !C) {
             if (Mode=='N') {
                n=(b[0]>b[1]?(b[0]>b[2]?0:2):(b[1]>b[2]?1:2));
                Def_Get(Def,1,GRef->Idx[ix+n],y);
@@ -204,9 +204,9 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
             *Length=hypot(x,y);
             *ThetaXY=180+RAD2DEG(atan2(x,y));
          }
-         return(1);
+         return(TRUE);
       } else {
-         return(0);
+         return(FALSE);
       }
    }
 
@@ -216,81 +216,124 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
       // Index memoire du niveau desire
       mem=Def->NIJ*(int)Z;
 
-      x=X+1.0;
-      y=Y+1.0;
-
       ix=lrint(X);
       iy=lrint(Y);
       idx=iy*Def->NI+ix;
-
+      
       // Check for mask
       if (Def->Mask && !Def->Mask[idx]) {
-         return(valid);
+         return(FALSE);
       }
 
-      valid=1;
+      // Point cloud
+      if (GRef->Grid[0]=='Y' || GRef->Grid[0]=='P') {
+         mem+=idx;
+         Def_Get(Def,C,mem,*Length);
+         if (Def->Data[1] && ThetaXY && !C)
+            Def_Get(Def,1,mem,*ThetaXY);
+         
+         return(TRUE);
+      } 
 
-      if (GRef && GRef->Grid[0]=='V') {
+      // Check for nodata in linear interpolation 
+      if (Def->Type>=TD_Int64 && Mode!='N') {
+         int idxs[4],dx,dy;
+         double vals[4];
+         
+         dx=X;
+         dy=Y;
+         idxs[0]=mem+dy*Def->NI+dx;
+         idxs[1]=(dx<GRef->X1)?idxs[0]+1:idxs[0];
+         idxs[2]=(dy<GRef->Y1)?idxs[0]+Def->NI:idxs[0];
+         idxs[3]=(dy<GRef->Y1 && dx<GRef->X1)?idxs[0]+Def->NI+1:idxs[0];
+         
+         Def_GetQuad(Def,C,idxs,vals);
+
+         // If either value is nodata then interpolation will be nodata as well
+         if (vals[0]==Def->NoData || vals[1]==Def->NoData || vals[2]==Def->NoData || vals[3]==Def->NoData) 
+            return(FALSE);        
+      }
+     
+      // XSection
+      if (GRef->Grid[0]=='V') {
          if (Def->Data[1]) {
             Def_GetMod(Def,FIDX2D(Def,ix,iy),*Length);
          } else {
             *Length=VertexVal(Def,-1,X,Y,0.0);
          }
-         return(valid);
+         return(TRUE);
       }
 
-      if (GRef->Grid[0]!='X' && GRef->Grid[0]!='Y' && GRef->Grid[0]!='P' && Def->Data[1] && !C) {
-         if (GRef->Ids) {
-            Def_Pointer(Def,0,mem,p0);
-            Def_Pointer(Def,1,mem,p1);
-//            RPN_IntLock();
-            c_gdxywdval(GRef->Ids[GRef->NId],&valf,&valdf,p0,p1,&x,&y,1);
-
-            /*If it's 3D, use the mode for speed since c_gdxywdval only uses 2D*/
-            if (Def->Data[2])
-               c_gdxysval(GRef->Ids[GRef->NId],&valf,(float*)&Def->Mode[mem],&x,&y,1);
-               *Length=valf;
-            if (ThetaXY)
-               *ThetaXY=valdf;
-//            RPN_IntUnlock();
-         }
-      } else {
-         if (GRef->Grid[0]=='Y' || GRef->Grid[0]=='P') {
-            X=ix;
-            Y=iy;
-         }
-
-         // G grids have something weird which means we have to use ezscint
-         if ((Def->Type<TD_Float32 || Mode=='N' || (X==ix && Y==iy)) && GRef->Grid[0]!='G') {
+      // Unstructured or not referenced
+      if (GRef->Grid[0]=='X') {
+         if (Def->Type<=TD_Int64 || Mode=='N' || (X==ix && Y==iy)) {
             mem+=idx;
-            Def_Get(Def,C,mem,*Length);
-            if (Def->Data[1] && ThetaXY && !C)
-               Def_Get(Def,1,mem,*ThetaXY);
+
+           // Pour un champs vectoriel
+            if (Def->Data[1] && !C && ThetaXY) {
+               Def_Get(Def,0,mem,x);
+               Def_Get(Def,1,mem,y);
+               *Length=hypot(x,y);
+               *ThetaXY=180+RAD2DEG(atan2(x,y)-GeoRef_GeoDir(GRef,X,Y));
+            } else {
+               Def_GetMod(Def,mem,*Length);              
+            }
          } else {
-            if (Def->Type==TD_Float32 && GRef->Ids) {
+            // Pour un champs vectoriel
+            if (Def->Data[1] && !C && ThetaXY) {
+               x=VertexVal(Def,0,X,Y,Z);
+               y=VertexVal(Def,1,X,Y,Z);
+               *Length=hypot(x,y);
+               *ThetaXY=180+RAD2DEG(atan2(x,y)-GeoRef_GeoDir(GRef,X,Y));
+            } else {
+               *Length=VertexVal(Def,-1,X,Y,Z);               
+            }
+         }
+         return(TRUE);
+      }
+   
+      // RPN grid
+      if (GRef->Ids) {         
+         if (Def->Type==TD_Float32) { 
+            x=X+1.0;
+            y=Y+1.0;
+
+            if (Mode=='N') {
+               x=lrint(x);
+               y=lrint(y);
+            }
+            
+            if (Def->Data[1] && !C) {
+               Def_Pointer(Def,0,mem,p0);
+               Def_Pointer(Def,1,mem,p1);
+               c_gdxywdval(GRef->Ids[GRef->NId],&valf,&valdf,p0,p1,&x,&y,1);
+
+               // If it's 3D, use the mode for speed since c_gdxywdval only uses 2D
+               if (Def->Data[2])
+                  c_gdxysval(GRef->Ids[GRef->NId],&valf,(float*)&Def->Mode[mem],&x,&y,1);
+                  *Length=valf;
+               if (ThetaXY)
+                  *ThetaXY=valdf;
+            } else {
                Def_Pointer(Def,C,mem,p0);
-
-               // If either value is nodata then interpolation will be nodata as well
-               ix=trunc(X);
-               iy=trunc(Y);
-               mem=idx;
-               if (               ((float*)p0)[mem]==Def->NoData)                          { return(valid); }
-               if (ix<GRef->X1 && ((float*)p0)[mem+1]==Def->NoData)                        { return(valid); }
-               if (iy<GRef->Y1 && ((float*)p0)[mem+Def->NI]==Def->NoData)                  { return(valid); }
-               if (iy<GRef->Y1 && ix<GRef->X1 && ((float*)p0)[mem+Def->NI+1]==Def->NoData) { return(valid); }
-
-//               RPN_IntLock();
                c_gdxysval(GRef->Ids[GRef->NId],&valf,p0,&x,&y,1);
                *Length=valf;
-//               RPN_IntUnlock();
+            }
+         } else {            
+            if (Mode=='N') {
+               mem+=idx;
+               Def_Get(Def,C,mem,*Length);
             } else {
                *Length=VertexVal(Def,C,X,Y,Z);
             }
+            if (ThetaXY) *ThetaXY=0.0;
          }
       }
+      return(TRUE);
+
    }
 #endif
-   return(valid);
+   return(FALSE);
 }
 
 /*--------------------------------------------------------------------------------------------------------------
@@ -318,6 +361,8 @@ int GeoRef_RPNProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,in
 
    float i,j,lat=-999.0,lon=-999.0;
    int   idx;
+   double d,dx,dy;
+   int    sx,sy,s;
 
 #ifdef HAVE_RMN
    if (X<(GRef->X0-0.5) || Y<(GRef->Y0-0.5) || X>(GRef->X1+0.5) || Y>(GRef->Y1+0.5)) {
@@ -330,16 +375,36 @@ int GeoRef_RPNProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,in
 
    if (GRef->Type&GRID_SPARSE) {
       if (GRef->AX && GRef->AY) {
-         idx=Y*(GRef->X1-GRef->X0)+X;
-         *Lat=GRef->AY[idx];
-         *Lon=GRef->AX[idx];
-         return(1);
+         if (GRef->Grid[0]=='Y') {
+            idx=Y*(GRef->X1-GRef->X0)+X;
+            Y=GRef->AY[idx];
+            X=GRef->AX[idx];
+         } else {
+            sx=floor(X);sx=CLAMP(sx,GRef->X0,GRef->X1);
+            sy=floor(Y);sy=CLAMP(sy,GRef->Y0,GRef->Y1);
+            dx=X-sx;;
+            dy=Y-sy;
+
+            s=sy*(GRef->X1-GRef->X0+1)+sx;
+            X=GRef->AX[s];
+            Y=GRef->AY[s];
+
+            if (++sx<=GRef->X1) {
+               s=sy*(GRef->X1-GRef->X0+1)+sx;
+               X+=(GRef->AX[s]-X)*dx;
+            }
+
+            if (++sy<=GRef->Y1) {
+               s=sy*(GRef->X1-GRef->X0+1)+(sx-1);
+               Y+=(GRef->AY[s]-Y)*dy;
+            }
+         }
       } else {
          return(0);
       }
    }
 
-   if (!GRef->Ids) {
+   if (!GRef->Ids || GRef->Type&GRID_SPARSE) {
       *Lat=Y;
       *Lon=X;
       return(1);
@@ -379,19 +444,25 @@ int GeoRef_RPNProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,in
  * Remarques   :
  *
  *---------------------------------------------------------------------------------------------------------------
-*/
+*/                     
 int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,int Extrap,int Transform) {
 
-   float         i,j,lat,lon,d=1e32,dx=1.0;
-   int           n,di,dj,idx,ni,nj;
-   Vect3d        b;
-   TQTree       *node;
+   float   i,j,lat,lon;
+   int     x,y,n,nd,dx,dy,idx,idxs[8];
+   double  dists[8];
+   Vect2d  pts[4],pt;
+   Vect3d  b;
+   TQTree *node;
 
    *X=-1.0;
    *Y=-1.0;
 
+   // Invalid coordinates ?
+   if (Lat>90.0 || Lat<-90.0 || Lon==-999.0) 
+     return(FALSE);
+
 #ifdef HAVE_RMN
-   if (GRef->Type&GRID_SPARSE) {
+   if (GRef->Type&GRID_SPARSE) {      
       if (GRef->AX && GRef->AY) {
          if (GRef->Grid[0]=='M') {
  
@@ -408,7 +479,7 @@ int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
                         // Return coordinate as triangle index + barycentric coefficient
                         *X=idx+b[0];
                         *Y=idx+b[1];
-                        return(1);
+                        return(TRUE);
                      }
                   }
                }
@@ -421,32 +492,81 @@ int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
                      // Return coordinate as triangle index + barycentric coefficient
                      *X=idx+b[0];
                      *Y=idx+b[1];
-                     return(1);
+                     return(TRUE);
                   }
                }
-               return(0);
-            } 
-         } else {
-            ni=GRef->X1-GRef->X0;
-            nj=GRef->Y1-GRef->Y0;
-            idx=0;
-
-            for(dj=0;dj<=nj;dj++) {
-               for(di=0;di<=ni;di++) {
-
-                  dx=hypot(Lon-GRef->AX[idx],Lat-GRef->AY[idx]);
-                  idx++;
-
-                  if (dx<0.1 && dx<d) {
-                     *X=di;*Y=dj;d=dx;
-                  }
-               }
+               return(FALSE);
+            }            
+         } else if (GRef->Grid[0]=='Y') {
+            // Get nearest point
+            if (GeoRef_Nearest(GRef,Lon,Lat,&idx,dists,1)) {
+               if (dists[0]<1.0) {
+                  *Y=(int)(idx/GRef->NX);
+                  *X=idx-(*Y)*GRef->NX;
+                  return(TRUE);
+               }         
             }
+         } else if (GRef->Grid[0]=='X') {
+            // Get nearest points
+            if ((nd=GeoRef_Nearest(GRef,Lon,Lat,idxs,dists,8))) {
+               
+               pt[0]=Lon;
+               pt[1]=Lat;
 
-            if (d<1.0) {
-               return(1);
-            } else {
-               return(0);
+               // Find which cell includes coordinates
+               for(n=0;n<nd;n++) {
+                  idx=idxs[n];
+
+                  // Find within which quad
+                  dx=-1;dy=-1;
+                  if (!GeoRef_WithinCell(GRef,pt,pts,idx-GRef->NX-1,idx-1,idx,idx-GRef->NX)) {
+                 
+                     dx=0;dy=-1;
+                     if (!GeoRef_WithinCell(GRef,pt,pts,idx-GRef->NX,idx,idx+1,idx-GRef->NX+1)) {
+                        
+                        dx=-1;dy=0;
+                        if (!GeoRef_WithinCell(GRef,pt,pts,idx-1,idx+GRef->NX-1,idx+GRef->NX,idx)) {
+                     
+                           dx=0;dy=0;
+                           if (!GeoRef_WithinCell(GRef,pt,pts,idx,idx+GRef->NX,idx+GRef->NX+1,idx+1)) {
+                              idx=-1;
+                           }
+                        }
+                     }
+                  }
+                  
+                  // If found, exit loop
+                  if (idx!=-1) {
+                     break;
+                  }
+               }
+               
+               if (idx!=-1) {
+                  // Map coordinates to grid
+                  Vertex_Map(pts,X,Y,Lon,Lat);
+                  
+                  if (!isnan(*X) && !isnan(*Y)) {
+                     y=idx/GRef->NX;
+                     x=idx-y*GRef->NX;
+                     *Y+=y+dy;
+                     *X+=x+dx; 
+                  } else {
+//                  fprintf(stderr,"nananan %f %f----- %f %f %i\n",Lat,Lon, *X,*Y,idx);
+                     *X=-1,0;
+                     *Y=-1.0;
+                     return(FALSE);
+                  }
+               } else {
+//                 fprintf(stderr,"-11111 %f %f----- %i\n",Lat,Lon,idx);
+               }
+
+               // Si on est a l'interieur de la grille
+               if (*X>(GRef->X1+0.5) || *Y>(GRef->Y1+0.5) || *X<(GRef->X0-0.5) || *Y<(GRef->Y0-0.5)) {
+                  *X=-1.0;
+                  *Y=-1.0;
+                  return(FALSE);
+               }
+               return(TRUE);
             }
          }
       } 
@@ -456,8 +576,8 @@ int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
    if (!GRef->Ids) {
       *Y=Lat;
       *X=Lon;
-      return(1);
-   } else if (Lat<=90.0 && Lat>=-90.0 && Lon!=-999.0) {
+      return(TRUE);
+   } else {
 
 //      lon=Lon<0?Lon+360.0:Lon;
       lon=Lon;
@@ -480,15 +600,11 @@ int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
             *X=-1.0;
             *Y=-1.0;
          }
-         return(0);
+         return(FALSE);
       }
-   } else {
-     *X=-1.0;
-     *Y=-1.0;
-     return(0);
    }
 #endif
-   return(1);
+   return(TRUE);
 }
 
 /*--------------------------------------------------------------------------------------------------------------
