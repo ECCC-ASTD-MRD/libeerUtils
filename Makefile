@@ -17,7 +17,7 @@ INSTALL_DIR = $(HOME)
 TCL_DIR     = /users/dor/afsr/ops/Links/devfs/Archive/tcl8.6.3
 
 #----- Uncoment to use dev libs
-LIB_DIR     = ${SSM_DEV}/workspace/libSPI_BETA_${ORDENV_PLAT}
+LIB_DIR     = ${SSM_DEV}/workspace/libSPI_7.11.0_${ORDENV_PLAT}
 
 LIBS        := -L$(LIB_DIR)/lib -L$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g')
 INCLUDES    := -I$(LIB_DIR)/include -I$(shell echo $(EC_INCLUDE_PATH) | sed 's/\s* / -I/g')

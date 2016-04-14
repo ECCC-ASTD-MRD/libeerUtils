@@ -831,11 +831,11 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
          Grid->GRef=GeoRef_New();
          Grid->GRef->Grid[0]='Y';
    
-         Grid->GRef->NX=Grid->H.NIJ;
-         Grid->GRef->NY=Grid->H.NIJ;
+         Grid->GRef->NX=Grid->H.NI;
+         Grid->GRef->NY=Grid->H.NJ;
 
-         Grid->GRef->AY=(float*)malloc(Grid->GRef->NY*sizeof(float));
-         Grid->GRef->AX=(float*)malloc(Grid->GRef->NX*sizeof(float));
+         Grid->GRef->AY=(float*)malloc(Grid->H.NIJ*sizeof(float));
+         Grid->GRef->AX=(float*)malloc(Grid->H.NIJ*sizeof(float));
 
          cs_fstlir(Grid->GRef->AY,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","^^");
          cs_fstlir(Grid->GRef->AX,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"",">>");

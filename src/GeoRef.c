@@ -141,7 +141,32 @@ int _GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef
    dd=Dim-1;
    Scan->N=0;
 
-   // WKT grid type
+   for(y=Y0;y<=Y1+dd;y++) {
+      idx=(y-FromRef->Y0)*FromDef->NI+(X0-FromRef->X0);
+      for(x=X0;x<=X1+dd;x++,idx++,n++) {
+         if (x<=X1 && y<=Y1) {
+            Scan->V[Scan->N++]=idx;
+         }
+
+         x0=dd?x-0.5:x;
+         y0=dd?y-0.5:y;
+         
+         FromRef->Project(FromRef,x0,y0,&Scan->X[n],&Scan->Y[n],0,1);
+
+
+         if (FromRef->Transform) {
+            Scan->X[n]=FromRef->Transform[0]+FromRef->Transform[1]*x0+FromRef->Transform[2]*y0;
+            Scan->Y[n]=FromRef->Transform[3]+FromRef->Transform[4]*x0+FromRef->Transform[5]*y0;
+         } else {
+            Scan->X[n]=x0;
+            Scan->Y[n]=y0;
+         }
+      }
+   }
+
+      
+      
+      // WKT grid type
    if (FromRef->Grid[0]=='W') {
 #ifdef HAVE_GDAL
       for(y=Y0;y<=Y1+dd;y++) {
@@ -1170,6 +1195,7 @@ int GeoRef_Nearest(TGeoRef* __restrict const Ref,double X,double Y,int *Idxs,dou
       yd=(Y-node->BBox[0].Y)/dy;
                   
       while(dxy<(GRID_YQTREESIZE>>1)) {
+         
          // Y circling increment
          for(y=yd-dxy;y<=yd+dxy;y++) {
             if (y<0) continue;
