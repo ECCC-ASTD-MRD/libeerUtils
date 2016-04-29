@@ -32,7 +32,7 @@
 
 #include "App.h"
 #include "eerUtils.h"
-#include "EZTile.h"
+#include "RPN.h"
 
 #define APP_NAME "CodeInfo"
 #define APP_DESC "SMC/CMC/EERS Coder/Decoder of pool information into/from RPN fields."

@@ -31,7 +31,7 @@
  */
 
 #include "App.h"
-#include "EZTile.h"
+#include "EZGrid.h"
 
 #define APP_NAME "EZTiler"
 #define APP_DESC "SMC/CMC/EERS RPN fstd field tiler."
