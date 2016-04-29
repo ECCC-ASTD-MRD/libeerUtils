@@ -31,11 +31,19 @@
  */
 #ifdef HAVE_RMN
 
+#define EZGRID_BUILD
+
 #include "App.h"
 #include "EZGrid.h"
 
+TGridYInterpMode EZGRID_YINTERP      = EZ_BARNES;               // Type of linear interpolation for Y grids
+int              EZGRID_YLINEARCOUNT = 4;                       // Number of points to use for point cloud interpolation
+int              EZGRID_YQTREESIZE   = 1000;                    // Size of the QTree index for Y grids
+int              EZGRID_MQTREEDEPTH  = 8;                       // Depth of the QTree index for M grids
+
 static pthread_mutex_t CacheMutex=PTHREAD_MUTEX_INITIALIZER;
 static TGrid          *GridCache[EZGRID_CACHEMAX];
+
 
 /*----------------------------------------------------------------------------
  * Nom      : <EZGrid_Wrap>
@@ -1680,8 +1688,8 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float La
    TQTree    *node;
    Vect3d     bary;
    float      i,j;
-   double     dx,dy,r,w,wt,dists[4];
-   int        n,nb,idxs[4];
+   double     dx,dy,r,w,wt,efact,dists[EZGRID_YLINEARCOUNT];
+   int        n,nb,idxs[EZGRID_YLINEARCOUNT];
    unsigned int idx;
    
    if (!Grid) {
@@ -1697,7 +1705,7 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float La
             EZGrid_TileGetData(Grid,t,K0,0);
          CLAMPLON(Lon);
          
-         // Find 4 nearest points
+         // Find nearest(s) points: 1 point if Mode==EZ_NEAREST or EZGRID_YLINEARCOUNT points if  Mode!=EZ_NEAREST
          nb=GeoRef_Nearest(Grid->GRef,Lon,Lat,idxs,dists,Mode==EZ_NEAREST?1:EZGRID_YLINEARCOUNT);
          
          if (nb) {
@@ -1705,16 +1713,26 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float La
                // For a single nearest, return value
                *Value+=t->Data[K0][idxs[0]];
             } else {
-               // Otherwise, do a Cressman interpolation
+               // Otherwise, interpolate
                *Value=0.0;
                wt=0;
                
                // Get search radius from farthest point
-               r=1.001*dists[nb-1];
+               r=dists[nb-1];
+               
+               if (EZGRID_YINTERP==EZ_BARNES) {
+                  // 14.2 factor determined with try-and-error tests.
+                  // This factor narrows the gaussian distribution shape(more weight for the nearest data point)
+                  efact=M_PI*14.2/(r*r);
+               }
                
                // Sum values modulated by weight
                for(n=0;n<nb;n++) {                  
-                  w=(r-dists[n])/(r+dists[n]);
+                  if (EZGRID_YINTERP==EZ_BARNES) {
+                     w=exp(-efact*(dists[n]*dists[n]));
+                  } else {
+                     w=(r-dists[n])/(r+dists[n]);
+                  }
                   wt+=w;
                   *Value+=t->Data[K0][idxs[n]]*w;
                }

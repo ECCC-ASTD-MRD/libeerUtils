@@ -41,11 +41,7 @@
 #include "QTree.h"
 #include "Triangle.h"
 
-#define EZGRID_CACHEMAX     2048
-#define EZGRID_YLINEARCOUNT 4
-#define EZGRID_YQTREESIZE   1000
-#define EZGRID_MQTREEDEPTH  8
-
+#define EZGRID_CACHEMAX 2048
 #define EZGRID_CENTER 0x0
 #define EZGRID_LEFT   0x1
 #define EZGRID_RIGHT  0x2
@@ -80,7 +76,8 @@
    } \
 }
 
-typedef enum { EZ_NEAREST, EZ_LINEAR } TGridInterpMode;
+typedef enum { EZ_NEAREST, EZ_LINEAR }  TGridInterpMode;
+typedef enum { EZ_CRESSMAN, EZ_BARNES } TGridYInterpMode;
 
 typedef struct TGridTile {
    float **Data;                        // Data pointer
@@ -118,6 +115,13 @@ typedef struct TGrid {
    TGridTile      *Tiles;                // Array of tiles
    pthread_mutex_t Mutex;                // Per grid mutex for IO
 } TGrid;
+
+#ifndef EZGRID_BUILD
+extern int              EZGRID_YLINEARCOUNT;
+extern int              EZGRID_YQTREESIZE;
+extern int              EZGRID_MQTREEDEPTH;
+extern TGridYInterpMode EZGRID_YINTERP;
+#endif
 
 TGrid *EZGrid_New();
 TGrid *EZGrid_Copy(TGrid *Master,int Level);

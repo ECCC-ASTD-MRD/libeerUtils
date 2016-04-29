@@ -273,7 +273,6 @@ TGeoRef* GeoRef_RDRSetup(double Lat,double Lon,double Height,int R,double ResR,d
    TGeoRef *ref;
 
    ref=GeoRef_New();
-   GeoRef_Size(ref,0,0,(360/ResA),R-1,0);
 
    ref->Grid[0]='R';
    ref->Loc.Lat=Lat;
