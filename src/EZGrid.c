@@ -1711,7 +1711,7 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float La
          if (nb) {
             if (nb==1) {
                // For a single nearest, return value
-               *Value+=t->Data[K0][idxs[0]];
+               *Value=t->Data[K0][idxs[0]];
             } else {
                // Otherwise, interpolate
                *Value=0.0;
