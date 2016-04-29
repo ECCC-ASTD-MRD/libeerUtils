@@ -34,7 +34,7 @@
  */
 #include "App.h"
 #include "eerUtils.h"
-#include "EZTile.h"
+#include "RPN.h"
 #include "Dict.h"
 
 #define APP_NAME    "Dict"
