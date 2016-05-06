@@ -1721,9 +1721,12 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float La
                r=dists[nb-1];
                
                if (EZGRID_YINTERP==EZ_BARNES) {
-                  // 14.2 factor determined with try-and-error tests.
+                  // 14.2 factor determined with trial-and-error tests.
                   // This factor narrows the gaussian distribution shape(more weight for the nearest data point)
                   efact=M_PI*14.2/(r*r);
+               } else {
+                  // Ensure that the weight of the farthest data point weight is not 0.0 for EZ_CRESSMAN interp. type.
+                  r=1.001*r;    
                }
                
                // Sum values modulated by weight
