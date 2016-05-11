@@ -57,8 +57,8 @@
  */
 int Codec(char *Pool,char *FST,char *Var,int Code) {
 
-   char       buf[APP_BUFMAX],*c;
-   int        fld[APP_BUFMAX],len,err,fstid,i;
+   char       buf[APP_BUFMAX*8],*c;
+   int        fld[APP_BUFMAX*8],len,err,fstid,i;
    FILE      *fid=NULL;
    TRPNHeader h;
 
@@ -69,7 +69,7 @@ int Codec(char *Pool,char *FST,char *Var,int Code) {
       }
 
       // Get the pool line
-      c=fgets(buf,APP_BUFMAX,fid);
+      c=fgets(buf,APP_BUFMAX*8,fid);
 
       // Get rid of trailing spaces
       strtrim(buf,' ');

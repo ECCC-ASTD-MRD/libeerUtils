@@ -87,7 +87,7 @@ struct TcpState {
 
 int TclY_Get0IntFromObj(Tcl_Interp *Interp,Tcl_Obj *Obj,int *Var) {
 
-   if (Tcl_GetString(Obj)[0]=='0') {
+   if (Tcl_GetString(Obj)[0]=='0' && Tcl_GetString(Obj)[1]!='.') {
        sscanf(Tcl_GetString(Obj),"%d",Var);
        return(TCL_OK);
    } else {
@@ -97,7 +97,7 @@ int TclY_Get0IntFromObj(Tcl_Interp *Interp,Tcl_Obj *Obj,int *Var) {
 
 int TclY_Get0LongFromObj(Tcl_Interp *Interp,Tcl_Obj *Obj,long *Var) {
 
-   if (Tcl_GetString(Obj)[0]=='0') {
+   if (Tcl_GetString(Obj)[0]=='0' && Tcl_GetString(Obj)[1]!='.') {
        sscanf(Tcl_GetString(Obj),"%ld",Var);
        return(TCL_OK);
    } else {
