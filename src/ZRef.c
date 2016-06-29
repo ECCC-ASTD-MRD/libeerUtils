@@ -296,6 +296,8 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
      return(1);
    }
 
+   memset(&h,0,sizeof(TRPNHeader));
+   
 #ifdef HAVE_RMN
 
    RPN_FieldLock();

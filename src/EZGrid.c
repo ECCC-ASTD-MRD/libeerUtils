@@ -712,6 +712,8 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
    int        n,ni,nj,nk,key;
    int        idlst[RPNMAX];
    
+   memset(&h,0,sizeof(TRPNHeader));
+
    /*Check for master grid descriptor*/
    if (Grid->H.GRTYP[0]=='#') {
       key=cs_fstinf(Grid->H.FID,&Grid->H.NI,&h.NJ,&h.NK,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"",">>");
@@ -992,14 +994,12 @@ TGrid *EZGrid_New(void) {
       new->GRef=NULL;
       new->Wrap=0;
       new->Halo=0;
-      new->H.NI=0;
-      new->H.NJ=0;
-      new->H.NK=0;
-      new->H.NIJ=0;
       new->IP1=new->IP2=new->IP3=0;
       new->NTI=new->NTJ=0;
       new->NbTiles=0;
       new->Tiles=NULL;
+      
+      memset(&new->H,0,sizeof(TRPNHeader));
       new->H.FID=-1;
    }
    return(new);
