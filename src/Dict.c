@@ -392,7 +392,7 @@ int Dict_Parse(char *Filename,TDict_Encoding Encoding) {
       node=node->next;
    }
 
-    xmlFreeDtd(dtd);
+//    xmlFreeDtd(dtd);
     xmlFreeDoc(doc);
 
     return(ok);

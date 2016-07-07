@@ -59,6 +59,9 @@
 #define LVL_IDX         17  //  Index de matrice
 #define LVL_MPRES       21  //  Metres-pression
 
+#define MB2PA           100.0f           // Constant for converting pressure from [mb] to [Pa]
+#define PA2MB           0.01f            // Constant for converting pressure from [Pa] to [mb]
+
 #define PRESS2METER(LVL) (LVL>0?-8409.1*log(LVL)/1200.0:0)
 #define SIGMA2METER(LVL) (LVL>0?-8409.1*log(LVL):0)
 #define ETA2METER(LVL)   (-8409.1*log(LVL+1e-32))
@@ -69,25 +72,26 @@ typedef enum { DEFAULT=1,NEW=2,OLD=3 } TZRef_IP1Mode;
 
 // Vertical referential definition
 typedef struct TZRef {
-   char  *Name;          // Reference name
-   int    NRef;          // Reference count
-   int    Version;       // Version
-   int    Type;          // Type of levels
-   float *Levels;        // Levels list
-   int    LevelNb;       // Number of Levels
-   float  POff;          // Pressure offset from level
-   float  PTop;          // Pressure at top of atmosphere
-   float  PRef;          // Reference pressure
-   float  RCoef[2];      // Hybrid level coefficient
-   float  ETop;          // Eta coordinate a top
-   float  *A,*B;         // Pressure calculation factors
-   float  *P0;           // Pressure at surface
-   float  *PCube;        // 3D Pressure cube
+   char  *Name;           // Reference name
+   int    NRef;           // Reference count
+   int    Version;        // Version
+   int    Type;           // Type of levels
+   float *Levels;         // Levels list
+   int    LevelNb;        // Number of Levels
+   float  POff;           // Pressure offset from level
+   float  PTop;           // Pressure at top of atmosphere
+   float  PRef;           // Reference pressure
+   float  RCoef[2];       // Hybrid level coefficient
+   float  ETop;           // Eta coordinate a top
+   float  *A,*B;          // Pressure calculation factors
+   float  *P0;            // Pressure at surface
+   float  *PCube;         // 3D Pressure cube
 
-   TZRef_IP1Mode Style;  // IP style
+   char  *VGD; // VGrid descriptor
+   TZRef_IP1Mode Style;   // IP style
 
 #ifdef HAVE_RPNC   
-   int NC_Id,NC_NZDimId; // netCDF identifiers
+   int NC_Id,NC_NZDimId;  // netCDF identifiers
 #endif
 } TZRef;
 

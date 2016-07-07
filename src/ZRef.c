@@ -36,6 +36,7 @@
 #include "RPN.h"
 #include "eerUtils.h"
 #include "ZRef.h"
+#include "vgrid.h"
 
 static float       *ZRef_Levels   = NULL;
 static unsigned int ZRef_LevelsNb = 0;
@@ -83,6 +84,7 @@ TZRef* ZRef_New(void) {
       App_Log(ERROR,"%s: Unable to allocate memory\n",__func__);
    }
    
+   zref->VGD=NULL;
    zref->Levels=NULL;
    zref->Style=NEW;
    zref->Type=LVL_UNDEF;
@@ -160,12 +162,13 @@ int ZRef_Free(TZRef *ZRef) {
 
    if (ZRef && !ZRef_Decr(ZRef)) {
 
-      if (ZRef->Levels) free(ZRef->Levels); ZRef->Levels=NULL;
-      if (ZRef->A)      free(ZRef->A);      ZRef->A=NULL;
-      if (ZRef->B)      free(ZRef->B);      ZRef->B=NULL;
+      if (ZRef->VGD)    Cvgd_free((vgrid_descriptor**)&ZRef->VGD); ZRef->VGD=NULL;
+      if (ZRef->Levels) free(ZRef->Levels);    ZRef->Levels=NULL;
+      if (ZRef->A)      free(ZRef->A);         ZRef->A=NULL;
+      if (ZRef->B)      free(ZRef->B);         ZRef->B=NULL;
 // P0 is owned by other packages
 //      if (ZRef->P0)     free(ZRef->P0);     ZRef->P0=NULL;
-      if (ZRef->PCube)  free(ZRef->PCube);  ZRef->PCube=NULL;
+      if (ZRef->PCube)  free(ZRef->PCube);     ZRef->PCube=NULL;
 
       ZRef->Version=-1;
       ZRef->LevelNb=0;
@@ -194,6 +197,9 @@ int ZRef_Equal(TZRef *ZRef0,TZRef *ZRef1) {
 
    if (!ZRef0 || !ZRef1)
       return(0);
+      
+   if (ZRef0->VGD && ZRef1->VGD)
+      return(!Cvgd_vgdcmp((vgrid_descriptor*)ZRef0->VGD,(vgrid_descriptor*)ZRef1->VGD));
       
    if ((ZRef0->LevelNb!=ZRef1->LevelNb) || (ZRef0->Type!=ZRef1->Type) || (ZRef0->Levels && memcmp(ZRef0->Levels,ZRef1->Levels,ZRef0->LevelNb*sizeof(float))!=0))
       return(0);
@@ -302,7 +308,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
 
    RPN_FieldLock();
 
-   // Check for toctoc (field !!)
+   // Check for toctoc (field !!)   
    key=c_fstinf(Unit,&h.NI,&h.NJ,&h.NK,-1,"",-1,-1,-1,"X","!!");
    if (key>=0) {
       cd=c_fstprm(key,&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&h.NK,&h.NBITS,&h.DATYP,&h.IP1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,h.GRTYP,&h.IG1,
@@ -319,6 +325,11 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
          if (!ZRef->A) ZRef->A=(float*)malloc(ZRef->LevelNb*sizeof(float));
          if (!ZRef->B) ZRef->B=(float*)malloc(ZRef->LevelNb*sizeof(float));
 
+         if (Cvgd_new_read((vgrid_descriptor**)&ZRef->VGD,Unit,-1,-1,-1,-1)==VGD_ERROR) {
+            App_Log(ERROR,"%s: Unable to initialize vgrid descriptor.\n",__func__);
+            return(0);
+         }
+                  
          cd=c_fstluk(buf,key,&h.NI,&h.NJ,&h.NK);
          if (cd>=0) {
 
@@ -568,49 +579,7 @@ int ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Order) {
  */
 double ZRef_K2Pressure(TZRef* restrict const ZRef,double P0,int K) {
 
-   double pres=-1.0,pref,ptop,rtop;
-
-   pref=ZRef->PRef;
-   ptop=ZRef->PTop;
-
-   switch(ZRef->Version) {
-      case -1:
-      case 0:
-         switch(ZRef->Type) {
-            case LVL_PRES:
-               pres=ZRef->Levels[K];
-               break;
-
-            case LVL_SIGMA:
-               pres=P0*ZRef->Levels[K];
-               break;
-
-            case LVL_ETA:
-               pres=ptop+(P0-ptop)*ZRef->Levels[K];
-               break;
-
-            case LVL_HYBRID:
-               rtop=ptop/pref;
-               pres=pref*ZRef->Levels[K]+(P0-pref)*pow((ZRef->Levels[K]-rtop)/(1.0-rtop),ZRef->RCoef[0]);
-               break;
-
-            default:
-               App_Log(ERROR,"%s: Invalid level type (%i)\n",__func__,ZRef->Type);
-         }
-         break;
-
-      case 1001: pres=ZRef->B[K]*P0; break;                                      // Sigma
-      case 1002:                                                                 // Eta
-      case 1003:                                                                 // Hybrid normalized
-      case 5001: pres=(ZRef->A[K]+ZRef->B[K]*P0*100)*0.01; break;                // Hybrid
-      case 2001: pres=ZRef->A[K]*0.01; break;                                    // Pressure
-      case 5002:                                                                 // Hybrid momentum
-      case 5003: pres=exp(ZRef->A[K]+ZRef->B[K]*log(P0/pref))*0.01; break;       // Hybrid momentum
-      default:
-         App_Log(ERROR,"%s: Invalid level version (%i)\n",__func__,ZRef->Version);
-   }
-
-   return(pres+ZRef->POff);
+   return(ZRef_Level2Pressure(ZRef,P0,ZRef->Levels[K]));
 }
 
 /*----------------------------------------------------------------------------
@@ -635,7 +604,8 @@ double ZRef_K2Pressure(TZRef* restrict const ZRef,double P0,int K) {
 int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,float *Pres) {
 
    unsigned int k,idxk=0,ij;
-   float        pref,ptop;
+   int          *ips;
+   float        pref,ptop,*p0;
 
    if (!P0 && ZRef->Type!=LVL_PRES) {
       App_Log(ERROR,"%s: Surface pressure is required\n",__func__);
@@ -680,57 +650,42 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
 
             case LVL_UNDEF:
                for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
-                  for (ij=0;ij<NIJ;ij++) {
+                 for (ij=0;ij<NIJ;ij++) {
                      Pres[idxk+ij]=P0[idxk+ij];
                   }
-               }
+                }
                break;
+               
             default:
                App_Log(ERROR,"%s: Invalid level type (%i)\n",__func__,ZRef->Type);
+               return(0);
          }
          break;
 
-      case 1001:                                                      // Sigma
-         for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
-            for (ij=0;ij<NIJ;ij++) {
-               Pres[idxk+ij]=ZRef->B[k]*P0[ij];
-            }
+      default: 
+         ips=malloc(ZRef->LevelNb*sizeof(int));
+         for (k=0;k<ZRef->LevelNb;k++) {
+            ips[k]=ZRef_Level2IP(ZRef->Levels[k],ZRef->Type,ZRef->Style);
          }
-         break;
-
-      case 1002:                                                      // Eta
-      case 1003:                                                      // Hybrid normalized
-      case 5001:                                                      // Hybrid
-         for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
-            for (ij=0;ij<NIJ;ij++) {
-               Pres[idxk+ij]=(ZRef->A[k]+ZRef->B[k]*P0[ij]*100.0f)*0.01f;
-            }
+         
+         // Really not ooptimal but Cvgd needs pascals
+         p0=(float*)malloc(NIJ*sizeof(float));
+         for (ij=0;ij<NIJ;ij++) {
+            p0[ij]=P0[ij]*MB2PA;
          }
-         break;
-
-      case 2001:                                                      // Pressure
-         for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
-            for (ij=0;ij<NIJ;ij++) {
-               Pres[idxk+ij]=ZRef->A[k]*0.01f;
-            }
+         
+         if (Cvgd_levels((vgrid_descriptor*)ZRef->VGD,NIJ,1,ZRef->LevelNb,ips,Pres,p0,0)) {
+            App_Log(ERROR,"%s: Problems in Cvgd_levels\n",__func__);
+            return(0);
          }
-         break;
-      case 5002:                                                     // Hybrid momentum
-      case 5003:                                                     // Hybrid momentum
-         for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
-            for (ij=0;ij<NIJ;ij++) {
-               Pres[idxk+ij]=exp(ZRef->A[k]+ZRef->B[k]*log(P0[ij]/pref))*0.01f;
-            }
-         }
-         break;
-
-      default:
-         App_Log(ERROR,"%s: Invalid level type (%i)\n",__func__,ZRef->Type);
+         for (ij=0;ij<NIJ*ZRef->LevelNb;ij++) Pres[ij]*=PA2MB;
+         free(ips);
+         free(p0);
    }
    
    if (ZRef->POff!=0.0) for (ij=0;ij<NIJ*ZRef->LevelNb;ij++) Pres[ij]+=ZRef->POff;
    if (Log)             for (ij=0;ij<NIJ*ZRef->LevelNb;ij++) Pres[ij]=log(Pres[ij]);
-
+   
    return(1);
 }
 
@@ -828,63 +783,50 @@ int ZRef_KCube2Meter(TZRef* restrict const ZRef,float *GZ,const int NIJ,float *H
  */
 double ZRef_Level2Pressure(TZRef* restrict const ZRef,double P0,double Level) {
 
-   double pres=-1.0,pref,ptop,rtop,f,f0,f1;
-   int    z,z0,z1,o;
+   double pres=-1.0,p0,pref,ptop,rtop;
+   int    ip;
 
    pref=ZRef->PRef;
    ptop=ZRef->PTop;
 
-   switch(ZRef->Type) {
-      case LVL_PRES:
-         pres=Level;
-         break;
+   switch(ZRef->Version) {
+      case -1:
+      case 0:
+         switch(ZRef->Type) {
+            case LVL_PRES:
+               pres=Level;
+               break;
 
-      case LVL_SIGMA:
-         pres=P0*Level;
-         break;
+            case LVL_SIGMA:
+               pres=P0*Level;
+               break;
 
-      case LVL_ETA:
-         pres=ptop+(P0-ptop)*Level;
-         break;
+            case LVL_ETA:
+               pres=ptop+(P0-ptop)*Level;
+               break;
 
-      case LVL_HYBRID:
-         //TODO need to add analytical function for GEM4 type
-         if (ZRef->Version==5002) {
-            // Check for level ordering
-            o=(ZRef->Levels[0]<ZRef->Levels[ZRef->LevelNb-1]);
+            case LVL_HYBRID:
+               rtop=ptop/pref;
+               pres=pref*Level+(P0-pref)*pow((Level-rtop)/(1.0-rtop),ZRef->RCoef[0]);
+               break;
 
-            // Find enclosing levels
-            for(z=0;z<ZRef->LevelNb;z++) {
-               if ((o && Level<=ZRef->Levels[z]) || (!o && Level>=ZRef->Levels[z])) {
-                  z1=o?z:(z>0?z-1:z);
-                  z0=o?(z>0?z-1:z):z;
-                  break;
-               }
-            }
-            if (z==ZRef->LevelNb) {
-               App_Log(ERROR,"%s: Level not in range ([%f,%f])\n",__func__,ZRef->Levels[0],ZRef->Levels[ZRef->LevelNb-1]);
-            }
-
-            // Interpolate between levels (in log(p))
-            pref=log(P0/pref);
-            if (z0==z1) {
-               pres=exp(ZRef->A[z0]+ZRef->B[z0]*pref)*0.01;
-            } else {
-               f=ZRef->Levels[z1]-Level;
-               f0=ZRef->A[z0]+ZRef->B[z0]*pref;
-               f1=ZRef->A[z1]+ZRef->B[z1]*pref;
-               pres=exp(ILIN(f0,f1,f))*0.01;
-            }
-         } else {
-            rtop=ptop/pref;
-            pres=pref*Level+(P0-pref)*pow((Level-rtop)/(1.0-rtop),ZRef->RCoef[0]);
+            default:
+               App_Log(ERROR,"%s: Invalid level type (%i)\n",__func__,ZRef->Type);
+               return(0);
          }
          break;
 
-      default:
-         App_Log(ERROR,"%s: Invalid level type (%i)\n",__func__,ZRef->Type);
+      default: 
+         ip=ZRef_Level2IP(Level,ZRef->Type,ZRef->Style);
+         p0=P0*MB2PA;
+         if (Cvgd_levels_8((vgrid_descriptor*)ZRef->VGD,1,1,1,&ip,&pres,&p0,0)) {
+            App_Log(ERROR,"%s: Problems in Cvgd_levels_8\n",__func__);
+            return(0);
+         }
+         pres*=PA2MB;
    }
-   return(pres);
+   
+   return(pres+ZRef->POff);
 }
 
 /*----------------------------------------------------------------------------

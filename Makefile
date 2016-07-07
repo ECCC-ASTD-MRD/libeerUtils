@@ -1,6 +1,6 @@
 NAME       = eerUtils
 DESC       = SMC-CMC-CMOE Utility librairie package.
-VERSION    = 3.0.2
+VERSION    = 3.1.0
 MAINTAINER = $(USER)
 OS         = $(shell uname -s)
 PROC       = $(shell uname -m | tr _ -)
@@ -24,7 +24,7 @@ INCLUDES    := -I$(LIB_DIR)/include -I$(shell echo $(EC_INCLUDE_PATH) | sed 's/\
 
 ifeq ($(OS),Linux)
 
-   LIBS        := $(LIBS) -Wl,-rpath-link $(LIB_DIR)/lib -lxml2 -lgdal -lnetcdf -lz -lezscint -lrmneer
+   LIBS        := $(LIBS) -Wl,-rpath-link $(LIB_DIR)/lib -lxml2 -lgdal -lnetcdf -lz -lezscint -lrmneer -ldescrip $(LIB_DIR)/lib/libintlc.so.5   
    INCLUDES    := -Isrc -I/usr/include/libxml2 -I$(LIB_DIR)/include/libxml2 -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic  $(INCLUDES)
 
 #   CC          = mpicc
@@ -32,7 +32,7 @@ ifeq ($(OS),Linux)
    CC          = s.cc
    AR          = ar rv
    LD          = ld -shared -x
-   LINK_EXEC   = -lm -lpthread
+   LINK_EXEC   = -lm -lpthread 
  
    CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer -DHAVE_GDAL
    ifdef OMPI
@@ -61,7 +61,7 @@ else
 
    AR          = ar rv
    LD          = ld
-   LINK_EXEC   = -lxlf90 -lxlsmp -lpthread -lm
+   LINK_EXEC   = -lxlf90 -lxlsmp -lpthread -lm 
 
    CCOPTIONS   = -std=c99 -O3 -qtls -qnohot -qstrict -Q -v -qkeyword=restrict -qcache=auto -qtune=auto -qarch=auto -qinline 
    ifdef OMPI
@@ -93,13 +93,19 @@ obj: $(OBJ_C) $(OBJ_F)
 lib: obj
 	mkdir -p ./lib
 	mkdir -p ./include
-	$(AR) lib/libeerUtils$(OMPI)-$(VERSION).a $(OBJ_C) $(OBJ_F)
+	
+	# Need to include vgrid archive
+	cd src;	ar x ${VGRIDDESCRIPTORS_SRC}/../lib/libdescrip.a
+	$(AR) lib/libeerUtils$(OMPI)-$(VERSION).a $(OBJ_C) $(OBJ_F) src/utils.o src/vgrid.o src/vgrid_descriptors.o
+	
+#	$(AR) lib/libeerUtils$(OMPI)-$(VERSION).a $(OBJ_C) $(OBJ_F)
 	ln -fs libeerUtils$(OMPI)-$(VERSION).a lib/libeerUtils$(OMPI).a
 
 #	@if test "$(OS)" != "AIX"; then \
-#	   $(CC) -shared -Wl,-soname,libeerUtils-$(VERSION).so -o lib/libeerUtils$(OMPI)-$(VERSION).so $(OBJ_C) $(OBJ_T) $(CFLAGS) $(LIBS) $(LINK_EXEC); \
-#	   ln -fs  libeerUtils$(OMPI)-$(VERSION).so lib/libeerUtils.so; \
+#	   $(CC) -shared -Wl,-soname,libeerUtils_shared-$(VERSION).so -o lib/libeerUtils_shared$(OMPI)-$(VERSION).so $(OBJ_C) $(OBJ_T) $(CFLAGS) $(LIBS); \
+#	   ln -fs  libeerUtils_shared$(OMPI)-$(VERSION).so lib/libeerUtils_shared$(OMPI).so; \
 #	fi
+
 	cp $(CPFLAGS) ./src/*.h ./include
 
 exec: obj 

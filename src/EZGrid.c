@@ -1699,94 +1699,159 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float La
    
    switch(Grid->H.GRTYP[0]) {
       case 'Y': // This is a point cloud
-         
-         t=&Grid->Tiles[0];
-         if (!EZGrid_IsLoaded(t,K0))
-            EZGrid_TileGetData(Grid,t,K0,0);
-         CLAMPLON(Lon);
-         
-         // Find nearest(s) points: 1 point if Mode==EZ_NEAREST or EZGRID_YLINEARCOUNT points if  Mode!=EZ_NEAREST
-         nb=GeoRef_Nearest(Grid->GRef,Lon,Lat,idxs,dists,Mode==EZ_NEAREST?1:EZGRID_YLINEARCOUNT);
-         
-         if (nb) {
-            if (nb==1) {
-               // For a single nearest, return value
-               *Value=t->Data[K0][idxs[0]];
-            } else {
-               // Otherwise, interpolate
-               *Value=0.0;
-               wt=0;
-               
-               // Get search radius from farthest point
-               r=dists[nb-1];
-               
-               if (EZGRID_YINTERP==EZ_BARNES) {
-                  // 14.2 factor determined with trial-and-error tests.
-                  // This factor narrows the gaussian distribution shape(more weight for the nearest data point)
-                  efact=M_PI*14.2/(r*r);
-               } else {
-                  // Ensure that the weight of the farthest data point weight is not 0.0 for EZ_CRESSMAN interp. type.
-                  r=1.001*r;    
-               }
-               
-               // Sum values modulated by weight
-               for(n=0;n<nb;n++) {                  
-                  if (EZGRID_YINTERP==EZ_BARNES) {
-                     w=exp(-efact*(dists[n]*dists[n]));
-                  } else {
-                     w=(r-dists[n])/(r+dists[n]);
-                  }
-                  wt+=w;
-                  *Value+=t->Data[K0][idxs[n]]*w;
-               }
-               *Value/=wt;
-            }
-            
-            return(TRUE);            
-         }            
+         return(EZGrid_LLGetValueY(Grid,NULL,Mode,Lat,Lon,K0,K1,Value,NULL,1.0));
          break;
          
       case 'M': // This is a triangle mesh
-         
-         t=&Grid->Tiles[0];
-         if (!EZGrid_IsLoaded(t,K0))
-            EZGrid_TileGetData(Grid,t,K0,0);
-         CLAMPLON(Lon);
-
-         // Find enclosing triangle
-         if ((node=QTree_Find(Grid->GRef->QTree,Lon,Lat)) && node->NbData) {
-
-            // Loop on this nodes data payload
-            for(n=0;n<node->NbData;n++) {
-               idx=(unsigned int)node->Data[n].Ptr-1; // Remove false pointer increment
-               idxs[0]=Grid->GRef->Idx[idx];
-               idxs[1]=Grid->GRef->Idx[idx+1];
-               idxs[2]=Grid->GRef->Idx[idx+2];
-               
-               // if the Barycentric coordinates are within this triangle, get its interpolated value
-               if (Bary_Get(bary,Lon,Lat,Grid->GRef->AX[idxs[0]],Grid->GRef->AY[idxs[0]],Grid->GRef->AX[idxs[1]],Grid->GRef->AY[idxs[1]],Grid->GRef->AX[idxs[2]],Grid->GRef->AY[idxs[2]])) {
-                  if (Mode==EZ_NEAREST) {
-                     *Value=t->Data[K0][(bary[0]>bary[1]?(bary[0]>bary[2]?0:2):(bary[1]>bary[2]?1:2))];
-                  } else {
-                     *Value=Bary_Interp(bary,t->Data[K0][idxs[0]],t->Data[K0][idxs[1]],t->Data[K0][idxs[2]]);    
-                  }
-                  return(TRUE);
-               }
-            }
-         }
+         return(EZGrid_LLGetValueM(Grid,NULL,Mode,Lat,Lon,K0,K1,Value,NULL,1.0));
          break;
-         
+                  
       default: // This is a regular RPN grid
          
          // RPN_IntLock();
          c_gdxyfll(Grid->GID,&i,&j,&Lat,&Lon,1);
          // RPN_IntUnlock();
 
-         return(EZGrid_IJGetValue(Grid,Mode,i-1.0f,j-1.0f,K0,K1,Value));
-         
+         return(EZGrid_IJGetValue(Grid,Mode,i-1.0f,j-1.0f,K0,K1,Value));         
    }
    
    return(FALSE);
+}
+
+int EZGrid_LLGetValueY(TGrid* __restrict const GridU,TGrid* __restrict const GridV,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* __restrict UU,float* __restrict VV,float Conv) {
+
+   TGridTile *tu,*tv;
+   double     r,wt,efact,dists[EZGRID_YLINEARCOUNT],w[EZGRID_YLINEARCOUNT];
+   int        k,ik=0,n,nb=-1,idxs[EZGRID_YLINEARCOUNT];
+   
+   if (!GridU || GridU->H.GRTYP[0]!='Y') {
+      App_Log(ERROR,"%s: Invalid grid\n",__func__);
+      return(FALSE);
+   }
+   
+   CLAMPLON(Lon);
+   
+   // Find nearest(s) points: 1 point if Mode==EZ_NEAREST or EZGRID_YLINEARCOUNT points if  Mode!=EZ_NEAREST
+   if (!(nb=GeoRef_Nearest(GridU->GRef,Lon,Lat,idxs,dists,Mode==EZ_NEAREST?1:EZGRID_YLINEARCOUNT))) {
+      return(FALSE);
+   }
+   
+   if (nb>1) {
+      // Get search radius from farthest point
+      r=dists[nb-1];
+      
+      if (EZGRID_YINTERP==EZ_BARNES) {
+         // 14.2 factor determined with trial-and-error tests.
+         // This factor narrows the gaussian distribution shape(more weight for the nearest data point)
+         efact=M_PI*14.2/(r*r);
+      } else {
+         // Ensure that the weight of the farthest data point weight is not 0.0 for EZ_CRESSMAN interp. type.
+         r=1.001*r;    
+      }
+      
+      // Calculate modulated weight
+      wt=0;
+      for(n=0;n<nb;n++) {                  
+         if (EZGRID_YINTERP==EZ_BARNES) {
+            w[n]=exp(-efact*(dists[n]*dists[n]));
+         } else {
+            w[n]=(r-dists[n])/(r+dists[n]);
+         }
+         wt+=w[n];
+      }
+   }
+   
+   tu=tv=NULL;
+   k=K0;
+   do {
+                   tu=&GridU->Tiles[0]; if (!EZGrid_IsLoaded(tu,k)) EZGrid_TileGetData(GridU,tu,k,0);
+      if (GridV) { tv=&GridV->Tiles[0]; if (!EZGrid_IsLoaded(tv,k)) EZGrid_TileGetData(GridV,tv,k,0); }
+            
+      if (nb==1) {
+         // For a single nearest, return value
+                 UU[ik]=tu->Data[k][idxs[0]];
+         if (tv) VV[ik]=tv->Data[k][idxs[0]];
+      } else {
+         // Otherwise, interpolate
+                 UU[ik]=0.0;
+         if (tv) VV[ik]=0.0;
+         
+         
+         // Sum values modulated by weight
+         for(n=0;n<nb;n++) {                  
+                    UU[ik]+=tu->Data[k][idxs[n]]*w[n];
+            if (tv) VV[ik]+=tv->Data[k][idxs[n]]*w[n];
+         }
+                 UU[ik]/=wt;
+         if (tv) VV[ik]/=wt;
+      }
+      
+      if (Conv!=1.0) {
+                 UU[ik]*=Conv;
+         if (tv) VV[ik]*=Conv;         
+      }
+      ik++;
+   } while ((K0<=K1?k++:k--)!=K1);
+                
+   return(TRUE);  
+}
+
+int EZGrid_LLGetValueM(TGrid* __restrict const GridU,TGrid* __restrict const GridV,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* __restrict UU,float* __restrict VV,float Conv) {
+
+   TGridTile *tu,*tv;
+   int        k,ik=0;
+   TQTree    *node;
+   TGeoRef   *gref;
+   Vect3d     bary;
+   int        n,idxs[EZGRID_YLINEARCOUNT];
+   unsigned int idx;
+   
+   if (!GridU || GridU->H.GRTYP[0]!='M') {
+      App_Log(ERROR,"%s: Invalid grid\n",__func__);
+      return(FALSE);
+   }
+   
+   CLAMPLON(Lon);
+   
+   // Find enclosing triangle
+   gref=GridU->GRef;
+   if ((node=QTree_Find(gref->QTree,Lon,Lat)) && node->NbData) {
+      // Loop on this nodes data payload
+      for(n=0;n<node->NbData;n++) {
+         idx=(unsigned int)node->Data[n].Ptr-1; // Remove false pointer increment
+         idxs[0]=gref->Idx[idx];
+         idxs[1]=gref->Idx[idx+1];
+         idxs[2]=gref->Idx[idx+2];
+         
+         // if the Barycentric coordinates are within this triangle, get its interpolated value
+         if (Bary_Get(bary,Lon,Lat,gref->AX[idxs[0]],gref->AY[idxs[0]],gref->AX[idxs[1]],gref->AY[idxs[1]],gref->AX[idxs[2]],gref->AY[idxs[2]])) {
+            break;
+         }
+      }
+     
+      tu=tv=NULL;
+      k=K0;
+      do {
+                      tu=&GridU->Tiles[0]; if (!EZGrid_IsLoaded(tu,k)) EZGrid_TileGetData(GridU,tu,k,0);
+         if (GridV) { tv=&GridV->Tiles[0]; if (!EZGrid_IsLoaded(tv,k)) EZGrid_TileGetData(GridV,tv,k,0); }
+               
+         if (Mode==EZ_NEAREST) {
+                    UU[ik]=tu->Data[k][(bary[0]>bary[1]?(bary[0]>bary[2]?0:2):(bary[1]>bary[2]?1:2))];
+            if (tv) VV[ik]=tv->Data[k][(bary[0]>bary[1]?(bary[0]>bary[2]?0:2):(bary[1]>bary[2]?1:2))];
+         } else {
+                    UU[ik]=Bary_Interp(bary,tu->Data[k][idxs[0]],tu->Data[k][idxs[1]],tu->Data[k][idxs[2]]);    
+            if (tv) VV[ik]=Bary_Interp(bary,tv->Data[k][idxs[0]],tv->Data[k][idxs[1]],tv->Data[k][idxs[2]]);    
+         }
+                  
+         if (Conv!=1.0) {
+                    UU[ik]*=Conv;
+            if (tv) VV[ik]*=Conv;         
+         }
+         ik++;
+      } while ((K0<=K1?k++:k--)!=K1);
+   }
+                
+   return(TRUE);  
 }
 
 /*----------------------------------------------------------------------------
@@ -1814,10 +1879,10 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float La
  *   - Cette fonction permet de recuperer un profile
  *----------------------------------------------------------------------------
 */
-wordint f77name(ezgrid_llgetuvvalue)(wordint *gdidu,wordint *gdidv,wordint *mode,ftnfloat *lat,ftnfloat *lon,wordint *k0,wordint *k1,ftnfloat *uu,ftnfloat *vv) {
-   return(EZGrid_LLGetUVValue(GridCache[*gdidu],GridCache[*gdidv],*mode,*lat,*lon,*k0-1,*k1-1,uu,vv));
+wordint f77name(ezgrid_llgetuvvalue)(wordint *gdidu,wordint *gdidv,wordint *mode,ftnfloat *lat,ftnfloat *lon,wordint *k0,wordint *k1,ftnfloat *uu,ftnfloat *vv,ftnfloat *conv) {
+   return(EZGrid_LLGetUVValue(GridCache[*gdidu],GridCache[*gdidv],*mode,*lat,*lon,*k0-1,*k1-1,uu,vv,*conv));
 }
-int EZGrid_LLGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const GridV,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* __restrict UU,float* __restrict VV) {
+int EZGrid_LLGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const GridV,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* __restrict UU,float* __restrict VV,float Conv) {
 
    float i,j;
 
@@ -1826,11 +1891,25 @@ int EZGrid_LLGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const Gr
       return(FALSE);
    }
 
-//   RPN_IntLock();
-   c_gdxyfll(GridU->GID,&i,&j,&Lat,&Lon,1);
-//   RPN_IntUnlock();
+   switch(GridU->H.GRTYP[0]) {
+      case 'Y': // This is a point cloud
+         return(EZGrid_LLGetValueY(GridU,GridV,Mode,Lat,Lon,K0,K1,UU,VV,Conv));
+         break;
+         
+      case 'M': // This is a triangle mesh
+         return(EZGrid_LLGetValueM(GridU,GridV,Mode,Lat,Lon,K0,K1,UU,VV,Conv));
+         break;
+                  
+      default: // This is a regular RPN grid
+         
+         // RPN_IntLock();
+         c_gdxyfll(GridU->GID,&i,&j,&Lat,&Lon,1);
+         // RPN_IntUnlock();
 
-   return(EZGrid_IJGetUVValue(GridU,GridV,Mode,i-1.0f,j-1.0f,K0,K1,UU,VV));
+         return(EZGrid_IJGetUVValue(GridU,GridV,Mode,i-1.0f,j-1.0f,K0,K1,UU,VV,Conv));
+   }
+   
+   return(FALSE);
 }
 
 /*----------------------------------------------------------------------------
@@ -1867,7 +1946,7 @@ int EZGrid_IJGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float I,
    int        i,j,k,ik=0,idx,idxj,idxw,idxwj,wrap=0;
    float      dx,dy,d[4];
 
-   if (!Grid) {
+   if (!Grid || Grid->GID<0) {
       App_Log(ERROR,"%s: Invalid grid\n",__func__);
       return(FALSE);
    }
@@ -2038,16 +2117,16 @@ int EZGrid_Interp(TGrid* __restrict const To, TGrid* __restrict const From) {
  *   - Cette fonction permet de recuperer un profile
  *----------------------------------------------------------------------------
 */
-wordint f77name(ezgrid_ijgetuvvalue)(wordint *gdidu,wordint *gdidv,wordint *mode,ftnfloat *i,ftnfloat *j,wordint *k0,wordint *k1,ftnfloat *uu,ftnfloat *vv) {
-   return(EZGrid_IJGetUVValue(GridCache[*gdidu],GridCache[*gdidv],*mode,*i-1,*j-1,*k0-1,*k1-1,uu,vv));
+wordint f77name(ezgrid_ijgetuvvalue)(wordint *gdidu,wordint *gdidv,wordint *mode,ftnfloat *i,ftnfloat *j,wordint *k0,wordint *k1,ftnfloat *uu,ftnfloat *vv,ftnfloat *conv) {
+   return(EZGrid_IJGetUVValue(GridCache[*gdidu],GridCache[*gdidv],*mode,*i-1,*j-1,*k0-1,*k1-1,uu,vv,*conv));
 }
-int EZGrid_IJGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const GridV,TGridInterpMode Mode,float I,float J,int K0,int K1,float *UU,float* __restrict VV) {
+int EZGrid_IJGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const GridV,TGridInterpMode Mode,float I,float J,int K0,int K1,float *UU,float* __restrict VV,float Conv) {
 
    TGridTile *tu,*tv;
    double     d,v;
    int        ik=0,k;
 
-   if (!GridU || !GridV) {
+   if (!GridU || !GridV || GridU->GID<0 || GridV->GID<0) {
       App_Log(ERROR,"%s: Invalid grid\n",__func__);
       return(FALSE);
    }
@@ -2083,7 +2162,7 @@ int EZGrid_IJGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const Gr
 //      RPN_IntUnlock();
 
       d=DEG2RAD(VV[ik]);
-      v=UU[ik]*0.515f;
+      v=UU[ik]*Conv;
 
       UU[ik]=-v*sin(d);
       VV[ik]=-v*cos(d);
