@@ -557,16 +557,13 @@ void App_PrintArgs(TApp_Arg *AArgs,char *Token,int Flags) {
    }
 
    // Process default argument
-   if (Flags&APP_ARGSSEED) {
-      printf("\n\t-%s, --%-15s %s","s", "seed",     "Seed (FIXED,"APP_COLOR_GREEN"VARIABLE"APP_COLOR_RESET" or seed)");
-   }
+   if (Flags&APP_ARGSSEED)   printf("\n\t-%s, --%-15s %s","s", "seed",     "Seed (FIXED,"APP_COLOR_GREEN"VARIABLE"APP_COLOR_RESET" or seed)");
+   if (Flags&APP_ARGSTHREAD) printf("\n\t-%s, --%-15s %s","t", "threads",     "Number of threads ("APP_COLOR_GREEN"0"APP_COLOR_RESET")");
+   
    printf("\n");
-   if (Flags&APP_ARGSLOG) {
-      printf("\n\t-%s, --%-15s %s","l", "log",     "Log file ("APP_COLOR_GREEN"stdout"APP_COLOR_RESET",stderr,file)");
-   }
-   if (Flags&APP_ARGSLANG) {
-      printf("\n\t-%s, --%-15s %s","a", "language","Language ("APP_COLOR_GREEN"$CMCLNG"APP_COLOR_RESET",english,francais)");
-   }
+   if (Flags&APP_ARGSLOG)    printf("\n\t-%s, --%-15s %s","l", "log",     "Log file ("APP_COLOR_GREEN"stdout"APP_COLOR_RESET",stderr,file)");
+   if (Flags&APP_ARGSLANG)   printf("\n\t-%s, --%-15s %s","a", "language","Language ("APP_COLOR_GREEN"$CMCLNG"APP_COLOR_RESET",english,francais)");
+   
    printf("\n\t-%s, --%-15s %s","v", "verbose",      "Verbose level (ERROR,WARNING,"APP_COLOR_GREEN"INFO"APP_COLOR_RESET",DEBUG,EXTRA or 0-4)");
    printf("\n\t    --%-15s %s",      "verbosecolor", "Use color for log messages");
    printf("\n\t-%s, --%-15s %s","h", "help",         "Help info");   
@@ -640,7 +637,7 @@ inline int App_GetArgs(TApp_Arg *AArg,char *Value) {
 int App_ParseArgs(TApp_Arg *AArgs,int argc,char *argv[],int Flags) {
 
    int       i=-1,ok=TRUE,ner=TRUE;
-   char     *tok,*ptok=NULL,*env=NULL,*str,*tmp;
+   char     *tok,*ptok=NULL,*env=NULL,*endptr=NULL,*str,*tmp;
    TApp_Arg *aarg=NULL;
    
    str=env=getenv("APP_PARAMS");
@@ -681,7 +678,13 @@ int App_ParseArgs(TApp_Arg *AArgs,int argc,char *argv[],int Flags) {
                free(App->LogFile);
                App->LogFile=env?strtok(str," "):argv[i];
             }
-         } else if ((Flags&APP_ARGSSEED) && (!strcasecmp(tok,"-s") || !strcasecmp(tok,"--seed"))) { // seed
+         } else if ((Flags&APP_ARGSTHREAD) && (!strcasecmp(tok,"-t") || !strcasecmp(tok,"--threads"))) { // Threads
+            i++;
+            if ((ner=ok=(i<argc && argv[i][0]!='-'))) {
+               tmp=env?strtok(str," "):argv[i];
+               App->NbThread=strtol(tmp,&endptr,10);
+            }
+         } else if ((Flags&APP_ARGSSEED) && (!strcasecmp(tok,"-s") || !strcasecmp(tok,"--seed"))) { // Seed
             i++;
             if ((ner=ok=(i<argc && argv[i][0]!='-'))) {
                tmp=env?strtok(str," "):argv[i];
@@ -692,7 +695,7 @@ int App_ParseArgs(TApp_Arg *AArgs,int argc,char *argv[],int Flags) {
                   App->Seed = APP_SEED;
                } else {
                   // Seed is user defined
-                  App->Seed=atoll(tmp);
+                  App->Seed=strtol(tmp,&endptr,10);
                }
             }
          } else if (!strcasecmp(tok,"-v") || !strcasecmp(tok,"--verbose")) {                      // Verbose degree
