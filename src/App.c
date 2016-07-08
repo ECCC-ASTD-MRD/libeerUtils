@@ -557,6 +557,9 @@ void App_PrintArgs(TApp_Arg *AArgs,char *Token,int Flags) {
    }
 
    // Process default argument
+   if (Flags&APP_ARGSSEED) {
+      printf("\n\t-%s, --%-15s %s","s", "seed",     "Seed (FIXED,"APP_COLOR_GREEN"VARIABLE"APP_COLOR_RESET" or seed)");
+   }
    printf("\n");
    if (Flags&APP_ARGSLOG) {
       printf("\n\t-%s, --%-15s %s","l", "log",     "Log file ("APP_COLOR_GREEN"stdout"APP_COLOR_RESET",stderr,file)");
@@ -677,6 +680,20 @@ int App_ParseArgs(TApp_Arg *AArgs,int argc,char *argv[],int Flags) {
             if ((ner=ok=(i<argc && argv[i][0]!='-'))) {
                free(App->LogFile);
                App->LogFile=env?strtok(str," "):argv[i];
+            }
+         } else if ((Flags&APP_ARGSSEED) && (!strcasecmp(tok,"-s") || !strcasecmp(tok,"--seed"))) { // seed
+            i++;
+            if ((ner=ok=(i<argc && argv[i][0]!='-'))) {
+               tmp=env?strtok(str," "):argv[i];
+               if (strcasecmp(tmp,"VARIABLE")==0 || strcmp(tmp,"1")==0) {
+                  // Seed is variable, according to number of elapsed seconds since January 1 1970, 00:00:00 UTC.
+               } else if (strcasecmp(tmp,"FIXED")==0 || strcmp(tmp,"0")==0) {
+                  // Seed is fixed
+                  App->Seed = APP_SEED;
+               } else {
+                  // Seed is user defined
+                  App->Seed=atoll(tmp);
+               }
             }
          } else if (!strcasecmp(tok,"-v") || !strcasecmp(tok,"--verbose")) {                      // Verbose degree
             i++;

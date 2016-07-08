@@ -77,6 +77,7 @@
 #define APP_NOARGSFAIL 0x01               // Fail if no arguments are specified
 #define APP_ARGSLOG    0x02               // Use log flag
 #define APP_ARGSLANG   0x04               // Multilingual app
+#define APP_ARGSSEED   0x08               // Use seed flag
 
 typedef enum { MUST=-1,ERROR=0,WARNING=1,INFO=2,DEBUG=3,EXTRA=4 } TApp_LogLevel;
 typedef enum { STOP,RUN,DONE } TApp_State;
