@@ -162,7 +162,7 @@ double GeoRef_RPNDistance(TGeoRef *GRef,double X0,double Y0,double X1, double Y1
 int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,double Z,double *Length,double *ThetaXY) {
 
    Vect3d       b,v;
-   float        x,y,valf,valdf,ddir;
+   float        x,y,valf,valdf;
    void        *p0,*p1;
    int          mem,ix,iy,n;
    unsigned int idx;
@@ -228,9 +228,14 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
       // Point cloud
       if (GRef->Grid[0]=='Y' || GRef->Grid[0]=='P' || Def->NI==1 || Def->NJ==1) {
          mem+=idx;
-         Def_Get(Def,C,mem,*Length);
-         if (Def->Data[1] && ThetaXY && !C)
-            Def_Get(Def,1,mem,*ThetaXY);
+         Def_Get(Def,C,mem,x);
+         if (Def->Data[1] && !C) {
+            Def_Get(Def,1,mem,y);
+            if (ThetaXY) *ThetaXY=180+RAD2DEG(atan2(x,y));
+            *Length=hypot(x,y);
+         } else {
+            *Length=x;   
+         }
          return(TRUE);
       } 
 
@@ -269,21 +274,21 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
             mem+=idx;
 
            // Pour un champs vectoriel
-            if (Def->Data[1] && !C && ThetaXY) {
+            if (Def->Data[1] && !C) {
                Def_Get(Def,0,mem,x);
                Def_Get(Def,1,mem,y);
+               if (ThetaXY) *ThetaXY=180+RAD2DEG(atan2(x,y)-GeoRef_GeoDir(GRef,X,Y));
                *Length=hypot(x,y);
-               *ThetaXY=180+RAD2DEG(atan2(x,y)-GeoRef_GeoDir(GRef,X,Y));
             } else {
                Def_GetMod(Def,mem,*Length);              
             }
          } else {
             // Pour un champs vectoriel
-            if (Def->Data[1] && !C && ThetaXY) {
+            if (Def->Data[1] && !C) {
                x=VertexVal(Def,0,X,Y,Z);
                y=VertexVal(Def,1,X,Y,Z);
+               if (ThetaXY) *ThetaXY=180+RAD2DEG(atan2(x,y)-GeoRef_GeoDir(GRef,X,Y));
                *Length=hypot(x,y);
-               *ThetaXY=180+RAD2DEG(atan2(x,y)-GeoRef_GeoDir(GRef,X,Y));
             } else {
                *Length=VertexVal(Def,-1,X,Y,Z);               
             }
@@ -329,7 +334,6 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
          }
       }
       return(TRUE);
-
    }
 #endif
    return(FALSE);

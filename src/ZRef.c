@@ -615,72 +615,68 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
    pref=ZRef->PRef;
    ptop=ZRef->PTop;
 
-   switch(ZRef->Version) {
-      case -1:
-      case 0:
-         switch(ZRef->Type) {
-            case LVL_PRES:
-               for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
-                  for (ij=0;ij<NIJ;ij++) {
-                     Pres[idxk+ij]=ZRef->Levels[k];
-                  }
-               }
-               break;
-
-            case LVL_SIGMA:
-               for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
-                  for (ij=0;ij<NIJ;ij++) {
-                     Pres[idxk+ij]=P0[ij]*ZRef->Levels[k];
-                  }
-               }
-               break;
-
-            case LVL_ETA:
-               for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
-                  for (ij=0;ij<NIJ;ij++) {
-                     Pres[idxk+ij]=ptop+(P0[ij]-ptop)*ZRef->Levels[k];
-                  }
-               }
-               break;
-
-            case LVL_HYBRID:
-               ij=1;
-               f77name(hyb_to_pres)(Pres,ZRef->Levels,&ptop,&ZRef->RCoef[0],&pref,&ij,P0,&NIJ,&ij,&ZRef->LevelNb);
-               break;
-
-            case LVL_UNDEF:
-               for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
-                 for (ij=0;ij<NIJ;ij++) {
-                     Pres[idxk+ij]=P0[idxk+ij];
-                  }
-                }
-               break;
-               
-            default:
-               App_Log(ERROR,"%s: Invalid level type (%i)\n",__func__,ZRef->Type);
-               return(0);
+   switch(ZRef->Type) {
+      case LVL_PRES:
+         for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
+            for (ij=0;ij<NIJ;ij++) {
+               Pres[idxk+ij]=ZRef->Levels[k];
+            }
          }
          break;
 
-      default: 
-         ips=malloc(ZRef->LevelNb*sizeof(int));
-         for (k=0;k<ZRef->LevelNb;k++) {
-            ips[k]=ZRef_Level2IP(ZRef->Levels[k],ZRef->Type,ZRef->Style);
+      case LVL_SIGMA:
+         for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
+            for (ij=0;ij<NIJ;ij++) {
+               Pres[idxk+ij]=P0[ij]*ZRef->Levels[k];
+            }
          }
+         break;
+
+      case LVL_ETA:
+         for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
+            for (ij=0;ij<NIJ;ij++) {
+               Pres[idxk+ij]=ptop+(P0[ij]-ptop)*ZRef->Levels[k];
+            }
+         }
+         break;
+
+      case LVL_UNDEF:
+         for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
+            for (ij=0;ij<NIJ;ij++) {
+               Pres[idxk+ij]=P0[idxk+ij];
+            }
+         }
+         break;
          
-         // Really not ooptimal but Cvgd needs pascals
-         p0=(float*)malloc(NIJ*sizeof(float));
-         for (ij=0;ij<NIJ;ij++) {
-            p0[ij]=P0[ij]*MB2PA;
+      case LVL_HYBRID:
+         if (ZRef->Version<=0) {
+            ij=1;
+            f77name(hyb_to_pres)(Pres,ZRef->Levels,&ptop,&ZRef->RCoef[0],&pref,&ij,P0,&NIJ,&ij,&ZRef->LevelNb);
+         } else {
+            ips=malloc(ZRef->LevelNb*sizeof(int));
+            for (k=0;k<ZRef->LevelNb;k++) {
+               ips[k]=ZRef_Level2IP(ZRef->Levels[k],ZRef->Type,ZRef->Style);
+            }
+            
+            // Really not ooptimal but Cvgd needs pascals
+            p0=(float*)malloc(NIJ*sizeof(float));
+            for (ij=0;ij<NIJ;ij++) {
+               p0[ij]=P0[ij]*MB2PA;
+            }
+            
+            if (Cvgd_levels((vgrid_descriptor*)ZRef->VGD,NIJ,1,ZRef->LevelNb,ips,Pres,p0,0)) {
+               App_Log(ERROR,"%s: Problems in Cvgd_levels\n",__func__);
+               return(0);
+            }
+            for (ij=0;ij<NIJ*ZRef->LevelNb;ij++) Pres[ij]*=PA2MB;
+            free(ips);
+            free(p0);            
          }
+         break;
          
-         if (Cvgd_levels((vgrid_descriptor*)ZRef->VGD,NIJ,1,ZRef->LevelNb,ips,Pres,p0,0)) {
-            App_Log(ERROR,"%s: Problems in Cvgd_levels\n",__func__);
-            return(0);
-         }
-         for (ij=0;ij<NIJ*ZRef->LevelNb;ij++) Pres[ij]*=PA2MB;
-         free(ips);
-         free(p0);
+      default:
+         App_Log(ERROR,"%s: Invalid level type (%i)\n",__func__,ZRef->Type);
+         return(0);
    }
    
    if (ZRef->POff!=0.0) for (ij=0;ij<NIJ*ZRef->LevelNb;ij++) Pres[ij]+=ZRef->POff;
@@ -789,41 +785,37 @@ double ZRef_Level2Pressure(TZRef* restrict const ZRef,double P0,double Level) {
    pref=ZRef->PRef;
    ptop=ZRef->PTop;
 
-   switch(ZRef->Version) {
-      case -1:
-      case 0:
-         switch(ZRef->Type) {
-            case LVL_PRES:
-               pres=Level;
-               break;
+   switch(ZRef->Type) {
+      case LVL_PRES:
+         pres=Level;
+         break;
 
-            case LVL_SIGMA:
-               pres=P0*Level;
-               break;
+      case LVL_SIGMA:
+         pres=P0*Level;
+         break;
 
-            case LVL_ETA:
-               pres=ptop+(P0-ptop)*Level;
-               break;
+      case LVL_ETA:
+         pres=ptop+(P0-ptop)*Level;
+         break;
 
-            case LVL_HYBRID:
-               rtop=ptop/pref;
-               pres=pref*Level+(P0-pref)*pow((Level-rtop)/(1.0-rtop),ZRef->RCoef[0]);
-               break;
-
-            default:
-               App_Log(ERROR,"%s: Invalid level type (%i)\n",__func__,ZRef->Type);
+      case LVL_HYBRID:
+         if (ZRef->Version<=0) {
+            rtop=ptop/pref;
+            pres=pref*Level+(P0-pref)*pow((Level-rtop)/(1.0-rtop),ZRef->RCoef[0]);
+         } else {
+            ip=ZRef_Level2IP(Level,ZRef->Type,ZRef->Style);
+            p0=P0*MB2PA;
+            if (Cvgd_levels_8((vgrid_descriptor*)ZRef->VGD,1,1,1,&ip,&pres,&p0,0)) {
+               App_Log(ERROR,"%s: Problems in Cvgd_levels_8\n",__func__);
                return(0);
+            }
+            pres*=PA2MB;
          }
          break;
 
-      default: 
-         ip=ZRef_Level2IP(Level,ZRef->Type,ZRef->Style);
-         p0=P0*MB2PA;
-         if (Cvgd_levels_8((vgrid_descriptor*)ZRef->VGD,1,1,1,&ip,&pres,&p0,0)) {
-            App_Log(ERROR,"%s: Problems in Cvgd_levels_8\n",__func__);
-            return(0);
-         }
-         pres*=PA2MB;
+      default:
+         App_Log(ERROR,"%s: Invalid level type (%i)\n",__func__,ZRef->Type);
+         return(0);
    }
    
    return(pres+ZRef->POff);

@@ -222,14 +222,18 @@ int    GeoFunc_RadialPointOn(Coord C1,Coord C2,Coord C3,Coord *CR);
 int    GeoFunc_RadialIntersect(Coord C1,Coord C2,double CRS13,double CRS23,Coord *C3);
 
 static inline double GeoRef_GeoDir(TGeoRef* __restrict const Ref,double X, double Y) {
-   double latd[2],lond[2];
+   double latd[2],lond[2],dir=0.0;
    
-   // Reproject vector orientation by adding grid projection's north difference
-   Ref->Project(Ref,X,Y,&latd[0],&lond[0],1,1);
-   Ref->Project(Ref,X,Y+1,&latd[1],&lond[1],1,1);
+   if (Ref->Grid[0]!='Y') {
+      
+      // Reproject vector orientation by adding grid projection's north difference
+      Ref->Project(Ref,X,Y,&latd[0],&lond[0],1,1);
+      Ref->Project(Ref,X,Y+1,&latd[1],&lond[1],1,1);
 
-   latd[0]=DEG2RAD(latd[0]); lond[0]=DEG2RAD(lond[0]);
-   latd[1]=DEG2RAD(latd[1]); lond[1]=DEG2RAD(lond[1]);
-   return(COURSE(latd[0],lond[0],latd[1],lond[1]));
+      latd[0]=DEG2RAD(latd[0]); lond[0]=DEG2RAD(lond[0]);
+      latd[1]=DEG2RAD(latd[1]); lond[1]=DEG2RAD(lond[1]);
+      dir=COURSE(latd[0],lond[0],latd[1],lond[1]);
+   }
+   return(dir);
 }
 #endif
