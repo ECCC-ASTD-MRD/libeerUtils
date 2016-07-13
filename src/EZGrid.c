@@ -1799,7 +1799,7 @@ int EZGrid_LLGetValueY(TGrid* __restrict const GridU,TGrid* __restrict const Gri
 int EZGrid_LLGetValueM(TGrid* __restrict const GridU,TGrid* __restrict const GridV,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* __restrict UU,float* __restrict VV,float Conv) {
 
    TGridTile *tu,*tv;
-   int        k,ik=0;
+   int        k=0,ik=0;
    TQTree    *node;
    TGeoRef   *gref;
    Vect3d     bary;
@@ -1824,11 +1824,15 @@ int EZGrid_LLGetValueM(TGrid* __restrict const GridU,TGrid* __restrict const Gri
          idxs[2]=gref->Idx[idx+2];
          
          // if the Barycentric coordinates are within this triangle, get its interpolated value
-         if (Bary_Get(bary,Lon,Lat,gref->AX[idxs[0]],gref->AY[idxs[0]],gref->AX[idxs[1]],gref->AY[idxs[1]],gref->AX[idxs[2]],gref->AY[idxs[2]])) {
+         if ((k=Bary_Get(bary,Lon,Lat,gref->AX[idxs[0]],gref->AY[idxs[0]],gref->AX[idxs[1]],gref->AY[idxs[1]],gref->AX[idxs[2]],gref->AY[idxs[2]]))) {
             break;
          }
       }
      
+      // Out of meshe
+      if (!k)
+         return(FALSE);
+      
       tu=tv=NULL;
       k=K0;
       do {
