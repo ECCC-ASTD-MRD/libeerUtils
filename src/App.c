@@ -52,6 +52,8 @@ char* App_ErrorGet(void) {
    return(APP_ERROR);
 }
 
+unsigned int App_OnceTable[APP_MAXONCE];                // Log once table
+
 /*----------------------------------------------------------------------------
  * Nom      : <App_Init>
  * Creation : Septembre 2008 - J.P. Gauthier
@@ -411,6 +413,16 @@ void App_Log(TApp_LogLevel Level,const char *Format,...) {
    if (!App->LogStream)
       App_LogOpen();
 
+   // Check for once log flag
+   if (Level>EXTRA) {
+      // If we logged it at least once
+      if (Level>>3<APP_MAXONCE && App_OnceTable[Level>>3]++)
+         return;
+      
+      // Real log level
+      Level&=0x7;
+   }
+   
    if (Level==WARNING) App->LogWarning++;
    if (Level==ERROR)   App->LogError++;
 
@@ -428,6 +440,7 @@ void App_Log(TApp_LogLevel Level,const char *Format,...) {
       
       va_start(args,Format);
       vfprintf(App->LogStream,Format,args);
+      
       va_end(args);
 
       if (App->LogColor)

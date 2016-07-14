@@ -30,6 +30,7 @@
  *==============================================================================
  */
 #include "EZGrid.h"
+#include "App.h"
 
 int main(int argc, char *argv[]) {
   
@@ -37,6 +38,14 @@ int main(int argc, char *argv[]) {
    float  val,vals[58];
    int    i,j,n=0,type,in,out;
 
+   App->LogLevel=EXTRA;
+
+   for(i=0;i<10;i++) {
+      App_Log(INFO+APP_ONCE,"Test log once, this should appear only once\n");
+      App_Log(ERROR,"Test more than once, this should appear 10 times\n");
+      App_Log(EXTRA+APP_ONCE,"Test log once, this should alsoe appear only once\n");
+   }
+   
    /*Test*/
    c_fnom(10,"/data/cmoex7/afsr005/tile/glb/2008010712_000","STD+RND+R/O",0);
    c_fstouv(10,"RND");
