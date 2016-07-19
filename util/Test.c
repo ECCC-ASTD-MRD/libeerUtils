@@ -41,9 +41,9 @@ int main(int argc, char *argv[]) {
    App->LogLevel=EXTRA;
 
    for(i=0;i<10;i++) {
-      App_Log(INFO+APP_ONCE,"Test log once, this should appear only once\n");
+      App_Log(INFO|APP_ONCE,"Test log once, this should appear only once\n");
       App_Log(ERROR,"Test more than once, this should appear 10 times\n");
-      App_Log(EXTRA+APP_ONCE,"Test log once, this should alsoe appear only once\n");
+      App_Log(EXTRA|APP_ONCE,"Test log once, this should alsoe appear only once\n");
    }
    
    /*Test*/

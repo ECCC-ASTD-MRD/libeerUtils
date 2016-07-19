@@ -14,7 +14,7 @@ endif
 SSM_NAME    = ${NAME}_${VERSION}${COMP}_${ORDENV_PLAT}
 
 INSTALL_DIR = $(HOME)
-TCL_DIR     = /users/dor/afsr/ops/Links/devfs/Archive/tcl8.6.3
+TCL_DIR     = ${EXT_SRC_PATH}/tcl8.6.5
 
 #----- Uncoment to use dev libs
 LIB_DIR     = ${SSM_DEV}/workspace/libSPI_7.11.1${COMP}_${ORDENV_PLAT}
