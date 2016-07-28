@@ -80,6 +80,9 @@
 #define APP_ARGSSEED   0x08               // Use seed flag
 #define APP_ARGSTHREAD 0x10               // Use thread flag
 
+#ifdef __xlc___
+#   define __COUNTER__ 0
+#endif
 #define APP_ONCE    ((__COUNTER__+1)<<3)
 #define APP_MAXONCE 1024
 
