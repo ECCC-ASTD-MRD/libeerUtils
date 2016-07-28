@@ -1956,12 +1956,12 @@ int EZGrid_IJGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float I,
    }
 
    // Check inclusion in master grid limits
-   if (I<0 || J<0 || K0<0 || K1<0 || J>=Grid->H.NJ || K0>=Grid->H.NK || K1>=Grid->H.NK) {
+   if (I<0 || J<0 || K0<0 || K1<0 || J>Grid->H.NJ-0.5 || K0>Grid->H.NK-1 || K1>Grid->H.NK-1) {
       App_Log(ERROR,"%s: Coordinates out of range (%s): I(%f) J(%f) K(%i,%i)\n",__func__,Grid->H.NOMVAR,I,J,K0,K1);
       return(FALSE);
    }
 
-   if (I>=Grid->H.NI) {
+   if (I>=Grid->H.NI-0.5) {
       if (Grid->Wrap) {
          wrap=1;
       } else {
@@ -1970,15 +1970,15 @@ int EZGrid_IJGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float I,
       }
    }
 
-   if (!(t=EZGrid_TileGet(Grid,I,J))) {
-      App_Log(ERROR,"%s: Tile not found (%s) I(%.f) J(%f)\n",__func__,Grid->H.NOMVAR,I,J);
-      return(FALSE);
-   }
-
    if (Mode==EZ_NEAREST) {
       I=ROUND(I);
       J=ROUND(J);
       wrap=0;
+   }
+   
+   if (!(t=EZGrid_TileGet(Grid,I,J))) {
+      App_Log(ERROR,"%s: Tile not found (%s) I(%.f) J(%f)\n",__func__,Grid->H.NOMVAR,I,J);
+      return(FALSE);
    }
 
    // Calculate in-tile indexes and limits
@@ -2136,9 +2136,14 @@ int EZGrid_IJGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const Gr
    }
 
    /*Check inclusion in master grid limits*/
-   if (I<0 || J<0 || K0<0 || K1<0 || I>=GridU->H.NI || J>=GridU->H.NJ || K0>=GridU->H.NK || K1>=GridU->H.NK) {
+   if (I<0 || J<0 || K0<0 || K1<0 || I>GridU->H.NI-0.5 || J>GridU->H.NJ-0.5 || K0>GridU->H.NK-1 || K1>GridU->H.NK-1) {
       App_Log(ERROR,"%s: Coordinates out of range (%s,%s): I(%f) J(%f) K(%i,%i)\n",__func__,GridU->H.NOMVAR,GridV->H.NOMVAR,I,J,K0,K1);
       return(FALSE);
+   }
+
+   if (Mode==EZ_NEAREST) {
+      I=ROUND(I);
+      J=ROUND(J);
    }
 
    if (!(tu=EZGrid_TileGet(GridU,I,J))) {
@@ -2212,7 +2217,7 @@ int EZGrid_GetValue(const TGrid* __restrict const Grid,int I,int J,int K0,int K1
    }
 
    /*Check inclusion in master grid limits*/
-   if (I<0 || J<0 || K0<0 || K1<0 || I>=Grid->H.NI || J>=Grid->H.NJ || K0>=Grid->H.NK || K1>=Grid->H.NK) {
+   if (I<0 || J<0 || K0<0 || K1<0 || I>Grid->H.NI-0.5 || J>Grid->H.NJ-0.5 || K0>Grid->H.NK-1 || K1>Grid->H.NK-1) {
       App_Log(ERROR,"%s: Coordinates out of range (%s) I(%i) J(%i) K(%i,%i)\n",__func__,Grid->H.NOMVAR,I,J,K0,K1);
       return(FALSE);
    }
