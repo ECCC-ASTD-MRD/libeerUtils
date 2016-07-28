@@ -80,10 +80,11 @@
 #define APP_ARGSSEED   0x08               // Use seed flag
 #define APP_ARGSTHREAD 0x10               // Use thread flag
 
-#ifdef __xlc___
-#   define __COUNTER__ 0
+#ifdef __xlC__
+#   define APP_ONCE    ((1)<<3)
+#else
+#   define APP_ONCE    ((__COUNTER__+1)<<3)
 #endif
-#define APP_ONCE    ((__COUNTER__+1)<<3)
 #define APP_MAXONCE 1024
 
 typedef enum { MUST=-1,ERROR=0,WARNING=1,INFO=2,DEBUG=3,EXTRA=4 } TApp_LogLevel;
