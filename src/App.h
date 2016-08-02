@@ -179,5 +179,6 @@ int   App_ParseDateSplit(char *Param,char *Value,int *Year,int *Month,int *Day,i
 int   App_ParseCoords(char *Param,char *Value,double *Lat,double *Lon,int Index);
 void  App_SeedInit(void);
 char* App_ErrorGet(void);
+void  App_Trap(int Signal);
 
 #endif

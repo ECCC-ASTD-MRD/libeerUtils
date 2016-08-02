@@ -358,8 +358,10 @@ void App_Trap(int Signal) {
    
    struct sigaction new,old;
    
-   new.sa_sigaction=NULL;
+#ifndef __xlC__
    new.sa_restorer=NULL;
+#endif
+   new.sa_sigaction=NULL;
    new.sa_handler=App_TrapProcess;
    new.sa_flags=0x0;
    sigemptyset(&new.sa_mask);   
