@@ -20,7 +20,7 @@ export EC_LD_LIBRARY_PATH="${packageHome}/lib \${EC_LD_LIBRARY_PATH}"
 
 #----- GDB data
 if [ -z \${GDB_PATH} ]; then
-   export GDB_PATH=/cnfs/ops/production/cmoe/geo/DBGeo/data
+   export GDB_PATH=/home/binops/afse/eer/links/geo/DBGeo/data
 fi
 
 #----- Force BURP table dir since it's hardcoded with RMN and problem outside cmc
@@ -35,7 +35,7 @@ setenv EC_LD_LIBRARY_PATH="${packageHome}/lib \${EC_LD_LIBRARY_PATH}"
 
 #----- GDB data
 if [ -z \${GDB_PATH} ]; then
-   setenv GDB_PATH=/cnfs/ops/production/cmoe/geo/DBGeo/data
+   setenv GDB_PATH=/home/binops/afse/eer/links/geo/DBGeo/data
 fi
 
 #----- Force BURP table dir since it's hardcoded with RMN and problem outside cmc
