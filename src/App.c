@@ -40,6 +40,7 @@
  */
 #define APP_BUILD
 
+#include <sys/signal.h>
 #include "App.h"
 #include "eerUtils.h"
 #include "RPN.h"
@@ -193,6 +194,9 @@ void App_Start(void) {
    char rmn[128],*env=NULL;
    int print=0,t,th,mpi;
 
+   // Trap signals (preemption)
+   App_Trap(SIGUSR2);
+
 #ifdef HAVE_RMN
    // RMN Lib settings
    c_fstopc("MSGLVL","WARNIN",0);
@@ -327,6 +331,40 @@ void App_End(int Status) {
 
       App->State=DONE;
    }
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <App_Trap>
+ * Creation : Aout 2016 - J.P. Gauthier
+ *
+ * But      : Trap les signaux afin de terminer gracieusement *
+ * Parametres :
+ *
+ * Retour:
+ *
+ * Remarques  :
+ *----------------------------------------------------------------------------
+*/
+void App_TrapProcess(int Signal) {
+
+   App_Log(DEBUG,"Trapped signal %i\n",Signal);
+   
+   switch(Signal) {
+      case SIGUSR2: App->State=DONE;
+   }
+}
+
+void App_Trap(int Signal) {
+   
+   struct sigaction new,old;
+   
+   new.sa_sigaction=NULL;
+   new.sa_restorer=NULL;
+   new.sa_handler=App_TrapProcess;
+   new.sa_flags=0x0;
+   sigemptyset(&new.sa_mask);   
+   
+   sigaction(Signal,&new,&old);
 }
 
 /*----------------------------------------------------------------------------
