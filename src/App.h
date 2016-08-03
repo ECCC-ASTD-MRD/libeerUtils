@@ -163,7 +163,7 @@ typedef int (TApp_InputParseProc) (void *Def,char *Token,char *Value,int Index);
 TApp *App_Init(int Type,char* Name,char* Version,char* Desc,char* Stamp);
 void  App_Free(void);
 void  App_Start(void);
-void  App_End(int Status);
+int   App_End(int Status);
 int   App_IsDone(void);
 int   App_IsMPI(void);
 int   App_IsOMP(void);

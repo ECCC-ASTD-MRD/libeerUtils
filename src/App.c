@@ -283,14 +283,16 @@ void App_Start(void) {
  *
  * But      : Finaliser l'execution du modele et afficher le footer
  *
- * Parametres :
- *
- * Retour     :
- *
- * Remarques  :
+ * Parametres  :
+ *   <Status>  : User status to use
+ * 
+ * Retour      :
+ *    <status> : Process exit status to be used
+ * 
+ * Remarques   :
  *----------------------------------------------------------------------------
 */
-void App_End(int Status) {
+int App_End(int Status) {
 
    struct timeval end,dif;
 
@@ -320,10 +322,10 @@ void App_End(int Status) {
 
       // Select status code based on error number
       if (Status<0) {
-         Status=App->LogError?1:0;
+         Status=App->LogError?EXIT_FAILURE:EXIT_SUCCESS;
       }
       
-      if (Status!=0) {
+      if (Status!=EXIT_SUCCESS) {
          App_Log(MUST,"Status         : Error %i (%i Errors)\n",Status,App->LogError);
       } else {
          App_Log(MUST,"Status         : Ok (%i Warnings)\n",App->LogWarning);
@@ -335,6 +337,8 @@ void App_End(int Status) {
 
       App->State=DONE;
    }
+   
+   return (App->Signal?128+App->Signal:Status);
 }
 
 /*----------------------------------------------------------------------------
@@ -343,6 +347,7 @@ void App_End(int Status) {
  *
  * But      : Trap les signaux afin de terminer gracieusement *
  * Parametres :
+ *   <Signal> : Signal to be trapped
  *
  * Retour:
  *

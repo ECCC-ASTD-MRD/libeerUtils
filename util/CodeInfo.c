@@ -157,12 +157,8 @@ int main(int argc, char *argv[]) {
    /*Launch the app*/
    App_Start();
    ok=Codec(pool,fst,var,ckey);
-   App_End(ok!=1);
+   code=App_End(ok?-1:EXIT_FAILURE);
    App_Free();
-
-   if (!ok) {
-      exit(EXIT_FAILURE);
-   } else {
-      exit(EXIT_SUCCESS);
-   }
+   
+   exit(code);
 }

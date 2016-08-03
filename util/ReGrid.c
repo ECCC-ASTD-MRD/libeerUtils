@@ -127,7 +127,7 @@ int ReGrid(char *In,char *Out,char *Grid,char **Vars) {
 
 int main(int argc, char *argv[]) {
 
-   int      ok=0;
+   int      ok=0,code=EXIT_FAILURE;
    char     *in=NULL,*out=NULL,*grid=NULL,*type=NULL,*vars[APP_LISTMAX];
 
    TApp_Arg appargs[]=
@@ -162,12 +162,8 @@ int main(int argc, char *argv[]) {
    /*Launch the app*/
    App_Start();
    ok=ReGrid(in,out,grid,vars);
-   App_End(ok!=1);
+   code=App_End(ok?-1:EXIT_FAILURE);
    App_Free();
 
-   if (!ok) {
-      exit(EXIT_FAILURE);
-   } else {
-      exit(EXIT_SUCCESS);
-   }
+   exit(code);
 }

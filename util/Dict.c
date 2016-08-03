@@ -48,7 +48,7 @@ int Dict_CheckCFG(char *CFGFile);
 int main(int argc, char *argv[]) {
 
    TDict_Encoding coding=DICT_UTF8;
-   int            ok=1,desc=DICT_SHORT,search=DICT_EXACT,st=DICT_ALL,ip1,ip2,ip3,d=0;
+   int            ok=1,desc=DICT_SHORT,search=DICT_EXACT,st=DICT_ALL,ip1,ip2,ip3,d=0,code=EXIT_SUCCESS;
    char          *var,*type,*lang,*encoding,*origin,*etiket,*state,*dicfile[APP_LISTMAX],*rpnfile[APP_LISTMAX],*cfgfile,dicdef[APP_BUFMAX],*env;
    
    TApp_Arg appargs[]=
@@ -162,15 +162,11 @@ int main(int argc, char *argv[]) {
    }
 
    if (rpnfile[0] || cfgfile) {
-      App_End(!ok);
+      code=App_End(ok?-1:EXIT_FAILURE);
    }
    App_Free();
 
-   if (!ok) {
-      exit(EXIT_FAILURE);
-   } else {
-      exit(EXIT_SUCCESS);
-   }
+   exit(code);
 }
 
 /*----------------------------------------------------------------------------
