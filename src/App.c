@@ -102,6 +102,7 @@ TApp *App_Init(int Type,char *Name,char *Version,char *Desc,char* Stamp) {
    App->DisplsMPI=NULL;
    App->OMPSeed=NULL;
    App->Seed=time(NULL);
+   App->Signal=0;
 
    // Check the log parameters in the environment 
    if ((c=getenv("APP_VERBOSE"))) {
@@ -311,6 +312,9 @@ void App_End(int Status) {
       timersub(&end,&App->Time,&dif);
 
       App_Log(MUST,"\n-------------------------------------------------------------------------------------\n");
+      if (App->Signal) {
+         App_Log(MUST,"Trapped signal : %i\n",App->Signal);         
+      }
       App_Log(MUST,"Finish time    : (UTC) %s",ctime(&end.tv_sec));
       App_Log(MUST,"Execution time : %.4f seconds\n",(float)dif.tv_sec+dif.tv_usec/1000000.0);
 
@@ -348,6 +352,7 @@ void App_End(int Status) {
 void App_TrapProcess(int Signal) {
 
    App_Log(DEBUG,"Trapped signal %i\n",Signal);
+   App->Signal=Signal;
    
    switch(Signal) {
       case SIGUSR2: App->State=DONE;
@@ -358,9 +363,6 @@ void App_Trap(int Signal) {
    
    struct sigaction new,old;
    
-#ifndef __xlC__
-   new.sa_restorer=NULL;
-#endif
    new.sa_sigaction=NULL;
    new.sa_handler=App_TrapProcess;
    new.sa_flags=0x0;

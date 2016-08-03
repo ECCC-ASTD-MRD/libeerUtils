@@ -151,6 +151,7 @@ typedef struct TApp {
     int           *DisplsMPI;            // MPI displacement gathering arrays
     int            NbMPI,RankMPI;        // Number of MPI process
     int            NbThread;             // Number of OpenMP threads
+    int            Signal;               // Trapped signal
 } TApp;
 
 #ifndef APP_BUILD
