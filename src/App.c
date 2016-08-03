@@ -308,6 +308,11 @@ int App_End(int Status) {
    }
 #endif
 
+   // Select status code based on error number
+   if (Status<0) {
+      Status=App->LogError?EXIT_FAILURE:EXIT_SUCCESS;
+   }
+   
    if (!App->RankMPI) {
 
       gettimeofday(&end,NULL);
@@ -320,10 +325,6 @@ int App_End(int Status) {
       App_Log(MUST,"Finish time    : (UTC) %s",ctime(&end.tv_sec));
       App_Log(MUST,"Execution time : %.4f seconds\n",(float)dif.tv_sec+dif.tv_usec/1000000.0);
 
-      // Select status code based on error number
-      if (Status<0) {
-         Status=App->LogError?EXIT_FAILURE:EXIT_SUCCESS;
-      }
       
       if (Status!=EXIT_SUCCESS) {
          App_Log(MUST,"Status         : Error %i (%i Errors)\n",Status,App->LogError);
@@ -338,7 +339,7 @@ int App_End(int Status) {
       App->State=DONE;
    }
    
-   return (App->Signal?128+App->Signal:Status);
+   return(App->Signal?128+App->Signal:Status);
 }
 
 /*----------------------------------------------------------------------------
