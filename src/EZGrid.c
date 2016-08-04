@@ -338,7 +338,7 @@ float* EZGrid_TileBurnAll(TGrid* __restrict const Grid,int K,float* __restrict D
    if (Grid) {
       if (Grid->NbTiles>1) {
          for(t=0;t<Grid->NbTiles;t++) {
-            if (!Grid->Tiles[t].Data || isnan(Grid->Tiles[t].Data[K][0])) {
+            if (!Grid->Tiles[t].Data || ISNAN(Grid->Tiles[t].Data[K][0])) {
                EZGrid_TileGetData(Grid,&Grid->Tiles[t],K,0);
             }
             if (!EZGrid_TileBurn(Grid,&Grid->Tiles[t],K,Data)) {
@@ -1948,7 +1948,7 @@ int EZGrid_IJGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float I,
 
    TGridTile *t,*tw=NULL;
    int        i,j,k,ik=0,idx,idxj,idxw,idxwj,wrap=0;
-   float      dx,dy,d[4];
+   float      dx,dy,dxy,d[4];
 
    if (!Grid || Grid->GID<0) {
       App_Log(ERROR,"%s: Invalid grid\n",__func__);
@@ -1986,6 +1986,7 @@ int EZGrid_IJGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float I,
    j=J;
    dx=I-i;
    dy=J-j;
+   dxy=dx*dy;
    i=i-t->HI;
    j=j-t->HJ;
    //   I+=1.0f;J+=1.0f;
@@ -2027,7 +2028,7 @@ int EZGrid_IJGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float I,
             d[3]=t->Data[k][idxj+1];
          }
 
-         Value[ik]=d[0] + (d[1]-d[0])*dx + (d[2]-d[0])*dy + (d[3]-d[1]-d[2]+d[0])*dx*dy;
+         Value[ik]=d[0] + (d[1]-d[0])*dx + (d[2]-d[0])*dy + (d[3]-d[1]-d[2]+d[0])*dxy;
       }
 
       ik++;
