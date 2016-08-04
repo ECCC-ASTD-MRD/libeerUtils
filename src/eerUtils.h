@@ -105,7 +105,7 @@
 #define TRUE   1
 #define FALSE  0
 
-#define ISNAN(A)                          (A!=A)
+#define ISNAN(A)                          ((A)!=(A))
 #define CLOSE(V)                          ((V-(int)V)<0.5?(V-(int)V):(V-(int)V)-0.5)
 #ifndef ROUND
 #define ROUND(V)                          ((int)(V+0.5))
