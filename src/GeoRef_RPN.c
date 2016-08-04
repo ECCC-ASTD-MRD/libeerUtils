@@ -548,7 +548,7 @@ int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
                   // Map coordinates to grid
                   Vertex_Map(pts,X,Y,Lon,Lat);
                   
-                  if (!isnan(*X) && !isnan(*Y)) {
+                  if (!ISNAN(*X) && !ISNAN(*Y)) {
                      y=idx/GRef->NX;
                      x=idx-y*GRef->NX;
                      *Y+=y+dy;
