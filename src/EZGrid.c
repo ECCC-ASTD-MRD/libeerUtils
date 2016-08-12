@@ -544,8 +544,6 @@ int EZGrid_TileGrid(int FIdTo,int NI, int NJ,int Halo,TGrid* __restrict const Gr
 
    tile=(float*)malloc((NI+Halo*2)*(NJ+Halo*2)*sizeof(float));
 
-   RPN_CopyDesc(FIdTo,&Grid->H);
-
    ip1=Grid->H.IP1;
 
    /*Build and save the tiles*/
