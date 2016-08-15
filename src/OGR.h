@@ -40,6 +40,7 @@
 
 #ifdef HAVE_GDAL
 
+#include "gdal.h"
 #include "ogr_api.h"
 #include "ogr_srs_api.h"
 
@@ -61,7 +62,7 @@ typedef struct OGR_Sort {
 } OGR_Sort;
 
 typedef struct OGR_File {
-   OGRDataSourceH  Data;                 // OGR internal file datasource object
+   GDALDatasetH    Data;                 // OGR internal file datasource object
    OGRSFDriverH    Driver;               // OGR driver used for this file
    char           *Id;                   // File identifier
    char           *Name;                 // File path
@@ -81,7 +82,7 @@ typedef struct OGR_Layer {
    OGRLayerH        Layer;               // OGR internal layer object
    OGRFeatureH     *Feature;             // List of OGR internal layer featuret
    OGRFeatureDefnH  Def;                 // OGR internal feature definition object
-   OGRDataSourceH   Data;                // OGR internal layer datasource object
+   GDALDatasetH     Data;                // OGR internal layer datasource object
 
    OGR_File        *File;                // Layer's file provenance
    OGR_Sort         Sort;                // Sorting parameters
