@@ -62,7 +62,9 @@ typedef struct OGR_Sort {
 } OGR_Sort;
 
 typedef struct OGR_File {
+#ifndef __xlC__
    GDALDatasetH    Data;                 // OGR internal file datasource object
+#endif
    OGRSFDriverH    Driver;               // OGR driver used for this file
    char           *Id;                   // File identifier
    char           *Name;                 // File path
@@ -82,8 +84,9 @@ typedef struct OGR_Layer {
    OGRLayerH        Layer;               // OGR internal layer object
    OGRFeatureH     *Feature;             // List of OGR internal layer featuret
    OGRFeatureDefnH  Def;                 // OGR internal feature definition object
+#ifndef __xlC__
    GDALDatasetH     Data;                // OGR internal layer datasource object
-
+#endif
    OGR_File        *File;                // Layer's file provenance
    OGR_Sort         Sort;                // Sorting parameters
    char            *Select;              // List of features selection flag
