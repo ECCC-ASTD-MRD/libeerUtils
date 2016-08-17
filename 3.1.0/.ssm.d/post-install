@@ -1,0 +1,45 @@
+#!/bin/bash
+# If changing this file, relfect the changes in libSPI.sh
+# post-install <domainHome> <packageHome>
+
+domainHome=$1
+packageHome=$2
+
+# create profiles
+packageName=`basename ${packageHome}`
+profileDirPath=${packageHome}/etc/profile.d
+profilePath=${profileDirPath}/${packageName}.sh
+loginPath=${profileDirPath}/${packageName}.csh
+
+rm -f ${profilePath} ${loginPath}
+mkdir -p ${profileDirPath}
+
+cat > ${profilePath} << EOF
+export EC_INCLUDE_PATH="${packageHome}/include \${EC_INCLUDE_PATH}"
+export EC_LD_LIBRARY_PATH="${packageHome}/lib \${EC_LD_LIBRARY_PATH}"
+
+#----- GDB data
+if [ -z \${GDB_PATH} ]; then
+   export GDB_PATH=/home/binops/afse/eer/links/geo/DBGeo/data
+fi
+
+#----- Force BURP table dir since it's hardcoded with RMN and problem outside cmc
+if [ -z \${AFSISIO} ]; then
+   export MA_TABLEBURP_PERSONNELLE=\${SPI_LIB}/share/rmn/table_b_bufr
+fi
+EOF
+
+cat > ${loginPath} << EOF
+setenv EC_INCLUDE_PATH="${packageHome}/include \${EC_INCLUDE_PATH}"
+setenv EC_LD_LIBRARY_PATH="${packageHome}/lib \${EC_LD_LIBRARY_PATH}"
+
+#----- GDB data
+if [ -z \${GDB_PATH} ]; then
+   setenv GDB_PATH=/home/binops/afse/eer/links/geo/DBGeo/data
+fi
+
+#----- Force BURP table dir since it's hardcoded with RMN and problem outside cmc
+if [ -z \${AFSISIO} ]; then
+   setenv MA_TABLEBURP_PERSONNELLE=\${SPI_LIB}/share/rmn/table_b_bufr
+fi
+EOF
