@@ -627,4 +627,183 @@ int RPN_FieldTile(int FID,TDef *Def,TRPNHeader *Head,TGeoRef *GRef,TZRef *ZRef,i
    return(key>=0);
 }
 
+
+/*----------------------------------------------------------------------------
+ * Nom      : <RPN_GetAllFields>
+ * Creation : Mars 2015 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Retourne une liste des champs correspondants aux critères donnés
+ *
+ * Parametres :
+ *  <FID>   : Le file handle vers un fichier standard
+ *  <DateV> : La date de validité des champs à chercher
+ *  <Etiket>: L'etiket des champs à chercher
+ *  <Ip1>   : L'ip1 des champs à chercher
+ *  <Ip2>   : L'ip2 des champs à chercher
+ *  <Ip3>   : L'ip3 des champs à chercher
+ *  <Typvar>: Le typvar des champs à chercher
+ *  <Nomvar>: Le nomvar des champs à chercher
+ *  <Arr>   : Le pointeur retourné vers la liste des champs
+ *  <Size>  : Nombre d'items de la liste
+ *
+ * Retour   : APP_ERR si erreur, APP_OK si ok.
+ *
+ * Remarques :
+ *  La mémoire est allouée dans la fonction et a besoin d'être libérée par la
+ *  fonction appelante. En cas d'erreur, le pointeur retourné sera NULL.
+ *
+ *----------------------------------------------------------------------------
+ */
+int RPN_GetAllFields(int FID,int DateV,char *Etiket,int Ip1,int Ip2,int Ip3,char *Typvar,char *Nomvar,int **Arr,int *Size) {
+    int ni,nj,nk;
+    int n=128;
+    int *arr=NULL,s;
+
+    *Arr    = NULL;
+    *Size   = 0;
+
+    do {
+        APP_MEM_ASRT(arr,realloc(arr,(n*=2)*sizeof(*arr)));
+        if( cs_fstinl(FID,&ni,&nj,&nk,DateV,Etiket,Ip1,Ip2,Ip3,Typvar,Nomvar,arr,&s,n) ) {
+            App_Log(ERROR,"(RPN_GetAllFields) Couldn't get list of fields (cs_fstinl)\n");
+            APP_FREE(arr);
+            return(APP_ERR);
+        }
+    } while( n == s );
+
+    // Only take the memory we really need
+    //APP_MEM_ASRT( arr,realloc(arr,s*sizeof(*arr)) );
+
+    *Size   = s;
+    *Arr    = arr;
+
+    return(APP_OK);
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <RPN_GetAllDates>
+ * Creation : Mars 2015 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Retourne une liste des DateV correspondants aux critères donnés
+ *
+ * Parametres :
+ *  <Flds>  : Les champs dont on veut les dates
+ *  <NbFlds>: Le nombre des champs dont on veut les dates
+ *  <Uniq>  : Boolean. If true, only returns the sorted list of unique dates.
+ *            If false, returns the list of valid dates associated with (and in
+ *            the same order as) the list of fields.
+ *  <DateV> : [OUT] Les dates valides des champs
+ *  <NbDateV: [OUT] Le nombre de dates valides retournées
+ *
+ * Retour   : APP_ERR si erreur, APP_OK si ok.
+ *
+ * Remarques :
+ *  La mémoire est allouée dans la fonction et a besoin d'être libérée par la
+ *  fonction appelante. En cas d'erreur, le pointeur retourné sera NULL.
+ *
+ *----------------------------------------------------------------------------
+ */
+int RPN_GetAllDates(int *Flds,int NbFlds,int Uniq,int **DateV,int *NbDateV) {
+    TRPNHeader  h;
+    int         i,err,*dates;
+    double      deltat;
+
+    *DateV = NULL;
+    *NbDateV = 0;
+    APP_MEM_ASRT(dates,malloc(NbFlds*sizeof(*dates)));
+
+    for(i=0; i<NbFlds; ++i) {
+        err=cs_fstprm(Flds[i],&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&h.NK,&h.NBITS,&h.DATYP,&h.IP1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,
+                h.GRTYP,&h.IG1,&h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,&h.UBC,&h.EX1,&h.EX2,&h.EX3);
+        if( err ) {
+            App_Log(ERROR,"(RPN_GetAllDates) Couldn't get info on field (cs_fstprm)\n");
+            APP_FREE(dates);
+            return(APP_ERR);
+        }
+
+        deltat = h.DEET*h.NPAS/3600.0;
+        err = f77name(incdatr)(&dates[i],&h.DATEO,&deltat);
+        if( err ) {
+            App_Log(ERROR,"(RPN_GetAllDates) Couldn't get DateV for dateo(%d),deet(%d),npas(%d),deltat(%f) (incdatr)\n",h.DATEO,h.DEET,h.NPAS,deltat);
+            APP_FREE(dates);
+            return(APP_ERR);
+        }
+    }
+
+    if( Uniq ) {
+        qsort(dates,NbFlds,sizeof(*dates),QSort_Int);
+        Unique(dates,&NbFlds,sizeof(*dates));
+        // Only take the memory we really need
+        //APP_MEM_ASRT( dates,realloc(dates,NbFlds*sizeof(*dates)) );
+    }
+
+    *DateV = dates;
+    *NbDateV = NbFlds;
+    return(APP_OK);
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <RPN_GetAllIps>
+ * Creation : Mars 2015 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Retourne une liste des IPx correspondants aux critères donnés
+ *
+ * Parametres :
+ *  <Flds>  : Les champs dont on veut les IPx
+ *  <NbFlds>: Le nombre des champs dont on veut les IPx
+ *  <IpN>   : Le numéro de l'ip voulu (1 for IP1, 2 for IP2, 3 for IP3)
+ *  <Uniq>  : Boolean. If true, only returns the sorted list of unique IP1.
+ *            If false, returns the list of IP1 associated with (and in
+ *            the same order as) the list of fields.
+ *  <Ips>   : [OUT] Les IPx des champs
+ *  <NbIp>  : [OUT] Le nombre d'IPx retournés
+ *
+ * Retour   : APP_ERR si erreur, APP_OK si ok.
+ *
+ * Remarques :
+ *  La mémoire est allouée dans la fonction et a besoin d'être libérée par la
+ *  fonction appelante. En cas d'erreur, le pointeur retourné sera NULL.
+ *
+ *----------------------------------------------------------------------------
+ */
+int RPN_GetAllIps(int *Flds,int NbFlds,int IpN,int Uniq,int **Ips,int *NbIp) {
+    TRPNHeader  h;
+    int         i,err,*ips;
+    double      deltat;
+
+    *Ips = NULL;
+    *NbIp = 0;
+    APP_MEM_ASRT(ips,malloc(NbFlds*sizeof(*ips)));
+
+    for(i=0; i<NbFlds; ++i) {
+        err=cs_fstprm(Flds[i],&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&h.NK,&h.NBITS,&h.DATYP,&h.IP1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,
+                h.GRTYP,&h.IG1,&h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,&h.UBC,&h.EX1,&h.EX2,&h.EX3);
+        if( err ) {
+            App_Log(ERROR,"(RPN_GetAllIps) Couldn't get info on field (cs_fstprm)\n");
+            APP_FREE(ips);
+            return(APP_ERR);
+        }
+
+        switch( IpN ) {
+            case 1: ips[i]=h.IP1; break;
+            case 2: ips[i]=h.IP2; break;
+            case 3: ips[i]=h.IP3; break;
+            default:
+                App_Log(ERROR,"(RPN_GetAllIps) [%d] is not a valid IP number. Valid numbers are 1,2 and 3.\n",IpN);
+                free(ips);
+                return(APP_ERR);
+        }
+    }
+
+    if( Uniq ) {
+        qsort(ips,NbFlds,sizeof(*ips),QSort_Int);
+        Unique(ips,&NbFlds,sizeof(*ips));
+        //APP_MEM_ASRT( ips,realloc(ips,NbFlds*sizeof(*ips)) );
+    }
+
+    *Ips = ips;
+    *NbIp = NbFlds;
+    return(APP_OK);
+}
+
 #endif
