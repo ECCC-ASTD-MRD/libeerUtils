@@ -1757,6 +1757,10 @@ int GeoRef_Positional(TGeoRef *Ref,TDef *XDef,TDef *YDef) {
       if (nx!=ny || nx!=dx) {
          return(0);
       }
+   } else if (!(Ref->X0 & Ref->X1 & Ref->Y0 & Ref->Y1)) {
+       GeoRef_Size(Ref,0,0,nx-1,ny-1,Ref->BD);
+       dx=nx;
+       dy=ny;
    } else if (nx!=dx || ny!=dy) {
       return(0);
    }
