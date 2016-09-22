@@ -1069,6 +1069,10 @@ TQTree* GeoRef_BuildIndex(TGeoRef* __restrict const Ref) {
    double        dx,dy,lat0,lon0,lat1,lon1;
    Vect2d        tr[3],pt;
    
+   if (!Ref->AX || !Ref->AY) {
+      return(NULL);
+   }
+      
    // Check data limits   
    lat0=lon0=1e10;
    lat1=lon1=-1e10;
