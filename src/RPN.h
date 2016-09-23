@@ -101,6 +101,8 @@ int RPN_GetAllFields(int FID,int DateV,char *Etiket,int Ip1,int Ip2,int Ip3,char
 int RPN_GetAllDates(int *Flds,int NbFlds,int Uniq,int **DateV,int *NbDateV);
 int RPN_GetAllIps(int *Flds,int NbFlds,int IpN,int Uniq,int **Ips,int *NbIp);
 
+int RPN_GenerateIG(int *IG1,int *IG2,int *IG3);
+
 #ifdef HAVE_RMN
 #include "rpnmacros.h"
 #include "rpn_macros_arch.h"

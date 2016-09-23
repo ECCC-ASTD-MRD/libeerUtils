@@ -806,4 +806,34 @@ int RPN_GetAllIps(int *Flds,int NbFlds,int IpN,int Uniq,int **Ips,int *NbIp) {
     return(APP_OK);
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <RPN_GenerateIG>
+ * Creation : Septembre 2016 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Initialise des IG1/2/3 à des valeurs qui se veulent uniques
+ *
+ * Parametres :
+ *  <IG1>   : [OUT] IG1 à Initialiser
+ *  <IG2>   : [OUT] IG2 à Initialiser
+ *  <IG3>   : [OUT] IG3 à Initialiser
+ *
+ * Retour   : APP_ERR si erreur, APP_OK si ok.
+ *
+ * Remarques :
+ *  La mémoire est allouée dans la fonction et a besoin d'être libérée par la
+ *  fonction appelante. En cas d'erreur, le pointeur retourné sera NULL.
+ *
+ *----------------------------------------------------------------------------
+ */
+int RPN_GenerateIG(int *IG1,int *IG2,int *IG3) {
+    int64_t bits = (int64_t)time(NULL);
+
+    // IG1, IG2 and IG3 are limited to 24 bits, but we only have 64 bits to distribute, si IG3 will only receive up to 16 bits
+    *IG2 = bits&0xffff; bits>>=16;
+    *IG1 = bits&0xffffff; bits>>=24;
+    *IG3 = bits; //Basically 0. Should turn 1 on January 19th, 2038 (so still way before my retirement)
+
+    return(APP_OK);
+}
+
 #endif
