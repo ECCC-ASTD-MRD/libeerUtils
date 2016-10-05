@@ -218,7 +218,7 @@ int GeoRef_WKTProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,in
          sx=floor(X);sx=CLAMP(sx,GRef->X0,GRef->X1);
          X=sx==X?GRef->AX[sx]:ILIN(GRef->AX[sx],GRef->AX[sx+1],X-sx);
 
-         s=GRef->X1-GRef->X0+1;
+         s=GRef->NX;
          sy=floor(Y);sy=CLAMP(sy,GRef->Y0,GRef->Y1);
          Y=sy==Y?GRef->AY[sy*s]:ILIN(GRef->AY[sy*s],GRef->AY[(sy+1)*s],Y-sy);
       }
@@ -229,17 +229,17 @@ int GeoRef_WKTProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,in
          dx=X-sx;;
          dy=Y-sy;
 
-         s=sy*(GRef->X1-GRef->X0+1)+sx;
+         s=sy*GRef->NX+sx;
          X=GRef->AX[s];
          Y=GRef->AY[s];
 
          if (++sx<=GRef->X1) {
-            s=sy*(GRef->X1-GRef->X0+1)+sx;
+            s=sy*GRef->NX+sx;
             X+=(GRef->AX[s]-X)*dx;
          }
 
          if (++sy<=GRef->Y1) {
-            s=sy*(GRef->X1-GRef->X0+1)+(sx-1);
+            s=sy*GRef->NX+(sx-1);
             Y+=(GRef->AY[s]-Y)*dy;
          }
       }
@@ -305,7 +305,7 @@ int GeoRef_WKTUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
 
 #ifdef HAVE_GDAL
    double x,y,z=0.0,d=1e32,sd;
-   int    n,nd,s,dx,dy,ok,idx,idxs[8],ni,nj;
+   int    n,nd,s,dx,dy,ok,idx,idxs[8];
    double dists[8];
    Vect2d pts[4],pt;
    Vect3d b;
@@ -317,8 +317,6 @@ int GeoRef_WKTUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
 
       x=Lon;
       y=Lat;
-      ni=GRef->X1-GRef->X0+1;
-      nj=GRef->Y1-GRef->Y0+1;
 
       // Transform from latlon 
       if (GRef->InvFunction) {
@@ -371,23 +369,23 @@ int GeoRef_WKTUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
                   *X=GRef->X0+(*X-GRef->AX[0])/(GRef->AX[1]-GRef->AX[0]);
                }
 
-               s=GRef->Y0;dx=ni;
+               s=GRef->Y0;dx=GRef->NX;
                // Check if vector is increasing
-               if (GRef->AY[s*ni]<GRef->AY[(s+1)*ni]) {
-                  while(s<=GRef->Y1 && *Y>GRef->AY[s*ni]) s++;
+               if (GRef->AY[s*GRef->NX]<GRef->AY[(s+1)*GRef->NX]) {
+                  while(s<=GRef->Y1 && *Y>GRef->AY[s*GRef->NX]) s++;
                } else {
-                  while(s<=GRef->Y1 && *Y<GRef->AY[s*ni]) s++;
+                  while(s<=GRef->Y1 && *Y<GRef->AY[s*GRef->NX]) s++;
                }
                if (s>GRef->Y0) {
                   // We're in so interpolate postion
                   if (s<=GRef->Y1) {
-                     *Y=(*Y-GRef->AY[(s-1)*ni])/(GRef->AY[s*ni]-GRef->AY[(s-1)*ni])+s-1;
+                     *Y=(*Y-GRef->AY[(s-1)*GRef->NX])/(GRef->AY[s*GRef->NX]-GRef->AY[(s-1)*GRef->NX])+s-1;
                   } else {
-                     *Y=(*Y-GRef->AY[GRef->Y1*ni])/(GRef->AY[GRef->Y1*ni]-GRef->AY[(GRef->Y1-1)*ni])+s-1;
+                     *Y=(*Y-GRef->AY[GRef->Y1*GRef->NX])/(GRef->AY[GRef->Y1*GRef->NX]-GRef->AY[(GRef->Y1-1)*GRef->NX])+s-1;
                   }
                } else {
                   // We're out so extrapolate position
-                  *Y=GRef->Y0+(*Y-GRef->AY[0])/(GRef->AY[ni]-GRef->AY[0]);
+                  *Y=GRef->Y0+(*Y-GRef->AY[0])/(GRef->AY[GRef->NX]-GRef->AY[0]);
                }
             }
          } else if (GRef->Grid[1]=='Y') {
