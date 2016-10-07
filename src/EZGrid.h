@@ -150,6 +150,7 @@ int    EZGrid_IJGetValue(TGrid* restrict const Grid,TGridInterpMode Mode,float I
 int    EZGrid_IJGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,TGridInterpMode Mode,float I,float J,int K0,int K1,float *UU,float* restrict VV,float Conv);
 int    EZGrid_LLGetValue(TGrid* restrict const Grid,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* restrict Value);
 int    EZGrid_LLGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* restrict UU,float* restrict VV,float Conv);
+int    EZGrid_LLGetValueX(TGrid* __restrict const GridU,TGrid* __restrict const GridV,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* __restrict UU,float* __restrict VV,float Conv);
 int    EZGrid_LLGetValueY(TGrid* __restrict const GridU,TGrid* __restrict const GridV,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* __restrict UU,float* __restrict VV,float Conv);
 int    EZGrid_LLGetValueM(TGrid* __restrict const GridU,TGrid* __restrict const GridV,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* __restrict UU,float* __restrict VV,float Conv);
 int    EZGrid_GetArray(TGrid* restrict const Grid,int K,float* restrict Value);

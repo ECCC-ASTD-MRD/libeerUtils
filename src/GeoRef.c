@@ -805,8 +805,13 @@ void GeoRef_Qualify(TGeoRef* __restrict const Ref) {
       if (Ref->Grid[0]=='R') {
          Ref->Type|=GRID_RADIAL;
       }     
+   
+      // Check for negative longitude (-180 <-> 180, or 0 <-> 360)
+      if (Ref->AX) {
+         if (Ref->AX[Ref->X0]<0 || Ref->AX[Ref->X1]<0) Ref->Type|=GRID_NEGLON; 
+      }
    }
-}
+ }
 
 int GeoRef_Equal(TGeoRef* __restrict const Ref0,TGeoRef* __restrict const Ref1) {
 

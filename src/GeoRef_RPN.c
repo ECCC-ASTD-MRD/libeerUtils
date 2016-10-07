@@ -383,24 +383,11 @@ int GeoRef_RPNProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,in
             Y=GRef->AY[idx];
             X=GRef->AX[idx];
          } else {
-            sx=floor(X);sx=CLAMP(sx,GRef->X0,GRef->X1);
-            sy=floor(Y);sy=CLAMP(sy,GRef->Y0,GRef->Y1);
-            dx=X-sx;;
-            dy=Y-sy;
-
-            s=sy*(GRef->X1-GRef->X0+1)+sx;
-            X=GRef->AX[s];
-            Y=GRef->AY[s];
-
-            if (++sx<=GRef->X1) {
-               s=sy*(GRef->X1-GRef->X0+1)+sx;
-               X+=(GRef->AX[s]-X)*dx;
-            }
-
-            if (++sy<=GRef->Y1) {
-               s=sy*(GRef->X1-GRef->X0+1)+(sx-1);
-               Y+=(GRef->AY[s]-Y)*dy;
-            }
+            dx=Vertex_ValS(GRef->AX,GRef->NX,GRef->NY,X,Y);
+            dy=Vertex_ValS(GRef->AY,GRef->NX,GRef->NY,X,Y);
+            
+            X=dx;
+            Y=dy;
          }
       } else {
          return(0);
@@ -463,6 +450,8 @@ int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
    // Invalid coordinates ?
    if (Lat>90.0 || Lat<-90.0 || Lon==-999.0) 
      return(FALSE);
+
+   Lon=GeoRef_Lon(GRef,Lon);
 
 #ifdef HAVE_RMN
    if (GRef->Type&GRID_SPARSE) {      
@@ -544,7 +533,8 @@ int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
                   }
                }
                
-               if (idx!=-1) {
+
+                if (idx!=-1) {
                   // Map coordinates to grid
                   Vertex_Map(pts,X,Y,Lon,Lat);
                   
@@ -582,7 +572,6 @@ int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
       return(TRUE);
    } else {
 
-//      lon=Lon<0?Lon+360.0:Lon;
       lon=Lon;
       lat=Lat;
 

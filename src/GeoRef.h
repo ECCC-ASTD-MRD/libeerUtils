@@ -51,17 +51,18 @@
 #endif
 
 #define GRID_NONE     0x0
-#define GRID_REGULAR  0x1
-#define GRID_VARIABLE 0x2
-#define GRID_WRAP     0x4
-#define GRID_SPARSE   0x8
-#define GRID_TILE     0x10
-#define GRID_VERTICAL 0x20
-#define GRID_RADIAL   0x40
-#define GRID_REPEAT   0x80
+#define GRID_REGULAR  0x1        // Regular grid
+#define GRID_VARIABLE 0x2        // Variable grid resolution
+#define GRID_WRAP     0x4        // Wrap around globe
+#define GRID_SPARSE   0x8        // Sparse grid (point cloud,orca grid
+#define GRID_TILE     0x10       // Sub tile 
+#define GRID_VERTICAL 0x20       // Vertical grid
+#define GRID_RADIAL   0x40       // Radar grid
+#define GRID_REPEAT   0x80       // Does the last longitude repeat the first
 #define GRID_PSEUDO   0x100      // Pseudocylindrical
 #define GRID_NOXNEG   0x200      // No negative longitude
 #define GRID_NUNORTH  0x400      // North is not up
+#define GRID_NEGLON   0x800      // Lon are (-180,180)
 
 #define GRID_YQTREESIZE   1000
 #define GRID_MQTREEDEPTH  8
@@ -101,6 +102,7 @@
 
 #define GeoRef_ScanX(X) (((float*)GeoScanX)[X]-1.0)
 #define GeoRef_ScanY(X) (((float*)GeoScanY)[X]-1.0)
+#define GeoRef_Lon(R,L) (((L)>180 && R->Type&GRID_NEGLON)?(L)-360.0:((L)<0 && !(R->Type&GRID_NEGLON))?(L)+360.0:(L))
 
 // Structure pour les coordonees latlon
 typedef struct Coord {
@@ -132,7 +134,7 @@ typedef struct TGeoRef {
    int     BD;                                            // Bordure
    int     NX,NY,X0,Y0,X1,Y1;                             // Grid limits
    int     IG1,IG2,IG3,IG4;                               // Grid descriptor id
-
+   
    Coord  Loc;                                            // (Radar) Localisation du centre de reference
    double CTH,STH;                                        // (Radar) sin and cos of sweep angle
    int    R;                                              // (Radar) Rayon autour du centre de reference en bin

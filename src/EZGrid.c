@@ -35,6 +35,7 @@
 
 #include "App.h"
 #include "EZGrid.h"
+#include "Vertex.h"
 
 TGridYInterpMode EZGRID_YINTERP      = EZ_BARNES;               // Type of linear interpolation for Y grids
 int              EZGRID_YLINEARCOUNT = 4;                       // Number of points to use for point cloud interpolation
@@ -813,17 +814,17 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
    } else {
       h.GRTYP[0]=Grid->H.GRTYP[0];
    }
+   
+   Grid->GRef=GeoRef_RPNSetup(Grid->H.NI,Grid->H.NJ,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,Grid->H.FID);
 
    switch(Grid->H.GRTYP[0]) {
       case 'M':
-         Grid->GRef=GeoRef_New();
-         Grid->GRef->Grid[0]='M';
+//         Grid->GRef=GeoRef_New();
+//         Grid->GRef->Grid[0]=Grid->H.GRTYP[0];
+//         GeoRef_Size(Grid->GRef,0,0,Grid->H.NI-1,Grid->H.NJ-1,0);
    
          cs_fstinf(Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","##");
          Grid->GRef->NIdx=ni*nj*nk;
-         Grid->GRef->NX=Grid->H.NI;
-         Grid->GRef->NY=Grid->H.NJ;
-
          Grid->GRef->Idx=(unsigned int*)malloc(Grid->GRef->NIdx*sizeof(unsigned int));
          Grid->GRef->AY=(float*)malloc(Grid->GRef->NX*sizeof(float));
          Grid->GRef->AX=(float*)malloc(Grid->GRef->NX*sizeof(float));
@@ -835,13 +836,12 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
          GeoRef_BuildIndex(Grid->GRef);
          break;
    
+      case 'X':
       case 'Y':
-         Grid->GRef=GeoRef_New();
-         Grid->GRef->Grid[0]='Y';
+//         Grid->GRef=GeoRef_New();
+//         Grid->GRef->Grid[0]=Grid->H.GRTYP[0];
+//         GeoRef_Size(Grid->GRef,0,0,Grid->H.NI-1,Grid->H.NJ-1,0);
    
-         Grid->GRef->NX=Grid->H.NI;
-         Grid->GRef->NY=Grid->H.NJ;
-
          Grid->GRef->AY=(float*)malloc(Grid->H.NIJ*sizeof(float));
          Grid->GRef->AX=(float*)malloc(Grid->H.NIJ*sizeof(float));
 
@@ -850,11 +850,12 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
          
          GeoRef_BuildIndex(Grid->GRef);
          break;
-         
+                  
       default:
          Grid->GID=RPN_IntIdNew(Grid->H.NI,Grid->H.NJ,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,Grid->H.FID);
          Grid->Wrap=EZGrid_Wrap(Grid);
    }
+   GeoRef_Qualify(Grid->GRef);
 
    return(Grid);
 }
@@ -1696,6 +1697,10 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float La
    }
    
    switch(Grid->H.GRTYP[0]) {
+      case 'X': // This is a $#@$@#% grid (orca)
+         return(EZGrid_LLGetValueX(Grid,NULL,Mode,Lat,Lon,K0,K1,Value,NULL,1.0));
+         break;
+         
       case 'Y': // This is a point cloud
          return(EZGrid_LLGetValueY(Grid,NULL,Mode,Lat,Lon,K0,K1,Value,NULL,1.0));
          break;
@@ -1714,6 +1719,58 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float La
    }
    
    return(FALSE);
+}
+
+int EZGrid_LLGetValueX(TGrid* __restrict const GridU,TGrid* __restrict const GridV,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* __restrict UU,float* __restrict VV,float Conv) {
+
+   TGridTile   *tu,*tv;
+   double       i,j,d,th,len;
+   int          k=0,ik=0;
+   int          n;
+   unsigned int idx;
+   
+   if (!GridU || GridU->H.GRTYP[0]!='X') {
+      App_Log(ERROR,"%s: Invalid grid\n",__func__);
+      return(FALSE);
+   }
+   
+   if (!GridU->GRef->UnProject(GridU->GRef,&i,&j,Lat,Lon,FALSE,TRUE)){
+      return(FALSE);
+   }
+   
+   tu=tv=NULL;
+   k=K0;
+   d=GeoRef_GeoDir(GridU->GRef,i,j);
+   
+  do {            
+                   tu=&GridU->Tiles[0]; if (!EZGrid_IsLoaded(tu,k)) EZGrid_TileGetData(GridU,tu,k,0);
+      if (GridV) { tv=&GridV->Tiles[0]; if (!EZGrid_IsLoaded(tv,k)) EZGrid_TileGetData(GridV,tv,k,0); }
+            
+      if (Mode==EZ_NEAREST) {
+         idx=lrintf(j)*tu->NI+lrintf(i);
+                 UU[ik]=tu->Data[k][idx];
+         if (tv) VV[ik]=tv->Data[k][idx];
+      } else {
+                 UU[ik]=Vertex_ValS(tu->Data[k],tu->NI,tu->NJ,i,j);
+         if (tv) VV[ik]=Vertex_ValS(tv->Data[k],tu->NI,tu->NJ,i,j);    
+      }
+               
+      if (Conv!=1.0) {
+                 UU[ik]*=Conv;
+         if (tv) VV[ik]*=Conv;         
+      }
+      
+      // Re-orient components geographically
+      if (tv) {
+         th=atan2(UU[ik],VV[ik])-d;
+         len=hypot(UU[ik],VV[ik]);
+         UU[ik]=len*sin(th);
+         VV[ik]=len*cos(th);
+      }
+      ik++;
+   } while ((K0<=K1?k++:k--)!=K1);
+                
+   return(TRUE);  
 }
 
 int EZGrid_LLGetValueY(TGrid* __restrict const GridU,TGrid* __restrict const GridV,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* __restrict UU,float* __restrict VV,float Conv) {
@@ -1894,6 +1951,10 @@ int EZGrid_LLGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const Gr
    }
 
    switch(GridU->H.GRTYP[0]) {
+      case 'X': // This is a $#@$@#% grid (orca)
+         return(EZGrid_LLGetValueX(GridU,GridV,Mode,Lat,Lon,K0,K1,UU,VV,Conv));
+         break;
+         
       case 'Y': // This is a point cloud
          return(EZGrid_LLGetValueY(GridU,GridV,Mode,Lat,Lon,K0,K1,UU,VV,Conv));
          break;
@@ -2561,6 +2622,7 @@ int EZGrid_GetDelta(TGrid* __restrict const Grid,int Invert,float* DX,float* DY,
 int EZGrid_GetLL(TGrid* __restrict const Grid,float* Lat,float* Lon,float* I,float* J,int Nb) {
 
    int i,ok=0;
+   double la,lo;
    float fi,fj;
 
    if (Grid && Grid->GID>=0) {
@@ -2575,8 +2637,9 @@ int EZGrid_GetLL(TGrid* __restrict const Grid,float* Lat,float* Lon,float* I,flo
    //   RPN_IntUnlock();
    } else {
       for(i=0;i<Nb;i++) {
-         Lon[i]=I[i];
-         Lat[i]=J[i];
+         Grid->GRef->Project(Grid->GRef,I[i],J[i],&la,&lo,FALSE,TRUE);   
+         Lon[i]=lo;
+         Lat[i]=la;
       }    
    }
    return(ok==0);
@@ -2605,9 +2668,10 @@ int EZGrid_GetLL(TGrid* __restrict const Grid,float* Lat,float* Lon,float* I,flo
 int EZGrid_GetIJ(TGrid* __restrict const Grid,float* Lat,float* Lon,float* I,float* J,int Nb) {
 
    int i,ok=0;
-      
+   double x,y;
+   
    if (Grid && Grid->GID>=0) {
-   //   RPN_IntLock();
+  //   RPN_IntLock();
       ok=c_gdxyfll(Grid->GID,I,J,Lat,Lon,Nb);
    //   RPN_IntUnlock();
 
@@ -2617,8 +2681,11 @@ int EZGrid_GetIJ(TGrid* __restrict const Grid,float* Lat,float* Lon,float* I,flo
       }
    } else {
       for(i=0;i<Nb;i++) {
-         I[i]=Lon[i];
-         J[i]=Lat[i];
+         Grid->GRef->UnProject(Grid->GRef,&x,&y,Lat[i],Lon[i],FALSE,TRUE);   
+         I[i]=x;
+         J[i]=y;
+//         I[i]=Lon[i];
+//         J[i]=Lat[i];
       }    
    }
    return(ok==0);

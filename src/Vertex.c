@@ -488,3 +488,38 @@ double VertexValV(TDef *Def,double X,double Y,double Z,Vect3d V) {
    
    return(0);
 }
+
+float Vertex_ValS(float *Data,int NI,int NJ,double X,double Y) {
+   
+   double        cell[4];
+   unsigned long i,j,idx,idx1;
+
+   if (X>NI-1 || Y>NJ-1 || X<0 || Y<0) {
+      return(0);
+   }
+
+   i=X;X-=i;
+   j=Y;Y-=j;
+
+   // Get gridpoint indexes
+   idx=j*NI+i;
+   idx1=(j==NJ-1)?idx:idx+NI;
+
+   cell[0]=Data[idx];
+   cell[1]=Data[idx+1];
+   cell[2]=Data[idx1+1];
+   cell[3]=Data[idx1];
+   
+   // Interpolate over X
+   if (X>TINY_VALUE) {
+      cell[0]=ILIN(cell[0],cell[1],X);
+      cell[3]=ILIN(cell[3],cell[2],X);
+   }
+
+   // Interpolate over Y
+   if (Y>TINY_VALUE) {
+      cell[0]=ILIN(cell[0],cell[3],Y);
+   }
+
+   return(cell[0]);
+}
