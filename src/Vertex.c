@@ -489,10 +489,28 @@ double VertexValV(TDef *Def,double X,double Y,double Z,Vect3d V) {
    return(0);
 }
 
-float Vertex_ValS(float *Data,int NI,int NJ,double X,double Y) {
+static inline float VertexAvgS(float *Data,char *Mask,int NI,int NJ,int X,int Y) {
+   
+   unsigned long n=0,i,j,idx;
+   float         val=0.0;
+   
+   i=X;j=Y;
+   j-=1;i-=1; idx=j*NI+i; if (j>=0 && i>=0 && Mask[idx]) { val+=Data[idx]; n++; }
+   i++;       idx++;      if (j>=0         && Mask[idx]) { val+=Data[idx]; n++; }
+   i++;       idx++;      if (j>=0 && i<NI && Mask[idx]) { val+=Data[idx]; n++; }
+   j++;       idx+=NI;    if (        i<NI && Mask[idx]) { val+=Data[idx]; n++; }
+   i-=2;      idx-=2;     if (        i>=0 && Mask[idx]) { val+=Data[idx]; n++; }
+   j++;       idx+=NI;    if (j<NJ && i>=0 && Mask[idx]) { val+=Data[idx]; n++; }
+   i++;       idx++;      if (j<NJ         && Mask[idx]) { val+=Data[idx]; n++; }
+   i++;       idx++;      if (j<NJ && i<NI && Mask[idx]) { val+=Data[idx]; n++; }
+   
+   return(n?val/n:0.0);
+}
+
+float Vertex_ValS(float *Data,char *Mask,int NI,int NJ,double X,double Y) {
    
    double        cell[4];
-   unsigned long i,j,idx,idx1;
+   unsigned long i,j,idx[4];
 
    if (X>NI-1 || Y>NJ-1 || X<0 || Y<0) {
       return(0);
@@ -502,13 +520,22 @@ float Vertex_ValS(float *Data,int NI,int NJ,double X,double Y) {
    j=Y;Y-=j;
 
    // Get gridpoint indexes
-   idx=j*NI+i;
-   idx1=(j==NJ-1)?idx:idx+NI;
+   idx[0]=j*NI+i;
+   idx[1]=idx[0]+1;
+   idx[3]=(j==NJ-1)?idx[0]:idx[0]+NI;
+   idx[2]=idx[3]+1;
 
-   cell[0]=Data[idx];
-   cell[1]=Data[idx+1];
-   cell[2]=Data[idx1+1];
-   cell[3]=Data[idx1];
+   cell[0]=Data[idx[0]];
+   cell[1]=Data[idx[1]];
+   cell[2]=Data[idx[2]];
+   cell[3]=Data[idx[3]];
+   
+   if (Mask) {
+      if (!Mask[idx[0]]) cell[0]=VertexAvgS(Data,Mask,NI,NJ,i,  j);
+      if (!Mask[idx[1]]) cell[1]=VertexAvgS(Data,Mask,NI,NJ,i+1,j);
+      if (!Mask[idx[2]]) cell[2]=VertexAvgS(Data,Mask,NI,NJ,i+1,j+1);
+      if (!Mask[idx[3]]) cell[3]=VertexAvgS(Data,Mask,NI,NJ,i,  j+1);      
+   }
    
    // Interpolate over X
    if (X>TINY_VALUE) {

@@ -82,6 +82,7 @@ typedef enum { EZ_CRESSMAN, EZ_BARNES } TGridYInterpMode;
 
 typedef struct TGridTile {
    float **Data;                        // Data pointer
+   char  **Mask;                        // Mask pointer
    int     GID;                         // EZSCINT Tile grid id (for interpolation)
    int     I,J;                         // Tile starting point within master grid
    int     NO;                          // Tile number

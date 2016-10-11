@@ -172,8 +172,8 @@ static float **EZGrid_TileGetData(const TGrid* __restrict const Grid,TGridTile* 
 
    TGridTile *t0,*t1;
    int        key;
-   int        ni,nj,nk,t=0,k;
-   int        flag=0,ip1=0,mode=2,type;
+   int        i,ni,nj,nk,t=0,k;
+   int       *tmpi,flag=0,ip1=0,mode=2,type;
    char       format;
    float    **data,*datak;
    
@@ -223,6 +223,41 @@ static float **EZGrid_TileGetData(const TGrid* __restrict const Grid,TGridTile* 
          } else {
             c_fstluk(datak,key,&ni,&nj,&nk);
          }
+         
+         // Check for mask (TYPVAR==@@) 
+         if (Grid->H.TYPVAR[1]=='@') {
+            key=c_fstinf(Grid->H.FID,&ni,&nj,&nk,Grid->H.DATEV,Grid->H.ETIKET,ip1,Grid->H.IP2,Tile->NO,"@@",Grid->H.NOMVAR);
+            if (key>0) {
+               /*Allocate Tile data if not already done*/
+               if (!Tile->Mask) {
+                  if (!(Tile->Mask=(char**)calloc(Grid->H.NK,sizeof(char*)))) {
+                     App_Log(ERROR,"%s: Unable to allocate memory for tile mask levels (%s)\n",__func__,Grid->H.NOMVAR);
+                     if (!Safe) pthread_mutex_unlock(&Tile->Mutex);
+                     return(NULL);
+                  }
+               }
+
+               if (!Tile->Mask[k]) {
+                  if ((Tile->Mask[k]=(char*)malloc(ni*nj))) {
+                     if ((tmpi=(int*)malloc(ni*nj*sizeof(int)))) {
+                       c_fstluk(tmpi,key,&ni,&nj,&nk);
+                        for(i=0;i<ni*nj;i++) {
+                           Tile->Mask[k][i]=tmpi[i]!=0x0;
+                        }
+                        free(tmpi);
+                     } else {
+                        free(Tile->Mask[k]);
+                        Tile->Mask[k]=NULL;
+                        App_Log(WARNING,"%s: Unable to allocate memory to read mask",__func__);
+                     }
+                  } else {
+                     App_Log(WARNING,"%s: Unable to allocate memory for mask",__func__);
+                  }
+               }          
+            }
+         }
+
+         
          RPN_FieldUnlock();
       } else if (Grid->T0 && Grid->T1) {  /*Check for time interpolation needs*/
          /*Figure out T0 and T1 tile to use*/
@@ -240,6 +275,7 @@ static float **EZGrid_TileGetData(const TGrid* __restrict const Grid,TGridTile* 
          for(ni=0;ni<Tile->HNIJ;ni++) {
             datak[ni]=t0->Data[k][ni]*Grid->FT0+t1->Data[k][ni]*Grid->FT1;
          }
+         Tile->Mask=t0->Mask;
       }
 
       /*Apply Factor if needed*/
@@ -763,6 +799,7 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
       tile->HDI   = 0;
       tile->HDJ   = 0;
       tile->Data  = NULL;
+      tile->Mask  = NULL;
       tile->KBurn = -1;
       tile->Side  = EZGRID_CENTER;
       pthread_mutex_init(&tile->Mutex,NULL);
@@ -1105,11 +1142,21 @@ void EZGrid_Free(TGrid* __restrict const Grid) {
                   free(Grid->Tiles[n].Data[k]);
                   Grid->Tiles[n].Data[k]=NULL;
                }
+               if (Grid->H.FID!=-1 && Grid->Tiles[n].Mask[k]) {
+                  free(Grid->Tiles[n].Mask[k]);
+                  Grid->Tiles[n].Mask[k]=NULL;
+               }  
             }
             pthread_mutex_destroy(&Grid->Tiles[n].Mutex);
             free(Grid->Tiles[n].Data);
             Grid->Tiles[n].Data=NULL;
-         }
+            
+            // Free mask only on fields with associated file, otherwise it's referenced
+            if (Grid->H.FID!=-1 && Grid->Tiles[n].Mask) {
+               free(Grid->Tiles[n].Mask);
+            }
+            Grid->Tiles[n].Mask=NULL;
+        }
       }
       if (Grid->Data) {
          free(Grid->Data);
@@ -1751,10 +1798,10 @@ int EZGrid_LLGetValueX(TGrid* __restrict const GridU,TGrid* __restrict const Gri
                  UU[ik]=tu->Data[k][idx];
          if (tv) VV[ik]=tv->Data[k][idx];
       } else {
-                 UU[ik]=Vertex_ValS(tu->Data[k],tu->NI,tu->NJ,i,j);
-         if (tv) VV[ik]=Vertex_ValS(tv->Data[k],tu->NI,tu->NJ,i,j);    
+                 UU[ik]=Vertex_ValS(tu->Data[k],tu->Mask[k],tu->NI,tu->NJ,i,j);
+         if (tv) VV[ik]=Vertex_ValS(tv->Data[k],tv->Mask[k],tu->NI,tu->NJ,i,j);    
       }
-               
+    
       if (Conv!=1.0) {
                  UU[ik]*=Conv;
          if (tv) VV[ik]*=Conv;         

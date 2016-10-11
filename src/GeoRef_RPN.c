@@ -383,8 +383,8 @@ int GeoRef_RPNProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,in
             Y=GRef->AY[idx];
             X=GRef->AX[idx];
          } else {
-            dx=Vertex_ValS(GRef->AX,GRef->NX,GRef->NY,X,Y);
-            dy=Vertex_ValS(GRef->AY,GRef->NX,GRef->NY,X,Y);
+            dx=Vertex_ValS(GRef->AX,NULL,GRef->NX,GRef->NY,X,Y);
+            dy=Vertex_ValS(GRef->AY,NULL,GRef->NX,GRef->NY,X,Y);
             
             X=dx;
             Y=dy;
