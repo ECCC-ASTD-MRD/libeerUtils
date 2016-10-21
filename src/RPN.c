@@ -39,6 +39,9 @@
 #include "EZGrid.h"
 #include "fnom.h"
 
+static int **LNK_FID = NULL;
+static int LNK_NB = 0;
+
 static const char *RPN_Desc[]={ ">>","^^","^>","!!","##","HY","PROJ","MTRX",NULL };
 
 static char FGFDTLock[1000];
@@ -834,6 +837,137 @@ int RPN_GenerateIG(int *IG1,int *IG2,int *IG3) {
     *IG3 = bits; //Basically 0. Should turn 1 on January 19th, 2038 (so still way before my retirement)
 
     return(APP_OK);
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <RPN_LinkFiles>
+ * Creation : Octobre 2016 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Ouvre et lie plusieurs fichiers standards ensemble
+ *
+ * Parametres :
+ *  <Files> : Null-terminated liste des fichiers standards à ouvrir et lier
+ *
+ * Retour   : Le FID à utiliser ou un nombre négatif si erreur.
+ *
+ * Remarques : Cette fonction N'EST PAS thread safe
+ *  
+ *----------------------------------------------------------------------------
+ */
+int RPN_LinkFiles(char **Files) {
+    // Make sure there is at least one file
+    if( !Files || !*Files )
+        return -1;
+
+    // Check if there is more than one file
+    if( Files[1] ) {
+        int i,*lst,**ptr;
+
+        // Find the number of files
+        for(i=2; Files[i]; ++i);
+
+        // Allocate the memory
+        lst = malloc((i+1)*sizeof(*lst));
+
+        // Put the size first
+        lst[0] = i;
+
+        // Open all the files
+        for(i=0; Files[i]; ++i) {
+            if( (lst[i+1]=cs_fstouv(Files[i],"STD+RND+R/O")) < 0 ) {
+                App_Log(ERROR,"(%s) Problem opening input file \"%s\"\n",__func__,Files[i]);
+                free(lst);
+                return -1;
+            }
+        }
+
+        // Link all files
+        if( f77name(fstlnk)(lst+1,lst) != 0 ) {
+            App_Log(ERROR,"(%s) Could not link the %d input files together\n",__func__,i);
+            free(lst);
+            return -1;
+        }
+
+        // Add the list of FIDs to the global list
+        if( !(ptr=realloc(LNK_FID,(LNK_NB+1)*sizeof(*LNK_FID))) ) {
+            App_Log(ERROR,"(%s) Could not allocate memory for the global FIDs array\n",__func__);
+            free(lst);
+            return -1;
+        }
+        LNK_FID = ptr;
+        LNK_FID[LNK_NB++] = lst;
+
+        // Return the file handle
+        return lst[1];
+    } else {
+        int h;
+
+        // Only one file, no need to link anything
+        if( (h=cs_fstouv(Files[0],"STD+RND+R/O")) < 0 ) {
+            App_Log(ERROR,"(%s) Problem opening input file %s\n",__func__,Files[0]);
+        }
+
+        return h;
+    }
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <RPN_UnLinkFiles>
+ * Creation : Septembre 2016 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Délie et ferme les fichiers standards liés
+ *
+ * Parametres :
+ *  <FID>   : Le FID des fichiers liés à libérer
+ *
+ * Retour   : APP_ERR si erreur, APP_OK si ok.
+ *
+ * Remarques : Cette fonction N'EST PAS thread safe
+ * 
+ *----------------------------------------------------------------------------
+ */
+int RPN_UnLinkFiles(int FID) {
+    // Make sure we have a valid handle
+    if( FID >= 0 ) {
+        int i,j,**ptr;
+
+        // Find the list containing that FID in the first position
+        for(i=0; i<LNK_NB; ++i) {
+            if( LNK_FID[i][1] == FID ) {
+                // Unlink the files (the number of files is the header of that list)
+                f77name(fstunl)(LNK_FID[i]+1,LNK_FID[i]);
+
+                // Close the files
+                for(j=1; j<LNK_FID[i][0]; ++j)
+                    cs_fstfrm(LNK_FID[i][j]);
+
+                // Free the memory
+                free(LNK_FID[i]);
+
+                // Move back the remaining FIDs
+                for(j=i+1; j<LNK_NB; )
+                    LNK_FID[i++] = LNK_FID[j++];
+
+                // Resize the table
+                --LNK_NB;
+                if( LNK_NB ) {
+                    if( (ptr=realloc(LNK_FID,LNK_NB*sizeof(*LNK_FID))) ) {;
+                        LNK_FID = ptr;
+                    }
+                } else {
+                    free(LNK_FID);
+                    LNK_FID = NULL;
+                }
+
+                return APP_OK;
+            }
+        }
+
+        // If we are still here, it means there was no list (only one file). Therefore, we just close the file.
+        cs_fstfrm(FID);
+    }
+
+    return APP_OK;
 }
 
 #endif
