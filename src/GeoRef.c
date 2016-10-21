@@ -746,8 +746,9 @@ void GeoRef_Clear(TGeoRef *Ref,int New) {
 
 void GeoRef_Qualify(TGeoRef* __restrict const Ref) {
 
-   Coord co[2];
+   Coord  co[2];
    double d[2];
+   int    x;
 
    if (Ref) {
       Ref->Type=GRID_NONE;
@@ -808,10 +809,15 @@ void GeoRef_Qualify(TGeoRef* __restrict const Ref) {
    
       // Check for negative longitude (-180 <-> 180, or 0 <-> 360)
       if (Ref->AX) {
-         if (Ref->AX[Ref->X0]<0 || Ref->AX[Ref->X1]<0) Ref->Type|=GRID_NEGLON; 
+         for(x=0;x<Ref->NX;x++) { 
+            if (Ref->AX[x]<0) { 
+               Ref->Type|=GRID_NEGLON; 
+               break; 
+            } 
+         } 
       }
    }
- }
+}
 
 int GeoRef_Equal(TGeoRef* __restrict const Ref0,TGeoRef* __restrict const Ref1) {
 

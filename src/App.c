@@ -206,7 +206,11 @@ void App_Start(void) {
    c_ezsetopt("VERBOSE","NO");
 #endif
    
-   App->State=RUN;
+   App->State      = RUN;
+   App->LogWarning = 0;
+   App->LogError   = 0;
+   App->Percent    = 0.0;
+   App->Signal     = 0;
 
    gettimeofday(&App->Time,NULL);
 

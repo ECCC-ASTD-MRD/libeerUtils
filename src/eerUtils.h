@@ -199,6 +199,8 @@ int   strtok_count(char *Str,char Sep);
 int   strrindex(char *Str);
 int   strmatch(const char *Str,char *Pattern);
 
+#define strend(S) (S+strlen(S))
+
 #define System_IsStamp(S) (S<999999999)
 
 int    System_IsBigEndian(void);

@@ -240,7 +240,7 @@ static float **EZGrid_TileGetData(const TGrid* __restrict const Grid,TGridTile* 
                if (!Tile->Mask[k]) {
                   if ((Tile->Mask[k]=(char*)malloc(ni*nj))) {
                      if ((tmpi=(int*)malloc(ni*nj*sizeof(int)))) {
-                       c_fstluk(tmpi,key,&ni,&nj,&nk);
+                        c_fstluk(tmpi,key,&ni,&nj,&nk);
                         for(i=0;i<ni*nj;i++) {
                            Tile->Mask[k][i]=tmpi[i]!=0x0;
                         }
@@ -749,7 +749,7 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
    
    memset(&h,0,sizeof(TRPNHeader));
 
-   /*Check for master grid descriptor*/
+   // Check for master grid descriptor
    if (Grid->H.GRTYP[0]=='#') {
       key=cs_fstinf(Grid->H.FID,&Grid->H.NI,&h.NJ,&h.NK,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"",">>");
       key=cs_fstinf(Grid->H.FID,&h.NI,&Grid->H.NJ,&h.NK,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"","^^");
@@ -760,10 +760,10 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
       }
    }
 
-   /*Get vertical reference*/
+   // Get vertical reference
    Grid->ZRef=EZGrid_GetZRef(Grid);
 
-   /*Get the number of tiles*/
+   // Get the number of tiles
    cs_fstinl(Grid->H.FID,&h.NI,&h.NJ,&h.NK,Grid->H.DATEV,Grid->H.ETIKET,Grid->H.IP1,Grid->H.IP2,-1,Grid->H.TYPVAR,Grid->H.NOMVAR,idlst,&Grid->NbTiles,RPNMAX);
    Grid->Tiles=(TGridTile*)malloc(Grid->NbTiles*sizeof(TGridTile));
    Grid->Data=NULL;
@@ -777,7 +777,7 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
    h.GRTYP[1]='\0';
    ni=0;
 
-   /*Parse the tiles to get the tile limits and structure*/
+   // Parse the tiles to get the tile limits and structure
    for(n=0;n<Grid->NbTiles;n++) {
       key=cs_fstprm(idlst[n],&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&h.NK,&h.NBITS,
             &h.DATYP,&h.IP1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,
@@ -791,8 +791,8 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
 
       tile=&Grid->Tiles[Grid->H.GRTYP[0]=='#'?h.IP3-1:0];
 
-      /*Create tile grid*/
-      tile->NO    = h.IP3;
+      // Create tile grid
+      tile->NO    = Grid->H.GRTYP[0]=='#'?h.IP3:-1;
       tile->HNI   = tile->NI  = h.NI;
       tile->HNJ   = tile->NJ  = h.NJ;
       tile->HNIJ  = tile->NIJ = h.NI*h.NJ;
@@ -803,15 +803,14 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
       tile->KBurn = -1;
       tile->Side  = EZGRID_CENTER;
       pthread_mutex_init(&tile->Mutex,NULL);
-
       tile->GID =RPN_IntIdNew(h.NI,h.NJ,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,Grid->H.FID);
 
-      /*Check for tiled data or not*/
+      // Check for tiled data or not
       if (Grid->H.GRTYP[0]=='#') {
          tile->HI=tile->I=h.IG3-1;
          tile->HJ=tile->J=h.IG4-1;
 
-         /*Set the border tile flags and count the number of tiles in I,J*/
+         // Set the border tile flags and count the number of tiles in I,J
          if (h.IG3==1)                { tile->Side|=EZGRID_LEFT;   Grid->NTJ++; }
          if (h.IG3+h.NI+2>Grid->H.NI) { tile->Side|=EZGRID_RIGHT; }
          if (h.IG4==1)                { tile->Side|=EZGRID_BOTTOM; Grid->NTI++; ni+=h.NI; }
@@ -825,12 +824,12 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
       }
    }
 
-   /*Is there a halo around the tiles*/
+   // Is there a halo around the tiles
    if (ni>Grid->H.NI) {
-      /*Calculate halo width*/
+      // Calculate halo width
       Grid->Halo=ceil((ni-Grid->H.NI)/Grid->NTI/2.0);
 
-      /*Adjust dimensions with halo, we keep coordinates reference without halo*/
+      // Adjust dimensions with halo, we keep coordinates reference without halo
       for(n=0;n<Grid->NbTiles;n++) {
          tile=&Grid->Tiles[n];
 
@@ -844,7 +843,7 @@ TGrid* EZGrid_Get(TGrid* __restrict const Grid) {
       }
    }
 
-   /*Create master grid*/
+   // Create master grid
    if (Grid->H.GRTYP[0]=='#') {
       h.GRTYP[0]='Z';
       h.IG3=h.IG4=0;
@@ -1142,7 +1141,7 @@ void EZGrid_Free(TGrid* __restrict const Grid) {
                   free(Grid->Tiles[n].Data[k]);
                   Grid->Tiles[n].Data[k]=NULL;
                }
-               if (Grid->H.FID!=-1 && Grid->Tiles[n].Mask[k]) {
+               if (!Grid->T0 && Grid->Tiles[n].Mask && Grid->Tiles[n].Mask[k] && Grid->H.FID!=-1) {
                   free(Grid->Tiles[n].Mask[k]);
                   Grid->Tiles[n].Mask[k]=NULL;
                }  
@@ -1152,7 +1151,7 @@ void EZGrid_Free(TGrid* __restrict const Grid) {
             Grid->Tiles[n].Data=NULL;
             
             // Free mask only on fields with associated file, otherwise it's referenced
-            if (Grid->H.FID!=-1 && Grid->Tiles[n].Mask) {
+            if (!Grid->T0 && Grid->H.FID!=-1 && Grid->Tiles[n].Mask) {
                free(Grid->Tiles[n].Mask);
             }
             Grid->Tiles[n].Mask=NULL;
@@ -1197,7 +1196,7 @@ void EZGrid_Clear(TGrid* __restrict const Grid) {
    int n,k;
    float f=nanf("NaN");
 
-   /*Cleanup tile data*/
+   // Cleanup tile data
    for(n=0;n<Grid->NbTiles;n++) {
       if (Grid->Tiles[n].Data) {
          for(k=0;k<Grid->H.NK;k++) {
@@ -1205,9 +1204,12 @@ void EZGrid_Clear(TGrid* __restrict const Grid) {
                Grid->Tiles[n].Data[k][0]=f;
          }
       }
+      // If tile is interpolated, mask is a reference
+      if (Grid->T0) Grid->Tiles[n].Mask=NULL;
+      
       Grid->Tiles[n].KBurn=-1;
    }
-   Grid->T0=Grid->T1=0;
+   Grid->T0=Grid->T1=NULL;
 }
 
 /*----------------------------------------------------------------------------
@@ -1342,6 +1344,7 @@ TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr) {
       memcpy(new->Tiles,mst->Tiles,mst->NbTiles*sizeof(TGridTile));
       for(n=0;n<mst->NbTiles;n++) {
          new->Tiles[n].Data=NULL;
+         new->Tiles[n].Mask=NULL;
          new->Tiles[n].KBurn=-1;
          pthread_mutex_init(&new->Tiles[n].Mutex,NULL);
       }

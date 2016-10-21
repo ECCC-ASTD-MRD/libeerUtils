@@ -452,7 +452,7 @@ int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
      return(FALSE);
 
    Lon=GeoRef_Lon(GRef,Lon);
-
+   
 #ifdef HAVE_RMN
    if (GRef->Type&GRID_SPARSE) {      
       if (GRef->AX && GRef->AY) {
