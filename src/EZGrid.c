@@ -191,7 +191,7 @@ static float **EZGrid_TileGetData(const TGrid* __restrict const Grid,TGridTile* 
       } else {
          data=Tile->Data;
       }
-
+      
       k=K;
 
       if (!data[k]) {
@@ -203,6 +203,7 @@ static float **EZGrid_TileGetData(const TGrid* __restrict const Grid,TGridTile* 
       } else {
          datak=data[k];
       }
+      data[k]=NULL;
 
       if (Grid->H.FID>=0) {                                       /*Check for data to read*/
          RPN_FieldLock();
@@ -228,10 +229,11 @@ static float **EZGrid_TileGetData(const TGrid* __restrict const Grid,TGridTile* 
          if (Grid->H.TYPVAR[1]=='@') {
             key=c_fstinf(Grid->H.FID,&ni,&nj,&nk,Grid->H.DATEV,Grid->H.ETIKET,ip1,Grid->H.IP2,Tile->NO,"@@",Grid->H.NOMVAR);
             if (key>0) {
-               /*Allocate Tile data if not already done*/
+               // Allocate Tile data if not already done
                if (!Tile->Mask) {
                   if (!(Tile->Mask=(char**)calloc(Grid->H.NK,sizeof(char*)))) {
                      App_Log(ERROR,"%s: Unable to allocate memory for tile mask levels (%s)\n",__func__,Grid->H.NOMVAR);
+                     RPN_FieldUnlock();
                      if (!Safe) pthread_mutex_unlock(&Tile->Mutex);
                      return(NULL);
                   }
@@ -254,9 +256,10 @@ static float **EZGrid_TileGetData(const TGrid* __restrict const Grid,TGridTile* 
                      App_Log(WARNING,"%s: Unable to allocate memory for mask",__func__);
                   }
                }          
+            } else {
+               App_Log(WARNING,"%s: Unable to find associated field mask (%s)",__func__,Grid->H.NOMVAR);
             }
          }
-
          
          RPN_FieldUnlock();
       } else if (Grid->T0 && Grid->T1) {  /*Check for time interpolation needs*/
@@ -272,10 +275,10 @@ static float **EZGrid_TileGetData(const TGrid* __restrict const Grid,TGridTile* 
          if (!EZGrid_IsLoaded(t1,k)) EZGrid_TileGetData(Grid->T1,t1,k,0);
 
          /*Interpolate between by applying factors*/
+         Tile->Mask=t0->Mask;
          for(ni=0;ni<Tile->HNIJ;ni++) {
             datak[ni]=t0->Data[k][ni]*Grid->FT0+t1->Data[k][ni]*Grid->FT1;
          }
-         Tile->Mask=t0->Mask;
       }
 
       /*Apply Factor if needed*/
@@ -1146,9 +1149,9 @@ void EZGrid_Free(TGrid* __restrict const Grid) {
                   Grid->Tiles[n].Mask[k]=NULL;
                }  
             }
-            pthread_mutex_destroy(&Grid->Tiles[n].Mutex);
             free(Grid->Tiles[n].Data);
             Grid->Tiles[n].Data=NULL;
+            pthread_mutex_destroy(&Grid->Tiles[n].Mutex);
             
             // Free mask only on fields with associated file, otherwise it's referenced
             if (!Grid->T0 && Grid->H.FID!=-1 && Grid->Tiles[n].Mask) {
@@ -1547,6 +1550,8 @@ TGrid *EZGrid_InterpFactor(TGrid* __restrict const Grid,TGrid* __restrict const 
       memcpy(new->Tiles,Grid0->Tiles,Grid0->NbTiles*sizeof(TGridTile));
       for(i=0;i<Grid0->NbTiles;i++) {
          new->Tiles[i].Data=NULL;
+         new->Tiles[i].Mask=NULL;
+         new->Tiles[i].KBurn=-1;
       }
       EZGrid_CacheAdd(new);
    }
@@ -1787,12 +1792,13 @@ int EZGrid_LLGetValueX(TGrid* __restrict const GridU,TGrid* __restrict const Gri
    if (!GridU->GRef->UnProject(GridU->GRef,&i,&j,Lat,Lon,FALSE,TRUE)){
       return(FALSE);
    }
-   
+
    tu=tv=NULL;
    k=K0;
-   d=GeoRef_GeoDir(GridU->GRef,i,j);
+   if (GridV) 
+      d=GeoRef_GeoDir(GridU->GRef,i,j);
    
-  do {            
+   do {   
                    tu=&GridU->Tiles[0]; if (!EZGrid_IsLoaded(tu,k)) EZGrid_TileGetData(GridU,tu,k,0);
       if (GridV) { tv=&GridV->Tiles[0]; if (!EZGrid_IsLoaded(tv,k)) EZGrid_TileGetData(GridV,tv,k,0); }
             
@@ -1802,7 +1808,7 @@ int EZGrid_LLGetValueX(TGrid* __restrict const GridU,TGrid* __restrict const Gri
          if (tv) VV[ik]=tv->Data[k][idx];
       } else {
                  UU[ik]=Vertex_ValS(tu->Data[k],tu->Mask[k],tu->NI,tu->NJ,i,j);
-         if (tv) VV[ik]=Vertex_ValS(tv->Data[k],tv->Mask[k],tu->NI,tu->NJ,i,j);    
+         if (tv) VV[ik]=Vertex_ValS(tv->Data[k],tv->Mask[k],tv->NI,tv->NJ,i,j);    
       }
     
       if (Conv!=1.0) {
@@ -1811,7 +1817,7 @@ int EZGrid_LLGetValueX(TGrid* __restrict const GridU,TGrid* __restrict const Gri
       }
       
       // Re-orient components geographically
-      if (tv) {
+      if (GridV) {
          th=atan2(UU[ik],VV[ik])-d;
          len=hypot(UU[ik],VV[ik]);
          UU[ik]=len*sin(th);
@@ -2565,14 +2571,9 @@ int EZGrid_GetDelta(TGrid* __restrict const Grid,int Invert,float* DX,float* DY,
    float        di[4],dj[4],dlat[4],dlon[4];
    double       fx,fy,fz,dx[4],dy[4],s;
 
-   if (!Grid || Grid->H.GRTYP[0]=='X' || Grid->H.GRTYP[0]=='Y') {
-      App_Log(ERROR,"%s: Invalid grid\n",__func__);
-      return(FALSE);
-   }
-
 //   RPN_IntLock();
-   if (Grid->H.GRTYP[0]=='Y') {
-      App_Log(WARNING,"%s: DX, DY and DA cannot be calculated on a Y grid\n",__func__);        
+   if (!Grid || Grid->H.GRTYP[0]=='X' || Grid->H.GRTYP[0]=='Y') {
+      App_Log(WARNING,"%s: DX, DY and DA cannot be calculated on an X or Y grid\n",__func__);        
    } else if (Grid->H.GRTYP[0]=='M') {
       
       if (DX || DY) {

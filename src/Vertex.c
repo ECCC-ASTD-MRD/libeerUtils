@@ -512,7 +512,7 @@ float Vertex_ValS(float *Data,char *Mask,int NI,int NJ,double X,double Y) {
    double        cell[4];
    unsigned long i,j,idx[4];
 
-   if (X>NI-1 || Y>NJ-1 || X<0 || Y<0) {
+   if (!Data || X>NI-1 || Y>NJ-1 || X<0 || Y<0) {
       return(0);
    }
 
