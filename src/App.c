@@ -267,15 +267,30 @@ void App_Start(void) {
       rmn[126]='\0';
       App_Log(MUST,"Lib RMN        : %s\n",&rmn[22]);
 #endif
+
       App_Log(MUST,"\nStart time     : (UTC) %s",ctime(&App->Time.tv_sec));
 
+#ifdef _OPENMP
       if (App->NbThread>1) {
-         App_Log(MUST,"OpenMP threads : %i\n",App->NbThread);
-
+         // OpenMP specification version
+         if       (_OPENMP >= 201511)  App_Log(MUST,"OpenMP threads : %i (Standard: %d -- OpenMP %s4.5)\n",App->NbThread,_OPENMP,_OPENMP>201511?">":"");
+         else if  (_OPENMP >= 201307)  App_Log(MUST,"OpenMP threads : %i (Standard: %d -- OpenMP %s4.0)\n",App->NbThread,_OPENMP,_OPENMP>201307?">":"");
+         else if  (_OPENMP >= 201107)  App_Log(MUST,"OpenMP threads : %i (Standard: %d -- OpenMP %s3.1)\n",App->NbThread,_OPENMP,_OPENMP>201107?">":"");
+         else if  (_OPENMP >= 200805)  App_Log(MUST,"OpenMP threads : %i (Standard: %d -- OpenMP %s3.0)\n",App->NbThread,_OPENMP,_OPENMP>200805?">":"");
+         else if  (_OPENMP >= 200505)  App_Log(MUST,"OpenMP threads : %i (Standard: %d -- OpenMP %s2.5)\n",App->NbThread,_OPENMP,_OPENMP>200505?">":"");
+         else if  (_OPENMP >= 200203)  App_Log(MUST,"OpenMP threads : %i (Standard: %d -- OpenMP %s2.0)\n",App->NbThread,_OPENMP,_OPENMP>200203?">":"");
+         else if  (_OPENMP >= 199810)  App_Log(MUST,"OpenMP threads : %i (Standard: %d -- OpenMP %s1.0)\n",App->NbThread,_OPENMP,_OPENMP>199810?">":"");
+         else                          App_Log(MUST,"OpenMP threads : %i (Standard: %d)\n",App->NbThread,_OPENMP);
       }
-      if (App->NbMPI>1) {
-         App_Log(MUST,"MPI processes  : %i\n",App->NbMPI);
+#endif //_OPENMP
 
+      if (App->NbMPI>1) {
+#if defined MPI_VERSION && defined MPI_SUBVERSION
+         // MPI specification version
+         App_Log(MUST,"MPI processes  : %i (Standard: %d.%d)\n",App->NbMPI,MPI_VERSION,MPI_SUBVERSION);
+#else
+         App_Log(MUST,"MPI processes  : %i\n",App->NbMPI);
+#endif
       }
       App_Log(MUST,"-------------------------------------------------------------------------------------\n\n");
    }
