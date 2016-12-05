@@ -42,6 +42,7 @@
 #define OGRFeatureDefnH              char*
 #define OGRDataSourceH               char*
 #define OGRSFDriverH                 char*
+#define GDALDatasetH                 char*
 
 typedef struct OGREnvelope {
     double      MinX;

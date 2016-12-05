@@ -1751,6 +1751,11 @@ int EZGrid_LLGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float La
       return(FALSE);
    }
    
+   if (K0<0 || K0>=Grid->H.NK || K1<0 || K1>=Grid->H.NK) {
+      App_Log(WARNING,"%s: Coordinates out of range (%s): K(%i,%i)\n",__func__,Grid->H.NOMVAR,K0,K1);
+      return(FALSE);
+   }
+   
    switch(Grid->H.GRTYP[0]) {
       case 'X': // This is a $#@$@#% grid (orca)
          return(EZGrid_LLGetValueX(Grid,NULL,Mode,Lat,Lon,K0,K1,Value,NULL,1.0));
@@ -2006,6 +2011,11 @@ int EZGrid_LLGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const Gr
       return(FALSE);
    }
 
+   if (K0<0 || K0>=GridU->H.NK || K1<0 || K1>=GridU->H.NK) {
+      App_Log(WARNING,"%s: Coordinates out of range (%s): K(%i,%i)\n",__func__,GridU->H.NOMVAR,K0,K1);
+      return(FALSE);
+   }
+   
    switch(GridU->H.GRTYP[0]) {
       case 'X': // This is a $#@$@#% grid (orca)
          return(EZGrid_LLGetValueX(GridU,GridV,Mode,Lat,Lon,K0,K1,UU,VV,Conv));
@@ -2071,7 +2081,7 @@ int EZGrid_IJGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float I,
    }
 
    // Check inclusion in master grid limits
-   if (I<0 || J<0 || K0<0 || K1<0 || J>Grid->H.NJ-0.5 || K0>Grid->H.NK-1 || K1>Grid->H.NK-1) {
+   if (I<0 || J<0 || K0<0 || K1<0 || J>Grid->H.NJ-0.5 || K0>=Grid->H.NK || K1>=Grid->H.NK) {
       App_Log(WARNING,"%s: Coordinates out of range (%s): I(%f) J(%f) K(%i,%i)\n",__func__,Grid->H.NOMVAR,I,J,K0,K1);
       return(FALSE);
    }
@@ -2251,8 +2261,8 @@ int EZGrid_IJGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const Gr
       return(FALSE);
    }
 
-   /*Check inclusion in master grid limits*/
-   if (I<0 || J<0 || K0<0 || K1<0 || I>GridU->H.NI-0.5 || J>GridU->H.NJ-0.5 || K0>GridU->H.NK-1 || K1>GridU->H.NK-1) {
+   // Check inclusion in master grid limits
+   if (I<0 || J<0 || K0<0 || K1<0 || I>GridU->H.NI-0.5 || J>GridU->H.NJ-0.5 || K0>=GridU->H.NK || K1>=GridU->H.NK) {
       App_Log(WARNING,"%s: Coordinates out of range (%s,%s): I(%f) J(%f) K(%i,%i)\n",__func__,GridU->H.NOMVAR,GridV->H.NOMVAR,I,J,K0,K1);
       return(FALSE);
    }
@@ -2271,7 +2281,7 @@ int EZGrid_IJGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const Gr
       return(FALSE);
    }
 
-   /*Have to readjust coordinate within tile for ezscint*/
+   // Have to readjust coordinate within tile for ezscint
    I=I-tu->HI+1.0;
    J=J-tu->HJ+1.0;
 
@@ -2332,8 +2342,8 @@ int EZGrid_GetValue(const TGrid* __restrict const Grid,int I,int J,int K0,int K1
       return(FALSE);
    }
 
-   /*Check inclusion in master grid limits*/
-   if (I<0 || J<0 || K0<0 || K1<0 || I>Grid->H.NI-0.5 || J>Grid->H.NJ-0.5 || K0>Grid->H.NK-1 || K1>Grid->H.NK-1) {
+   // Check inclusion in master grid limits
+   if (I<0 || J<0 || K0<0 || K1<0 || I>Grid->H.NI-0.5 || J>Grid->H.NJ-0.5 || K0>=Grid->H.NK || K1>=Grid->H.NK) {
       App_Log(WARNING,"%s: Coordinates out of range (%s) I(%i) J(%i) K(%i,%i)\n",__func__,Grid->H.NOMVAR,I,J,K0,K1);
       return(FALSE);
    }
@@ -2401,7 +2411,7 @@ int EZGrid_GetValues(const TGrid* __restrict const Grid,int Nb,float* __restrict
          k=Grid->H.NK>1?K[n]:0;
       }
 
-      /*Check inclusion in master grid limits*/
+      // Check inclusion in master grid limits
       if (i<0 || j<0 || k<0 || i>=Grid->H.NI || j>=Grid->H.NJ || k>=Grid->H.NK) {
          App_Log(WARNING,"%s: Coordinates out of range (%s): I(%i) J(%i) K(%i)\n",__func__,Grid->H.NOMVAR,i,j,k);
          return(FALSE);
@@ -2451,7 +2461,7 @@ int EZGrid_GetArray(TGrid* __restrict const Grid,int K,float* __restrict Value) 
       return(FALSE);
    }
 
-   /*Check inclusion in master grid limits*/
+   // Check inclusion in master grid limits
    if (K<0 || K>=Grid->H.NK) {
       App_Log(WARNING,"%s: Coordinates out of range (%s): K(%i)\n",__func__,Grid->H.NOMVAR,K);
       return(FALSE);
@@ -2469,7 +2479,7 @@ float* EZGrid_GetArrayPtr(TGrid* __restrict const Grid,int K) {
       return(FALSE);
    }
 
-   /*Check inclusion in master grid limits*/
+   // Check inclusion in master grid limits
    if (K<0 || K>=Grid->H.NK) {
       App_Log(WARNING,"%s: Coordinates out of range (%s): K(%i)\n",__func__,Grid->H.NOMVAR,K);
       return(FALSE);
@@ -2515,14 +2525,14 @@ int EZGrid_GetRange(const TGrid* __restrict const Grid,int I0,int J0,int K0,int 
       return(FALSE);
    }
 
-   /*Check inclusion in master grid limits*/
-   if (I0<0 || J0<0 || K0<0 || I0>=Grid->H.NI || J0>=Grid->H.NJ || K0>=Grid->H.NK ||
-       I1<0 || J1<0 || K1<0 || I1>=Grid->H.NI || J1>=Grid->H.NJ || K1>=Grid->H.NK) {
+   // Check inclusion in master grid limits
+   if (I0<0 || J0<0 || K0<0 || I0>Grid->H.NI-1 || J0>Grid->H.NJ-1 || K0>=Grid->H.NK ||
+       I1<0 || J1<0 || K1<0 || I1>Grid->H.NI-1 || J1>Grid->H.NJ-1 || K1>=Grid->H.NK) {
       App_Log(WARNING,"%s: Coordinates out of range (%s): I(%i,%i) J(%i,%i) K(%i,%i)\n",__func__,Grid->H.NOMVAR,I0,I1,J0,J1,K0,K1);
       return(FALSE);
    }
 
-   /*Loop on coverage*/
+   // Loop on coverage
    for(k=K0;k<=K1;k++) {
       for(j=J0;j<=J1;j++) {
          for(i=I0;i<=I1;i++) {
