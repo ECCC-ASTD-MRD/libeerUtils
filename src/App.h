@@ -79,6 +79,7 @@
 #define APP_ARGSLANG   0x04               // Multilingual app
 #define APP_ARGSSEED   0x08               // Use seed flag
 #define APP_ARGSTHREAD 0x10               // Use thread flag
+#define APP_ARGSTMPDIR 0x20               // Use tmp dir
 
 #ifdef __xlC__
 #   define APP_ONCE    ((1)<<3)
@@ -133,6 +134,7 @@ typedef struct TApp {
     char*          Desc;                 // Description
     char*          TimeStamp;            // Compilation timestamp
     char*          LogFile;              // Log file
+    char*          TmpDir;               // Tmp directory
     char*          Tag;                  // Identificateur
     FILE*          LogStream;            // Log file associated stream
     int            LogWarning;           // Number of warnings
