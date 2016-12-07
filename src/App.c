@@ -246,9 +246,11 @@ void App_Start(void) {
    th=App->NbThread=App->NbThread==0?1:App->NbThread;
    #pragma omp parallel for 
    for(t=0;t<th;t++) {
+      App=&AppInstance;
+      
+      // Need to define default for ezscint for each thread
       c_ezsetopt("INTERP_DEGREE","LINEAR");
       c_ezsetopt("VERBOSE","NO");
-      App=&AppInstance;
    }
 #else
    App->NbThread=1;
