@@ -1,6 +1,6 @@
 NAME       = eerUtils
 DESC       = SMC-CMC-CMOE Utility librairie package.
-VERSION    = 3.1.1
+VERSION    = 3.2.0
 MAINTAINER = $(USER)
 OS         = $(shell uname -s)
 PROC       = $(shell uname -m | tr _ -)
@@ -13,8 +13,9 @@ endif
 
 SSM_NAME    = ${NAME}_${VERSION}${COMP}_${ORDENV_PLAT}
 
-INSTALL_DIR = $(HOME)
+INSTALL_DIR = $(HOME)/data/Build
 TCL_DIR     = ${EXT_SRC_PATH}/tcl8.6.5
+#RMN_DIR     = $(LIB_DIR)/librmn-15.1
 
 #----- Uncoment to use dev libs
 LIB_DIR     = ${SSM_DEV}/workspace/libSPI_7.11.2${COMP}_${ORDENV_PLAT}
@@ -63,7 +64,8 @@ else
    LD          = ld
    LINK_EXEC   = -lxlf90 -lxlsmp -lpthread -lm 
 
-   CCOPTIONS   = -std=c99 -O3 -qtls -qnohot -qstrict -Q -v -qkeyword=restrict -qcache=auto -qtune=auto -qarch=auto -qinline 
+   CCOPTIONS   = -std=c99 -O3 -qtls -qnohot -qstrict -Q -v -qkeyword=restrict -qcache=auto -qtune=auto -qarch=auto -qinline
+   #CCOPTIONS   = -std=c99 -O3 -qtls -qnohot -qstrict -Q -v -qkeyword=restrict -qcache=auto -qtune=auto -qarch=auto -qinline -berok
    ifdef OMPI
       CCOPTIONS  := $(CCOPTIONS) -qsmp=omp -qthreaded -qlibmpi -qinline
    endif
@@ -109,7 +111,7 @@ lib: obj
 	cp $(CPFLAGS) ./src/*.h ./include
 
 exec: obj 
-	mkdir -p ./bin;
+	mkdir -p ./bin $(LIB_DIR)/lib;
 ifdef RMN
 	$(CC) util/Dict.c -o bin/Dict-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC); 
 	ln -fs Dict-$(VERSION) bin/Dict;
@@ -129,7 +131,7 @@ ifdef RMN
 endif
 
 test: obj 
-	mkdir -p ./bin;
+	mkdir -p ./bin $(LIB_DIR)/lib;
 	$(CC) util/Test.c -o bin/Test $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC);
 	$(CC) util/TestQTree.c -o bin/TestQTree $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC);
 
@@ -151,7 +153,7 @@ endif
 	cp $(CPFLAGS) ./include/* $(SSM_DEV)/workspace/$(SSM_NAME)/include
 	cp $(CPFLAGS) .ssm.d/post-install  $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d
 	sed -e 's/NAME/$(NAME)/' -e 's/VERSION/$(VERSION)/' -e 's/PLATFORM/$(ORDENV_PLAT)/' -e 's/MAINTAINER/$(MAINTAINER)/' -e 's/DESC/$(DESC)/' .ssm.d/control >  $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d/control
-	cd $(SSM_DEV)/workspace; tar -zcvf $(SSM_DEV)/package/$(SSM_NAME).ssm $(SSM_NAME)
+	cd $(SSM_DEV)/workspace; tar -zcvf $(SSM_DEV)/package/$(SSM_NAME).ssm $(SSM_NAME) || tar -cvf $(SSM_DEV)/package/$(SSM_NAME).ssm $(SSM_NAME)
 #	rm -f -r  $(SSM_DEV)/workspace/$(SSM_NAME)
 
 clean:
