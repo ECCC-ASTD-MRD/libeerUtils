@@ -882,7 +882,7 @@ int Def_GridCell2OGR(OGRGeometryH Geom,TGeoRef *RefTo,TGeoRef *RefFrom,int I,int
    OGR_G_SetPoint_2D(Geom,pt++,x,y);
 
    // If the cell is outside the destination limits
-   if (x0<RefTo->X0 && x1>RefTo->X1) {
+   if ((x0<RefTo->X0 && x1<RefTo->X0) || (x0>RefTo->X1 && x1>RefTo->X1)) {
       return(0);
    }
 
