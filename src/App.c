@@ -768,11 +768,11 @@ int App_ParseArgs(TApp_Arg *AArgs,int argc,char *argv[],int Flags) {
                tmp=env?strtok(str," "):argv[i];
                App->NbThread=strtol(tmp,&endptr,10);
             }
-         } else if ((Flags&APP_ARGSTMPDIR) && (!strcasecmp(tok,"--tmpdir"))) { // Use tmpdir if available
-            i++;
-            if ((ner=ok=(i<argc && argv[i][0]!='-'))) {
-               App->TmpDir=env?strtok(str," "):argv[i];
-            }
+//         } else if ((Flags&APP_ARGSTMPDIR) && (!strcasecmp(tok,"--tmpdir"))) { // Use tmpdir if available
+//            i++;
+//            if ((ner=ok=(i<argc && argv[i][0]!='-'))) {
+//               App->r=env?strtok(str," "):argv[i];
+//            }
          } else if ((Flags&APP_ARGSSEED) && (!strcasecmp(tok,"-s") || !strcasecmp(tok,"--seed"))) { // Seed
             i++;
             if ((ner=ok=(i<argc && argv[i][0]!='-'))) {

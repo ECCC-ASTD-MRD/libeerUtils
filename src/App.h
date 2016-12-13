@@ -134,7 +134,7 @@ typedef struct TApp {
     char*          Desc;                 // Description
     char*          TimeStamp;            // Compilation timestamp
     char*          LogFile;              // Log file
-    char*          TmpDir;               // Tmp directory
+//    char*          TmpDir;               // Tmp directory
     char*          Tag;                  // Identificateur
     FILE*          LogStream;            // Log file associated stream
     int            LogWarning;           // Number of warnings

@@ -3,6 +3,7 @@
 set -e -x
 
 MAKE=make
+MAKEFILE=Makefile
 
 #----- Need gmake on AIX
 if [[ $HOSTTYPE = "AIX" ]]; then
@@ -14,19 +15,19 @@ touch src/App.c
 
 #----- Build no multi processor version first
 unset OMPI
-$MAKE clear
-$MAKE all
+$MAKE -f $MAKEFILE clear
+$MAKE -f $MAKEFILE  all
 
 #----- Build OpenMP/MPI lib only
 export OMPI=-ompi
-$MAKE clean
-$MAKE lib
+$MAKE -f $MAKEFILE clean
+$MAKE -f $MAKEFILE lib
 
 while [ "$1" != "" ]; do
     if [ "$1" == "-ssm" ]; then
-        $MAKE ssm
+        $MAKE -f $MAKEFILE ssm
     elif [ "$1" == "-install" ]; then
-        $MAKE install
+        $MAKE -f $MAKEFILE install
     fi
     shift
 done
