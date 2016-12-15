@@ -1,6 +1,9 @@
 NAME       = eerUtils
 DESC       = SMC-CMC-CMOE Utility librairie package.
 VERSION    = 3.1.2
+SUBVERSION = $(shell svnversion -n)
+#SUBVERSION = (shell git rev-list --count --first-parent HEAD)
+#SUBVERSION = (shell git describe parent)
 MAINTAINER = $(USER)
 OS         = $(shell uname -s)
 PROC       = $(shell uname -m | tr _ -)
@@ -77,7 +80,7 @@ else
    CPFLAGS     = -h
 endif
 
-DEFINES     = -DVERSION=\"$(VERSION)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE $(RMN)
+DEFINES     = -DVERSION=\"$(VERSION)-r$(SUBVERSION)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE $(RMN)
 ifdef OMPI
    DEFINES    := $(DEFINES) -D_MPI
 endif
