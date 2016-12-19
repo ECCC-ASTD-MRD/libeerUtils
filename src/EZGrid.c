@@ -410,7 +410,7 @@ float* EZGrid_TileBurnAll(TGrid* __restrict const Grid,int K,float* __restrict D
 */
 static TGrid* EZGrid_CacheFind(TGrid *Grid) {
 
-   register int n;
+   register int n,k;
 
    int     type;
    float   level;
@@ -427,18 +427,20 @@ static TGrid* EZGrid_CacheFind(TGrid *Grid) {
             if (type!=GridCache[n]->ZRef->Type) {
                continue;
             }
-            if (GridCache[n]->H.NK!=Grid->H.NK || GridCache[n]->ZRef->Levels[GridCache[n]->Incr<0?Grid->H.NK-1:0]!=level) {
-//            if (GridCache[n]->H.NK!=Grid->H.NK) {
+            if (GridCache[n]->H.NK!=Grid->H.NK) {
                continue;
             }
-
+            for(k=0;k<GridCache[n]->H.NK;k++) if (GridCache[n]->ZRef->Levels[k]==level) break;
+            if (k==GridCache[n]->H.NK)
+               continue;
+           
             // Check for same grid
             if (Grid->H.GRTYP[0]=='#') {
                if (GridCache[n]->IP1==Grid->H.IG1 && GridCache[n]->IP2==Grid->H.IG2) {
                   pthread_mutex_unlock(&CacheMutex);
                   return(GridCache[n]);
                }
-            } else if (Grid->H.GRTYP[0]=='Z' || Grid->H.GRTYP[0]=='M' || Grid->H.GRTYP[0]=='Y') {
+            } else if (Grid->H.GRTYP[0]=='Z' || Grid->H.GRTYP[0]=='M' || Grid->H.GRTYP[0]=='Y'|| Grid->H.GRTYP[0]=='X') {
                if (GridCache[n]->IP1==Grid->H.IG1 && GridCache[n]->IP2==Grid->H.IG2 && GridCache[n]->IP3==Grid->H.IG3) {
                   pthread_mutex_unlock(&CacheMutex);
                   return(GridCache[n]);
