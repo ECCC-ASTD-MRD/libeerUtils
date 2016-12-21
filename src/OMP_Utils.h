@@ -64,6 +64,8 @@
 
 #define OMP_PARALLEL_FOR_GUIDED(Min,Max,Fac,Id,BlckCntr) OMP_PARALLEL_FOR_DECL(Min,Max)
 #define OMP_PARALLEL_FOR_GUIDED_NEXT(Id,BlckCntr)
+#define OMP_ATOMIC_WRITE(Code)   Code
+#define OMP_ATOMIC_CAPTURE(Code) Code
 
 #endif //_OPENMP
 

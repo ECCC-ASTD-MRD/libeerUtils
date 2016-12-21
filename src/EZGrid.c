@@ -36,6 +36,7 @@
 #include "App.h"
 #include "EZGrid.h"
 #include "Vertex.h"
+#include "OMP_Utils.h"
 
 TGridYInterpMode EZGRID_YINTERP      = EZ_BARNES;               // Type of linear interpolation for Y grids
 int              EZGRID_YLINEARCOUNT = 4;                       // Number of points to use for point cloud interpolation
@@ -175,7 +176,7 @@ static float **EZGrid_TileGetData(const TGrid* __restrict const Grid,TGridTile* 
    int        i,ni,nj,nk,t=0,k;
    int       *tmpi,flag=0,ip1=0,mode=2,type;
    char       format;
-   float    **data,*datak;
+   float    **data,*datak,val;
    
    if (!Safe) pthread_mutex_lock(&Tile->Mutex);
 
@@ -281,7 +282,13 @@ static float **EZGrid_TileGetData(const TGrid* __restrict const Grid,TGridTile* 
          // Interpolate between by applying factors
          Tile->Mask=t0->Mask;
          for(ni=0;ni<Tile->HNIJ;ni++) {
-            datak[ni]=(t0->Data[k][ni]*Grid->FT0+t1->Data[k][ni]*Grid->FT1)*Grid->Factor;
+            val=(t0->Data[k][ni]*Grid->FT0+t1->Data[k][ni]*Grid->FT1)*Grid->Factor;
+            if (ni==Tile->HNIJ-1) {
+               // Last value is ok flag for valid tile
+               OMP_ATOMIC_WRITE(datak[ni]=val);
+            } else {
+               datak[ni]=val;
+            }
          }
       }
 
@@ -2565,7 +2572,7 @@ int EZGrid_GetRange(const TGrid* __restrict const Grid,int I0,int J0,int K0,int 
  *   <Grid>       : Grille
  *   <Invert>     : Invert (1/area)
  *   <DX>         : Valeurs de distance en X
- *   <DY>         : Valeurs de distance en X
+ *   <DY>         : Valeurs de distance en Y
  *   <DA>         : Valeurs de l'aire
  *
  * Retour:
