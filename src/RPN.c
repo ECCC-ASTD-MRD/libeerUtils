@@ -448,7 +448,6 @@ void RPN_CopyHead(TRPNHeader *To,TRPNHeader *From) {
    strncpy(To->NOMVAR,From->NOMVAR,5);
    strncpy(To->TYPVAR,From->TYPVAR,3);
    strncpy(To->ETIKET,From->ETIKET,13);
-   strncpy(To->NOMVAR,From->NOMVAR,5);
    To->DATEO=From->DATEO;
    To->DATEV=From->DATEV;
    To->DEET=From->DEET;
