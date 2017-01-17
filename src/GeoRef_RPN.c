@@ -532,9 +532,8 @@ int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
                      break;
                   }
                }
-               
 
-                if (idx!=-1) {
+               if (idx!=-1) {
                   // Map coordinates to grid
                   Vertex_Map(pts,X,Y,Lon,Lat);
                   
@@ -560,7 +559,7 @@ int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
                   return(FALSE);
                }
                return(TRUE);
-            }
+            }            
          }
       } 
       return(0);

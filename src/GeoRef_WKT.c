@@ -327,11 +327,6 @@ int GeoRef_WKTUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
          }
       }
 
-      // No negative longitude (GRIB2 LL grid)
-      if (GRef->Type&GRID_NOXNEG) {
-         x=x<0?x+360:x;
-      }
-
       // Transform from georeferenced coordinates
       *X=x;
       *Y=y;

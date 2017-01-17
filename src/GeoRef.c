@@ -1107,9 +1107,9 @@ TQTree* GeoRef_BuildIndex(TGeoRef* __restrict const Ref) {
 
       // Loop on triangles
       for(n=0;n<Ref->NIdx-3;n+=3) {          
-         tr[0][0]=CLAMPLON(Ref->AX[Ref->Idx[n]]);     tr[0][1]=Ref->AY[Ref->Idx[n]];
-         tr[1][0]=CLAMPLON(Ref->AX[Ref->Idx[n+1]]);   tr[1][1]=Ref->AY[Ref->Idx[n+1]];
-         tr[2][0]=CLAMPLON(Ref->AX[Ref->Idx[n+2]]);   tr[2][1]=Ref->AY[Ref->Idx[n+2]];
+         tr[0][0]=Ref->AX[Ref->Idx[n]];     tr[0][1]=Ref->AY[Ref->Idx[n]];
+         tr[1][0]=Ref->AX[Ref->Idx[n+1]];   tr[1][1]=Ref->AY[Ref->Idx[n+1]];
+         tr[2][0]=Ref->AX[Ref->Idx[n+2]];   tr[2][1]=Ref->AY[Ref->Idx[n+2]];
          
          // Put it in the quadtree, in any child nodes intersected and set false pointer increment (+1)
          if (!QTree_AddTriangle(Ref->QTree,tr,GRID_MQTREEDEPTH,(void*)(n+1))) {
@@ -1142,7 +1142,7 @@ TQTree* GeoRef_BuildIndex(TGeoRef* __restrict const Ref) {
       // Loop on points
       for(n=0;n<Ref->NX*Ref->NY;n++) {     
          
-         pt[0]=CLAMPLON(Ref->AX[n]);
+         pt[0]=Ref->AX[n];
          pt[1]=Ref->AY[n];  
          
          x=(pt[0]-lon0)/dx;

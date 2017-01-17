@@ -60,9 +60,8 @@
 #define GRID_RADIAL   0x40       // Radar grid
 #define GRID_REPEAT   0x80       // Does the last longitude repeat the first
 #define GRID_PSEUDO   0x100      // Pseudocylindrical
-#define GRID_NOXNEG   0x200      // No negative longitude
-#define GRID_NUNORTH  0x400      // North is not up
-#define GRID_NEGLON   0x800      // Lon are (-180,180)
+#define GRID_NUNORTH  0x200      // North is not up
+#define GRID_NEGLON   0x400      // Lon are (-180,180)
 
 #define GRID_YQTREESIZE   1000
 #define GRID_MQTREEDEPTH  8
