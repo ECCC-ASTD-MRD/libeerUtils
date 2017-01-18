@@ -14,7 +14,8 @@ ifdef COMP_ARCH
    COMP=-${COMP_ARCH}
 endif
 
-SSM_NAME    = ${NAME}_${VERSION}${COMP}_${ORDENV_PLAT}
+SSM_VERSION = ${VERSION}${COMP}
+SSM_NAME    = ${NAME}_${SSM_VERSION}_${ORDENV_PLAT}
 
 INSTALL_DIR = $(HOME)
 TCL_DIR     = ${EXT_SRC_PATH}/tcl8.6.6
@@ -157,7 +158,7 @@ endif
 	cp $(CPFLAGS) ./lib/* $(SSM_DEV)/workspace/$(SSM_NAME)/lib
 	cp $(CPFLAGS) ./include/* $(SSM_DEV)/workspace/$(SSM_NAME)/include
 	cp $(CPFLAGS) .ssm.d/post-install  $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d
-	sed -e 's/NAME/$(NAME)/' -e 's/VERSION/$(VERSION)/' -e 's/PLATFORM/$(ORDENV_PLAT)/' -e 's/MAINTAINER/$(MAINTAINER)/' -e 's/DESC/$(DESC)/' .ssm.d/control >  $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d/control
+	sed -e 's/NAME/$(NAME)/' -e 's/VERSION/$(SSM_VERSION)/' -e 's/PLATFORM/$(ORDENV_PLAT)/' -e 's/MAINTAINER/$(MAINTAINER)/' -e 's/DESC/$(DESC)/' .ssm.d/control >  $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d/control
 	cd $(SSM_DEV)/workspace; tar -zcvf $(SSM_DEV)/package/$(SSM_NAME).ssm $(SSM_NAME)
 #	rm -f -r  $(SSM_DEV)/workspace/$(SSM_NAME)
 
