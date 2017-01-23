@@ -7,7 +7,6 @@
  * Projet       : Projection diverses de la carte vectorielle.
  * Fichier      : List.c
  * Creation     : Janvier 2011 - J.P. Gauthier
- * Revision     : $Id$
  *
  * Description: Fonctions de manipulations de listes
  *

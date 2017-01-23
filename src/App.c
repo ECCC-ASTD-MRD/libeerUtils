@@ -7,9 +7,8 @@
  * Projet    : Librairie de fonctions utiles
  * Fichier   : App->c
  * Creation  : Septembre 2008 - J.P. Gauthier
- * Revision  : $Id$
  *
- * Description: Fonctions gÃ©nÃ©riques Ã  toute les applications.
+ * Description: Fonctions gé©nériques à toute les applications.
  *
  * Remarques :
  *    This package can uses the following environment variables if defined
@@ -40,7 +39,11 @@
  */
 #define APP_BUILD
 
+#include <sched.h>
+#include <unistd.h>
+#include <sys/syscall.h>
 #include <sys/signal.h>
+
 #include "App.h"
 #include "eerUtils.h"
 #include "RPN.h"
@@ -95,6 +98,7 @@ TApp *App_Init(int Type,char *Name,char *Version,char *Desc,char* Stamp) {
    App->LogLevel=INFO;
    App->State=STOP;
    App->Percent=0.0;
+   App->Affinity=APP_AFFINITY_NONE;
    App->NbThread=0;
    App->NbMPI=1;
    App->RankMPI=0;
@@ -178,6 +182,86 @@ int App_IsMPI(void) { return(App->NbMPI>1); }
 int App_IsOMP(void) { return(App->NbThread>1); }
 
 /*----------------------------------------------------------------------------
+ * Nom      : <App_ThreadPlace>
+ * Creation : Janvier 2017 - J.P. Gauthier
+ *
+ * But      : Initialiser l'emplacement des threads
+ *
+ * Parametres :
+ *
+ * Retour     :
+ *
+ * Remarques  :
+ *    - On fait ca ici car quand on combine MPI et OpenMP, les threads se supperpose sur
+ *      un meme CPU pour plusieurs job MPI sur un meme "socket@
+ *----------------------------------------------------------------------------
+*/
+int App_ThreadPlace(void) {
+   
+   int nompi=0;
+   
+   // No thread affinity request
+   if (!App->Affinity)
+      return(TRUE);
+   
+#ifdef _MPI
+   int len,i;
+   char *n,*names,*cptr;
+   
+   // Get the physical node unique name of mpi procs
+   APP_MEM_ASRT(names,calloc(MPI_MAX_PROCESSOR_NAME*App->NbMPI,sizeof(*names)));
+
+   n=names+App->RankMPI*MPI_MAX_PROCESSOR_NAME;
+   MPI_Get_processor_name(n,&len);
+   MPI_Allgather(n,MPI_MAX_PROCESSOR_NAME,MPI_CHAR,names,MPI_MAX_PROCESSOR_NAME,MPI_CHAR,MPI_COMM_WORLD);
+   
+   // Go through the names and check sequence in proc sharing order for this proc's physical node
+   for(i=0,nompi=-1,cptr=names; i<=App->RankMPI; ++i,cptr+=MPI_MAX_PROCESSOR_NAME) {
+      if (!strncmp(n,cptr,MPI_MAX_PROCESSOR_NAME)) {
+         ++nompi;
+      }
+   }
+
+   free(names);
+#endif
+
+#ifdef _OPENMP
+   if (App->NbThread>1) {
+      
+      int nbcpu=sysconf(_SC_NPROCESSORS_ONLN);   // Get number of available  cores
+      int incmpi=nbcpu/App->NbMPI;               // Number of cores per MPI job
+      
+      #pragma omp parallel
+      {
+         cpu_set_t    set;
+         unsigned int nid = omp_get_thread_num();
+         pid_t        tid = (pid_t) syscall(SYS_gettid);
+     
+         CPU_ZERO(&set);
+
+         switch(App->Affinity) {
+            case APP_AFFINITY_SCATTER:   // Scatter threads evenly across all processors
+                    CPU_SET((nompi*incmpi)+omp_get_thread_num()*incmpi/App->NbThread,&set);
+                    break;
+               
+            case APP_AFFINITY_COMPACT:   // Place threads closely packed
+                    CPU_SET((nompi*App->NbThread)+omp_get_thread_num(),&set);
+                    break;
+                 
+            case APP_AFFINITY_SOCKET:    // Pack threads over scattered MPI (hope it fits with sockets) 
+                    CPU_SET((nompi*incmpi)+omp_get_thread_num(),&set);
+                    break;
+                          
+         }
+         sched_setaffinity(tid,sizeof(set),&set);
+      }
+   }
+#endif
+   return(TRUE);
+}
+
+      
+/*----------------------------------------------------------------------------
  * Nom      : <App_Start>
  * Creation : Septembre 2008 - J.P. Gauthier
  *
@@ -243,15 +327,15 @@ void App_Start(void) {
    }
    
    // We need to initialize the per thread app pointer
-   th=App->NbThread=App->NbThread==0?1:App->NbThread;
-   #pragma omp parallel for 
-   for(t=0;t<th;t++) {
+   #pragma omp parallel
+   {
       App=&AppInstance;
       
       // Need to define default for ezscint for each thread
       c_ezsetopt("INTERP_DEGREE","LINEAR");
       c_ezsetopt("VERBOSE","NO");
    }
+   App_ThreadPlace();
 #else
    App->NbThread=1;
 #endif
@@ -643,6 +727,7 @@ void App_PrintArgs(TApp_Arg *AArgs,char *Token,int Flags) {
    // Process default argument
    if (Flags&APP_ARGSSEED)   printf("\n\t-%s, --%-15s %s","s", "seed",     "Seed (FIXED,"APP_COLOR_GREEN"VARIABLE"APP_COLOR_RESET" or seed)");
    if (Flags&APP_ARGSTHREAD) printf("\n\t-%s, --%-15s %s","t", "threads",     "Number of threads ("APP_COLOR_GREEN"0"APP_COLOR_RESET")");
+   if (Flags&APP_ARGSTHREAD) printf("\n\t    --%-15s %s", "affinity",     "Thread affinity ("APP_COLOR_GREEN"NONE"APP_COLOR_RESET",COMPACT,SCATTER,SOCKET)");
    
    printf("\n");
    if (Flags&APP_ARGSLOG)    printf("\n\t-%s, --%-15s %s","l", "log",     "Log file ("APP_COLOR_GREEN"stdout"APP_COLOR_RESET",stderr,file)");
@@ -767,6 +852,23 @@ int App_ParseArgs(TApp_Arg *AArgs,int argc,char *argv[],int Flags) {
             if ((ner=ok=(i<argc && argv[i][0]!='-'))) {
                tmp=env?strtok(str," "):argv[i];
                App->NbThread=strtol(tmp,&endptr,10);
+            }
+         } else if ((Flags&APP_ARGSTHREAD) && !strcasecmp(tok,"--affinity")) { // Threads
+            i++;
+            if ((ner=ok=(i<argc && argv[i][0]!='-'))) {
+               tmp=env?strtok(str," "):argv[i];
+               if (!strcasecmp(tmp,"NONE")) {
+                  App->Affinity=APP_AFFINITY_NONE;
+               } else if (!strcasecmp(tmp,"COMPACT")) {
+                  App->Affinity=APP_AFFINITY_COMPACT;
+               } else if (!strcasecmp(tmp,"SCATTER")) {
+                  App->Affinity=APP_AFFINITY_SCATTER;
+               } else if (!strcasecmp(tmp,"SOCKET")) {
+                  App->Affinity=APP_AFFINITY_SOCKET;
+               } else {
+                  printf("Invalid value for thread affinity, NONE, COMPACT, SCATTER or SOCKET\n");
+                  exit(EXIT_FAILURE);               
+               }
             }
 //         } else if ((Flags&APP_ARGSTMPDIR) && (!strcasecmp(tok,"--tmpdir"))) { // Use tmpdir if available
 //            i++;

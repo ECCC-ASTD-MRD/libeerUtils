@@ -7,7 +7,6 @@
  * Projet       : Lecture et traitements de fichiers raster
  * Fichier      : GeoRef.c
  * Creation     : Mars 2005 - J.P. Gauthier
- * Revision     : $Id$
  *
  * Description  : Fonctions de manipulations de projections.
  *

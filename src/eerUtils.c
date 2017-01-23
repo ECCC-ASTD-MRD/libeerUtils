@@ -7,7 +7,6 @@
  * Projet       : Lecture et traitements de divers fichiers de donnees
  * Fichier      : eerUtils.c
  * Creation     : Avril 2006 - J.P. Gauthier
- * Revision     : $Id$
  *
  * Description  : Fonctions generales d'utilites courantes.
  *

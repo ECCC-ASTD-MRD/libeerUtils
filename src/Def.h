@@ -7,7 +7,6 @@
  * Projet       : Lecture et traitements de divers fichiers de donnees
  * Fichier      : Def.h
  * Creation     : Fevrier 2003 - J.P. Gauthier
- * Revision     : $Id$
  *
  * Description  : Fonctions generales applicables a divers types de donnees.
  *

@@ -6,8 +6,7 @@
  *
  * Project      : Generic 2D Quad Tree library
  * Creation     : November 2008
- * Author       : Gilles Mercier && J.P. Gauthier- CMC/CMOE
- * Revision     : $Id$
+ * Author       : Gilles Mercier & J.P. Gauthier- CMC/CMOE
  *
  * Description: Library of functions to store data(ex. geo-referenced
  *              Finite Element data) information in a 2D Quad Tree

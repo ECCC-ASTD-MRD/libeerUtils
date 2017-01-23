@@ -7,7 +7,6 @@
  * Projet       : Librairie Tcl de fichiers standards.
  * Fichier      : Vertex.h
  * Creation     : Aout 2002 - J.P. Gauthier - CMC/CMOE
- * Revision     : $Id$
  *
  * Description: Fonctions de manipulations et de traitements des vertex.
  *

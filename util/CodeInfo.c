@@ -7,7 +7,6 @@
  * Projet       : Librairie de fonctions utiles
  * Creation     : Octobre 2012
  * Auteur       : Jean-Philippe Gauthier
- * Revision     : $Id$
  *
  * Description: Coder/Decoder of pool information into/from RPN fields
  *

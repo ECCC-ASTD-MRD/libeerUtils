@@ -1,9 +1,8 @@
 NAME       = eerUtils
 DESC       = SMC-CMC-CMOE Utility librairie package.
 VERSION    = 3.1.3
-SUBVERSION = $(shell svnversion -n)
-#SUBVERSION = (shell git rev-list --count --first-parent HEAD)
-#SUBVERSION = (shell git describe parent)
+#SUBVERSION = $(shell svnversion -n)
+SUBVERSION = $(shell git describe --always)
 MAINTAINER = $(USER)
 OS         = $(shell uname -s)
 PROC       = $(shell uname -m | tr _ -)

@@ -7,7 +7,6 @@
  * Projet    : Calculs dur des vecteurs.
  * Fichier   : Vector.c
  * Creation  : Janvier 2000 - J.P. Gauthier
- * Revision     : $Id$
  *
  * Description: Fichier de definition des parametres et fonctions de vecteurs.
  *

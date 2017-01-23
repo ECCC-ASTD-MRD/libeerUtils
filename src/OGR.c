@@ -7,7 +7,6 @@
  * Projet       : Lecture et traitements de fichiers raster
  * Fichier      : OGR.c
  * Creation     : Juillet 2005 - J.P. Gauthier
- * Revision     : $Id$
  *
  * Description  : Fonctions de calculs sur les objets geometriques.
  *

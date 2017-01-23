@@ -7,7 +7,6 @@
  * Projet       : Librairie de fonctions utiles
  * Creation     : Janvier 2015
  * Auteur       : Jean-Philippe Gauthier
- * Revision     : $Id$
  *
  * Description: RPN fstd interpolation test
  *

@@ -7,7 +7,6 @@
  * Projet    : Librairie de fonctions utiles
  * Fichier   : App.h
  * Creation  : Septembre 2008 - J.P. Gauthier
- * Revision  : $Id$
  *
  * Description: Fonctions génériques à tout les modèles.
  *
@@ -93,6 +92,7 @@ typedef enum { STOP,RUN,DONE } TApp_State;
 typedef enum { APP_NIL=0x0,APP_FLAG=0x01,APP_CHAR=0x02,APP_UINT32=0x04,APP_INT32=0x06,APP_UINT64=0x08,APP_INT64=0x0A,APP_FLOAT32=0x0C,APP_FLOAT64=0x0E } TApp_Type;
 typedef enum { APP_FR=0x0,APP_EN=0x01 } TApp_Lang;
 typedef enum { APP_OK=1,APP_ERR=0 } TApp_RetCode;
+typedef enum { APP_AFFINITY_NONE=0,APP_AFFINITY_COMPACT=1,APP_AFFINITY_SCATTER=2,APP_AFFINITY_SOCKET=3 } TApp_Affinity;
 
 #define APP_ASRT_OK(x) if( (x)!=APP_OK ) return(APP_ERR)
 #define APP_ASRT_OK_M(Fct, ...) \
@@ -148,6 +148,7 @@ typedef struct TApp {
     int            Type;                 // App object type (APP_MASTER,APP_THREAD)
 
     int            Seed,*OMPSeed;        // Random number generator seed
+    TApp_Affinity  Affinity;             // Thread placement affinity
     int           *TotalsMPI;            // MPI total number of items arrays
     int           *CountsMPI;            // MPI count gathering arrays
     int           *DisplsMPI;            // MPI displacement gathering arrays
@@ -182,6 +183,7 @@ int   App_ParseDateSplit(char *Param,char *Value,int *Year,int *Month,int *Day,i
 int   App_ParseCoords(char *Param,char *Value,double *Lat,double *Lon,int Index);
 void  App_SeedInit(void);
 char* App_ErrorGet(void);
+int   App_ThreadPlace(void);
 void  App_Trap(int Signal);
 
 #endif

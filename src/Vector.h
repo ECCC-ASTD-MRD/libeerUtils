@@ -7,7 +7,6 @@
  * Projet       : Projection diverses de la carte vectorielle.
  * Fichier      : Vector.h
  * Creation     : Janvier 2000 - J.P. Gauthier
- * Revision     : $Id$
  *
  * Description: Fichier de definition des parametres et fonctions de vecteurs.
  *

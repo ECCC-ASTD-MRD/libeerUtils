@@ -7,7 +7,6 @@
  * Projet       : Projection diverses de la carte vectorielle.
  * Fichier      : List.h
  * Creation     : Janvier 2011 - J.P. Gauthier
- * Revision     : $Id$
  *
  * Description: Fichier de definition de structures de donnees
  *

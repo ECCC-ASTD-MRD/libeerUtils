@@ -7,7 +7,6 @@
  * Projet    : Librairie de modélisation
  * Fichier   : Traj.h
  * Creation  : Septembre 2008 - J.P. Gauthier
- * Revision  : $Id$
  *
  * Description: Module de calcul de trajectoires.
  *

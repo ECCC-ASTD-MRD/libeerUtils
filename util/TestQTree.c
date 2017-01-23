@@ -7,7 +7,6 @@
  * Projet    : Librairie de fonctions utiles
  * Creation     : Janvier 2008
  * Auteur       : Jean-Philippe Gauthier
- * Revision     : $Id$
  *
  * Description: QTree tester
  *

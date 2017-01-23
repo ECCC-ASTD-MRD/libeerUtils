@@ -7,7 +7,6 @@
  * Projet    : Projection diverses de la carte vectorielle.
  * Fichier   : Array.c
  * Creation  : Janvier 2011 - J.P. Gauthier
- * Revision  : $Id$
  *
  * Description: Fonctions de manipulation de tableau dynamiques
  *
