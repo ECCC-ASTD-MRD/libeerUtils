@@ -1,8 +1,8 @@
 NAME       = eerUtils
 DESC       = SMC-CMC-CMOE Utility librairie package.
 VERSION    = 3.1.3
-#SUBVERSION = $(shell svnversion -n)
-SUBVERSION = $(shell git describe --always)
+#BUILDINFO = $(shell svnversion -n)
+BUILDINFO  = $(shell git describe --always)
 MAINTAINER = $(USER)
 OS         = $(shell uname -s)
 PROC       = $(shell uname -m | tr _ -)
@@ -80,7 +80,7 @@ else
    CPFLAGS     = -h
 endif
 
-DEFINES     = -DVERSION=\"$(VERSION)-r$(SUBVERSION)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE $(RMN)
+DEFINES     = -DVERSION=\"$(VERSION)-r$(BUILDINFO)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE $(RMN)
 ifdef OMPI
    DEFINES    := $(DEFINES) -D_MPI
 endif
@@ -157,7 +157,7 @@ endif
 	cp $(CPFLAGS) ./lib/* $(SSM_DEV)/workspace/$(SSM_NAME)/lib
 	cp $(CPFLAGS) ./include/* $(SSM_DEV)/workspace/$(SSM_NAME)/include
 	cp $(CPFLAGS) .ssm.d/post-install  $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d
-	sed -e 's/NAME/$(NAME)/' -e 's/VERSION/$(SSM_VERSION)/' -e 's/PLATFORM/$(ORDENV_PLAT)/' -e 's/MAINTAINER/$(MAINTAINER)/' -e 's/DESC/$(DESC)/' .ssm.d/control >  $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d/control
+	sed -e 's/NAME/$(NAME)/' -e 's/VERSION/$(SSM_VERSION)/' -e 's/PLATFORM/$(ORDENV_PLAT)/' -e 's/MAINTAINER/$(MAINTAINER)/' -e 's/BUILDINFO/${BUILDINFO}/' -e 's/DESC/$(DESC)/' .ssm.d/control >  $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d/control
 	cd $(SSM_DEV)/workspace; tar -zcvf $(SSM_DEV)/package/$(SSM_NAME).ssm $(SSM_NAME)
 #	rm -f -r  $(SSM_DEV)/workspace/$(SSM_NAME)
 
