@@ -37,6 +37,7 @@
 
 #define DICT_SHORT  0
 #define DICT_LONG   1
+#define DICT_XML    2
 #define DICT_NOTSET 1e+300
 
 #define DICT_ALL        0x00

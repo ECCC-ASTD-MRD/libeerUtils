@@ -47,7 +47,7 @@ int Dict_CheckCFG(char *CFGFile);
 int main(int argc, char *argv[]) {
 
    TDict_Encoding coding=DICT_UTF8;
-   int            ok=1,desc=DICT_SHORT,search=DICT_EXACT,st=DICT_ALL,ip1,ip2,ip3,d=0,code=EXIT_SUCCESS;
+   int            ok=1,lng=0,xml=0,desc=DICT_SHORT,search=DICT_EXACT,st=DICT_ALL,ip1,ip2,ip3,d=0,code=EXIT_SUCCESS;
    char          *var,*type,*lang,*encoding,*origin,*etiket,*state,*dicfile[APP_LISTMAX],*rpnfile[APP_LISTMAX],*cfgfile,dicdef[APP_BUFMAX],*env;
    
    TApp_Arg appargs[]=
@@ -58,7 +58,8 @@ int main(int argc, char *argv[]) {
         { APP_CHAR,          &origin,   1,             "o", "origin"      , "Search originator ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
         { APP_CHAR,          &etiket,   1,             "k", "etiket"      , "ETIKET modifier ("APP_COLOR_GREEN"\"\""APP_COLOR_RESET")" },
         { APP_CHAR,          &state,    1,             "s", "state"       , "Search state ("APP_COLOR_GREEN"all"APP_COLOR_RESET",obsolete,current,future,incomplete)" },
-        { APP_FLAG,          &desc,     1,             "l", "long"        , "use long description" },
+        { APP_FLAG,          &lng,      1,             "l", "long"        , "use long description" },
+        { APP_FLAG,          &xml,      1,             "x", "xml"         , "use xml description" },
         { APP_FLAG,          &search,   1,             "g", "glob"        , "use glob search pattern" },
         { APP_CHAR,          &encoding, 1,             "e", "encoding"    , "encoding type (iso8859-1,"APP_COLOR_GREEN"utf8"APP_COLOR_RESET",ascii)" },
         { APP_CHAR,          dicfile,   APP_LISTMAX-1, "d", "dictionnary" , "dictionnary file(s) ("APP_COLOR_GREEN"$AFSISIO/datafiles/constants/ops.variable_dictionary.xml"APP_COLOR_RESET")" },
@@ -77,6 +78,8 @@ int main(int argc, char *argv[]) {
       exit(EXIT_FAILURE);      
    }
 
+   desc=xml?DICT_XML:lng?DICT_LONG:DICT_SHORT;
+   
    if (!var && !type && !cfgfile && !rpnfile[0]) {
       var=strdup("");
       type=strdup("");

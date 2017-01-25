@@ -59,7 +59,7 @@ char *TVAL[]        = { "Valeur"            ,"Value"            };
 char *TOBSOLETE[]   = { "Obsolète"   ,"Obsolete"   };
 char *TFUTURE[]     = { "Futur"      ,"Future"     };
 char *TCURRENT[]    = { "Courante"   ,"Current"    };
-char *TINCOMPLETE[] = { "Incomplète" ,"Icompletee" };
+char *TINCOMPLETE[] = { "Incomplète" ,"Icomplete" };
 
 char *TCENTILE[]    = { "e centile"                   ,"th percentile" };
 char *TMIN[]        = { "(minimum)"                   ,"(minimum)" };
@@ -996,7 +996,7 @@ TDictType *Dict_IterateType(TList **Iterator,char *Type) {
  *
  * Parametres :
  *  <Var>     : Variable to look fortement
- *  <Format>  : Print format (DICT_SHORT,DICT_LONG)
+ *  <Format>  : Print format (DICT_SHORT,DICT_LONG,DICT_XML)
  *  <Lang>    : Language (APP_FR,APP_EN)
  *
  * Retour:
@@ -1024,7 +1024,7 @@ void Dict_PrintVars(char *Var,int Format,TApp_Lang Lang) {
  *
  * Parametres :
  *  <Var>     : Variable to look fortement
- *  <Format>  : Print format (DICT_SHORT,DICT_LONG)
+ *  <Format>  : Print format (DICT_SHORT,DICT_LONG,DICT_XML)
  *  <Lang>    : Language (APP_FR,APP_EN)
  *
  * Retour:
@@ -1134,6 +1134,86 @@ void Dict_PrintVar(TDictVar *DVar,int Format,TApp_Lang Lang) {
                   break;
             }
             break;
+            
+         case DICT_XML:
+            printf("<metvar usage=");
+            
+            if (var->Nature&DICT_OBSOLETE) {
+               printf("\"obsolete\"");
+            } else if (var->Nature&DICT_CURRENT) {
+               printf("\"current\"");
+            } else if (var->Nature&DICT_FUTURE) {
+               printf("\"future\"");
+            } else if (var->Nature&DICT_INCOMPLETE) {
+               printf("\"incomplete\"");
+            }
+            
+            if (var->IP1>=0) printf(" ip1=\"%i\"",var->IP1);
+            if (var->IP2>=0) printf(" ip2=\"%i\"",var->IP2);
+            if (var->IP3>=0) printf(" ip3=\"%i\"",var->IP3);
+            if (var->ETIKET[0]!='\0') printf(" etiket=\"%s\"",var->ETIKET);
+
+            printf(" origin=\"%s\"",var->Origin);
+            
+            if (var->Pack>0)  {
+               printf(" pack=\"%i\"",var->Pack);
+            }
+            
+            if (var->Date) {
+               tm=gmtime(&(var->Date));
+               printf(" date=\"%04i-%02i-%02i\">\n",1900+tm->tm_year,tm->tm_mon+1,tm->tm_mday);
+            } else {
+               printf(" date=\"\">\n");
+            } 
+
+            printf("\t<nomvar>%s</nomvar>\n",var->Name);
+            printf("\t<description>\n");
+            printf("\t\t<short lang=\"fr\">%s</short>\n",var->Short[0]);
+            printf("\t\t<short lang=\"en\">%s</short>\n",var->Short[1]);
+            printf("\t\t<long lang=\"fr\">%s</long>\n",var->Long[0]);
+            printf("\t\t<long lang=\"en\">%s</long>\n",var->Long[1]);
+            printf("\t</description>\n");
+            printf("\t<measure>\n");
+
+            if (var->Nature & DICT_INTEGER) {
+               printf("\t\t<integer>\n");
+               printf("\t\t\t<units>%s</units>\n",var->Units);
+               if (var->Magnitude!=DICT_NOTSET)  
+                  printf("\t\t\t<magnitude>%0.0f</magnitude>\n",var->Magnitude);
+               if (var->Min!=var->Max) {
+                  printf("\t\t\t<min>%0.0f</min>\n",var->Min);
+                  printf("\t\t\t<max>%0.0f</max>\n",var->Max);
+               }
+               printf("\t\t</integer>\n");
+
+            } else if (var->Nature & DICT_REAL) {
+               printf("\t\t<real>\n");
+               printf("\t\t\t<units>%s</units>\n",var->Units);
+               if (var->Precision!=DICT_NOTSET)  
+                  printf("\t\t\t<precision>%e</precision>\n",var->Precision);
+               if (var->Magnitude!=DICT_NOTSET)  
+                  printf("\t\t\t<magnitude>%e</magnitude>\n",var->Magnitude);
+               if (var->Min!=var->Max) {
+                  printf("\t\t\t<min>%e</min>\n",var->Min);
+                  printf("\t\t\t<max>%e</max>\n",var->Max);
+               }
+               printf("\t\t</real>\n");
+ 
+            } else if (var->Nature & DICT_LOGICAL) {
+               printf("\t\t<logical>\n");
+               printf("\t\t</logical>\n");
+
+            } else if (var->Nature & DICT_CODE) {
+               printf("\t\t<code>\n");
+               for (i=0; i < var->NCodes; i++) {
+                  printf("\t\t\t<value>%d</value>\n\t\t\t<meaning>%s</meaning>\n",var->Codes[i], var->Meanings[i]);
+               }
+               printf("\t\t</code>\n");
+            }
+            printf("\t</measure>\n");
+            printf("</metvar>\n");
+            
+            break;
       }
       if (var!=DVar) free(var);
       if (var->Nature&DICT_OBSOLETE) printf(APP_COLOR_RESET);
@@ -1148,7 +1228,7 @@ void Dict_PrintVar(TDictVar *DVar,int Format,TApp_Lang Lang) {
  *
  * Parametres :
  *  <Var>     : Variable to look fortement
- *  <Format>  : Print format (DICT_SHORT,DICT_LONG)
+ *  <Format>  : Print format (DICT_SHORT,DICT_LONG,DICT_XML)
  *  <Lang>    : Language (APP_FR,APP_EN)
  *
  * Retour:
@@ -1181,7 +1261,7 @@ void Dict_PrintTypes(char *Type,int Format,TApp_Lang Lang) {
  *
  * Parametres :
  *  <Var>     : Variable to look fortement
- *  <Format>  : Print format (DICT_SHORT,DICT_LONG)
+ *  <Format>  : Print format (DICT_SHORT,DICT_LONG,DICT_XML)
  *  <Lang>    : Language (APP_FR,APP_EN)
  *
  * Retour:
@@ -1226,6 +1306,37 @@ void Dict_PrintType(TDictType *DType,int Format,TApp_Lang Lang) {
             else if (DType->Nature&DICT_INCOMPLETE)
                printf("%s\n",TINCOMPLETE[Lang]);
 
+            break;
+            
+         case DICT_XML:
+            printf("<typvar usage=");
+            
+            if (DType->Nature&DICT_OBSOLETE) {
+               printf("\"obsolete\"");
+            } else if (DType->Nature&DICT_CURRENT) {
+               printf("\"current\"");
+            } else if (DType->Nature&DICT_FUTURE) {
+               printf("\"future\"");
+            } else if (DType->Nature&DICT_INCOMPLETE) {
+               printf("\"incomplete\"");
+            }
+            
+            if (DType->Date) {
+               tm=gmtime(&(DType->Date));
+               printf(" date=\"%04i-%02i-%02i\">\n",1900+tm->tm_year,tm->tm_mon+1,tm->tm_mday);
+            } else {
+               printf(" date=\"\">\n");
+            } 
+            
+           printf("\t<nomtype>%s</nomtype>\n",DType->Name);
+           printf("\t<description>\n");
+           printf("\t\t<short lang=\"fr\">%s</short>\n",DType->Short[0]);
+           printf("\t\t<short lang=\"en\">%s</short>\n",DType->Short[1]);
+           printf("\t\t<long lang=\"fr\">%s</long>\n",DType->Long[0]);
+           printf("\t\t<long lang=\"en\">%s</long>\n",DType->Long[1]);
+           printf("\t</description>\n");
+           printf("</typvar\n");
+            
             break;
       }
    }
