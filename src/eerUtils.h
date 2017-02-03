@@ -138,7 +138,7 @@
 #define INSIDE(PT,X0,Y0,X1,Y1)            (PT[0]<=X1 && PT[0]>=X0 && PT[1]<=Y1 && PT[1]>=Y0)
 #define FMIN(X,Y)                         (X<Y?X:Y)
 #define FMAX(X,Y)                         (X>Y?X:Y)
-#define FWITHIN(DL,LA0,LO0,LA1,LO1,LA,LO) ((LA>=LA0 && LA<=LA1)?((DL<=180)?(LO>=LO0 && LO<=LO1):((LO<=LO0 && DL>-180) || (LO>=LO1 && DL<180))):0)
+#define FWITHIN(DL,LA0,LO0,LA1,LO1,LA,LO) ((LA>=LA0 && LA<=LA1) && (DL<=180?(LO>=LO0 && LO<=LO1):((LO<=LO0 && DL>-180) || (LO>=LO1 && DL<180))))
 
 // Geographical related constants and functions
 //#define EARTHRADIUS          6378140.0                          ///Rayon de la terre en metres

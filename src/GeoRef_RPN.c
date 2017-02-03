@@ -558,10 +558,10 @@ int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
                   return(FALSE);
                }
                return(TRUE);
-            }            
+            } 
          }
       } 
-      return(0);
+      return(FALSE);
    }
 
    if (!GRef->Ids) {

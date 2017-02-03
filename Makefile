@@ -50,7 +50,7 @@ ifeq ($(OS),Linux)
    endif
 
    CDEBUGFLAGS = -g -Winline
-   CPFLAGS     = -d
+   CPFLAGS     = -d 
 
    ifeq ($(PROC),x86-64)
         CCOPTIONS   := $(CCOPTIONS) -fPIC -DSTDC_HEADERS

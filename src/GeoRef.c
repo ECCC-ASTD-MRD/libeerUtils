@@ -761,7 +761,14 @@ void GeoRef_Qualify(TGeoRef* __restrict const Ref) {
       if (Ref->Grid[0]=='#') {
          Ref->Type|=GRID_TILE;
       }
-   
+    
+      if (Ref->Grid[0]=='X') {
+         // If grid type is X (ORCA) and a pole in within the grid, mark as wrapping grid
+         if (Ref->UnProject(Ref,&d[0],&d[1],89.0,0.0,0,1) || Ref->UnProject(Ref,&d[0],&d[1],-89.0,0.0,0,1)) {
+            Ref->Type|=GRID_WRAP;
+         }
+      }  
+     
       if (Ref->Grid[0]=='A' || Ref->Grid[0]=='B' || Ref->Grid[0]=='G') {
          Ref->Type|=GRID_WRAP;
       } else if (Ref->Grid[0]!='V' && Ref->X0!=Ref->X1 && Ref->Y0!=Ref->Y1) {
@@ -1149,16 +1156,6 @@ TQTree* GeoRef_BuildIndex(TGeoRef* __restrict const Ref) {
                
          // Add location and set false pointer increment (+1);
          QTree_AddData(&Ref->QTree[y*GRID_YQTREESIZE+x],pt[0],pt[1],(void*)(n+1));
-
-         // Wrapped grid need to repeat border pixels
-         if (Ref->Type&GRID_WRAP) {
-            if (pt[0]+dx>180) {
-               QTree_AddData(&Ref->QTree[y*GRID_YQTREESIZE],pt[0]-360,pt[1],(void*)(n+1));
-            }
-            if (pt[0]-dx<-180) {
-               QTree_AddData(&Ref->QTree[y*GRID_YQTREESIZE+(GRID_YQTREESIZE-1)],pt[0]+360,pt[1],(void*)(n+1));
-            }
-         }
       }
    }
    
@@ -1189,27 +1186,31 @@ TQTree* GeoRef_BuildIndex(TGeoRef* __restrict const Ref) {
 int GeoRef_Nearest(TGeoRef* __restrict const Ref,double X,double Y,int *Idxs,double *Dists,int NbNear) {
 
    double       dx,dy,l;
-   unsigned int dxy,n,nn,nr,nnear;
+   unsigned int n,nn,nr,nnear;
    TQTree      *node;
-   int          x,y,xd,yd,rep;
+   int          dxy,x,y,xd,yd,rx;
   
    if (!NbNear || !Idxs || !Dists) return(0);
 
    Dists[0]=1e32;
    dxy=nnear=0;
 
-   if (Ref->QTree) {      
-      // Find the closest point(s) by circling larger around cell
-
+   if (Ref->QTree) {     
+      
+      // Find the closest point(s) by circling larger around cell      
       node=&Ref->QTree[0];
+
+      if (!(Ref->Type&GRID_WRAP) && !FWITHIN(0,node->BBox[0].Y,node->BBox[0].X,node->BBox[1].Y,node->BBox[1].X,Y,X)) {
+         return(0);
+      }
 
       dx=(node->BBox[1].X-node->BBox[0].X)/GRID_YQTREESIZE;
       dy=(node->BBox[1].Y-node->BBox[0].Y)/GRID_YQTREESIZE;
       xd=(X-node->BBox[0].X)/dx;
       yd=(Y-node->BBox[0].Y)/dy;
-                  
+                    
       while(dxy<(GRID_YQTREESIZE>>1)) {
-         
+
          // Y circling increment
          for(y=yd-dxy;y<=yd+dxy;y++) {
             if (y<0) continue;
@@ -1217,33 +1218,41 @@ int GeoRef_Nearest(TGeoRef* __restrict const Ref,double X,double Y,int *Idxs,dou
             
             // X Circling increment (avoid revisiting previous cells)
             for(x=xd-dxy;x<=xd+dxy;x+=((!dxy || y==yd-dxy || y==yd+dxy)?1:(dxy+dxy))) {
-               if (x<0) continue;
-               if (x>=GRID_YQTREESIZE) break;
+               rx=x;
+               if (x<0) {
+                  if (Ref->Type&GRID_WRAP) {
+                     rx=x+GRID_YQTREESIZE;
+                  } else {
+                     continue;                  
+                  }
+               }
                
-               node=&Ref->QTree[y*GRID_YQTREESIZE+x];
+               if (x>=GRID_YQTREESIZE) {
+                  if (Ref->Type&GRID_WRAP) {
+                     rx=x-GRID_YQTREESIZE;
+                  } else {
+                     break;
+                  }
+               }
+               
+               node=&Ref->QTree[y*GRID_YQTREESIZE+rx];
 
                // Loop on points in this cell and get closest point
                for(n=0;n<node->NbData;n++) {
-
-                  // Wrapped grid repeat some point on adjacent index cell
-                  if (NbNear>1 && Ref->Type&GRID_WRAP) {
-                     rep=0;
-                     for(nn=0;nn<(nnear>NbNear?NbNear:nnear);nn++) {
-                        if (Idxs[nn]==(int)node->Data[n].Ptr-1) { rep=1; break; } 
-                     }
-                     if (rep) continue;
-                  }
                       
                   dx=X-node->Data[n].Pos.X;
+                  // flip distances for wrap-around
+                  if (dx>=180)  dx-=360;
+                  if (dx<=-180) dx+=360;
+                  
                   dy=Y-node->Data[n].Pos.Y;
                   l=dx*dx+dy*dy;
 
                   // Loop on number of nearest to find
                   for(nn=0;nn<NbNear;nn++) {
-                     
                      // If this is closer
                      if (l<Dists[nn]) {
-
+                           
                         // Move farther nearest in order
                         for(nr=NbNear-1;nr>nn;nr--) {
                            Dists[nr]=Dists[nr-1];
@@ -1561,12 +1570,6 @@ int GeoRef_WithinRange(TGeoRef* __restrict const Ref,double Lat0,double Lon0,dou
 
    if (!Ref) return(0);
    
-   if (Lon0*Lon1<0) {
-      dl=Lon1-Lon0;
-   } else {
-      dl=0;
-   }
-
    if (Lat0>Lat1) {
       dl=Lat0;
       Lat0=Lat1;
@@ -1579,6 +1582,12 @@ int GeoRef_WithinRange(TGeoRef* __restrict const Ref,double Lat0,double Lon0,dou
       Lon1=dl;
    }
 
+   if (Lon0*Lon1<0) {
+      dl=Lon1-Lon0;
+   } else {
+      dl=0;
+   }
+   
    /* Check image within range */
    Ref->Project(Ref,Ref->X0,Ref->Y0,&lat[0],&lon[0],0,1);
    d0=FWITHIN(dl,Lat0,Lon0,Lat1,Lon1,lat[0],lon[0]);
