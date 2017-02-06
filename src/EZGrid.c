@@ -100,9 +100,11 @@ int EZGrid_Wrap(TGrid* __restrict const Grid) {
          // If the grid wraps
          if (i<Grid->H.NI) {
             // check if the last gridpoint is a repeat of the first
-            if (rintf(i)==1.0f) {
+            if (lrintf(i)==1) {
+               // No repeat
                Grid->Wrap=1;
             } else {
+               // First gridpoint is repeated at end
                Grid->Wrap=2;
             }
          }

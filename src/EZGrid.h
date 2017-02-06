@@ -70,7 +70,7 @@
       if (X>GRID->H.NI-1) { \
          X-=GRID->H.NI-GRID->Wrap; \
       } else if (X<0) { \
-         X+=GRID->H.NI-GRID->Wrap; \
+         X+=(GRID->H.NI-GRID->Wrap+1); \
          if (X==GRID->H.NI) X-=1e-4; \
       } \
    } \
