@@ -84,10 +84,9 @@
 #define NANO_TIMER_STOP \
     clock_gettime(CLOCK_MONOTONIC,&_t2); \
     _diff = (double)((_t2.tv_sec-_t1.tv_sec)*1000000000+_t2.tv_nsec-_t1.tv_nsec)/1000000.0; \
-    clock_getres(CLOCK_MONOTONIC,&_t2); \
-    NANO_TIMER_PRINT;
+    clock_getres(CLOCK_MONOTONIC,&_t2);
 
-#define NANO_TIMER(Code) { NANO_TIMER_START; { Code; }; NANO_TIMER_STOP; }
+#define NANO_TIMER(Code) { NANO_TIMER_START; { Code; }; NANO_TIMER_STOP; NANO_TIMER_PRINT; }
 
 #endif //__OMP_UTILS_H
 
