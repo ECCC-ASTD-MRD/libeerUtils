@@ -9,3 +9,4 @@
 #----- Lib/bin directory at the root path
 /bin/
 /lib/
+/include/
