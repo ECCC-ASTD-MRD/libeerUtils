@@ -68,7 +68,7 @@
          X=X<(GRID->H.NI>>1)?X+(GRID->H.NI>>1):X-(GRID->H.NI>>1); \
       } \
       if (X>GRID->H.NI-1) { \
-         X-=GRID->H.NI-GRID->Wrap; \
+         X-=(GRID->H.NI-GRID->Wrap+1); \
       } else if (X<0) { \
          X+=(GRID->H.NI-GRID->Wrap+1); \
          if (X==GRID->H.NI) X-=1e-4; \
@@ -80,6 +80,7 @@ typedef enum { EZ_NEAREST, EZ_LINEAR }  TGridInterpMode;
 typedef enum { EZ_CRESSMAN, EZ_BARNES } TGridYInterpMode;
 
 typedef struct TGridTile {
+   pthread_mutex_t Mutex;               // Per tile mutex for IO
    float **Data;                        // Data pointer
    char  **Mask;                        // Mask pointer
    int     GID;                         // EZSCINT Tile grid id (for interpolation)
@@ -89,15 +90,16 @@ typedef struct TGridTile {
    int     NI,NJ,NIJ;                   // Tile dimensions without halo)
    int     HI,HJ,HDI,HDJ,HNI,HNJ,HNIJ;  // Tile dimensions with halo
    char    Side;                        // Side flag indicator
-   pthread_mutex_t Mutex;               // Per tile mutex for IO
 } TGridTile;
 
 struct TGrid;
 
 typedef struct TGrid {
+   pthread_mutex_t Mutex;                // Per grid mutex for IO
    TRPNHeader      H;                    // RPN Standard file header
    TZRef          *ZRef;                 // Vertical referential
    TGeoRef        *GRef;                 // Geographic referential
+   float          *Data;                 // Data pointer
    int             Wrap;                 // Flag indicating grid globe wrap-around (global grids)
    float           Pole[2];              // Pole coverage
 
@@ -105,16 +107,15 @@ typedef struct TGrid {
    int             IP1,IP2,IP3,Master;   // Grid template identifier
    int             Incr;                 // Increasing sorting
    int             Factor;               // Increasing sorting
-   float          *Data;                 // Data pointer
    unsigned int    NTI,NTJ;              // Number of tiles in I and J
    unsigned int    Halo;                 // Halo width
 
-   float           FT0,FT1;              // Time interpolation factor
-   struct TGrid   *T0,*T1;               // Time interpolation strat and end grid
-
    unsigned int    NbTiles;              // Number of tiles
    TGridTile      *Tiles;                // Array of tiles
-   pthread_mutex_t Mutex;                // Per grid mutex for IO
+
+   struct TGrid   *T0,*T1;               // Time interpolation strat and end grid
+   float           FT0,FT1;              // Time interpolation factor
+
 } TGrid;
 
 #ifndef EZGRID_BUILD

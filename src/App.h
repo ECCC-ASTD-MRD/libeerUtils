@@ -148,13 +148,13 @@ typedef struct TApp {
     int            Type;                 // App object type (APP_MASTER,APP_THREAD)
 
     int            Seed,*OMPSeed;        // Random number generator seed
-    TApp_Affinity  Affinity;             // Thread placement affinity
     int           *TotalsMPI;            // MPI total number of items arrays
     int           *CountsMPI;            // MPI count gathering arrays
     int           *DisplsMPI;            // MPI displacement gathering arrays
     int            NbMPI,RankMPI;        // Number of MPI process
     int            NbThread;             // Number of OpenMP threads
     int            Signal;               // Trapped signal
+    TApp_Affinity  Affinity;             // Thread placement affinity
 } TApp;
 
 #ifndef APP_BUILD

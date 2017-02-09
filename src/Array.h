@@ -37,12 +37,12 @@
 #include "Vector.h"
 
 typedef struct T3DArray {
-   Vect3d *Data;
-   double  Value;
-   int     Size;
+   Vect3d        *Data;
+   double        Value;
+   unsigned long Size;
 } T3DArray;
 
-T3DArray *T3DArray_Alloc(double Value,int Size);
+T3DArray *T3DArray_Alloc(double Value,unsigned long Size);
 void      T3DArray_Free(T3DArray *Array);
 
 #endif

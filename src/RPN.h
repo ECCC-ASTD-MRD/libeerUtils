@@ -38,10 +38,10 @@ struct TGeoRef;
 typedef struct TRPNFile {
    char *CId;              // Identificateur du fichier
    char *Name;             // Path complet du fichier
-   char Mode;              // Mode d'ouverture du fichier (r,w,a)
    int  Open;              // Etat du fichier
    unsigned int Id;        // Numero d'unite du fichier
    int  NRef;              // Nombre de reference
+   char Mode;              // Mode d'ouverture du fichier (r,w,a)
 } TRPNFile;
 
 typedef struct TRPNHeader {
@@ -66,7 +66,7 @@ typedef struct TRPNHeader {
    char NOMVAR[5];         // Nom de la variable
    char ETIKET[13];        // Etiquette du champs
    char GRTYP[2];          // Type de grilles
-}  TRPNHeader;
+} TRPNHeader;
 
 typedef struct TRPNField {
    TRPNHeader     Head;    // Entete du champs
