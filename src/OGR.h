@@ -101,6 +101,7 @@ typedef struct OGR_Layer {
    unsigned int     NSFeature;           // Number of highligted features
    int              CFeature;            // Cleared feature (to be re-rendered)
    int              Topo,Extrude,Space;  // Positional parameters
+   char             Changed;             // Is the layer changed
 } OGR_Layer;
 
 #define OGM_ARRAY0   0

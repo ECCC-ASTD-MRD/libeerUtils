@@ -318,9 +318,8 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
                if (ThetaXY)
                   *ThetaXY=valdf;
             } else {
-               Def_Pointer(Def,C,mem,p0);
-               c_gdxysval(GRef->Ids[GRef->NId],&valf,p0,&x,&y,1);
-               *Length=valf;
+               mem+=idx;
+               Def_Get(Def,C,mem,*Length);
             }
          } else {            
             if (Mode=='N') {
