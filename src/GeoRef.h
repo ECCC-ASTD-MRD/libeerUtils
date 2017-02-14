@@ -61,6 +61,7 @@
 #define GRID_PSEUDO   0x100      // Pseudocylindrical
 #define GRID_NUNORTH  0x200      // North is not up
 #define GRID_NEGLON   0x400      // Lon are (-180,180)
+#define GRID_CORNER   0x800      // Grid cell is corner defined (ie: firdt gridpoint is 0.5 0.5)
 
 #define GRID_YQTREESIZE   1000
 #define GRID_MQTREEDEPTH  8
