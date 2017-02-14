@@ -446,8 +446,8 @@ TBFKey BinaryFile_Find(TBFFiles *File,int *NI,int *NJ,int *NK,int DateO,const ch
                && (!TypVar || TypVar[0]=='\0' || !ntv || ntv==strnlen(h->TYPVAR,2) && !strncmp(TypVar,h->TYPVAR,ntv))
                && (!Etiket || Etiket[0]=='\0' || !net || net==strnlen(h->ETIKET,12) && !strncmp(Etiket,h->ETIKET,net)) ) {
             // We found the field, return its key
-            printf("Found field dateo=(%d|%d) ip1=(%d|%d) ip2=(%d|%d) ip3=(%d|%d) NomVar=(%.*s|%.4s) TypVar=(%.*s|%.2s) Etiket=(%.*s|%.12s)\n",DateO,h->DATEO,IP1,h->IP1,IP2,h->IP2,IP3,h->IP3,nnv,NomVar,h->NOMVAR,ntv,TypVar,h->TYPVAR,net,Etiket,h->ETIKET);
-            printf("Note that nnv=%d ntv=%d net=%d nlenNV=%d nlenTV=%d nlenET=%d\n",nnv,ntv,net,(int)strnlen(h->NOMVAR,4),(int)strnlen(h->TYPVAR,2),(int)strnlen(h->ETIKET,12));
+            //printf("Found field dateo=(%d|%d) ip1=(%d|%d) ip2=(%d|%d) ip3=(%d|%d) NomVar=(%.*s|%.4s) TypVar=(%.*s|%.2s) Etiket=(%.*s|%.12s)\n",DateO,h->DATEO,IP1,h->IP1,IP2,h->IP2,IP3,h->IP3,nnv,NomVar,h->NOMVAR,ntv,TypVar,h->TYPVAR,net,Etiket,h->ETIKET);
+            //printf("Note that nnv=%d ntv=%d net=%d nlenNV=%d nlenTV=%d nlenET=%d\n",nnv,ntv,net,(int)strnlen(h->NOMVAR,4),(int)strnlen(h->TYPVAR,2),(int)strnlen(h->ETIKET,12));
             *NI=h->NI; *NJ=h->NJ; *NK=h->NK;
             return BinaryFile_MakeKey(f,i);
          }
