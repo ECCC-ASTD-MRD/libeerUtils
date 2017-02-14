@@ -1,12 +1,21 @@
 #include "BinaryFile.h"
 #include "App.h"
 
-#define MAX(a,b) ((a)>=(b)?(a):(b))
-
 const int32_t BF_MAGIC=0x45454642; //BFEE (Binary File Env. Emergencies) in little endian
 const int32_t BF_VERSION=1;
 
 static int BFTypeSize[] = {1,1,1,2,4,8,1,2,4,8,4,8,0};
+
+size_t FtnStrSize(const char *Str,size_t Max) {
+   size_t n;
+
+   if( !Str )
+      return 0;
+
+   for(n=Max<0?strlen(Str):strnlen(Str,Max); n>0&&Str[n-1]==' '; --n)
+      ;
+   return n;
+}
 
 TBFFiles* BinaryFile_New(int N) {
    TBFFiles *files;
@@ -60,7 +69,7 @@ void BinaryFile_Free(TBFFiles *Files) {
 TBFFiles* BinaryFile_OpenFiles(const char **FileNames,int N,TBFFlag Mode) {
    TBFFiles *restrict files = BinaryFile_New(N);
    TBFFile  *restrict file;
-   int      i;
+   int      i,append=0;
    char     mode[]={'\0','b','\0','\0'};
 
    // If memory was not allocated, we allocate it
@@ -95,12 +104,18 @@ TBFFiles* BinaryFile_OpenFiles(const char **FileNames,int N,TBFFlag Mode) {
       // If we are in write-only non-overwrite mode
       if( !(Mode&BF_READ) && !(Mode&BF_CLEAR) ) {
          FILE* fd;
+         long pos;
          // Open the file in append mode, creating it if it doesn't exist, and then close it
          // This ensures that the file exists so that we can open it in r+ mode afterwards
          if( !(fd=fopen(FileNames[i],"ab")) ) {
             App_Log(ERROR,"BinaryFile: File %s could not be created or accessed. Are you sure the path exists and you have write permissions on that path/file?\n",FileNames[i]);
             goto error;
          }
+         if( (pos=ftell(fd))<0 ) {
+            App_Log(ERROR,"BinaryFile: Can't tell where we are in the file %s. Aborting...\n",FileNames[i]);
+            goto error;
+         }
+         append = pos!=0;
          fclose(fd);
       }
       
@@ -112,7 +127,7 @@ TBFFiles* BinaryFile_OpenFiles(const char **FileNames,int N,TBFFlag Mode) {
 
       file->Flags |= Mode;
 
-      if( Mode&BF_READ ) {
+      if( Mode&BF_READ || append ) {
          // Read the file header
          if( fread(&file->Header,sizeof(file->Header),1,file->FD)!=1 ) {
             App_Log(ERROR,"BinaryFile: Problem reading header for file %s\n",FileNames[i]);
@@ -379,9 +394,9 @@ int BinaryFile_Write(void *Data,TBFType DataType,TBFFiles *File,int DateO,int De
    memset(h->NOMVAR,0,4);
    memset(h->ETIKET,0,12);
 
-   memcpy(h->TYPVAR,TypVar,MAX(2,strlen(TypVar)));
-   memcpy(h->NOMVAR,NomVar,MAX(4,strlen(NomVar)));
-   memcpy(h->ETIKET,Etiket,MAX(12,strlen(Etiket)));
+   memcpy(h->TYPVAR,TypVar,FtnStrSize(TypVar,2));
+   memcpy(h->NOMVAR,NomVar,FtnStrSize(NomVar,4));
+   memcpy(h->ETIKET,Etiket,FtnStrSize(Etiket,12));
    h->GRTYP = GrTyp[0];
 
    // Update the offset
@@ -409,21 +424,30 @@ TBFKey BinaryFile_Find(TBFFiles *File,int *NI,int *NJ,int *NK,int DateO,const ch
    TBFFldHeader *restrict h;
    TBFFile *restrict file;
    int32_t i,f;
+   int nnv=0,ntv=0,net=0;
 
    if( !File )
       return -1;
 
+   // This is needed because fortran whistespace pads its strings, so giving an fstprm output would be a problem
+   nnv = FtnStrSize(NomVar,-1);
+   ntv = FtnStrSize(TypVar,-1);
+   net = FtnStrSize(Etiket,-1);
+
    // Look for the field in the index
    for(f=0,file=File->Files; f<File->N; ++f,++file) {
       for(i=0,h=file->Index.Headers; i<file->Index.N; ++i,++h) {
+         //printf("Comparing dateo=(%d|%d) ip1=(%d|%d) ip2=(%d|%d) ip3=(%d|%d) NomVar=(%.*s|%.4s) TypVar=(%.*s|%.2s) Etiket=(%.*s|%.12s)\n",DateO,h->DATEO,IP1,h->IP1,IP2,h->IP2,IP3,h->IP3,nnv,NomVar,h->NOMVAR,ntv,TypVar,h->TYPVAR,net,Etiket,h->ETIKET);
          if( (DateO==-1 || DateO==h->DATEO)
                && (IP1==-1 || IP1==h->IP1)
                && (IP2==-1 || IP2==h->IP2)
                && (IP3==-1 || IP3==h->IP3)
-               && (!NomVar || NomVar[0]=='\0' || !strcmp(NomVar,h->NOMVAR))
-               && (!TypVar || TypVar[0]=='\0' || !strcmp(TypVar,h->TYPVAR))
-               && (!Etiket || Etiket[0]=='\0' || !strcmp(Etiket,h->ETIKET)) ) {
+               && (!NomVar || NomVar[0]=='\0' || !nnv || nnv==strnlen(h->NOMVAR,4) && !strncmp(NomVar,h->NOMVAR,nnv))
+               && (!TypVar || TypVar[0]=='\0' || !ntv || ntv==strnlen(h->TYPVAR,2) && !strncmp(TypVar,h->TYPVAR,ntv))
+               && (!Etiket || Etiket[0]=='\0' || !net || net==strnlen(h->ETIKET,12) && !strncmp(Etiket,h->ETIKET,net)) ) {
             // We found the field, return its key
+            printf("Found field dateo=(%d|%d) ip1=(%d|%d) ip2=(%d|%d) ip3=(%d|%d) NomVar=(%.*s|%.4s) TypVar=(%.*s|%.2s) Etiket=(%.*s|%.12s)\n",DateO,h->DATEO,IP1,h->IP1,IP2,h->IP2,IP3,h->IP3,nnv,NomVar,h->NOMVAR,ntv,TypVar,h->TYPVAR,net,Etiket,h->ETIKET);
+            printf("Note that nnv=%d ntv=%d net=%d nlenNV=%d nlenTV=%d nlenET=%d\n",nnv,ntv,net,(int)strnlen(h->NOMVAR,4),(int)strnlen(h->TYPVAR,2),(int)strnlen(h->ETIKET,12));
             *NI=h->NI; *NJ=h->NJ; *NK=h->NK;
             return BinaryFile_MakeKey(f,i);
          }
