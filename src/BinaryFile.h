@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 
-typedef enum TBFFlag {BF_READ=1,BF_WRITE=2,BF_DIRTY=4,BF_SEEKED=8} TBFFlag;
+typedef enum TBFFlag {BF_READ=1,BF_WRITE=2,BF_CLEAR=4,BF_DIRTY=8,BF_SEEKED=16} TBFFlag;
 typedef enum TBFType {BF_STRING,BF_BINARY,BF_INT8,BF_INT16,BF_INT32,BF_INT64,BF_UINT8,BF_UINT16,BF_UINT32,BF_UINT64,BF_FLOAT32,BF_FLOAT64,BF_NOTYPE} TBFType;
 
 // Field header
@@ -49,20 +49,29 @@ typedef struct TBFFile {
    int            Flags;   // Mode, dirty flags
 } TBFFile;
 
+typedef struct TBFFiles {
+   TBFFile     *Files;  // Files linked
+   int         N;       // Number of files linked
+   int         Flags;   // Mode of the files (all files must be opened for the same purpose
+} TBFFiles;
 
-TBFFile* BinaryFile_Open(const char *FileName,TBFFlag Mode);
-int BinaryFile_Close(TBFFile *File);
+typedef int64_t TBFKey;
+
+// Function declaration
+
+TBFFiles* BinaryFile_Open(const char *FileName,TBFFlag Mode);
+int BinaryFile_Close(TBFFiles *File);
 
 TBFType BinaryFile_Type(int DaTyp,int NBytes);
 
-int BinaryFile_Write(void *Data,TBFType DataType,TBFFile *File,int DateO,int Deet,int NPas,int NI,int NJ,int NK,int IP1,int IP2,int IP3,const char* TypVar,const char *NomVar,const char *Etiket,const char *GrTyp,int IG1,int IG2,int IG3,int IG4);
-int BinaryFile_WriteFSTD(void *Data,int NPak,TBFFile *File,int DateO,int Deet,int NPas,int NI,int NJ,int NK,int IP1,int IP2,int IP3,const char* TypVar,const char *NomVar,const char *Etiket,const char *GrTyp,int IG1,int IG2,int IG3,int IG4,int DaTyp,int Over);
+int BinaryFile_Write(void *Data,TBFType DataType,TBFFiles *File,int DateO,int Deet,int NPas,int NI,int NJ,int NK,int IP1,int IP2,int IP3,const char* TypVar,const char *NomVar,const char *Etiket,const char *GrTyp,int IG1,int IG2,int IG3,int IG4);
+int BinaryFile_WriteFSTD(void *Data,int NPak,TBFFiles *File,int DateO,int Deet,int NPas,int NI,int NJ,int NK,int IP1,int IP2,int IP3,const char* TypVar,const char *NomVar,const char *Etiket,const char *GrTyp,int IG1,int IG2,int IG3,int IG4,int DaTyp,int Over);
 
-int32_t BinaryFile_Find(TBFFile *File,int *NI,int *NJ,int *NK,int DateO,const char *Etiket,int IP1,int IP2,int IP3,const char* TypVar,const char *NomVar);
+TBFKey BinaryFile_Find(TBFFiles *File,int *NI,int *NJ,int *NK,int DateO,const char *Etiket,int IP1,int IP2,int IP3,const char* TypVar,const char *NomVar);
 
-int32_t BinaryFile_ReadIndex(void *Buf,int32_t Key,TBFFile *File);
-int32_t BinaryFile_Read(void *Buf,TBFFile *File,int *NI,int *NJ,int *NK,int DateO,const char *Etiket,int IP1,int IP2,int IP3,const char* TypVar,const char *NomVar);
-int32_t BinaryFile_ReadIndexInto(void *Buf,int32_t Key,TBFFile *File,TBFType DestType);
-int32_t BinaryFile_ReadInto(void *Buf,TBFFile *File,int *NI,int *NJ,int *NK,int DateO,const char *Etiket,int IP1,int IP2,int IP3,const char* TypVar,const char *NomVar,TBFType DestType);
+TBFKey BinaryFile_ReadIndex(void *Buf,TBFKey Key,TBFFiles *File);
+TBFKey BinaryFile_Read(void *Buf,TBFFiles *File,int *NI,int *NJ,int *NK,int DateO,const char *Etiket,int IP1,int IP2,int IP3,const char* TypVar,const char *NomVar);
+TBFKey BinaryFile_ReadIndexInto(void *Buf,TBFKey Key,TBFFiles *File,TBFType DestType);
+TBFKey BinaryFile_ReadInto(void *Buf,TBFFiles *File,int *NI,int *NJ,int *NK,int DateO,const char *Etiket,int IP1,int IP2,int IP3,const char* TypVar,const char *NomVar,TBFType DestType);
 
 #endif // _BINARYFILE_H
