@@ -60,6 +60,7 @@ typedef int64_t TBFKey;
 // Function declaration
 
 TBFFiles* BinaryFile_Open(const char *FileName,TBFFlag Mode);
+TBFFiles* BinaryFile_Link(const char** FileNames);
 int BinaryFile_Close(TBFFiles *File);
 
 TBFType BinaryFile_Type(int DaTyp,int NBytes);
