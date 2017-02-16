@@ -223,6 +223,7 @@ int    GeoFunc_RadialPointOn(Coord C1,Coord C2,Coord C3,Coord *CR);
 int    GeoFunc_RadialIntersect(Coord C1,Coord C2,double CRS13,double CRS23,Coord *C3);
 
 static inline double GeoRef_GeoDir(TGeoRef* __restrict const Ref,double X, double Y) {
+   
    double latd[2],lond[2],dir=0.0;
    
    if (Ref->Grid[0]!='Y') {
