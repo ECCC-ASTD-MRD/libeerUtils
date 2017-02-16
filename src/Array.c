@@ -51,7 +51,7 @@
  *
  *----------------------------------------------------------------------------
 */
-T3DArray *T3DArray_Alloc(double Value,int Size) {
+T3DArray *T3DArray_Alloc(double Value,unsigned long Size) {
 
    T3DArray *array=(T3DArray*)malloc(sizeof(T3DArray));
 

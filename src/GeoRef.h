@@ -61,6 +61,7 @@
 #define GRID_PSEUDO   0x100      // Pseudocylindrical
 #define GRID_NUNORTH  0x200      // North is not up
 #define GRID_NEGLON   0x400      // Lon are (-180,180)
+#define GRID_CORNER   0x800      // Grid cell is corner defined (ie: firdt gridpoint is 0.5 0.5)
 
 #define GRID_YQTREESIZE   1000
 #define GRID_MQTREEDEPTH  8
@@ -124,34 +125,34 @@ typedef double (TGeoRef_Height)    (struct TGeoRef *Ref,TZRef *ZRef,double X,dou
 
 typedef struct TGeoRef {
    char*   Name;                                          // Reference name
-   int     NbId,NId;                                      // Nombre de sous-grille
    int*    Ids;                                           // Ids des georeferences (>=0 = ezscint)
+   int     NbId,NId;                                      // Nombre de sous-grille
 
    int     NRef;                                          // Nombre de reference a la georeference
    int     Type;                                          // Type de grille
    int     BD;                                            // Bordure
    int     NX,NY,X0,Y0,X1,Y1;                             // Grid limits
    int     IG1,IG2,IG3,IG4;                               // Grid descriptor id
+   char    Grid[3];                                       // Type de grille
    
    Coord  Loc;                                            // (Radar) Localisation du centre de reference
    double CTH,STH;                                        // (Radar) sin and cos of sweep angle
-   int    R;                                              // (Radar) Rayon autour du centre de reference en bin
    double ResR,ResA;                                      // (Radar) Resolutions en distance et azimuth
+   int    R;                                              // (Radar) Rayon autour du centre de reference en bin
 
+   unsigned int NIdx,*Idx;                                // Index dans les positions
    float        *Lat,*Lon;                                // Coordonnees des points de grilles (Spherical)
    float        *AX,*AY,*Hgt;                             // Axes de positionnement / deformation
-   unsigned int *Idx,NIdx;                                // Index dans les positions
 
-   char                          Grid[3];                 // Type de grille
    char                         *String;                  // OpenGIS WKT String description
-   OGREnvelope                   LLExtent;                // LatLon extent
-   OGRCoordinateTransformationH  Function,InvFunction;    // Projection functions
-   OGRSpatialReferenceH          Spatial;                 // Spatial reference
    double                       *Transform,*InvTransform; // Transformation functions
    void                         *GCPTransform;            // GPC derivative transform (1,2,3 order)
    void                         *TPSTransform;            // GPC Thin Spline transform
    void                         *RPCTransform;            // GPC Rigorous Projection Model transform
    TQTree                       *QTree;                   // Quadtree index
+   OGREnvelope                   LLExtent;                // LatLon extent
+   OGRCoordinateTransformationH  Function,InvFunction;    // Projection functions
+   OGRSpatialReferenceH          Spatial;                 // Spatial reference
 
    struct TGeoRef    *RefFrom;                            // Georeference de reference (coupe verticale,...)
 
@@ -167,10 +168,10 @@ typedef struct TGeoRef {
 } TGeoRef;
 
 typedef struct TGeoPos {
-   int      NRef;                                         // Nombre de reference a la georeference
    TGeoRef *GRef;                                         // Reference horizontale
    TZRef   *ZRef;                                         // Reference verticale
    Vect3d **Pos;                                          // Coordonnees des points de grilles (World)
+   int      NRef;                                         // Nombre de reference a la georeference
 } TGeoPos;
 
 typedef struct TGeoScan {
@@ -222,6 +223,7 @@ int    GeoFunc_RadialPointOn(Coord C1,Coord C2,Coord C3,Coord *CR);
 int    GeoFunc_RadialIntersect(Coord C1,Coord C2,double CRS13,double CRS23,Coord *C3);
 
 static inline double GeoRef_GeoDir(TGeoRef* __restrict const Ref,double X, double Y) {
+   
    double latd[2],lond[2],dir=0.0;
    
    if (Ref->Grid[0]!='Y') {

@@ -41,8 +41,10 @@
 
 #include <sched.h>
 #include <unistd.h>
-#include <sys/syscall.h>
 #include <sys/signal.h>
+#ifndef _AIX
+#include <sys/syscall.h>
+#endif
 
 #include "App.h"
 #include "eerUtils.h"
@@ -200,6 +202,7 @@ int App_ThreadPlace(void) {
    
    int nompi=0;
    
+#ifndef _AIX
    // No thread affinity request
    if (!App->Affinity)
       return(TRUE);
@@ -256,6 +259,7 @@ int App_ThreadPlace(void) {
          sched_setaffinity(tid,sizeof(set),&set);
       }
    }
+#endif
 #endif
    return(TRUE);
 }

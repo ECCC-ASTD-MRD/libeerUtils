@@ -506,9 +506,9 @@ static inline float VertexAvgS(float *Data,char *Mask,int NI,int NJ,int X,int Y)
    return(n?val/n:0.0);
 }
 
-float Vertex_ValS(float *Data,char *Mask,int NI,int NJ,double X,double Y) {
+float Vertex_ValS(float *Data,char *Mask,int NI,int NJ,double X,double Y,char Geo) {
    
-   double        cell[4];
+   double        cell[4],d;
    unsigned long i,j,idx[4];
 
    if (!Data || X>NI-1 || Y>NJ-1 || X<0 || Y<0) {
@@ -528,7 +528,7 @@ float Vertex_ValS(float *Data,char *Mask,int NI,int NJ,double X,double Y) {
    cell[1]=Data[idx[1]];
    cell[2]=Data[idx[2]];
    cell[3]=Data[idx[3]];
-   
+      
    if (Mask) {
       if (!Mask[idx[0]]) cell[0]=VertexAvgS(Data,Mask,NI,NJ,i,  j);
       if (!Mask[idx[1]]) cell[1]=VertexAvgS(Data,Mask,NI,NJ,i+1,j);
@@ -538,12 +538,27 @@ float Vertex_ValS(float *Data,char *Mask,int NI,int NJ,double X,double Y) {
    
    // Interpolate over X
    if (X>TINY_VALUE) {
+      if (Geo) {
+         // If interpolation on coordinates, check for wrap-around cell[0] and cell[3] contain longitude
+         d=cell[0]-cell[1];
+         if (d>=180) cell[1]+=360.0;
+         if (d<-180) cell[1]-=360.0;
+         d=cell[3]-cell[2];
+         if (d>=180) cell[2]+=360.0;
+         if (d<-180) cell[2]-=360.0;
+      }
       cell[0]=ILIN(cell[0],cell[1],X);
       cell[3]=ILIN(cell[3],cell[2],X);
    }
 
    // Interpolate over Y
    if (Y>TINY_VALUE) {
+      if (Geo) {
+         // If interpolation on coordinates, check for wrap-around cell[0] and cell[3] contain longitude
+         d=cell[0]-cell[3];
+         if (d>=180) cell[3]+=360.0;
+         if (d<-180) cell[3]-=360.0;
+      }
       cell[0]=ILIN(cell[0],cell[3],Y);
    }
 

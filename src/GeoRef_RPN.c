@@ -297,7 +297,7 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
    
       // RPN grid
       if (GRef->Ids) {         
-         if (Def->Type==TD_Float32) { 
+         if (Def->Type==TD_Float32 && Def->Data[1] && !C) { 
             x=X+1.0;
             y=Y+1.0;
 
@@ -306,22 +306,16 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
                y=lrint(y);
             }
             
-            if (Def->Data[1] && !C) {
-               Def_Pointer(Def,0,mem,p0);
-               Def_Pointer(Def,1,mem,p1);
-               c_gdxywdval(GRef->Ids[GRef->NId],&valf,&valdf,p0,p1,&x,&y,1);
+            Def_Pointer(Def,0,mem,p0);
+            Def_Pointer(Def,1,mem,p1);
+            c_gdxywdval(GRef->Ids[GRef->NId],&valf,&valdf,p0,p1,&x,&y,1);
 
-               // If it's 3D, use the mode for speed since c_gdxywdval only uses 2D
-               if (Def->Data[2])
-                  c_gdxysval(GRef->Ids[GRef->NId],&valf,(float*)&Def->Mode[mem],&x,&y,1);
-                  *Length=valf;
-               if (ThetaXY)
-                  *ThetaXY=valdf;
-            } else {
-               Def_Pointer(Def,C,mem,p0);
-               c_gdxysval(GRef->Ids[GRef->NId],&valf,p0,&x,&y,1);
+            // If it's 3D, use the mode for speed since c_gdxywdval only uses 2D
+            if (Def->Data[2])
+               c_gdxysval(GRef->Ids[GRef->NId],&valf,(float*)&Def->Mode[mem],&x,&y,1);
                *Length=valf;
-            }
+            if (ThetaXY)
+               *ThetaXY=valdf;
          } else {            
             if (Mode=='N') {
                mem+=idx;
@@ -329,7 +323,8 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
             } else {
                *Length=VertexVal(Def,C,X,Y,Z);
             }
-            if (ThetaXY) *ThetaXY=0.0;
+            if (ThetaXY)
+               *ThetaXY=0.0;
          }
       }
       return(TRUE);
@@ -382,8 +377,8 @@ int GeoRef_RPNProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,in
             Y=GRef->AY[idx];
             X=GRef->AX[idx];
          } else {
-            dx=Vertex_ValS(GRef->AX,NULL,GRef->NX,GRef->NY,X,Y);
-            dy=Vertex_ValS(GRef->AY,NULL,GRef->NX,GRef->NY,X,Y);
+            dx=Vertex_ValS(GRef->AX,NULL,GRef->NX,GRef->NY,X,Y,TRUE);
+            dy=Vertex_ValS(GRef->AY,NULL,GRef->NX,GRef->NY,X,Y,FALSE);
             
             X=dx;
             Y=dy;
@@ -392,7 +387,7 @@ int GeoRef_RPNProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,in
          return(0);
       }
    }
-
+   
    if (!GRef->Ids || GRef->Type&GRID_SPARSE) {
       *Lat=Y;
       *Lon=X;

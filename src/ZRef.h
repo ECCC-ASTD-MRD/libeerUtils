@@ -72,21 +72,21 @@ typedef enum { DEFAULT=1,NEW=2,OLD=3 } TZRef_IP1Mode;
 // Vertical referential definition
 typedef struct TZRef {
    char  *Name;           // Reference name
+   char  *VGD;            // VGrid descriptor
+   float *Levels;         // Levels list
+   float *A,*B;           // Pressure calculation factors
+   float *P0;             // Pressure at surface
+   float *PCube;          // 3D Pressure cube
+   int    LevelNb;        // Number of Levels
    int    NRef;           // Reference count
    int    Version;        // Version
    int    Type;           // Type of levels
-   float *Levels;         // Levels list
-   int    LevelNb;        // Number of Levels
    float  POff;           // Pressure offset from level
    float  PTop;           // Pressure at top of atmosphere
    float  PRef;           // Reference pressure
    float  RCoef[2];       // Hybrid level coefficient
    float  ETop;           // Eta coordinate a top
-   float  *A,*B;          // Pressure calculation factors
-   float  *P0;            // Pressure at surface
-   float  *PCube;         // 3D Pressure cube
 
-   char  *VGD; // VGrid descriptor
    TZRef_IP1Mode Style;   // IP style
 
 #ifdef HAVE_RPNC   

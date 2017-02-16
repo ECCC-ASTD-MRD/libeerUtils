@@ -211,6 +211,12 @@ int GeoRef_WKTProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,in
       }
    }
 
+   // Grid cell are corner defined 
+   if (GRef->Type&GRID_CORNER) {
+      X+=0.5;
+      Y+=0.5;
+   }
+
    // In case of non-uniform grid, figure out where in the position vector we are
    if (GRef->Grid[1]=='Z') {
       if (GRef->AX && GRef->AY) {
@@ -259,7 +265,7 @@ int GeoRef_WKTProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,in
          GDALGCPTransform(GRef->RPCTransform,FALSE,1,&x,&y,&z,&ok);
       }
    }
-
+   
    // Transform to latlon
    if (GRef->Function) {
       if (!OCTTransform(GRef->Function,1,&x,&y,NULL)) {
@@ -454,6 +460,12 @@ int GeoRef_WKTUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
             return(0);
          }
       }
+      // Grid cell are corner defined 
+      if (GRef->Type&GRID_CORNER) {
+         *X-=0.5;
+         *Y-=0.5;
+      }
+      
    } else {
       *X=-1.0;
       *Y=-1.0;

@@ -89,7 +89,9 @@ typedef struct OGR_Layer {
    OGR_File        *File;                // Layer's file provenance
    OGR_Sort         Sort;                // Sorting parameters
    char            *Select;              // List of features selection flag
-   char             Changed;             // Is the layer changed
+   Coord           *Loc;                 // List of feature's centroid
+   Vect3d           Vr[2];               // Layer extent in projected coordinates
+   double           Min,Max;             // Layer's min-max of the currently mapped field
    int              Update;              // Do we need to update the internale OGR
    int              Mask,FMask;          // Is this layer used as a mask
    unsigned int     NFeature;            // Number of features in the layer
@@ -99,9 +101,7 @@ typedef struct OGR_Layer {
    unsigned int     NSFeature;           // Number of highligted features
    int              CFeature;            // Cleared feature (to be re-rendered)
    int              Topo,Extrude,Space;  // Positional parameters
-   double           Min,Max;             // Layer's min-max of the currently mapped field
-   Vect3d           Vr[2];               // Layer extent in projected coordinates
-   Coord           *Loc;                 // List of feature's centroid
+   char             Changed;             // Is the layer changed
 } OGR_Layer;
 
 #define OGM_ARRAY0   0

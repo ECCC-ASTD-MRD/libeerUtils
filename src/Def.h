@@ -313,17 +313,17 @@ typedef struct TDef {
    OGRGeometryH *Pick,*Poly;  // Geometry used in various interpolation method
    TList  *Segments;          // Liste d'objets de rendue
 
+   double  NoData;            // Valeur de novalue
    TDef_Type Type;            // Type de donnees du champs
    int NI,NJ,NK,NC,NIJ;       // Dimensions du champs
    int Idx;                   // Index displacement into supergrid
 
-   double  NoData;            // Valeur de novalue
    int     CellDim;           // Defined grid point coverage, point=1 or area=2
-   char    Alias;             // Alias d'un autre TDef (Pointe sur d'autres donnees)
-   int     Level;             // Niveau courant
-   int     Limits[3][2];      // Limits of processing in grid points
    double  CoordLimits[2][2]; // Limits of processing in latlon
+   int     Limits[3][2];      // Limits of processing in grid points
+   int     Level;             // Niveau courant
    int     Sample,SubSample;  // Sample interval in grid points
+   char    Alias;             // Alias d'un autre TDef (Pointe sur d'autres donnees)
 } TDef;
 
 struct TGeoRef;

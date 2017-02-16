@@ -71,21 +71,21 @@ typedef struct                      /* Polygon vertex structure          */
 
 typedef struct                      /* Vertex list structure             */
 {
-  int                 num_vertices; /* Number of vertices in list        */
   gpc_vertex         *vertex;       /* Vertex array pointer              */
+  int                 num_vertices; /* Number of vertices in list        */
 } gpc_vertex_list;
 
 typedef struct                      /* Polygon set structure             */
 {
-  int                 num_contours; /* Number of contours in polygon     */
-  int                *hole;         /* Hole / external contour flags     */
   gpc_vertex_list    *contour;      /* Contour array pointer             */
+  int                *hole;         /* Hole / external contour flags     */
+  int                 num_contours; /* Number of contours in polygon     */
 } gpc_polygon;
 
 typedef struct                      /* Tristrip set structure            */
 {
-  int                 num_strips;   /* Number of tristrips               */
   gpc_vertex_list    *strip;        /* Tristrip array pointer            */
+  int                 num_strips;   /* Number of tristrips               */
 } gpc_tristrip;
 
 
