@@ -1474,7 +1474,7 @@ int GeoRef_Limits(TGeoRef* __restrict const Ref,double *Lat0,double *Lon0,double
 
    if (!Ref) return(0);
    
-   /*Source grid Y*/
+   // Source grid Y
    if (Ref->Grid[0]=='Y' || Ref->Grid[1]=='Y' || Ref->Grid[0]=='X' || Ref->Grid[1]=='X') {
       for(x=0;x<((Ref->X1-Ref->X0)+1)*((Ref->Y1-Ref->Y0)+1);x++) {
          *Lat0=FMIN(*Lat0,Ref->AY[x]); *Lon0=FMIN(*Lon0,Ref->AX[x]);
@@ -1483,14 +1483,14 @@ int GeoRef_Limits(TGeoRef* __restrict const Ref,double *Lat0,double *Lon0,double
       return(1);
    }
 
-   /*If destination is global*/
+   // If destination is global
    if (Ref->Type&GRID_WRAP) {
       *Lat0=-90.0;  *Lat1=90.0;
       *Lon0=-180.0; *Lon1=180.0;
       return(1);
    }
 
-   /*Project Ref0 Border within Ref1 and get limits*/
+   // Project Ref0 Border within Ref1 and get limits
    for(x=Ref->X0,y=Ref->Y0;x<=Ref->X1;x++) {
       Ref->Project(Ref,x,y,&lat,&lon,0,1);
       *Lat0=FMIN(*Lat0,lat); *Lon0=FMIN(*Lon0,lon);
@@ -1515,7 +1515,7 @@ int GeoRef_Limits(TGeoRef* __restrict const Ref,double *Lat0,double *Lon0,double
       *Lat1=FMAX(*Lat1,lat); *Lon1=FMAX(*Lon1,lon);
    }
 
-   /*Test for north and south pole including grid*/
+   // Test for north and south pole including grid
    if (Ref->UnProject(Ref,&di,&dj,90.0,0.0,0,1) && dj>Ref->Y0+2 && dj<Ref->Y1-2 && di>Ref->X0+2 && di<Ref->X1-2) {
       *Lat1=90.0;
    }
@@ -1532,7 +1532,7 @@ int GeoRef_Within(TGeoRef* __restrict const Ref0,TGeoRef* __restrict const Ref1)
 
    if (!Ref0 || !Ref1) return(0);
    
-   /*Project Ref0 Border within Ref1 and get limits*/
+   // Project Ref0 Border within Ref1 and get limits
    for(x=Ref0->X0,y=Ref0->Y0;x<=Ref0->X1;x++) {
       Ref0->Project(Ref0,x,y,&lat,&lon,0,1);
       if (!Ref1->UnProject(Ref1,&di,&dj,lat,lon,0,1)) {

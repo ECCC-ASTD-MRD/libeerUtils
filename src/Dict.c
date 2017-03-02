@@ -57,9 +57,10 @@ char *TCODE[]       = { "Variable codée"    ,"Coded Variable"   };
 char *TVAL[]        = { "Valeur"            ,"Value"            };
 
 char *TOBSOLETE[]   = { "Obsolète"   ,"Obsolete"   };
+char *TDEPRECATED[] = { "Désuète"    ,"Deprecated" };
 char *TFUTURE[]     = { "Futur"      ,"Future"     };
 char *TCURRENT[]    = { "Courante"   ,"Current"    };
-char *TINCOMPLETE[] = { "Incomplète" ,"Icomplete" };
+char *TINCOMPLETE[] = { "Incomplète" ,"Icomplete"  };
 
 char *TCENTILE[]    = { "e centile"                   ,"th percentile" };
 char *TMIN[]        = { "(minimum)"                   ,"(minimum)" };
@@ -437,6 +438,8 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encodin
    if ((tmpc=(char*)xmlGetProp(Node,"usage"))) {
       if (!strcmp(tmpc,"obsolete")) {
          metvar->Nature|=DICT_OBSOLETE;
+      } else if (!strcmp(tmpc,"deprecated")) {
+         metvar->Nature|=DICT_DEPRECATED;
       } else if (!strcmp(tmpc,"current")) {
          metvar->Nature|=DICT_CURRENT;
       } else if (!strcmp(tmpc,"future")) {
@@ -638,6 +641,8 @@ static int Dict_ParseType(xmlDocPtr Doc, xmlNsPtr NS, xmlNodePtr Node,TDict_Enco
    if ((tmpc=(char*)xmlGetProp(Node,"usage"))) {
       if (!strcmp(tmpc,"obsolete")) {
          type->Nature|=DICT_OBSOLETE;
+      } else if (!strcmp(tmpc,"deprecated")) {
+         type->Nature|=DICT_DEPRECATED;
       } else if (!strcmp(tmpc,"current")) {
          type->Nature|=DICT_CURRENT;
       } else if (!strcmp(tmpc,"future")) {
@@ -1048,14 +1053,17 @@ void Dict_PrintVar(TDictVar *DVar,int Format,TApp_Lang Lang) {
       if (!(var=Dict_ApplyModifier(DVar,DictSearch.Modifier))) {
          return;
       }
-      if (var->Nature&DICT_OBSOLETE) printf(APP_COLOR_RED);
+      if (var->Nature&DICT_OBSOLETE)   printf(APP_COLOR_RED);
+      if (var->Nature&DICT_DEPRECATED) printf(APP_COLOR_YELLOW);
 
       switch(Format) {
          case DICT_SHORT:
             printf("%-4s\t%-70s\t%-s",var->Name,var->Short[Lang],var->Units);
             if (var->Nature&DICT_OBSOLETE)
                printf(" \t%s\n",TOBSOLETE[Lang]);
-            else
+            else if (var->Nature&DICT_DEPRECATED)
+               printf(" \t%s\n",TDEPRECATED[Lang]);
+            else 
                printf("\n");
 
             break;
@@ -1075,6 +1083,8 @@ void Dict_PrintVar(TDictVar *DVar,int Format,TApp_Lang Lang) {
 
             if (var->Nature&DICT_OBSOLETE)
                printf("%s\n",TOBSOLETE[Lang]);
+            else if (var->Nature&DICT_DEPRECATED)
+               printf("%s\n",TDEPRECATED[Lang]);
             else if (var->Nature&DICT_CURRENT)
                printf("%s\n",TCURRENT[Lang]);
             else if (var->Nature&DICT_FUTURE)
@@ -1140,6 +1150,8 @@ void Dict_PrintVar(TDictVar *DVar,int Format,TApp_Lang Lang) {
             
             if (var->Nature&DICT_OBSOLETE) {
                printf("\"obsolete\"");
+            } else if (var->Nature&DICT_DEPRECATED) {
+               printf("\"deprecated\"");
             } else if (var->Nature&DICT_CURRENT) {
                printf("\"current\"");
             } else if (var->Nature&DICT_FUTURE) {
@@ -1216,7 +1228,7 @@ void Dict_PrintVar(TDictVar *DVar,int Format,TApp_Lang Lang) {
             break;
       }
       if (var!=DVar) free(var);
-      if (var->Nature&DICT_OBSOLETE) printf(APP_COLOR_RESET);
+      if (var->Nature&DICT_OBSOLETE || var->Nature&DICT_DEPRECATED) printf(APP_COLOR_RESET);
    }
 }
 
@@ -1299,6 +1311,8 @@ void Dict_PrintType(TDictType *DType,int Format,TApp_Lang Lang) {
 
             if (DType->Nature&DICT_OBSOLETE)
                printf("%s\n",TOBSOLETE[Lang]);
+            else if (DType->Nature&DICT_DEPRECATED)
+               printf("%s\n",TDEPRECATED[Lang]);
             else if (DType->Nature&DICT_CURRENT)
                printf("%s\n",TCURRENT[Lang]);
             else if (DType->Nature&DICT_FUTURE)
@@ -1313,6 +1327,8 @@ void Dict_PrintType(TDictType *DType,int Format,TApp_Lang Lang) {
             
             if (DType->Nature&DICT_OBSOLETE) {
                printf("\"obsolete\"");
+            } else if (DType->Nature&DICT_DEPRECATED) {
+               printf("\"deprecated\"");
             } else if (DType->Nature&DICT_CURRENT) {
                printf("\"current\"");
             } else if (DType->Nature&DICT_FUTURE) {
