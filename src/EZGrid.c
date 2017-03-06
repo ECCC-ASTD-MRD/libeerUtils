@@ -1876,7 +1876,7 @@ int EZGrid_LLGetValueX(TGrid* __restrict const GridU,TGrid* __restrict const Gri
          if (tv) VV[ik]=tv->Data[k][idx];
       } else {
                  UU[ik]=Vertex_ValS(tu->Data[k],tu->Mask[k],tu->NI,tu->NJ,i,j,FALSE);
-         if (tv) VV[ik]=Vertex_ValS(tv->Data[k],tv->Mask[k],tv->NI,tv->NJ,i,j,FALSE);    
+         if (tv) VV[ik]=Vertex_ValS(tv->Data[k],tu->Mask[k],tv->NI,tv->NJ,i,j,FALSE);    
       }
     
       if (Conv!=1.0) {
