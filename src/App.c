@@ -211,21 +211,23 @@ int App_ThreadPlace(void) {
    int len,i;
    char *n,*names,*cptr;
    
-   // Get the physical node unique name of mpi procs
-   APP_MEM_ASRT(names,calloc(MPI_MAX_PROCESSOR_NAME*App->NbMPI,sizeof(*names)));
+   if (App_IsMPI()) {
+      // Get the physical node unique name of mpi procs
+      APP_MEM_ASRT(names,calloc(MPI_MAX_PROCESSOR_NAME*App->NbMPI,sizeof(*names)));
 
-   n=names+App->RankMPI*MPI_MAX_PROCESSOR_NAME;
-   MPI_Get_processor_name(n,&len);
-   MPI_Allgather(n,MPI_MAX_PROCESSOR_NAME,MPI_CHAR,names,MPI_MAX_PROCESSOR_NAME,MPI_CHAR,MPI_COMM_WORLD);
-   
-   // Go through the names and check sequence in proc sharing order for this proc's physical node
-   for(i=0,nompi=-1,cptr=names; i<=App->RankMPI; ++i,cptr+=MPI_MAX_PROCESSOR_NAME) {
-      if (!strncmp(n,cptr,MPI_MAX_PROCESSOR_NAME)) {
-         ++nompi;
+      n=names+App->RankMPI*MPI_MAX_PROCESSOR_NAME;
+      MPI_Get_processor_name(n,&len);
+      MPI_Allgather(n,MPI_MAX_PROCESSOR_NAME,MPI_CHAR,names,MPI_MAX_PROCESSOR_NAME,MPI_CHAR,MPI_COMM_WORLD);
+      
+      // Go through the names and check sequence in proc sharing order for this proc's physical node
+      for(i=0,nompi=-1,cptr=names; i<=App->RankMPI; ++i,cptr+=MPI_MAX_PROCESSOR_NAME) {
+         if (!strncmp(n,cptr,MPI_MAX_PROCESSOR_NAME)) {
+            ++nompi;
+         }
       }
-   }
 
-   free(names);
+      free(names);
+   }
 #endif
 
 #ifdef _OPENMP
