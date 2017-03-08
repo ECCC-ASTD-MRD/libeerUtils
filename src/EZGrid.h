@@ -52,7 +52,7 @@
 #define EZGrid_IsInside(GRID,X,Y)      (GRID->H.GRTYP[0]=='M' || GRID->H.GRTYP[0]=='Y' || (X>=0 && Y>=0 && (GRID->Wrap || (X<GRID->H.NI-1 && Y<GRID->H.NJ-1))))
 #define EZGrid_IsMesh(GRID)            (GRID->H.GRTYP[0]=='M')
 #define EZGrid_IsRegular(GRID)         (GRID->H.GRTYP[0]!='M' && GRID->H.GRTYP[0]!='Y' && GRID->H.GRTYP[0]!='X')
-#define EZGrid_Is3D(GRID)              (GRID->H.NK>1)
+#define EZGrid_Is3D(GRID)              (GRID->H.NK>1?GRID->H.NK:0)
 
 #define EZGrid_Size(GRID)              (GRID->H.NJ*GRID->H.NI)
 #define EZGrid_TileValue(TILE,X,Y,Z)   (TILE->Data[Z][((int)Y-TILE->HJ)*TILE->HNI+((int)X-TILE->HI)])
