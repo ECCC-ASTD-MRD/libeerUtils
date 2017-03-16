@@ -287,6 +287,7 @@ void App_Start(void) {
 
    // Trap signals (preemption)
    App_Trap(SIGUSR2);
+   App_Trap(SIGTERM);
 
 #ifdef HAVE_RMN
    // RMN Lib settings
@@ -474,7 +475,8 @@ void App_TrapProcess(int Signal) {
    App->Signal=Signal;
    
    switch(Signal) {
-      case SIGUSR2: App->State=DONE;
+      case SIGUSR2:
+      case SIGTERM: App->State=DONE;
    }
 }
 

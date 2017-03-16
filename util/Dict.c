@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
         { APP_INT32,         &ip3,      1,             "3",  "ip3"        , "Search IP3 ("APP_COLOR_GREEN"-1"APP_COLOR_RESET")" },
         { APP_CHAR,          &origin,   1,             "o", "origin"      , "Search originator ("APP_COLOR_GREEN"all"APP_COLOR_RESET")" },
         { APP_CHAR,          &etiket,   1,             "k", "etiket"      , "ETIKET modifier ("APP_COLOR_GREEN"\"\""APP_COLOR_RESET")" },
-        { APP_CHAR,          &state,    1,             "s", "state"       , "Search state ("APP_COLOR_GREEN"all"APP_COLOR_RESET",obsolete,current,future,incomplete)" },
+        { APP_CHAR,          &state,    1,             "s", "state"       , "Search state ("APP_COLOR_GREEN"all"APP_COLOR_RESET",obsolete,current,future,incomplete,deprecated)" },
         { APP_FLAG,          &lng,      1,             "l", "long"        , "use long description" },
         { APP_FLAG,          &xml,      1,             "x", "xml"         , "use xml description" },
         { APP_FLAG,          &search,   1,             "g", "glob"        , "use glob search pattern" },
