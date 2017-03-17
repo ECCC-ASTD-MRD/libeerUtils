@@ -1,5 +1,6 @@
 #include "BinaryFile.h"
 #include "App.h"
+#include <string.h>
 
 const int32_t BF_MAGIC=0x45454642; //BFEE (Binary File Env. Emergencies) in little endian
 const int32_t BF_VERSION=1;
@@ -12,7 +13,7 @@ size_t FtnStrSize(const char *Str,size_t Max) {
    if( !Str )
       return 0;
 
-   for(n=Max<0?strlen(Str):strnlen(Str,Max); n>0&&Str[n-1]==' '; --n)
+   for(n=strnlen(Str,Max); n>0&&Str[n-1]==' '; --n)
       ;
    return n;
 }
@@ -425,26 +426,32 @@ TBFKey BinaryFile_Find(TBFFiles *File,int *NI,int *NJ,int *NK,int DateO,const ch
    TBFFile *restrict file;
    int32_t i,f;
    int nnv=0,ntv=0,net=0;
+   int nonv,notv,noet;
 
    if( !File )
       return -1;
 
    // This is needed because fortran whistespace pads its strings, so giving an fstprm output would be a problem
-   nnv = FtnStrSize(NomVar,-1);
-   ntv = FtnStrSize(TypVar,-1);
-   net = FtnStrSize(Etiket,-1);
+   nnv = FtnStrSize(NomVar,4);
+   ntv = FtnStrSize(TypVar,2);
+   net = FtnStrSize(Etiket,12);
+
+   nonv = !NomVar || NomVar[0]=='\0' || !nnv;
+   notv = !TypVar || TypVar[0]=='\0' || !ntv;
+   noet = !Etiket || Etiket[0]=='\0' || !net;
 
    // Look for the field in the index
    for(f=0,file=File->Files; f<File->N; ++f,++file) {
       for(i=0,h=file->Index.Headers; i<file->Index.N; ++i,++h) {
          //printf("Comparing dateo=(%d|%d) ip1=(%d|%d) ip2=(%d|%d) ip3=(%d|%d) NomVar=(%.*s|%.4s) TypVar=(%.*s|%.2s) Etiket=(%.*s|%.12s)\n",DateO,h->DATEO,IP1,h->IP1,IP2,h->IP2,IP3,h->IP3,nnv,NomVar,h->NOMVAR,ntv,TypVar,h->TYPVAR,net,Etiket,h->ETIKET);
+         //printf("DateO[%d] IP1[%d] IP2[%d] IP3[%d] NOMVAR[%d] TYPVAR[%d] ETIKET[%d]\n",(DateO==-1 || DateO==h->DATEO),(IP1==-1 || IP1==h->IP1),(IP2==-1 || IP2==h->IP2),(IP3==-1 || IP3==h->IP3),(nonv || nnv==strnlen(h->NOMVAR,4) && !strncmp(NomVar,h->NOMVAR,nnv)),(notv || ntv==strnlen(h->TYPVAR,2) && !strncmp(TypVar,h->TYPVAR,ntv)),(noet || net==strnlen(h->ETIKET,12) && !strncmp(Etiket,h->ETIKET,net)));
          if( (DateO==-1 || DateO==h->DATEO)
                && (IP1==-1 || IP1==h->IP1)
                && (IP2==-1 || IP2==h->IP2)
                && (IP3==-1 || IP3==h->IP3)
-               && (!NomVar || NomVar[0]=='\0' || !nnv || nnv==strnlen(h->NOMVAR,4) && !strncmp(NomVar,h->NOMVAR,nnv))
-               && (!TypVar || TypVar[0]=='\0' || !ntv || ntv==strnlen(h->TYPVAR,2) && !strncmp(TypVar,h->TYPVAR,ntv))
-               && (!Etiket || Etiket[0]=='\0' || !net || net==strnlen(h->ETIKET,12) && !strncmp(Etiket,h->ETIKET,net)) ) {
+               && (nonv || nnv==strnlen(h->NOMVAR,4) && !strncmp(NomVar,h->NOMVAR,nnv))
+               && (notv || ntv==strnlen(h->TYPVAR,2) && !strncmp(TypVar,h->TYPVAR,ntv))
+               && (noet || net==strnlen(h->ETIKET,12) && !strncmp(Etiket,h->ETIKET,net)) ) {
             // We found the field, return its key
             //printf("Found field dateo=(%d|%d) ip1=(%d|%d) ip2=(%d|%d) ip3=(%d|%d) NomVar=(%.*s|%.4s) TypVar=(%.*s|%.2s) Etiket=(%.*s|%.12s)\n",DateO,h->DATEO,IP1,h->IP1,IP2,h->IP2,IP3,h->IP3,nnv,NomVar,h->NOMVAR,ntv,TypVar,h->TYPVAR,net,Etiket,h->ETIKET);
             //printf("Note that nnv=%d ntv=%d net=%d nlenNV=%d nlenTV=%d nlenET=%d\n",nnv,ntv,net,(int)strnlen(h->NOMVAR,4),(int)strnlen(h->TYPVAR,2),(int)strnlen(h->ETIKET,12));
