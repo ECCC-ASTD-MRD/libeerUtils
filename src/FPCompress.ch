@@ -1,4 +1,5 @@
-#include "FPCompress.h"
+#include "FPCompressD.h"
+#include "FPCompressF.h"
 #include <limits.h>
 #include <stdlib.h>
 #include "App.h"
