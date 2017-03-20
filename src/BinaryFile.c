@@ -1,11 +1,13 @@
 #include "BinaryFile.h"
+#include "FPCompressF.h"
+#include "FPCompressD.h"
 #include "App.h"
 #include <string.h>
 
 const int32_t BF_MAGIC=0x45454642; //BFEE (Binary File Env. Emergencies) in little endian
 const int32_t BF_VERSION=1;
 
-static int BFTypeSize[] = {1,1,1,2,4,8,1,2,4,8,4,8,0};
+static int BFTypeSize[] = {1,1,1,2,4,8,1,2,4,8,4,8,4,8,0};
 
 size_t FtnStrSize(const char *Str,size_t Max) {
    size_t n;
@@ -289,14 +291,11 @@ TBFFldHeader* BinaryFile_GetHeader(TBFFiles* Files,TBFKey Key) {
 }
 
 TBFType BinaryFile_Type(int DaTyp,int NBytes) {
-   // Compressed types
-   if( DaTyp >= 128 )
-      DaTyp -= 128;
-
    switch( DaTyp ) {
       // Binary
       case 0:  return BF_BINARY;
       // Unsigned int
+      case 130:
       case 2: {
          switch( NBytes ) {
             case 1:  return BF_UINT8;
@@ -307,6 +306,7 @@ TBFType BinaryFile_Type(int DaTyp,int NBytes) {
          }
       }
       // Signed int
+      case 132:
       case 4: {
          switch( NBytes ) {
             case 1:  return BF_INT8;
@@ -324,6 +324,14 @@ TBFType BinaryFile_Type(int DaTyp,int NBytes) {
             default: return BF_FLOAT32;
          }
       }
+      // Compressed Float
+      case 133: {
+         switch( NBytes ) {
+            case 4:  return BF_CFLOAT32;
+            case 8:  return BF_CFLOAT64;
+            default: return BF_CFLOAT32;
+         }
+      }
       // Caracter string
       case 3:
       case 7:  return BF_STRING;
@@ -333,7 +341,7 @@ TBFType BinaryFile_Type(int DaTyp,int NBytes) {
 }
 
 int BinaryFile_Write(void *Data,TBFType DataType,TBFFiles *File,int DateO,int Deet,int NPas,int NI,int NJ,int NK,int IP1,int IP2,int IP3,const char* TypVar,const char *NomVar,const char *Etiket,const char *GrTyp,int IG1,int IG2,int IG3,int IG4) {
-   int size = NI*NJ*NK;
+   size_t size;
    void *buf;
    TBFFldHeader *restrict h;
    TBFFile *restrict file = BinaryFile_GetFile(File,0);
@@ -356,9 +364,21 @@ int BinaryFile_Write(void *Data,TBFType DataType,TBFFiles *File,int DateO,int De
    }
 
    // Write the field
-   if( fwrite(Data,BFTypeSize[DataType],size,file->FD)!=size ) {
-      App_Log(ERROR,"BinaryFile: Problem writing field. The file will be corrupt\n");
-      return APP_ERR;
+   switch( DataType ) {
+      case BF_CFLOAT32:
+         APP_ASRT_OK( FPC_CompressF(file->FD,Data,NI,NJ,NK,&size) );
+         break;
+      case BF_CFLOAT64:
+         APP_ASRT_OK( FPC_CompressD(file->FD,Data,NI,NJ,NK,&size) );
+         break;
+      default:
+         size = NI*NJ*NK;
+         if( fwrite(Data,BFTypeSize[DataType],size,file->FD)!=size ) {
+            App_Log(ERROR,"BinaryFile: Problem writing field. The file will be corrupt\n");
+            return APP_ERR;
+         }
+         size *= BFTypeSize[DataType];
+         break;
    }
 
    // Make space in the index
@@ -374,7 +394,7 @@ int BinaryFile_Write(void *Data,TBFType DataType,TBFFiles *File,int DateO,int De
 
    // Fill the header
    h->KEY   = file->Header.IOffset;
-   h->NBYTES= BFTypeSize[DataType]*size;
+   h->NBYTES= size;
    h->DATEO = DateO;
    h->DEET  = Deet;
    h->NPAS  = NPas;
@@ -401,7 +421,7 @@ int BinaryFile_Write(void *Data,TBFType DataType,TBFFiles *File,int DateO,int De
    h->GRTYP = GrTyp[0];
 
    // Update the offset
-   file->Header.IOffset += size*BFTypeSize[DataType];
+   file->Header.IOffset += size;
 
    // Flag the update to the index
    file->Flags |= BF_DIRTY;
@@ -480,11 +500,21 @@ TBFKey BinaryFile_ReadIndex(void *Buf,TBFKey Key,TBFFiles *File) {
    }
 
    // Read the bytes
-   // TODO the size of each item may vary based on the packing/compression/etc.
-   size_t n = h->NI*h->NJ*h->NK;
-   if( fread(Buf,BFTypeSize[h->DATYP],n,file->FD)!=n ) {
-      App_Log(ERROR,"BinaryFile: Could not seek to field position\n");
-      return -1;
+   switch( h->DATYP ) {
+      case BF_CFLOAT32:
+         APP_ASRT_OK( FPC_InflateF(file->FD,Buf,h->NI,h->NJ,h->NK) );
+         break;
+      case BF_CFLOAT64:
+         APP_ASRT_OK( FPC_InflateD(file->FD,Buf,h->NI,h->NJ,h->NK) );
+         break;
+      default: {
+         size_t n = h->NI*h->NJ*h->NK;
+         if( fread(Buf,BFTypeSize[h->DATYP],n,file->FD)!=n ) {
+            App_Log(ERROR,"BinaryFile: Could not seek to field position\n");
+            return -1;
+         }
+         break;
+      }
    }
 
    return Key;
