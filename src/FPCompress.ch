@@ -267,7 +267,7 @@ int R(FPC_Compress)(FILE* FD,TFPCReal *restrict Data,int NI,int NJ,int NK,size_t
 
     FPC_FlushBytes(ctx);
     App_Log(DEBUG,"Initial data size : %zu bytes. New data size : %zu bytes. Compression factor : %.2f\n",n*sizeof(*Data),ctx->Cnt,(double)(n*sizeof(*Data))/(double)ctx->Cnt);
-    CSize = ctx->Cnt;
+    *CSize = ctx->Cnt;
 
     free(buf);
     FPC_Free(ctx);
