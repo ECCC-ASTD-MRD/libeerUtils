@@ -266,7 +266,12 @@ int R(FPC_Compress)(FILE* FD,TFPCReal *restrict Data,int NI,int NJ,int NK,size_t
     }
 
     FPC_FlushBytes(ctx);
-    App_Log(DEBUG,"Initial data size : %zu bytes. New data size : %zu bytes. Compression factor : %.2f\n",n*sizeof(*Data),ctx->Cnt,(double)(n*sizeof(*Data))/(double)ctx->Cnt);
+    n *= sizeof(*Data);
+    App_Log(DEBUG,"Initial data size : %zu bytes. New data size : %zu bytes. Compression factor : %.2f\n",n,ctx->Cnt,(double)(n)/(double)ctx->Cnt);
+    if( ctx->Cnt > n ) {
+        App_Log(WARNING,"The compressed field is bigger (%lu bytes|%lu MB) than the initial field (%zu bytes|%zu MB) by a factor of %.2f\n",
+                ctx->Cnt,(ctx->Cnt+1024*1024/2)/(1024*1024),n,(n+1024*1024/2)/(1024*1024),(double)ctx->Cnt/(double)(n));
+    }
     *CSize = ctx->Cnt;
 
     free(buf);
