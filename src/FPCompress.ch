@@ -143,7 +143,7 @@ static void FPC_EncodeBits(TFPCCtx *restrict Ctx,TFPCType Bits,TFPCType K) {
 
 #define BUFDIFF(i,j,k) ((k)*d1*d2+(j)*d1+(i))
 #define BUFIDX(i,j,k)  (bufi<BUFDIFF(i,j,k)?bufs-BUFDIFF(i,j,k)+bufi:bufi-BUFDIFF(i,j,k))
-int R(FPC_Compress)(FILE* FD,TFPCReal *restrict Data,int NI,int NJ,int NK) {
+int R(FPC_Compress)(FILE* FD,TFPCReal *restrict Data,int NI,int NJ,int NK,size_t *restrict CSize) {
     TFPCCtx         *ctx;
     size_t          bufs,bufi,i,n=NI*NJ*NK,d1=0,d2=0;
     TFPCType        *buf,udata,upred,diff,k,zero=bitsizeof(udata);
@@ -267,6 +267,7 @@ int R(FPC_Compress)(FILE* FD,TFPCReal *restrict Data,int NI,int NJ,int NK) {
 
     FPC_FlushBytes(ctx);
     App_Log(DEBUG,"Initial data size : %zu bytes. New data size : %zu bytes. Compression factor : %.2f\n",n*sizeof(*Data),ctx->Cnt,(double)(n*sizeof(*Data))/(double)ctx->Cnt);
+    CSize = ctx->Cnt;
 
     free(buf);
     FPC_Free(ctx);
@@ -351,7 +352,7 @@ static TFPCType FPC_DecodeBits(TFPCCtx *restrict Ctx,TFPCType K) {
 }
 
 
-int R(FPC_Inflate)(FILE* FD,TFPCReal *restrict Data,int NI,int NJ,int NK,size_t CSize) {
+int R(FPC_Inflate)(FILE* FD,TFPCReal *restrict Data,int NI,int NJ,int NK) {
     TFPCCtx         *ctx;
     size_t          bufs,bufi,i,n=NI*NJ*NK,d1=0,d2=0;
     TFPCType        *buf,udata,upred,diff,k,zero=bitsizeof(udata);
