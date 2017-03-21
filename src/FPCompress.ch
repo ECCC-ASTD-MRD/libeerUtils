@@ -19,14 +19,13 @@
 #define MSB(x)  (sizeof(x)==8?CountLeadingZerosl(x):CountLeadingZeros(x))
 // X must be different from 0
 static int CountLeadingZeros(unsigned int X) {
-    uint32_t k=0;
+    int k=0;
     while( X>>=1 ) ++k;
     return k;
 }
 // X must be different from 0
 static int CountLeadingZerosl(unsigned long X) {
-
-    uint32_t k=0;
+    int k=0;
     while( X>>=1 ) ++k;
     return k;
 }
