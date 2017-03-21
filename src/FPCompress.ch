@@ -1,3 +1,42 @@
+/*==============================================================================
+ * Environnement Canada
+ * Centre Meteorologique Canadian
+ * 2121 Trans-Canadienne
+ * Dorval, Quebec
+ *
+ * Projet    : Librairie de compression de nombre flotants
+ * Fichier   : FPCompress.ch
+ * Creation  : Mars 2017
+ * Auteur    : Eric Legault-Ouellet
+ *
+ * Description: Compress and inflate floating point numbers
+ *
+ * Note:
+        This is an implementation of the paper
+ *      "Fast and Efficient Compression of Floating-Point Data" written
+ *      by Peter Lindstrom and Martin Isenburg, published in
+ *      IEEE Transactions on Visualization and Computer Graphics 12(5):1245-50,
+ *      September 2006
+ *
+ * License:
+ *    This library is free software; you can redistribute it and/or
+ *    modify it under the terms of the GNU Lesser General Public
+ *    License as published by the Free Software Foundation,
+ *    version 2.1 of the License.
+ *
+ *    This library is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *    Lesser General Public License for more details.
+ *
+ *    You should have received a copy of the GNU Lesser General Public
+ *    License along with this library; if not, write to the
+ *    Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ *    Boston, MA 02111-1307, USA.
+ *
+ *==============================================================================
+ */
+
 #include "FPCompressD.h"
 #include "FPCompressF.h"
 #include <limits.h>
@@ -42,11 +81,27 @@ typedef struct TFPCCtx {
     TFPCType    Code;
 } TFPCCtx;
 
-static TFPCCtx* FPC_New(FILE* FD,TQSMSym Size,TQSMUpF UpFreq) {
+/*----------------------------------------------------------------------------
+ * Nom      : <FPC_New>
+ * Creation : Mars 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Retourne une structure TFPCCtx initialisée
+ *
+ * Parametres :
+ *  <FD>    : File descriptor of the opened file to output the data to/input
+ *            the data from
+ *
+ * Retour   : Une structure TFPCCtx initialisée ou NULL en cas d'erreur
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
+static TFPCCtx* FPC_New(FILE* FD) {
     TFPCCtx *ctx = malloc(sizeof(*ctx));
 
     if( ctx ) {
-        if( !(ctx->QSM=QSM_New(Size,UpFreq)) ) {
+        if( !(ctx->QSM=QSM_New(bitsizeof(TFPCType)*2+1,QSM_TARGET)) ) {
             free(ctx);
             return NULL;
         }
@@ -60,6 +115,21 @@ static TFPCCtx* FPC_New(FILE* FD,TQSMSym Size,TQSMUpF UpFreq) {
     return ctx;
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <FPC_Free>
+ * Creation : Mars 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Libère une structure TFPCCtx
+ *
+ * Parametres :
+ *  <Ctx>   : Structure dont il faut libérer la mémoire
+ *
+ * Retour   :
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 static void FPC_Free(TFPCCtx *Ctx) {
     if( Ctx ) {
         QSM_Free(Ctx->QSM);
@@ -67,21 +137,67 @@ static void FPC_Free(TFPCCtx *Ctx) {
     }
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <FPC_PutByte>
+ * Creation : Mars 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Écrit un byte de donnée dans un fichier
+ *
+ * Parametres :
+ *  <Ctx>   : Contexte
+ *
+ * Retour   :
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 static void FPC_PutByte(TFPCCtx *restrict Ctx) {
     putc(TOPBYTE(Ctx->Low),Ctx->FD);
     Ctx->Low <<= 8;
     ++Ctx->Cnt;
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <FPC_FlushBytes>
+ * Creation : Mars 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Écrit les derniers bytes restant pour compléter la compression
+ *
+ * Parametres :
+ *  <Ctx>   : Contexte
+ *
+ * Retour   :
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 static void FPC_FlushBytes(TFPCCtx *restrict Ctx) {
     size_t i;
 
-    // Read in the first 4 bytes
+    // Write the last 4 bytes
     for(i=0; i<sizeof(Ctx->Low); ++i) {
         FPC_PutByte(Ctx);
     }
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <FPC_AdjustRange>
+ * Creation : Mars 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Ajuste (normalize) le range en écrivant les bytes qui sont
+ *            immuables
+ *
+ * Parametres :
+ *  <Ctx>   : Contexte
+ *
+ * Retour   :
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 static void FPC_AdjustRange(TFPCCtx *restrict Ctx) {
     // If the top byte is the same when you add the range, this means that it won't change anymore and may be ouputed
     while( !FPCTOPBYTE(Ctx->Low^(Ctx->Low+Ctx->Range)) ) {
@@ -99,6 +215,23 @@ static void FPC_AdjustRange(TFPCCtx *restrict Ctx) {
     }
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <FPC_EncodeK>
+ * Creation : Mars 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : encode et ajoute au range le K, soit le nombre de bits significatifs
+ *            nuls avant le premier '1'
+ *
+ * Parametres :
+ *  <Ctx>   : Contexte
+ *  <K>     : La valeur à encoder
+ *
+ * Retour   :
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 static void FPC_EncodeK(TFPCCtx *restrict Ctx,TFPCType K) {
     TQSMFreq freq,ltcfreq,totfreq;
 
@@ -122,14 +255,49 @@ static void FPC_EncodeK(TFPCCtx *restrict Ctx,TFPCType K) {
     FPC_AdjustRange(Ctx);
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <FPC_EncodeShift>
+ * Creation : Mars 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Encode verbatim les bits donnés
+ *
+ * Parametres :
+ *  <Ctx>   : Contexte
+ *  <Bits>  : Les bits à encoder
+ *  <K>     : Le nombre de bits à encoder
+ *
+ * Retour   :
+ *
+ * Remarques : Voir "FPC_EncodeBits"
+ *
+ *----------------------------------------------------------------------------
+ */
 static void FPC_EncodeShift(TFPCCtx *restrict Ctx,TFPCType Bits,TFPCType K) {
     Ctx->Range >>= K;
     Ctx->Low += Ctx->Range*Bits;
     FPC_AdjustRange(Ctx);
 }
 
-// Bits : remaining bits to encode as-is
-// K : number of remaining bits
+/*----------------------------------------------------------------------------
+ * Nom      : <FPC_EncodeBits>
+ * Creation : Mars 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Encode verbatim les bits donnés
+ *
+ * Parametres :
+ *  <Ctx>   : Contexte
+ *  <Bits>  : Les bits à encoder
+ *  <K>     : Le nombre de bits à encoder
+ *
+ * Retour   :
+ *
+ * Remarques :
+ *      Il est nécessaire d'encoder les bits graduellement, sans quoi un trop
+ *      gros "shift" pourrait causer un rnage nul, ce qui invaliderait le
+ *      range coding.
+ *
+ *----------------------------------------------------------------------------
+ */
 static void FPC_EncodeBits(TFPCCtx *restrict Ctx,TFPCType Bits,TFPCType K) {
     size_t i;
     for(i=1; i<sizeof(Bits)/2 && K>16; ++i) {
@@ -140,6 +308,26 @@ static void FPC_EncodeBits(TFPCCtx *restrict Ctx,TFPCType Bits,TFPCType K) {
     FPC_EncodeShift(Ctx,Bits,K);
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <FPC_Compress>
+ * Creation : Mars 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Compresse les nombre à points flotants donnés
+ *
+ * Parametres :
+ *  <FD>    : Le file descriptor d'un fichier ouvert où écrire les données compressées
+ *  <Data>  : Les nombres flotants à écrire
+ *  <NI>    : Dimension en I
+ *  <NJ>    : Dimension en J
+ *  <NK>    : Dimension en K
+ *  <CSize> : [OUT] Taille compressée
+ *
+ * Retour   : APP_OK si ok, APP_ERR si error
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 #define BUFDIFF(i,j,k) ((k)*d1*d2+(j)*d1+(i))
 #define BUFIDX(i,j,k)  (bufi<BUFDIFF(i,j,k)?bufs-BUFDIFF(i,j,k)+bufi:bufi-BUFDIFF(i,j,k))
 int R(FPC_Compress)(FILE* FD,TFPCReal *restrict Data,int NI,int NJ,int NK,size_t *restrict CSize) {
@@ -161,7 +349,7 @@ int R(FPC_Compress)(FILE* FD,TFPCReal *restrict Data,int NI,int NJ,int NK,size_t
     //    return APP_ERR;
     //}
 
-    if( !(ctx=FPC_New(FD,bitsizeof(TFPCType)*2+1,QSM_TARGET)) ) {
+    if( !(ctx=FPC_New(FD)) ) {
         App_Log(ERROR,"Could not allocate memory for context\n");
         return APP_ERR;
     }
@@ -278,12 +466,43 @@ int R(FPC_Compress)(FILE* FD,TFPCReal *restrict Data,int NI,int NJ,int NK,size_t
     return APP_OK;
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <FPC_GetByte>
+ * Creation : Mars 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Lit un byte de donnée d'un fichier
+ *
+ * Parametres :
+ *  <Ctx>   : Contexte
+ *
+ * Retour   :
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 static void FPC_GetByte(TFPCCtx *restrict Ctx) {
     Ctx->Code = (Ctx->Code<<8)|getc(Ctx->FD);
     Ctx->Low <<= 8;
     ++Ctx->Cnt;
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <FPC_InitBytes>
+ * Creation : Mars 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Initialise le décodage en lisant autant de bytes que peux contenir
+ *            le range
+ *
+ * Parametres :
+ *  <Ctx>   : Contexte
+ *
+ * Retour   :
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 static void FPC_InitBytes(TFPCCtx *restrict Ctx) {
     size_t i;
 
@@ -293,6 +512,22 @@ static void FPC_InitBytes(TFPCCtx *restrict Ctx) {
     }
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <FPC_AdjustRange>
+ * Creation : Mars 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Ajuste (normalize) le range en lisant les bytes qui sont
+ *            immuables (inverse de FPC_AdjustRange)
+ *
+ * Parametres :
+ *  <Ctx>   : Contexte
+ *
+ * Retour   :
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 static void FPC_DAdjustRange(TFPCCtx *restrict Ctx) {
     // If the top byte is the same when you add the range, this means that it won't change anymore and may be ouputed
     while( !FPCTOPBYTE(Ctx->Low^(Ctx->Low+Ctx->Range)) ) {
@@ -310,6 +545,21 @@ static void FPC_DAdjustRange(TFPCCtx *restrict Ctx) {
     }
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <FPC_DecodeK>
+ * Creation : Mars 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Decode le 'K' (nombre de high bits à 0)
+ *
+ * Parametres :
+ *  <Ctx>   : Contexte
+ *
+ * Retour   : Le 'K' décodé
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 static TFPCType FPC_DecodeK(TFPCCtx *restrict Ctx) {
     TQSMFreq freq,ltcfreq;
     TFPCType k;
@@ -330,6 +580,22 @@ static TFPCType FPC_DecodeK(TFPCCtx *restrict Ctx) {
     return k;
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <FPC_DecodeShift>
+ * Creation : Mars 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Decode verbatim les bits
+ *
+ * Parametres :
+ *  <Ctx>   : Contexte
+ *  <K>     : Le nombre de bits à décoder
+ *
+ * Retour   : Les bits décodés
+ *
+ * Remarques : Voir "FPC_EncodeBits"
+ *
+ *----------------------------------------------------------------------------
+ */
 static TFPCType FPC_DecodeShift(TFPCCtx *restrict Ctx,TFPCType K) {
     TFPCType bits;
 
@@ -341,8 +607,23 @@ static TFPCType FPC_DecodeShift(TFPCCtx *restrict Ctx,TFPCType K) {
     return bits;
 }
 
-// Bits : remaining bits to encode as-is
-// K : number of remaining bits
+/*----------------------------------------------------------------------------
+ * Nom      : <FPC_DecodeBits>
+ * Creation : Mars 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Decode verbatim les bits
+ *
+ * Parametres :
+ *  <Ctx>   : Contexte
+ *  <K>     : Le nombre de bits à décoder
+ *
+ * Retour   : Les bits décodés
+ *
+ * Remarques :
+ *      Voir "FPC_EncodeBits"
+ *
+ *----------------------------------------------------------------------------
+ */
 static TFPCType FPC_DecodeBits(TFPCCtx *restrict Ctx,TFPCType K) {
     TFPCType bits=0,shift=0;
     size_t i;
@@ -355,7 +636,25 @@ static TFPCType FPC_DecodeBits(TFPCCtx *restrict Ctx,TFPCType K) {
     return bits+(FPC_DecodeShift(Ctx,K)<<shift);
 }
 
-
+/*----------------------------------------------------------------------------
+ * Nom      : <FPC_Inflate>
+ * Creation : Mars 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Décompresse les nombre à points flotants
+ *
+ * Parametres :
+ *  <FD>    : Le file descriptor d'un fichier ouvert où lire les données compressées
+ *  <Data>  : [OUT] Les nombres flotants décompressés
+ *  <NI>    : Dimension en I
+ *  <NJ>    : Dimension en J
+ *  <NK>    : Dimension en K
+ *
+ * Retour   : APP_OK si ok, APP_ERR si error
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 int R(FPC_Inflate)(FILE* FD,TFPCReal *restrict Data,int NI,int NJ,int NK) {
     TFPCCtx         *ctx;
     size_t          bufs,bufi,i,n=NI*NJ*NK,d1=0,d2=0;
@@ -369,7 +668,7 @@ int R(FPC_Inflate)(FILE* FD,TFPCReal *restrict Data,int NI,int NJ,int NK) {
         return APP_ERR;
     }
 
-    if( !(ctx=FPC_New(FD,bitsizeof(TFPCType)*2+1,QSM_TARGET)) ) {
+    if( !(ctx=FPC_New(FD)) ) {
         App_Log(ERROR,"Could not allocate memory for context\n");
         return APP_ERR;
     }
