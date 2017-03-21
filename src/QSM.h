@@ -1,3 +1,40 @@
+/*==============================================================================
+ * Environnement Canada
+ * Centre Meteorologique Canadian
+ * 2121 Trans-Canadienne
+ * Dorval, Quebec
+ *
+ * Projet    : Librairie de compression de nombre flotants
+ * Fichier   : QSM.h
+ * Creation  : Mars 2017
+ * Auteur    : Eric Legault-Ouellet
+ *
+ * Description: Quasi-static Model implementation of a cumulative distribution
+ *              function
+ *
+ * Note:
+ *      Based on the model implementation of M. Schindler,
+ *      Range Encoder version 1. 3, 2000.
+ *      URL http://www.compressconsult.com/rangecoder/.
+ *
+ * License:
+ *    This library is free software; you can redistribute it and/or
+ *    modify it under the terms of the GNU Lesser General Public
+ *    License as published by the Free Software Foundation,
+ *    version 2.1 of the License.
+ *
+ *    This library is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *    Lesser General Public License for more details.
+ *
+ *    You should have received a copy of the GNU Lesser General Public
+ *    License along with this library; if not, write to the
+ *    Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ *    Boston, MA 02111-1307, USA.
+ *
+ *==============================================================================
+ */
 #ifndef _QSM_H
 #define _QSM_H
 
