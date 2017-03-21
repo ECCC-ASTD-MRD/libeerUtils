@@ -1,6 +1,59 @@
+/*==============================================================================
+ * Environnement Canada
+ * Centre Meteorologique Canadian
+ * 2121 Trans-Canadienne
+ * Dorval, Quebec
+ *
+ * Projet    : Librairie de compression de nombre flotants
+ * Fichier   : QSM.c
+ * Creation  : Mars 2017
+ * Auteur    : Eric Legault-Ouellet
+ *
+ * Description: Quasi-static Model implementation of a cumulative distribution
+ *              function
+ *
+ * Note:
+ *      Based on the model implementation of M. Schindler,
+ *      Range Encoder version 1. 3, 2000.
+ *      URL http://www.compressconsult.com/rangecoder/.
+ *
+ * License:
+ *    This library is free software; you can redistribute it and/or
+ *    modify it under the terms of the GNU Lesser General Public
+ *    License as published by the Free Software Foundation,
+ *    version 2.1 of the License.
+ *
+ *    This library is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *    Lesser General Public License for more details.
+ *
+ *    You should have received a copy of the GNU Lesser General Public
+ *    License along with this library; if not, write to the
+ *    Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ *    Boston, MA 02111-1307, USA.
+ *
+ *==============================================================================
+ */
 #include "QSM.h"
 #include <stdlib.h>
 
+/*----------------------------------------------------------------------------
+ * Nom      : <QSM_New>
+ * Creation : Mars 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Retourne une structure TQSM initialisée
+ *
+ * Parametres :
+ *  <Size>  : Maximum number of different symbols
+ *  <UpFreq>: Target update frequency
+ *
+ * Retour   : Une structure TQSM initialisée ou NULL en cas d'erreur
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 TQSM* QSM_New(TQSMSym Size,TQSMUpF UpFreq) {
     TQSM *qsm = malloc(sizeof(*qsm));
 
@@ -30,6 +83,21 @@ TQSM* QSM_New(TQSMSym Size,TQSMUpF UpFreq) {
     return qsm;
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <QSM_Free>
+ * Creation : Mars 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Libère une structure TQSM
+ *
+ * Parametres :
+ *  <QSM>   : Structure à libérer
+ *
+ * Retour   :
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 void QSM_Free(TQSM *QSM) {
     if( QSM ) {
         free(QSM->Freq);
@@ -38,6 +106,21 @@ void QSM_Free(TQSM *QSM) {
     }
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <QSM_Update>
+ * Creation : Mars 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Met à jour la CDF (Cumulative Distribution Function)
+ *
+ * Parametres :
+ *  <QSM>   : Modèle
+ *
+ * Retour   :
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 void QSM_Update(TQSM *restrict QSM) {
     TQSMSym i;
 
@@ -54,6 +137,22 @@ void QSM_Update(TQSM *restrict QSM) {
     }
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <QSM_Add>
+ * Creation : Mars 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Incrémente la fréquence d'un symbole
+ *
+ * Parametres :
+ *  <QSM>   : Modèle
+ *  <Sym>   : Symbole dont on doit incrémenter la fréquence
+ *
+ * Retour   :
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 void QSM_Add(TQSM *restrict QSM,TQSMSym Sym) {
     QSM->Freq[Sym]++;
     QSM->NextUp--;
@@ -61,12 +160,48 @@ void QSM_Add(TQSM *restrict QSM,TQSMSym Sym) {
         QSM_Update(QSM);
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <QSM_GetFreq>
+ * Creation : Mars 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Retourne la fréquence et fréquence cumulée d'un symbole
+ *
+ * Parametres :
+ *  <QSM>   : Modèle
+ *  <Sym>   : Symbole dont on veut les fréquences
+ *  <Freq>  : [OUT] Fréquence du symbole
+ *  <LTFreq>: [OUT] Lesser-Than cumulative frequency
+ *  <MaxFreq: [OUT] Total cumulative frequency
+ *
+ * Retour   :
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 void QSM_GetFreq(TQSM *restrict QSM,TQSMSym Sym,TQSMFreq *restrict Freq,TQSMFreq *restrict LTFreq,TQSMFreq *restrict MaxFreq) {
     *LTFreq = QSM->CDF[Sym];
     *Freq = QSM->CDF[Sym+1]-QSM->CDF[Sym];
     *MaxFreq = QSM->CDF[QSM->Size];
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <QSM_GetSym>
+ * Creation : Mars 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Retourne le symbole correspondant à la fréquence cumulée donnée
+ *
+ * Parametres :
+ *  <QSM>   : Modèle
+ *  <LTFreq>: [IN/OUT] Lesser-Than cumulative frequency
+ *  <Freq>  : [OUT] Fréquence du symbole
+ *
+ * Retour   : Le symbole correspondant à la fréquence cumulée donnée
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 TQSMSym QSM_GetSym(TQSM *restrict QSM,TQSMFreq *restrict LTFreq,TQSMFreq *restrict Freq) {
     TQSMFreq *restrict cdf = QSM->CDF;
     TQSMSym from=0,to=QSM->Size,mid;
