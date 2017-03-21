@@ -248,7 +248,7 @@ int R(FPC_Compress)(FILE* FD,TFPCReal *restrict Data,int NI,int NJ,int NK,size_t
             // Zero is set to bitsizeof(*data) and k<=bitsizeof(*data)-1 ; this means that 0<=(zero+-(k+1))<=bitsizeof(*data)*2
             // (0 to 64 (inclusive) if 32 bits)
             FPC_EncodeK(ctx,zero+(k+1));
-            FPC_EncodeBits(ctx,diff-(1u<<k),k);
+            FPC_EncodeBits(ctx,diff-(L(1u)<<k),k);
         } else if( upred > udata ) {
             // Overprediction
             diff = upred-udata;
@@ -256,7 +256,7 @@ int R(FPC_Compress)(FILE* FD,TFPCReal *restrict Data,int NI,int NJ,int NK,size_t
             // Zero is set to bitsizeof(*data) and k<=bitsizeof(*data)-1 ; this means that 0<=(zero+-(k+1))<=bitsizeof(*data)*2
             // (0 to 64 (inclusive) if 32 bits)
             FPC_EncodeK(ctx,zero-(k+1));
-            FPC_EncodeBits(ctx,diff-(1u<<k),k);
+            FPC_EncodeBits(ctx,diff-(L(1u)<<k),k);
         } else {
             // Perfect prediction
             FPC_EncodeK(ctx,zero);
