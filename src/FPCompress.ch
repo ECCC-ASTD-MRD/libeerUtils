@@ -48,8 +48,6 @@
 #define TOPBYTE(x)      ((x)>>(bitsizeof(x)-8))
 #define FPCTOPBYTE(x)   ((x)>>(bitsizeof(TFPCType)-8))
 
-#define QSM_TARGET 128
-
 typedef struct TFPCCtx {
     TQSM        *QSM;
     FILE*       FD;
@@ -126,7 +124,7 @@ static TFPCCtx* FPC_New(FILE* FD) {
     TFPCCtx *ctx = malloc(sizeof(*ctx));
 
     if( ctx ) {
-        if( !(ctx->QSM=QSM_New(bitsizeof(TFPCType)*2+1,QSM_TARGET)) ) {
+        if( !(ctx->QSM=QSM_New(bitsizeof(TFPCType)*2+1,1u<<16,128)) ) {
             free(ctx);
             return NULL;
         }
@@ -258,10 +256,10 @@ static void FPC_AdjustRange(TFPCCtx *restrict Ctx) {
  *----------------------------------------------------------------------------
  */
 static void FPC_EncodeK(TFPCCtx *restrict Ctx,TFPCType K) {
-    TQSMFreq freq,ltcfreq,totfreq;
+    TQSMFreq freq,ltcfreq;
 
     // Get the frequence, cumulative number of smaller items and total number of items in the model
-    QSM_GetFreq(Ctx->QSM,K,&freq,&ltcfreq,&totfreq);
+    QSM_GetFreq(Ctx->QSM,K,&freq,&ltcfreq);
     QSM_Add(Ctx->QSM,K);
     
     // R(i) = ⌊R(i-1)(Fai+fai)⌋ - ⌊R(i-1)Fai⌋
@@ -272,8 +270,7 @@ static void FPC_EncodeK(TFPCCtx *restrict Ctx,TFPCType K) {
     // pour R[low,high), nous avons donc :
     //  low = low + int(R(i-1)/totfreq) * ltcfreq
     //  high= low + R(i)
-    //Ctx->Range /= totfreq;
-    Ctx->Range >>= 16;
+    Ctx->Range >>= 16; // totfreq is maintained at 1<<16 so this is akin to dividing by totfreq
     Ctx->Low += Ctx->Range * ltcfreq;
     Ctx->Range *= freq;
 
@@ -590,7 +587,7 @@ static TFPCType FPC_DecodeK(TFPCCtx *restrict Ctx) {
     TFPCType k;
 
     // Get the lesser-than cumulative frequency
-    Ctx->Range >>= 16;
+    Ctx->Range >>= 16; // totfreq is maintained at 1<<16 so this is akin to dividing by totfreq
     ltcfreq = (Ctx->Code-Ctx->Low)/Ctx->Range;
 
     // Get K from the model

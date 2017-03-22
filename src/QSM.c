@@ -54,7 +54,7 @@
  *
  *----------------------------------------------------------------------------
  */
-TQSM* QSM_New(TQSMSym Size,TQSMUpF UpFreq) {
+TQSM* QSM_New(TQSMSym Size,TQSMFreq TotFreq,TQSMUpF UpFreq) {
     TQSM *qsm = malloc(sizeof(*qsm));
 
     if( qsm ) {
@@ -69,15 +69,17 @@ TQSM* QSM_New(TQSMSym Size,TQSMUpF UpFreq) {
         }
         qsm->Size = Size;
 
-        // Make everything have a default count of 1. That wasy, every symbol starts as likely
-        // and we don't have queries with 0 probability before the first couple of updates
-        TQSMFreq f;
-        for(f=0; f<Size; ++f) qsm->Freq[f]=1;
-        for(f=0; f<=Size; ++f) qsm->CDF[f]=f;
+        // Since the total cumulative frequency is fixed, distribute that total frequency over
+        // all the symbols (note that the integer division is taken into account here)
+        TQSMFreq i,f=TotFreq/Size,sizei=Size-TotFreq%Size;
+        for(i=0; i<sizei; ++i)  qsm->Freq[i] = f;
+        for(++f; i<Size; ++i)   qsm->Freq[i] = f;
 
+        qsm->NextIncr = 0;
         qsm->UpFreq = UpFreq;
         qsm->CurUpFreq = 8;
-        qsm->NextUp = qsm->CurUpFreq;
+
+        QSM_Update(qsm);
     }
 
     return qsm;
@@ -122,7 +124,18 @@ void QSM_Free(TQSM *QSM) {
  *----------------------------------------------------------------------------
  */
 void QSM_Update(TQSM *restrict QSM) {
+    TQSMFreq *restrict cdf = QSM->CDF;
+    TQSMFreq *restrict freq = QSM->Freq;
+    TQSMFreq newfreq=0;
     TQSMSym i;
+
+    // If we just need to increment the increment
+    if( QSM->NextIncr ) {
+        ++QSM->Incr;
+        QSM->NextUp = QSM->NextIncr;
+        QSM->NextIncr = 0;
+        return;
+    }
 
     // Update the update frequency if we are not yet at the target level
     if( QSM->CurUpFreq < QSM->UpFreq ) {
@@ -133,8 +146,24 @@ void QSM_Update(TQSM *restrict QSM) {
     // Build the cumulative distribution function table
     QSM->CDF[0] = 0;
     for(i=0; i<QSM->Size; ++i) {
-        QSM->CDF[i+1] = QSM->CDF[i] + QSM->Freq[i];
+        // Update the cumulative distribution function
+        cdf[i+1] = cdf[i] + freq[i];
+
+        // Divide the frequencies by 2 rounded up, so that we don't bust our maximum frequency
+        // (rounded up with a minimum of 1, since we don't want any null frequency. After all,
+        // if we ask for a symbol, it has to be present in the first place)
+        freq[i] = (freq[i]>>1)|1;
+        newfreq += freq[i];
     }
+
+    // Get the number we need to add to get back to our fixed total frequency
+    newfreq = cdf[QSM->Size]-newfreq;
+
+    // Given the number of steps we have until the next update, calculate the increment to add to the frequency
+    QSM->Incr = newfreq/QSM->NextUp;
+    // Number of values to add until the next update, but with an incremented Incr (due to integer division)
+    QSM->NextIncr = newfreq*QSM->NextUp;
+    QSM->NextUp -= QSM->NextIncr;
 }
 
 /*----------------------------------------------------------------------------
@@ -154,7 +183,7 @@ void QSM_Update(TQSM *restrict QSM) {
  *----------------------------------------------------------------------------
  */
 void QSM_Add(TQSM *restrict QSM,TQSMSym Sym) {
-    QSM->Freq[Sym]++;
+    QSM->Freq[Sym] += QSM->Incr;
     QSM->NextUp--;
     if( !QSM->NextUp )
         QSM_Update(QSM);
@@ -171,7 +200,6 @@ void QSM_Add(TQSM *restrict QSM,TQSMSym Sym) {
  *  <Sym>   : Symbole dont on veut les fréquences
  *  <Freq>  : [OUT] Fréquence du symbole
  *  <LTFreq>: [OUT] Lesser-Than cumulative frequency
- *  <MaxFreq: [OUT] Total cumulative frequency
  *
  * Retour   :
  *
@@ -179,10 +207,9 @@ void QSM_Add(TQSM *restrict QSM,TQSMSym Sym) {
  *
  *----------------------------------------------------------------------------
  */
-void QSM_GetFreq(TQSM *restrict QSM,TQSMSym Sym,TQSMFreq *restrict Freq,TQSMFreq *restrict LTFreq,TQSMFreq *restrict MaxFreq) {
+void QSM_GetFreq(TQSM *restrict QSM,TQSMSym Sym,TQSMFreq *restrict Freq,TQSMFreq *restrict LTFreq) {
     *LTFreq = QSM->CDF[Sym];
     *Freq = QSM->CDF[Sym+1]-QSM->CDF[Sym];
-    *MaxFreq = QSM->CDF[QSM->Size];
 }
 
 /*----------------------------------------------------------------------------
@@ -222,3 +249,6 @@ TQSMSym QSM_GetSym(TQSM *restrict QSM,TQSMFreq *restrict LTFreq,TQSMFreq *restri
     return from;
 }
 
+inline TQSMFreq QSM_GetTotFreq(TQSM *restrict QSM) {
+    return QSM->CDF[QSM->Size];
+}
