@@ -48,28 +48,6 @@
 #define TOPBYTE(x)      ((x)>>(bitsizeof(x)-8))
 #define FPCTOPBYTE(x)   ((x)>>(bitsizeof(TFPCType)-8))
 
-// Returns the number of leading 0-bits in x, starting from the most significant bit position
-// If x is 0, the result is undefined
-#if defined __INTEL_COMPILER
-#define MSB(x)  (sizeof(x)==8?(int)_lzcnt_u64(x):_bit_scan_reverse(x))
-#elif defined __GNUC__
-#define MSB(x)  (sizeof(x)==8?((int)bitsizeof(x)-__builtin_clzl(x)-1):((int)bitsizeof(x)-__builtin_clz(x)-1))
-#else // not GCC nor intel
-#define MSB(x)  (sizeof(x)==8?CountLeadingZerosl(x):CountLeadingZeros(x))
-// X must be different from 0
-static int CountLeadingZeros(unsigned int X) {
-    int k=0;
-    while( X>>=1 ) ++k;
-    return k;
-}
-// X must be different from 0
-static int CountLeadingZerosl(unsigned long X) {
-    int k=0;
-    while( X>>=1 ) ++k;
-    return k;
-}
-#endif
-
 #define QSM_TARGET 128
 
 typedef struct TFPCCtx {
@@ -80,6 +58,53 @@ typedef struct TFPCCtx {
     TFPCType    Low;
     TFPCType    Code;
 } TFPCCtx;
+
+/*----------------------------------------------------------------------------
+ * Nom      : <BSR>
+ * Creation : Mars 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Bit Scan Reverse : retourne la position du bit le plus
+ *            significatif à 1.
+ *            Ex: 00001000 retournerait 3
+ *
+ * Parametres :
+ *  <X>     : La valeur dont on veut le MSB. La valeur doit être non-nulle!
+ *
+ * Retour   : la position du bit le plus significatif à 1
+ *
+ * Remarques : If X is 0, the result is undefined
+ *
+ *----------------------------------------------------------------------------
+ */
+inline static int BSR(unsigned int X) {
+    int k;
+#if __x86_64__ || defined __i386__
+    __asm__("bsr %1,%0":"=r"(k):"rm"(X));
+#elif defined __INTEL_COMPILER
+    k = _bit_scan_reverse(x);
+#elif defined __GNUC__
+    k = (int)bitsizeof(x)-1-__builtin_clz(x);
+#else
+    k=0;
+    while( X>>=1 ) ++k;
+#endif
+    return k;
+}
+inline static int BSRl(unsigned long X) {
+#if __x86_64__ || defined __i386__
+    long k;
+    __asm__("bsr %1,%0":"=r"(k):"rm"(X));
+    return (int)k;
+#elif defined __INTEL_COMPILER
+    return (int)bitsizeof(x)-1-(int)_lzcnt_u64(x);
+#elif defined __GNUC__
+    return (int)bitsizeof(x)-1-__builtin_clzl(x);
+#else
+    int k=0;
+    while( X>>=1 ) ++k;
+    return k;
+#endif
+}
 
 /*----------------------------------------------------------------------------
  * Nom      : <FPC_New>
@@ -432,7 +457,7 @@ int R(FPC_Compress)(FILE* FD,TFPCReal *restrict Data,int NI,int NJ,int NK,size_t
         if( upred < udata ) {
             // Underprediction
             diff = udata-upred;
-            k = MSB(diff);
+            k = L(BSR)(diff);
             // Zero is set to bitsizeof(*data) and k<=bitsizeof(*data)-1 ; this means that 0<=(zero+-(k+1))<=bitsizeof(*data)*2
             // (0 to 64 (inclusive) if 32 bits)
             FPC_EncodeK(ctx,zero+(k+1));
@@ -440,7 +465,7 @@ int R(FPC_Compress)(FILE* FD,TFPCReal *restrict Data,int NI,int NJ,int NK,size_t
         } else if( upred > udata ) {
             // Overprediction
             diff = upred-udata;
-            k = MSB(diff);
+            k = L(BSR)(diff);
             // Zero is set to bitsizeof(*data) and k<=bitsizeof(*data)-1 ; this means that 0<=(zero+-(k+1))<=bitsizeof(*data)*2
             // (0 to 64 (inclusive) if 32 bits)
             FPC_EncodeK(ctx,zero-(k+1));
