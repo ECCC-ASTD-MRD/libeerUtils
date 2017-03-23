@@ -124,7 +124,7 @@ static TFPCCtx* FPC_New(FILE* FD) {
     TFPCCtx *ctx = malloc(sizeof(*ctx));
 
     if( ctx ) {
-        if( !(ctx->QSM=QSM_New(bitsizeof(TFPCType)*2+1,1u<<16,128)) ) {
+        if( !(ctx->QSM=QSM_New(bitsizeof(TFPCType)*2+1,1u<<16,8192)) ) {
             free(ctx);
             return NULL;
         }
