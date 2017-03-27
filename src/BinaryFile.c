@@ -1,13 +1,63 @@
+/*==============================================================================
+ * Environnement Canada
+ * Centre Meteorologique Canadian
+ * 2121 Trans-Canadienne
+ * Dorval, Quebec
+ *
+ * Projet    : Librairie d'écriture/lecture de fichier binaire à la FSTD
+ * Fichier   : BinaryFile.c
+ * Creation  : Février 2017
+ * Auteur    : Eric Legault-Ouellet
+ *
+ * Description: Librairie d'écriture/lecture de fichier binaire à la FSTD
+ *
+ * Note: Cette librairie vise à remplacer temporairement les FSTD là où les
+ *       limites de ces derniers rendent les choses difficiles.
+ *
+ * License:
+ *    This library is free software; you can redistribute it and/or
+ *    modify it under the terms of the GNU Lesser General Public
+ *    License as published by the Free Software Foundation,
+ *    version 2.1 of the License.
+ *
+ *    This library is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *    Lesser General Public License for more details.
+ *
+ *    You should have received a copy of the GNU Lesser General Public
+ *    License along with this library; if not, write to the
+ *    Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ *    Boston, MA 02111-1307, USA.
+ *
+ *==============================================================================
+ */
 #include "BinaryFile.h"
+#include "FPCompressF.h"
+#include "FPCompressD.h"
 #include "App.h"
 #include <string.h>
 
 const int32_t BF_MAGIC=0x45454642; //BFEE (Binary File Env. Emergencies) in little endian
 const int32_t BF_VERSION=1;
 
-static int BFTypeSize[] = {1,1,1,2,4,8,1,2,4,8,4,8,0};
+static int BFTypeSize[] = {1,1,1,2,4,8,1,2,4,8,4,8,4,8,0};
 
-size_t FtnStrSize(const char *Str,size_t Max) {
+/*----------------------------------------------------------------------------
+ * Nom      : <FtnStrSize>
+ * Creation : Février 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Retourne la taille d'un string fortran (sans les trailing spaces)
+ *
+ * Parametres :
+ *
+ * Retour   : La taille d'un string fortran (sans les trailing spaces)
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
+static size_t FtnStrSize(const char *Str,size_t Max) {
    size_t n;
 
    if( !Str )
@@ -18,7 +68,22 @@ size_t FtnStrSize(const char *Str,size_t Max) {
    return n;
 }
 
-TBFFiles* BinaryFile_New(int N) {
+/*----------------------------------------------------------------------------
+ * Nom      : <BinaryFile_New>
+ * Creation : Février 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Retourne une structure TBFFiles initialisée
+ *
+ * Parametres :
+ *    <N>   : Le jnombre de fichiers liés
+ *
+ * Retour   : Une structure TBFFiles initialisée ou NULL en cas d'erreur
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
+static TBFFiles* BinaryFile_New(int N) {
    TBFFiles *files;
    TBFFile  *restrict file;
 
@@ -50,7 +115,22 @@ TBFFiles* BinaryFile_New(int N) {
    return files;
 }
 
-void BinaryFile_Free(TBFFiles *Files) {
+/*----------------------------------------------------------------------------
+ * Nom      : <BinaryFile_Free>
+ * Creation : Février 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Libère la mémoire d'un structure TBFFiles
+ *
+ * Parametres :
+ *    <Files>  : La structure dont il faut libérer la mémoire
+ *
+ * Retour   : 
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
+static void BinaryFile_Free(TBFFiles *Files) {
    TBFFile  *restrict file;
 
    if( Files ) {
@@ -67,7 +147,24 @@ void BinaryFile_Free(TBFFiles *Files) {
    }
 }
 
-TBFFiles* BinaryFile_OpenFiles(const char **FileNames,int N,TBFFlag Mode) {
+/*----------------------------------------------------------------------------
+ * Nom      : <BinaryFile_OpenFiles>
+ * Creation : Février 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Ouvre et lie les fichiers donnés
+ *
+ * Parametres :
+ *    <FileNames> : Le nom des fichiers à ouvrir et lier
+ *    <N>         : Le nombre de fichier à ouvrir et lier
+ *    <Mode>      : Le mode (BF_READ,BF_WRITE,BF_CLEAR)
+ *
+ * Retour   : Un pointeur vers les fichiers ouvert
+ *
+ * Remarques : Fonction interne, pas accessible de l'extérieur
+ *
+ *----------------------------------------------------------------------------
+ */
+static TBFFiles* BinaryFile_OpenFiles(const char **FileNames,int N,TBFFlag Mode) {
    TBFFiles *restrict files = BinaryFile_New(N);
    TBFFile  *restrict file;
    int      i,append=0;
@@ -192,10 +289,41 @@ error:
    return NULL;
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <BinaryFile_Open>
+ * Creation : Février 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Ouvre un fichier BinaryFile
+ *
+ * Parametres :
+ *    <FileName>  : Le nom du fichier à ouvrir
+ *    <Mode>      : Le mode (BF_READ,BF_WRITE,BF_CLEAR)
+ *
+ * Retour   : Un pointeur vers le fichier ouvert
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 TBFFiles* BinaryFile_Open(const char *FileName,TBFFlag Mode) {
    return BinaryFile_OpenFiles(&FileName,1,Mode);
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <BinaryFile_Link>
+ * Creation : Février 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Ouvre et lie les fichiers donnés en mode lecture seulement
+ *
+ * Parametres :
+ *    <FileNames> : La liste (terminée par un NULL) des noms des fichiers à ouvrir et lier.
+ *
+ * Retour   : Un pointeur vers les fichiers ouvert
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 TBFFiles* BinaryFile_Link(const char** FileNames) {
    int n;
 
@@ -207,6 +335,21 @@ TBFFiles* BinaryFile_Link(const char** FileNames) {
    return BinaryFile_OpenFiles(FileNames,n,BF_READ);
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <BinaryFile_Close>
+ * Creation : Février 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Ferme le(s) fichier(s) ouvert(s)
+ *
+ * Parametres :
+ *    <Files>  : Le pointeur vers le(s) fichier(s)
+ *
+ * Retour   : APP_ERR en cas d'erreur, APP_OK si ok
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 int BinaryFile_Close(TBFFiles *Files) {
    int i,code=APP_OK;
    TBFFile  *restrict file;
@@ -271,32 +414,93 @@ int BinaryFile_Close(TBFFiles *Files) {
    return code;
 }
 
-TBFKey BinaryFile_MakeKey(int32_t FileIdx,int32_t IndexIdx) {
+/*----------------------------------------------------------------------------
+ * Nom      : <BinaryFile_MakeKey>
+ * Creation : Février 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Génère la clé se référant à un champ
+ *
+ * Parametres :
+ *    <FileIdx>   : L'index du fichier dans la liste de fichiers liés
+ *    <IndexIdx>  : L'index du FieldHeader dans l'index de ce fichier
+ *
+ * Retour   : La clé
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
+static TBFKey BinaryFile_MakeKey(int32_t FileIdx,int32_t IndexIdx) {
    return FileIdx>=0&&IndexIdx>=0 ? ((TBFKey)IndexIdx)<<32|(TBFKey)FileIdx : -1;
 }
 
-TBFFile* BinaryFile_GetFile(TBFFiles* Files,TBFKey Key) {
+/*----------------------------------------------------------------------------
+ * Nom      : <BinaryFile_GetFile>
+ * Creation : Février 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Retourne le fichier correspondant à la clé
+ *
+ * Parametres :
+ *    <Files>  : Le pointeur vers le(s) fichier(s)
+ *    <Key>    : La clé
+ *
+ * Retour   : NULL en cas d'erreur, le pointeur vers le fichier sinon
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
+static TBFFile* BinaryFile_GetFile(TBFFiles* Files,TBFKey Key) {
    int32_t idx = (int32_t)(Key&0x7fffffff);
 
    return Files && Key>=0 && idx>=0 && Files->N>0 && idx<Files->N ? &Files->Files[idx] : NULL;
 }
 
-TBFFldHeader* BinaryFile_GetHeader(TBFFiles* Files,TBFKey Key) {
+/*----------------------------------------------------------------------------
+ * Nom      : <BinaryFile_GetHeader>
+ * Creation : Février 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Retourne le field header correspondant à la clé
+ *
+ * Parametres :
+ *    <Files>  : Le pointeur vers le(s) fichier(s)
+ *    <Key>    : La clé
+ *
+ * Retour   : NULL en cas d'erreur, le pointeur vers le field header sinon
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
+static TBFFldHeader* BinaryFile_GetHeader(TBFFiles* Files,TBFKey Key) {
    TBFFile *restrict file;
    int32_t idx = (int32_t)((Key&0x7fffffff00000000)>>32);
 
    return (file=BinaryFile_GetFile(Files,Key)) && idx>=0 && idx<file->Index.N ? &file->Index.Headers[idx] : NULL;
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <BinaryFile_Type>
+ * Creation : Février 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Retourne le type en fonction d'un datyp FSTD et du nombre de bytes
+ *
+ * Parametres :
+ *    <DaTyp>  : DATYP FSTD
+ *    <NBytes> : Nombre de bytes du type (-1 pour default)
+ *
+ * Retour   : Le BF type, BF_NOTYPE si erreur
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 TBFType BinaryFile_Type(int DaTyp,int NBytes) {
-   // Compressed types
-   if( DaTyp >= 128 )
-      DaTyp -= 128;
-
    switch( DaTyp ) {
       // Binary
       case 0:  return BF_BINARY;
       // Unsigned int
+      case 130:
       case 2: {
          switch( NBytes ) {
             case 1:  return BF_UINT8;
@@ -307,6 +511,7 @@ TBFType BinaryFile_Type(int DaTyp,int NBytes) {
          }
       }
       // Signed int
+      case 132:
       case 4: {
          switch( NBytes ) {
             case 1:  return BF_INT8;
@@ -324,6 +529,14 @@ TBFType BinaryFile_Type(int DaTyp,int NBytes) {
             default: return BF_FLOAT32;
          }
       }
+      // Compressed Float
+      case 133: {
+         switch( NBytes ) {
+            case 4:  return BF_CFLOAT32;
+            case 8:  return BF_CFLOAT64;
+            default: return BF_CFLOAT32;
+         }
+      }
       // Caracter string
       case 3:
       case 7:  return BF_STRING;
@@ -332,8 +545,42 @@ TBFType BinaryFile_Type(int DaTyp,int NBytes) {
    }
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <BinaryFile_Write>
+ * Creation : Février 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Écrire un champ
+ *
+ * Parametres :
+ *    <Data>      : Le champ à écrire
+ *    <DataType>  : Le type de donnée du champ
+ *    <File>      : Le BF dans lequel écrire le champ
+ *    <DateO>     : Date d'origine
+ *    <Deet>      : Pas de temp (s)
+ *    <NPas>      : Nombre de pas de temps depuis DateO
+ *    <NI>        : Dimension du champ en I
+ *    <NJ>        : Dimension du champ en J
+ *    <NK>        : Dimension du champ en K
+ *    <IP1>       : IP1 du champ
+ *    <IP2>       : IP2 du champ
+ *    <IP3>       : IP3 du champ
+ *    <TypVar>    : Le type de la variable du champ
+ *    <NomVar>    : Le nom de la variable du champ
+ *    <Etiket>    : L'etiket du champ
+ *    <GrTyp>     : Le type de grille du champ
+ *    <IG1>       : Le IG1 du champ
+ *    <IG2>       : Le IG2 du champ
+ *    <IG3>       : Le IG3 du champ
+ *    <IG4>       : Le IG4 du champ
+ *
+ * Retour   : APP_OK si ok, APP_ERR sinon
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 int BinaryFile_Write(void *Data,TBFType DataType,TBFFiles *File,int DateO,int Deet,int NPas,int NI,int NJ,int NK,int IP1,int IP2,int IP3,const char* TypVar,const char *NomVar,const char *Etiket,const char *GrTyp,int IG1,int IG2,int IG3,int IG4) {
-   int size = NI*NJ*NK;
+   size_t size;
    void *buf;
    TBFFldHeader *restrict h;
    TBFFile *restrict file = BinaryFile_GetFile(File,0);
@@ -356,9 +603,21 @@ int BinaryFile_Write(void *Data,TBFType DataType,TBFFiles *File,int DateO,int De
    }
 
    // Write the field
-   if( fwrite(Data,BFTypeSize[DataType],size,file->FD)!=size ) {
-      App_Log(ERROR,"BinaryFile: Problem writing field. The file will be corrupt\n");
-      return APP_ERR;
+   switch( DataType ) {
+      case BF_CFLOAT32:
+         APP_ASRT_OK( FPC_CompressF(file->FD,Data,NI,NJ,NK,&size) );
+         break;
+      case BF_CFLOAT64:
+         APP_ASRT_OK( FPC_CompressD(file->FD,Data,NI,NJ,NK,&size) );
+         break;
+      default:
+         size = NI*NJ*NK;
+         if( fwrite(Data,BFTypeSize[DataType],size,file->FD)!=size ) {
+            App_Log(ERROR,"BinaryFile: Problem writing field. The file will be corrupt\n");
+            return APP_ERR;
+         }
+         size *= BFTypeSize[DataType];
+         break;
    }
 
    // Make space in the index
@@ -374,7 +633,7 @@ int BinaryFile_Write(void *Data,TBFType DataType,TBFFiles *File,int DateO,int De
 
    // Fill the header
    h->KEY   = file->Header.IOffset;
-   h->NBYTES= BFTypeSize[DataType]*size;
+   h->NBYTES= size;
    h->DATEO = DateO;
    h->DEET  = Deet;
    h->NPAS  = NPas;
@@ -401,7 +660,7 @@ int BinaryFile_Write(void *Data,TBFType DataType,TBFFiles *File,int DateO,int De
    h->GRTYP = GrTyp[0];
 
    // Update the offset
-   file->Header.IOffset += size*BFTypeSize[DataType];
+   file->Header.IOffset += size;
 
    // Flag the update to the index
    file->Flags |= BF_DIRTY;
@@ -409,6 +668,42 @@ int BinaryFile_Write(void *Data,TBFType DataType,TBFFiles *File,int DateO,int De
    return APP_OK;
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <BinaryFile_WriteFSTD>
+ * Creation : Février 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Écrire un champ (version compatibilité avec FSTD)
+ *
+ * Parametres :
+ *    <Data>      : Le champ à écrire
+ *    <NPak>      : Le packing du champ
+ *    <File>      : Le BF dans lequel écrire le champ
+ *    <DateO>     : Date d'origine
+ *    <Deet>      : Pas de temp (s)
+ *    <NPas>      : Nombre de pas de temps depuis DateO
+ *    <NI>        : Dimension du champ en I
+ *    <NJ>        : Dimension du champ en J
+ *    <NK>        : Dimension du champ en K
+ *    <IP1>       : IP1 du champ
+ *    <IP2>       : IP2 du champ
+ *    <IP3>       : IP3 du champ
+ *    <TypVar>    : Le type de la variable du champ
+ *    <NomVar>    : Le nom de la variable du champ
+ *    <Etiket>    : L'etiket du champ
+ *    <GrTyp>     : Le type de grille du champ
+ *    <IG1>       : Le IG1 du champ
+ *    <IG2>       : Le IG2 du champ
+ *    <IG3>       : Le IG3 du champ
+ *    <IG4>       : Le IG4 du champ
+ *    <DaTyp>     : Le data type du champ (format FSTD)
+ *    <Over>      : Overwrite? (ignoré; là seulement pour la compatibilité FSTD)
+ *
+ * Retour   : APP_OK si ok, APP_ERR sinon
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 int BinaryFile_WriteFSTD(void *Data,int NPak,TBFFiles *File,int DateO,int Deet,int NPas,int NI,int NJ,int NK,int IP1,int IP2,int IP3,const char* TypVar,const char *NomVar,const char *Etiket,const char *GrTyp,int IG1,int IG2,int IG3,int IG4,int DaTyp,int Over) {
    TBFType type=0;
     
@@ -421,6 +716,31 @@ int BinaryFile_WriteFSTD(void *Data,int NPak,TBFFiles *File,int DateO,int Deet,i
    return BinaryFile_Write(Data,type,File,DateO,Deet,NPas,NI,NJ,NK,IP1,IP2,IP3,TypVar,NomVar,Etiket,GrTyp,IG1,IG2,IG3,IG4);
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <BinaryFile_Find>
+ * Creation : Février 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Recherche un champ dans l'index
+ *
+ * Parametres :
+ *    <File>      : Le BF dans lequel chercher le champ
+ *    <NI>        : [OUT] Dimension du champ en I
+ *    <NJ>        : [OUT] Dimension du champ en J
+ *    <NK>        : [OUT] Dimension du champ en K
+ *    <DateO>     : Date d'origine (-1 pour toutes les dates)
+ *    <Etiket>    : L'etiket du champ (String vide ou NULL pour toutes les etiket)
+ *    <IP1>       : IP1 du champ (-1 pour tous les IP1)
+ *    <IP2>       : IP2 du champ (-1 pour tous les IP2)
+ *    <IP3>       : IP3 du champ (-1 pour tous les IP3)
+ *    <TypVar>    : Le type de la variable du champ (String vide ou NULL pour tous les typvar)
+ *    <NomVar>    : Le nom de la variable du champ (String vide ou NULL pour tous les nomvar)
+ *
+ * Retour   : La clé du premier champ trouvé matchant tous les critères ou -1 si pas trouvé
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 TBFKey BinaryFile_Find(TBFFiles *File,int *NI,int *NJ,int *NK,int DateO,const char *Etiket,int IP1,int IP2,int IP3,const char* TypVar,const char *NomVar) {
    TBFFldHeader *restrict h;
    TBFFile *restrict file;
@@ -464,6 +784,23 @@ TBFKey BinaryFile_Find(TBFFiles *File,int *NI,int *NJ,int *NK,int DateO,const ch
    return -1;
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <BinaryFile_ReadIndex>
+ * Creation : Février 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Lit un champ
+ *
+ * Parametres :
+ *    <Buf>       : [OUT] Buffer dans lequel lire le champ
+ *    <Key>       : Clé du champ à lire
+ *    <File>      : Handle vers le fichier BF
+ *
+ * Retour   : La clé du champ lu ou -1 si pas trouvé
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 TBFKey BinaryFile_ReadIndex(void *Buf,TBFKey Key,TBFFiles *File) {
    TBFFldHeader *restrict h;
    TBFFile *restrict file;
@@ -480,16 +817,52 @@ TBFKey BinaryFile_ReadIndex(void *Buf,TBFKey Key,TBFFiles *File) {
    }
 
    // Read the bytes
-   // TODO the size of each item may vary based on the packing/compression/etc.
-   size_t n = h->NI*h->NJ*h->NK;
-   if( fread(Buf,BFTypeSize[h->DATYP],n,file->FD)!=n ) {
-      App_Log(ERROR,"BinaryFile: Could not seek to field position\n");
-      return -1;
+   switch( h->DATYP ) {
+      case BF_CFLOAT32:
+         APP_ASRT_OK( FPC_InflateF(file->FD,Buf,h->NI,h->NJ,h->NK) );
+         break;
+      case BF_CFLOAT64:
+         APP_ASRT_OK( FPC_InflateD(file->FD,Buf,h->NI,h->NJ,h->NK) );
+         break;
+      default: {
+         size_t n = h->NI*h->NJ*h->NK;
+         if( fread(Buf,BFTypeSize[h->DATYP],n,file->FD)!=n ) {
+            App_Log(ERROR,"BinaryFile: Could not seek to field position\n");
+            return -1;
+         }
+         break;
+      }
    }
 
    return Key;
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <BinaryFile_Read>
+ * Creation : Février 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Lit un champ
+ *
+ * Parametres :
+ *    <Buf>       : [OUT] Buffer dans lequel lire le champ
+ *    <File>      : Le BF dans lequel lire le champ
+ *    <NI>        : [OUT] Dimension du champ en I
+ *    <NJ>        : [OUT] Dimension du champ en J
+ *    <NK>        : [OUT] Dimension du champ en K
+ *    <DateO>     : Date d'origine (-1 pour toutes les dates)
+ *    <Etiket>    : L'etiket du champ (String vide ou NULL pour toutes les etiket)
+ *    <IP1>       : IP1 du champ (-1 pour tous les IP1)
+ *    <IP2>       : IP2 du champ (-1 pour tous les IP2)
+ *    <IP3>       : IP3 du champ (-1 pour tous les IP3)
+ *    <TypVar>    : Le type de la variable du champ (String vide ou NULL pour tous les typvar)
+ *    <NomVar>    : Le nom de la variable du champ (String vide ou NULL pour tous les nomvar)
+ *
+ * Retour   : La clé du premier champ trouvé et lu matchant tous les critères ou -1 si pas trouvé
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 TBFKey BinaryFile_Read(void *Buf,TBFFiles *File,int *NI,int *NJ,int *NK,int DateO,const char *Etiket,int IP1,int IP2,int IP3,const char* TypVar,const char *NomVar) {
    TBFKey key;
    
@@ -499,13 +872,31 @@ TBFKey BinaryFile_Read(void *Buf,TBFFiles *File,int *NI,int *NJ,int *NK,int Date
    return key;
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <BinaryFile_Convert>
+ * Creation : Février 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Converti un champ d'un type compatible à un autre
+ *
+ * Parametres :
+ *    <DestType>  : Destination type
+ *    <DestBuf>   : [OUT] Destination buffer
+ *    <SrcType>   : Source type
+ *    <SrcBuf>    : Source buffer
+ *    <N>         : Siza of the field
+ *
+ * Retour   : APP_OK si ok, APP_ERR sinon
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 #define BF_CONVERT_LOOP(DestType,DestBuf,SrcType,SrcBuf,N) { \
    int i; \
    for(i=0; i<N; ++i) { \
       DestBuf[i] = (DestType)((SrcType*)SrcBuf)[i]; \
    } \
 }
-
 #define BF_CONVERT_SRC(DestType,DestBuf,SrcBFType,SrcBuf,N) { \
    DestType *restrict dest = DestBuf; \
    switch( SrcBFType ) { \
@@ -525,7 +916,7 @@ TBFKey BinaryFile_Read(void *Buf,TBFFiles *File,int *NI,int *NJ,int *NK,int Date
       default: return APP_ERR;   \
    } \
 }
-int BinaryFile_Convert(TBFType DestType,void* DestBuf,TBFType SrcType,void* SrcBuf,size_t N) {
+static int BinaryFile_Convert(TBFType DestType,void* DestBuf,TBFType SrcType,void* SrcBuf,size_t N) {
    switch( DestType ) {
       case BF_STRING:   BF_CONVERT_SRC(char,DestBuf,SrcType,SrcBuf,N);      break;
       case BF_BINARY:   BF_CONVERT_SRC(char,DestBuf,SrcType,SrcBuf,N);      break;
@@ -546,6 +937,24 @@ int BinaryFile_Convert(TBFType DestType,void* DestBuf,TBFType SrcType,void* SrcB
    return APP_OK;
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <BinaryFile_ReadIndexInto>
+ * Creation : Février 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Lit un champ et le converti au type spécifié
+ *
+ * Parametres :
+ *    <Buf>       : [OUT] Buffer dans lequel lire le champ
+ *    <Key>       : Clé du champ à lire
+ *    <File>      : Handle vers le fichier BF
+ *    <DestType>  : Type dans lequel on veut le champ
+ *
+ * Retour   : La clé du champ lu ou -1 si pas trouvé
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 TBFKey BinaryFile_ReadIndexInto(void *Buf,TBFKey Key,TBFFiles *File,TBFType DestType) {
    TBFFldHeader *restrict h;
    TBFFile *restrict file;
@@ -586,6 +995,33 @@ TBFKey BinaryFile_ReadIndexInto(void *Buf,TBFKey Key,TBFFiles *File,TBFType Dest
    return Key;
 }
 
+/*----------------------------------------------------------------------------
+ * Nom      : <BinaryFile_Read>
+ * Creation : Février 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Lit un champ et le converti au type spécifié
+ *
+ * Parametres :
+ *    <Buf>       : [OUT] Buffer dans lequel lire le champ
+ *    <File>      : Le BF dans lequel lire le champ
+ *    <NI>        : [OUT] Dimension du champ en I
+ *    <NJ>        : [OUT] Dimension du champ en J
+ *    <NK>        : [OUT] Dimension du champ en K
+ *    <DateO>     : Date d'origine (-1 pour toutes les dates)
+ *    <Etiket>    : L'etiket du champ (String vide ou NULL pour toutes les etiket)
+ *    <IP1>       : IP1 du champ (-1 pour tous les IP1)
+ *    <IP2>       : IP2 du champ (-1 pour tous les IP2)
+ *    <IP3>       : IP3 du champ (-1 pour tous les IP3)
+ *    <TypVar>    : Le type de la variable du champ (String vide ou NULL pour tous les typvar)
+ *    <NomVar>    : Le nom de la variable du champ (String vide ou NULL pour tous les nomvar)
+ *    <DestType>  : Type dans lequel on veut le champ
+ *
+ * Retour   : La clé du premier champ trouvé et lu matchant tous les critères ou -1 si pas trouvé
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
 TBFKey BinaryFile_ReadInto(void *Buf,TBFFiles *File,int *NI,int *NJ,int *NK,int DateO,const char *Etiket,int IP1,int IP2,int IP3,const char* TypVar,const char *NomVar,TBFType DestType) {
    TBFKey key;
    

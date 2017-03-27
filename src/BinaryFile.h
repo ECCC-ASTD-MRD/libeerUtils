@@ -1,3 +1,37 @@
+/*==============================================================================
+ * Environnement Canada
+ * Centre Meteorologique Canadian
+ * 2121 Trans-Canadienne
+ * Dorval, Quebec
+ *
+ * Projet    : Librairie d'écriture/lecture de fichier binaire à la FSTD
+ * Fichier   : BinaryFile.h
+ * Creation  : Février 2017
+ * Auteur    : Eric Legault-Ouellet
+ *
+ * Description: Librairie d'écriture/lecture de fichier binaire à la FSTD
+ *
+ * Note: Cette librairie vise à remplacer temporairement les FSTD là où les
+ *       limites de ces derniers rendent les choses difficiles.
+ *
+ * License:
+ *    This library is free software; you can redistribute it and/or
+ *    modify it under the terms of the GNU Lesser General Public
+ *    License as published by the Free Software Foundation,
+ *    version 2.1 of the License.
+ *
+ *    This library is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *    Lesser General Public License for more details.
+ *
+ *    You should have received a copy of the GNU Lesser General Public
+ *    License along with this library; if not, write to the
+ *    Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ *    Boston, MA 02111-1307, USA.
+ *
+ *==============================================================================
+ */
 #ifndef _BINARYFILE_H
 #define _BINARYFILE_H
 
@@ -5,7 +39,7 @@
 #include <inttypes.h>
 
 typedef enum TBFFlag {BF_READ=1,BF_WRITE=2,BF_CLEAR=4,BF_DIRTY=8,BF_SEEKED=16} TBFFlag;
-typedef enum TBFType {BF_STRING,BF_BINARY,BF_INT8,BF_INT16,BF_INT32,BF_INT64,BF_UINT8,BF_UINT16,BF_UINT32,BF_UINT64,BF_FLOAT32,BF_FLOAT64,BF_NOTYPE} TBFType;
+typedef enum TBFType {BF_STRING,BF_BINARY,BF_INT8,BF_INT16,BF_INT32,BF_INT64,BF_UINT8,BF_UINT16,BF_UINT32,BF_UINT64,BF_FLOAT32,BF_FLOAT64,BF_CFLOAT32,BF_CFLOAT64,BF_NOTYPE} TBFType;
 
 // Field header
 typedef struct TBFFldHeader {
