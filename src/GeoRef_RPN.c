@@ -322,6 +322,10 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
                Def_Get(Def,C,mem,*Length);
             } else {
                *Length=VertexVal(Def,C,X,Y,Z);
+//            Def_Pointer(Def,0,mem,p0);
+//            x=X+=1.0;y=Y+=1.0;
+//                c_gdxysval(GRef->Ids[GRef->NId],&valf,p0,&x,&y,1);
+//               fprintf(stderr,"----- %.10e %.10e   ---> %.10e\n",*Length,valf,*Length-valf);
             }
             if (ThetaXY)
                *ThetaXY=0.0;

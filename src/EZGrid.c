@@ -2152,16 +2152,16 @@ int EZGrid_IJGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float I,
       I=ROUND(I);
       J=ROUND(J);
       wrap=0;
-   } else {
-      if (I>=Grid->H.NI-1) {
-         if (Grid->Wrap) {
-            wrap=1;
-         } else {
-            App_Log(WARNING,"%s: Coordinates out of range (%s): I(%f) J(%f) K(%i,%i)\n",__func__,Grid->H.NOMVAR,I,J,K0,K1);
-            return(FALSE);
-         }
-      }      
    }
+   
+   if (I>=Grid->H.NI-1) {
+      if (Grid->Wrap) {
+         wrap=1;
+      } else {
+         App_Log(WARNING,"%s: Coordinates out of range (%s): I(%f) J(%f) K(%i,%i)\n",__func__,Grid->H.NOMVAR,I,J,K0,K1);
+         return(FALSE);
+      }
+   }      
    
    if (!(t=EZGrid_TileGet(Grid,I,J))) {
       App_Log(ERROR,"%s: Tile not found (%s) I(%.f) J(%f)\n",__func__,Grid->H.NOMVAR,I,J);
