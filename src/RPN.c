@@ -844,7 +844,8 @@ int RPN_GenerateIG(int *IG1,int *IG2,int *IG3) {
  * But      : Ouvre et lie plusieurs fichiers standards ensemble
  *
  * Parametres :
- *  <Files> : Null-terminated liste des fichiers standards à ouvrir et lier
+ *  <Files> : Liste des fichiers standards à ouvrir et lier
+ *  <N>     : Nombre de fichiers à lier (-1 si la liste des fichiers est NULL-terminated)
  *
  * Retour   : Le FID à utiliser ou un nombre négatif si erreur.
  *
@@ -852,23 +853,25 @@ int RPN_GenerateIG(int *IG1,int *IG2,int *IG3) {
  *  
  *----------------------------------------------------------------------------
  */
-int RPN_LinkFiles(char **Files) {
+int RPN_LinkFiles(char **Files,int N) {
     // Make sure there is at least one file
-    if( !Files || !*Files )
+    if( !Files || N==0 || !*Files )
         return -1;
 
-    // Check if there is more than one file
-    if( Files[1] ) {
+    // Count the number of files
+    if( N<0 ) {
+        for(N=1; Files[N]; ++N);
+    }
+
+    // Only apply the special treatment if there actually is more than one file
+    if( N>1 ) {
         int i,*lst,**ptr;
 
-        // Find the number of files
-        for(i=2; Files[i]; ++i);
-
         // Allocate the memory
-        lst = malloc((i+1)*sizeof(*lst));
+        lst = malloc((N+1)*sizeof(*lst));
 
         // Put the size first
-        lst[0] = i;
+        lst[0] = N;
 
         // Open all the files
         for(i=0; Files[i]; ++i) {
@@ -881,7 +884,7 @@ int RPN_LinkFiles(char **Files) {
 
         // Link all files
         if( f77name(fstlnk)(lst+1,lst) != 0 ) {
-            App_Log(ERROR,"(%s) Could not link the %d input files together\n",__func__,i);
+            App_Log(ERROR,"(%s) Could not link the %d input files together\n",__func__,N);
             free(lst);
             return -1;
         }

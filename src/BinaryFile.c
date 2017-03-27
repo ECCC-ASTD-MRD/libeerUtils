@@ -316,7 +316,8 @@ TBFFiles* BinaryFile_Open(const char *FileName,TBFFlag Mode) {
  * But      : Ouvre et lie les fichiers donnés en mode lecture seulement
  *
  * Parametres :
- *    <FileNames> : La liste (terminée par un NULL) des noms des fichiers à ouvrir et lier.
+ *    <FileNames> : La liste des noms des fichiers à ouvrir et lier.
+ *    <N>         : Le nombre de fichier à lier ou -1 si la liste est NULL-terminated
  *
  * Retour   : Un pointeur vers les fichiers ouvert
  *
@@ -324,15 +325,17 @@ TBFFiles* BinaryFile_Open(const char *FileName,TBFFlag Mode) {
  *
  *----------------------------------------------------------------------------
  */
-TBFFiles* BinaryFile_Link(const char** FileNames) {
-   int n;
-
-   if( !FileNames )
+TBFFiles* BinaryFile_Link(const char** FileNames,int N) {
+   // Make sure we have at least one file
+   if( !FileNames || N==0 || !*FileNames )
       return NULL;
 
-   for(n=0; FileNames[n]; ++n)
-      ;
-   return BinaryFile_OpenFiles(FileNames,n,BF_READ);
+   // Count the number of files
+   if( N<0 ) {
+      for(N=1; FileNames[N]; ++N)
+         ;
+   }
+   return BinaryFile_OpenFiles(FileNames,N,BF_READ);
 }
 
 /*----------------------------------------------------------------------------
