@@ -223,7 +223,6 @@ static float **EZGrid_TileGetData(const TGrid* __restrict const Grid,TGridTile* 
          } else {
             c_fstluk(datak,key,&ni,&nj,&nk);
          }
-         
          // Apply Factor if needed (TODO: ok for now but need to fix concurent access and might conflict with time interp)
          if (Grid->Factor!=1.0) {
             for(ni=0;ni<Tile->HNIJ;ni++) datak[ni]*=Grid->Factor;
@@ -254,14 +253,14 @@ static float **EZGrid_TileGetData(const TGrid* __restrict const Grid,TGridTile* 
                      } else {
                         free(Tile->Mask[K]);
                         Tile->Mask[K]=NULL;
-                        App_Log(WARNING,"%s: Unable to allocate memory to read mask",__func__);
+                        App_Log(WARNING,"%s: Unable to allocate memory to read mask\n",__func__);
                      }
                   } else {
-                     App_Log(WARNING,"%s: Unable to allocate memory for mask",__func__);
+                     App_Log(WARNING,"%s: Unable to allocate memory for mask\n",__func__);
                   }
                }          
             } else {
-               App_Log(WARNING,"%s: Unable to find associated field mask (%s)",__func__,Grid->H.NOMVAR);
+               App_Log(WARNING,"%s: Unable to find associated field mask (%s)\n",__func__,Grid->H.NOMVAR);
             }
          }
          
@@ -290,7 +289,6 @@ static float **EZGrid_TileGetData(const TGrid* __restrict const Grid,TGridTile* 
    }
 
    pthread_mutex_unlock(&Tile->Mutex);
-
    return(Tile->Data);
 }
 
@@ -2256,7 +2254,7 @@ int EZGrid_IJGetValue(TGrid* __restrict const Grid,TGridInterpMode Mode,float I,
 wordint f77name(ezgrid_ijgetuvvalue)(wordint *gdidu,wordint *gdidv,wordint *mode,ftnfloat *i,ftnfloat *j,wordint *k0,wordint *k1,ftnfloat *uu,ftnfloat *vv,ftnfloat *conv) {
    return(EZGrid_IJGetUVValue(GridCache[*gdidu],GridCache[*gdidv],*mode,*i-1,*j-1,*k0-1,*k1-1,uu,vv,*conv));
 }
-int EZGrid_IJGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const GridV,TGridInterpMode Mode,float I,float J,int K0,int K1,float *UU,float* __restrict VV,float Conv) {
+int EZGrid_IJGetUVValue(TGrid* __restrict const GridU,TGrid* __restrict const GridV,TGridInterpMode Mode,float I,float J,int K0,int K1,float* __restrict UU,float* __restrict VV,float Conv) {
 
    TGridTile *tu,*tv;
    double     d,v;

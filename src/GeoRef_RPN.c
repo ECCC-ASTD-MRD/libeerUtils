@@ -220,7 +220,7 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
       idx=iy*Def->NI+ix;
       
       // Check for mask
-      if (Def->Mask && !Def->Mask[idx]) {
+      if (Def->Mask && !Def->Mask[mem+idx]) {
          return(FALSE);
       }
 
@@ -253,7 +253,7 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
          Def_GetQuad(Def,C,idxs,vals);
 
          // If either value is nodata then interpolation will be nodata as well
-         if (vals[0]==Def->NoData || vals[1]==Def->NoData || vals[2]==Def->NoData || vals[3]==Def->NoData) 
+         if (DEFVALID(Def,vals[0]) || DEFVALID(Def,vals[1]) || DEFVALID(Def,vals[2]) || DEFVALID(Def,vals[3])) 
             return(FALSE);        
       }
      

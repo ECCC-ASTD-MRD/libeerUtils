@@ -152,7 +152,19 @@ int Def_Compat(TDef *DefTo,TDef *DefFrom) {
       for(n=1;n<DefTo->NC;n++) {
          DefTo->Data[n]=&DefTo->Data[0][nijk*n*TDef_Size[DefTo->Type]];
       }
-      ch=0;
+      ch=0;      
+   }
+
+   // Verifier le masque
+   if (DefFrom->Mask) {
+      if (!DefTo->Mask || ch==0) {
+         if (!(DefTo->Mask=(char*)realloc(DefTo->Mask,FSIZE3D(DefTo)))) {
+            return(0);
+         }
+      }
+   } else if (DefTo->Mask) {
+      free(DefTo->Mask); 
+      DefTo->Mask=NULL;
    }
 
    return(ch);
@@ -226,6 +238,13 @@ TDef *Def_Copy(TDef *Def){
          }
          def->Mode=def->Data[0];
          def->Dir=NULL;
+         
+         if (Def->Mask) { 
+            if (!(def->Mask=(char*)malloc(nijk))) {
+               return(NULL);
+            }
+            memcpy(def->Mask,Def->Mask,nijk);
+         }
       }
    }
    return(def);
@@ -279,6 +298,13 @@ TDef *Def_CopyPromote(TDef *Def,TDef_Type Type){
 
          def->Mode=def->Data[0];
          def->Dir=NULL;
+         
+         if (Def->Mask) { 
+            if (!(def->Mask=(char*)malloc(nijk))) {
+               return(NULL);
+            }
+            memcpy(def->Mask,Def->Mask,nijk);
+         }         
       }
    }
 
@@ -582,7 +608,7 @@ static void inline Def_SetValue(TDef *Def,int X, int Y,double Value,TDef_Combine
          Def_Set(Def,0,idx,Value);
       } else {
          Def_Get(Def,0,idx,val);
-         if (val==Def->NoData) val=0.0;
+         if (!DEFVALID(Def,val)) val=0.0;
 
          switch(Comb) {
             case CB_MIN    : if (Value<val) Def_Set(Def,0,idx,Value); break;
@@ -964,7 +990,7 @@ static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,char Mode
 
          if (na) {
             Def_Get(Def,0,idx3,val);
-            if (ISNAN(val) || val==Def->NoData)
+            if (!DEFVALID(Def,val))
                val=0.0;
          }
 
@@ -1167,7 +1193,7 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
             idx2=FIDX2D(ToDef,pi,pj);
 
             Def_Get(ToDef,0,idx2,val);
-            if (ISNAN(val) || val==ToDef->NoData) {
+            if (!DEFVALID(ToDef,val)) {
                val=0.0;
             }
 
@@ -1424,7 +1450,7 @@ int Def_GridInterp(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *FromDef,cha
 
       for(idx=0;idx<scan.N;idx++){
          /*Get the value of the data field at this latlon coordinate*/
-         if (scan.D[idx]!=FromDef->NoData && !ISNAN(scan.D[idx])) {
+         if (DEFVALID(ToDef,scan.D[idx])) {
             Def_Set(ToDef,0,scan.V[idx],scan.D[idx]);
          } else {
             /*Set as nodata*/
@@ -1643,7 +1669,7 @@ int Def_GridInterpSub(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *FromDef,
                dj=(double)y-0.5+d*j;
                ToRef->Project(ToRef,di,dj,&dlat,&dlon,1,1);
                if (FromRef->UnProject(FromRef,&di,&dj,dlat,dlon,0,1)) {
-                  if (FromRef->Value(FromRef,FromDef,Degree,0,di,dj,FromDef->Level,&val,&val1) && val!=FromDef->NoData) {
+                  if (FromRef->Value(FromRef,FromDef,Degree,0,di,dj,FromDef->Level,&val,&val1) && DEFVALID(FromDef,val)) {
                      ToDef->Sub[idx]=val;
                   }
                }
@@ -1741,7 +1767,7 @@ int Def_GridInterpConservative(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
 
             // Get this gridpoint value
             Def_Get(FromDef,0,FIDX3D(FromDef,i,j,k),val1);
-            if (ISNAN(val1) || val1==FromDef->NoData) {
+            if (!DEFVALID(FromDef,val1)) {
                continue;
             }
 
@@ -1754,7 +1780,7 @@ int Def_GridInterpConservative(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
                idx2=FIDX2D(ToDef,pi,pj);
                idx3=FIDX3D(ToDef,pi,pj,k);
                Def_Get(ToDef,0,idx3,val0);
-               if (ISNAN(val0) || val0==ToDef->NoData)
+               if (!DEFVALID(ToDef,val0))
                   val0=0.0;
 
                // Assign new value
@@ -1803,7 +1829,7 @@ int Def_GridInterpConservative(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
 
                     Def_Get(FromDef,0,FIDX3D(FromDef,i,j,k),val1);
                      // If we are saving the indexes, we have to process even if nodata but use 0.0 so as to not affect results
-                     if (ISNAN(val1) || val1==FromDef->NoData) {
+                     if (!DEFVALID(FromDef,val1)) {
                         if (ip) {
                            val1=0.0;
                         } else {
@@ -1851,7 +1877,7 @@ int Def_GridInterpConservative(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
 
                if (area>0.0) {
                   Def_Get(FromDef,0,FIDX3D(FromDef,i,j,k),val1);
-                  if (ISNAN(val1) || val1==FromDef->NoData) {
+                  if (!DEFVALID(FromDef,val1)) {
                      // If we are saving the indexes, we have to process even if nodata but use 0.0 so as to not affect results
                      if (ip) {
                         val1=0.0;
@@ -2015,11 +2041,11 @@ int Def_GridInterpAverage(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *From
             }
             for(s=0;s<4;s++) {
                vx=di[s];
-               if (ISNAN(vx) || vx==FromDef->NoData)
+               if (!DEFVALID(FromDef,vx))
                   continue;
 
                // If the previous value is nodata, initialize the counter
-               if (ISNAN(fld[idxt]) || fld[idxt]==ToDef->NoData) {
+               if (!DEFVALID(FromDef,fld[idxt])) {
                   fld[idxt]=(Mode==IR_SUM || Mode==IR_AVERAGE|| Mode==IR_VECTOR_AVERAGE)?0.0:(Mode==IR_MAXIMUM?-HUGE_VAL:HUGE_VAL);
                   if (aux) aux[idxt]=fld[idxt];
                }
@@ -2065,7 +2091,7 @@ int Def_GridInterpAverage(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *From
 
                // Skip if no data
                Def_Get(FromDef,0,gscan.V[x],vx);
-               if ((ISNAN(vx) || vx==FromDef->NoData) && Mode!=IR_COUNT)
+               if (!DEFVALID(FromDef,vx) && Mode!=IR_COUNT)
                   continue;
 
                // Figure out ordered coverage
@@ -2117,7 +2143,7 @@ int Def_GridInterpAverage(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *From
                      if (!ToDef->Mask || ToDef->Mask[idxt]) {
 
                         // If the previous value is nodata, initialize the counter
-                        if (ISNAN(fld[idxt]) || fld[idxt]==ToDef->NoData) {
+                        if (!DEFVALID(ToDef,fld[idxt])) {
                            fld[idxt]=(Mode==IR_SUM || Mode==IR_AVERAGE  || Mode==IR_VECTOR_AVERAGE || Mode==IR_VARIANCE || Mode==IR_SQUARE || Mode==IR_NORMALIZED_COUNT || Mode==IR_COUNT)?0.0:(Mode==IR_MAXIMUM?-HUGE_VAL:HUGE_VAL);
                            if (aux) aux[idxt]=fld[idxt];
                         }
@@ -2149,7 +2175,7 @@ int Def_GridInterpAverage(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *From
                                                             t++;
                                                          }
                                                       } else {
-                                                         if (vx!=FromDef->NoData) {
+                                                         if (DEFVALID(FromDef,vx)) {
                                                             fld[idxt]+=vx;
                                                             if (Mode!=IR_COUNT) acc[idxt]++;
                                                          }
@@ -2188,7 +2214,7 @@ int Def_GridInterpAverage(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *From
 
                default:
                   if (fld) {
-                     if (!ISNAN(fld[idxk]) && fld[idxk]!=ToDef->NoData) {
+                     if (DEFVALID(ToDef,fld[idxk])) {
                         if (aux) {
                            if (acc && acc[x]!=0) {
                               fld[idxk]/=acc[x];

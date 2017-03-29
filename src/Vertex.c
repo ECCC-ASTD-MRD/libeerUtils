@@ -269,21 +269,23 @@ int VertexLoc(Vect3d **Pos,TDef *Def,Vect3d Vr,double X,double Y,double Z) {
 */
 static inline double VertexAvg(TDef *Def,int Idx,int X,int Y,int Z) {
    
-   unsigned long n,i,j,idx;
+   unsigned long n,i,j,idx,k;
    double        v,val;
    
    n=0;
    val=0.0;
+   k=Z*Def->NIJ;
    
    for(j=Y-1;j<=Y+1;j++) {
       for(i=X-1;i<=X+1;i++) {
          idx=j*Def->NI+i;
 
-         if (idx>=0 && idx<Def->NIJ && Def->Mask[idx]) {
+// TODO:valid if masked data is valid        if (idx>=0 && idx<Def->NIJ && Def->Mask[k+idx]) {
+         if (idx>=0 && idx<Def->NIJ) {
             if (Idx==-1) {
-               Def_GetMod(Def,idx,v);
+               Def_GetMod(Def,k+idx,v);
             } else {
-               Def_Get(Def,Idx,idx,v);
+               Def_Get(Def,Idx,k+idx,v);
             }
             val+=v;
             n++;
@@ -313,6 +315,8 @@ static inline double VertexAvg(TDef *Def,int Idx,int X,int Y,int Z) {
  *
  *----------------------------------------------------------------------------
 */
+
+
 float VertexVal(TDef *Def,int Idx,double X,double Y,double Z) {
 
    double        cube[2][4];
@@ -348,7 +352,7 @@ float VertexVal(TDef *Def,int Idx,double X,double Y,double Z) {
    }
    
    // If either value is nodata then interpolation will be nodata as well
-   if (cube[0][0]==Def->NoData || cube[0][1]==Def->NoData || cube[0][2]==Def->NoData || cube[0][3]==Def->NoData) {
+   if (DEFVALID(Def,cube[0][0]) || DEFVALID(Def,cube[0][1]) || DEFVALID(Def,cube[0][2]) || DEFVALID(Def,cube[0][3])) {
       return(Def->NoData);
    }
      
@@ -374,7 +378,7 @@ float VertexVal(TDef *Def,int Idx,double X,double Y,double Z) {
       }
       
       // If either value is nodata then interpolation will be nodata as well
-      if (cube[1][0]==Def->NoData || cube[1][1]==Def->NoData || cube[1][2]==Def->NoData || cube[1][3]==Def->NoData) {
+      if (DEFVALID(Def,cube[1][0]) || DEFVALID(Def,cube[1][1]) || DEFVALID(Def,cube[1][2]) || DEFVALID(Def,cube[1][3])) {
          return(Def->NoData);
       }
 
@@ -424,7 +428,7 @@ double VertexValV(TDef *Def,double X,double Y,double Z,Vect3d V) {
    if (Def->Data[2]) Def_GetQuad(Def,2,idx,cube[2][0]);
    
    // If either value is nodata then interpolation will be nodata as well
-   if (cube[0][0][0]==Def->NoData || cube[0][0][1]==Def->NoData || cube[0][0][2]==Def->NoData || cube[0][0][3]==Def->NoData) {
+   if (DEFVALID(Def,cube[0][0][0]) || DEFVALID(Def,cube[0][0][1]) || DEFVALID(Def,cube[0][0][2]) || DEFVALID(Def,cube[0][0][3])) {
       return(Def->NoData);
    }
    
@@ -440,7 +444,7 @@ double VertexValV(TDef *Def,double X,double Y,double Z,Vect3d V) {
       if (Def->Data[2]) Def_GetQuad(Def,2,idx,cube[2][1]);
       
       // If either value is nodata then interpolation will be nodata as well
-      if (cube[0][1][0]==Def->NoData || cube[0][1][1]==Def->NoData || cube[0][1][2]==Def->NoData || cube[0][1][3]==Def->NoData) {
+      if (DEFVALID(Def,cube[0][1][0]) || DEFVALID(Def,cube[0][1][1]) || DEFVALID(Def,cube[0][1][2]) || DEFVALID(Def,cube[0][1][3])) {
          return(Def->NoData);
       }
 
