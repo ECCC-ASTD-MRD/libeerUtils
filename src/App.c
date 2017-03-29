@@ -1079,11 +1079,21 @@ int App_ParseDate(char *Param,char *Value,time_t *Var) {
    long long t;
    char     *ptr;
 
-   if (strlen(Value)!=12 || (t=strtoll(Value,&ptr,10))<=0) {
-       App_Log(ERROR,"Invalid value for %s, must be YYYYMMDDHHMM: %s\n",Param,Value);
+   if( (t=strtoll(Value,&ptr,10))<=0 ) {
+      App_Log(ERROR,"Invalid value for %s, must be YYYYMMDDHHMM or YYYYMMDDHHMMSS: %s\n",Param,Value);
       return(0);
    }
-   *Var=System_DateTime2Seconds(t/10000,(t-(t/10000*10000))*100,1);
+   switch( strlen(Value) ) {
+      case 12:
+         *Var=System_DateTime2Seconds(t/10000,(t-(t/10000*10000))*100,1);
+         break;
+      case 14:
+         *Var=System_DateTime2Seconds(t/1000000,(t-(t/1000000*1000000)),1);
+         break;
+      default:
+         App_Log(ERROR,"Invalid value for %s, must be YYYYMMDDHHMM or YYYYMMDDHHMMSS: %s\n",Param,Value);
+         return(0);
+   }
 
    return(1);
 }   
