@@ -352,7 +352,7 @@ float VertexVal(TDef *Def,int Idx,double X,double Y,double Z) {
    }
    
    // If either value is nodata then interpolation will be nodata as well
-   if (DEFVALID(Def,cube[0][0]) || DEFVALID(Def,cube[0][1]) || DEFVALID(Def,cube[0][2]) || DEFVALID(Def,cube[0][3])) {
+   if (!DEFVALID(Def,cube[0][0]) || !DEFVALID(Def,cube[0][1]) || !DEFVALID(Def,cube[0][2]) || !DEFVALID(Def,cube[0][3])) {
       return(Def->NoData);
    }
      
@@ -378,7 +378,7 @@ float VertexVal(TDef *Def,int Idx,double X,double Y,double Z) {
       }
       
       // If either value is nodata then interpolation will be nodata as well
-      if (DEFVALID(Def,cube[1][0]) || DEFVALID(Def,cube[1][1]) || DEFVALID(Def,cube[1][2]) || DEFVALID(Def,cube[1][3])) {
+      if (!DEFVALID(Def,cube[1][0]) || !DEFVALID(Def,cube[1][1]) || !DEFVALID(Def,cube[1][2]) || !DEFVALID(Def,cube[1][3])) {
          return(Def->NoData);
       }
 
@@ -428,7 +428,7 @@ double VertexValV(TDef *Def,double X,double Y,double Z,Vect3d V) {
    if (Def->Data[2]) Def_GetQuad(Def,2,idx,cube[2][0]);
    
    // If either value is nodata then interpolation will be nodata as well
-   if (DEFVALID(Def,cube[0][0][0]) || DEFVALID(Def,cube[0][0][1]) || DEFVALID(Def,cube[0][0][2]) || DEFVALID(Def,cube[0][0][3])) {
+   if (!DEFVALID(Def,cube[0][0][0]) || !DEFVALID(Def,cube[0][0][1]) || !DEFVALID(Def,cube[0][0][2]) || !DEFVALID(Def,cube[0][0][3])) {
       return(Def->NoData);
    }
    
@@ -444,7 +444,7 @@ double VertexValV(TDef *Def,double X,double Y,double Z,Vect3d V) {
       if (Def->Data[2]) Def_GetQuad(Def,2,idx,cube[2][1]);
       
       // If either value is nodata then interpolation will be nodata as well
-      if (DEFVALID(Def,cube[0][1][0]) || DEFVALID(Def,cube[0][1][1]) || DEFVALID(Def,cube[0][1][2]) || DEFVALID(Def,cube[0][1][3])) {
+      if (!DEFVALID(Def,cube[0][1][0]) || !DEFVALID(Def,cube[0][1][1]) || !DEFVALID(Def,cube[0][1][2]) || !DEFVALID(Def,cube[0][1][3])) {
          return(Def->NoData);
       }
 
