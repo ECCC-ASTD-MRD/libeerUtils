@@ -280,15 +280,16 @@ static inline double VertexAvg(TDef *Def,int Idx,int X,int Y,int Z) {
       for(i=X-1;i<=X+1;i++) {
          idx=j*Def->NI+i;
 
-// TODO:valid if masked data is valid        if (idx>=0 && idx<Def->NIJ && Def->Mask[k+idx]) {
-         if (idx>=0 && idx<Def->NIJ) {
+         if (idx>=0 && idx<Def->NIJ && Def->Mask[k+idx]) {
             if (Idx==-1) {
                Def_GetMod(Def,k+idx,v);
             } else {
-               Def_Get(Def,Idx,k+idx,v);
+               Def_Get(Def,Idx,k+idx,v)
             }
-            val+=v;
-            n++;
+            if (DEFVALID(Def,v)) {
+               val+=v;
+               n++;
+            }
          }
       }
    }
@@ -315,8 +316,6 @@ static inline double VertexAvg(TDef *Def,int Idx,int X,int Y,int Z) {
  *
  *----------------------------------------------------------------------------
 */
-
-
 float VertexVal(TDef *Def,int Idx,double X,double Y,double Z) {
 
    double        cube[2][4];
@@ -342,8 +341,8 @@ float VertexVal(TDef *Def,int Idx,double X,double Y,double Z) {
    } else {
       Def_GetQuad(Def,Idx,idx,cube[0]);
    }
-   
-   // Check for masked values
+
+   // If a mask exists average the masked points with the ones around
    if (Def->Mask) {
       if (!Def->Mask[idx[0]]) cube[0][0]=VertexAvg(Def,Idx,i,  j,  k);
       if (!Def->Mask[idx[1]]) cube[0][1]=VertexAvg(Def,Idx,i+1,j,  k);
@@ -363,6 +362,8 @@ float VertexVal(TDef *Def,int Idx,double X,double Y,double Z) {
       idx[1]+=idxk;
       idx[3]+=idxk;
       idx[2]+=idxk;
+      k++;
+      
       if (Idx==-1) {
          Def_GetQuadMod(Def,idx,cube[1]);
       } else {
