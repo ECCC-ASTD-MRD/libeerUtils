@@ -411,7 +411,9 @@ int App_End(int Status) {
    struct timeval end,dif;
 
 #ifdef _MPI
-   if (App->NbMPI>1) {
+   // The Status=INT_MIN means something went wrong and we want to crash gracefully and NOT get stuck 
+   // on a MPI deadlock where we wait for a reduce and the other nodes are stuck on a BCast, for example
+   if (App->NbMPI>1 && Status!=INT_MIN) {
       if( !App->RankMPI ) {
          MPI_Reduce(MPI_IN_PLACE,&App->LogWarning,1,MPI_INT,MPI_SUM,0,MPI_COMM_WORLD);
          MPI_Reduce(MPI_IN_PLACE,&App->LogError,1,MPI_INT,MPI_SUM,0,MPI_COMM_WORLD);

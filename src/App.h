@@ -8,7 +8,7 @@
  * Fichier   : App.h
  * Creation  : Septembre 2008 - J.P. Gauthier
  *
- * Description: Fonctions génériques à tout les modèles.
+ * Description: Fonctions gÃ©nÃ©riques Ã  tout les modÃ¨les.
  *
  * Remarques :
  *
@@ -43,6 +43,7 @@
 #include <malloc.h>
 #include <alloca.h>
 #include <errno.h>
+#include <limits.h>
 
 #ifdef _OPENMP
 #   include <omp.h>
