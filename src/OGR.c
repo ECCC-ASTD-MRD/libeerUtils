@@ -412,6 +412,42 @@ OGRGeometryH OGM_GPCOnOGRLayer(gpc_op Op,OGR_Layer *Layer) {
    return(geom);
 }
 
+OGRGeometryH OGM_GPCOnOGRGeometry(gpc_op Op,OGRGeometryH *Geom) {
+
+   gpc_polygon  poly0,poly1,result,*r,*p,*t;
+   OGRGeometryH geom=NULL;
+   unsigned int g;
+
+   OGM_GPCNew(&poly0);
+   OGM_GPCNew(&poly1);
+   OGM_GPCNew(&result);
+
+   p=&poly0;
+   r=&result;
+   t=NULL;
+ 
+   for(g=0;g<OGR_G_GetGeometryCount(Geom);g++) {
+      if ((geom=OGR_G_GetGeometryRef(Geom,g))) {
+         OGM_GPCFromOGR((t?&poly1:&result),geom);
+         if (t) {
+            gpc_polygon_clip(Op,p,&poly1,r);
+            gpc_free_polygon(p);
+         }
+         t=p; p=r; r=t;
+
+         gpc_free_polygon(&poly1);
+      }
+   }
+
+   OGM_GPCToOGR(p,&geom);
+
+   gpc_free_polygon(&result);
+   gpc_free_polygon(&poly0);
+   gpc_free_polygon(&poly1);
+
+   return(geom);
+}
+
 int OGM_Within(OGRGeometryH Geom0,OGRGeometryH Geom1,OGREnvelope *Env0,OGREnvelope *Env1) {
 
    int          n0,n1,npt=0;

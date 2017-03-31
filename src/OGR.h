@@ -112,6 +112,7 @@ void         OGM_GPCFromOGR(gpc_polygon* Poly,OGRGeometryH *Geom);
 void         OGM_GPCToOGR(gpc_polygon *Poly,OGRGeometryH *Geom);
 OGRGeometryH OGM_GPCOnOGR(gpc_op Op,OGRGeometryH Geom0,OGRGeometryH Geom1);
 OGRGeometryH OGM_GPCOnOGRLayer(gpc_op Op,OGR_Layer *Layer);
+OGRGeometryH OGM_GPCOnOGRGeometry(gpc_op Op,OGRGeometryH *Geom);
 void         OGM_GPCNew(gpc_polygon *Poly);
 
 Vect3d*      OGM_GetVect3d(unsigned int Size,unsigned int No);

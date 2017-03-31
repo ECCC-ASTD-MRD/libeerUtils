@@ -224,7 +224,7 @@ static float **EZGrid_TileGetData(const TGrid* __restrict const Grid,TGridTile* 
             c_fstluk(datak,key,&ni,&nj,&nk);
          }
         
-         // Last gridpoint is loaded marker (nan) so it is already nan, use something else
+         // Last gridpoint is tile load marker (nan) so it is already nan, use something else
 //         if (datak[Tile->HNIJ-1]!=datak[Tile->HNIJ-1]) datak[Tile->HNIJ-1]=-999.0;
          
          // Apply Factor if needed (TODO: ok for now but need to fix concurent access and might conflict with time interp)
