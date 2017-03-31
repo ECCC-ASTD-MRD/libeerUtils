@@ -36,6 +36,7 @@
 #include "FPCompressF.h"
 #include "FPCompressD.h"
 #include "App.h"
+#include "RPN.h"
 #include <string.h>
 
 const int32_t BF_MAGIC=0x45454642; //BFEE (Binary File Env. Emergencies) in little endian
