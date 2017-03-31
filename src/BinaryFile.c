@@ -730,7 +730,7 @@ int BinaryFile_WriteFSTD(void *Data,int NPak,TBFFiles *File,int DateO,int Deet,i
  *    <NI>        : [OUT] Dimension du champ en I
  *    <NJ>        : [OUT] Dimension du champ en J
  *    <NK>        : [OUT] Dimension du champ en K
- *    <DateO>     : Date d'origine (-1 pour toutes les dates)
+ *    <DateV>     : Date valide (-1 pour toutes les dates)
  *    <Etiket>    : L'etiket du champ (String vide ou NULL pour toutes les etiket)
  *    <IP1>       : IP1 du champ (-1 pour tous les IP1)
  *    <IP2>       : IP2 du champ (-1 pour tous les IP2)
@@ -744,7 +744,20 @@ int BinaryFile_WriteFSTD(void *Data,int NPak,TBFFiles *File,int DateO,int Deet,i
  *
  *----------------------------------------------------------------------------
  */
-TBFKey BinaryFile_Find(TBFFiles *File,int *NI,int *NJ,int *NK,int DateO,const char *Etiket,int IP1,int IP2,int IP3,const char* TypVar,const char *NomVar) {
+static int GetDateV(int DateO,int Deet,int Npas) {
+#ifdef HAVE_RMN
+   if( !DateO ) return 0;
+   // Calculer la date de validitee du champs
+   int datev;
+   double nhour=(Npas*Deet)/3600.0;
+   f77name(incdatr)(&datev,&DateO,&nhour);
+   return datev!=101010101 ? datev : 0;
+#else
+   App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
+   return 0;
+#endif
+}
+TBFKey BinaryFile_Find(TBFFiles *File,int *NI,int *NJ,int *NK,int DateV,const char *Etiket,int IP1,int IP2,int IP3,const char* TypVar,const char *NomVar) {
    TBFFldHeader *restrict h;
    TBFFile *restrict file;
    int32_t i,f;
@@ -766,9 +779,9 @@ TBFKey BinaryFile_Find(TBFFiles *File,int *NI,int *NJ,int *NK,int DateO,const ch
    // Look for the field in the index
    for(f=0,file=File->Files; f<File->N; ++f,++file) {
       for(i=0,h=file->Index.Headers; i<file->Index.N; ++i,++h) {
-         //printf("Comparing dateo=(%d|%d) ip1=(%d|%d) ip2=(%d|%d) ip3=(%d|%d) NomVar=(%.*s|%.4s) TypVar=(%.*s|%.2s) Etiket=(%.*s|%.12s)\n",DateO,h->DATEO,IP1,h->IP1,IP2,h->IP2,IP3,h->IP3,nnv,NomVar,h->NOMVAR,ntv,TypVar,h->TYPVAR,net,Etiket,h->ETIKET);
-         //printf("DateO[%d] IP1[%d] IP2[%d] IP3[%d] NOMVAR[%d] TYPVAR[%d] ETIKET[%d]\n",(DateO==-1 || DateO==h->DATEO),(IP1==-1 || IP1==h->IP1),(IP2==-1 || IP2==h->IP2),(IP3==-1 || IP3==h->IP3),(nonv || nnv==strnlen(h->NOMVAR,4) && !strncmp(NomVar,h->NOMVAR,nnv)),(notv || ntv==strnlen(h->TYPVAR,2) && !strncmp(TypVar,h->TYPVAR,ntv)),(noet || net==strnlen(h->ETIKET,12) && !strncmp(Etiket,h->ETIKET,net)));
-         if( (DateO==-1 || DateO==h->DATEO)
+         //printf("Comparing datev=(%d|%d) ip1=(%d|%d) ip2=(%d|%d) ip3=(%d|%d) NomVar=(%.*s|%.4s) TypVar=(%.*s|%.2s) Etiket=(%.*s|%.12s)\n",DateV,GetDateV(h->DATEO,h->DEET,h->NPAS),IP1,h->IP1,IP2,h->IP2,IP3,h->IP3,nnv,NomVar,h->NOMVAR,ntv,TypVar,h->TYPVAR,net,Etiket,h->ETIKET);
+         //printf("DateV[%d] IP1[%d] IP2[%d] IP3[%d] NOMVAR[%d] TYPVAR[%d] ETIKET[%d]\n",(DateV==-1 || DateV==GetDateV(h->DATEO,h->DEET,h->NPAS),(IP1==-1 || IP1==h->IP1),(IP2==-1 || IP2==h->IP2),(IP3==-1 || IP3==h->IP3),(nonv || nnv==strnlen(h->NOMVAR,4) && !strncmp(NomVar,h->NOMVAR,nnv)),(notv || ntv==strnlen(h->TYPVAR,2) && !strncmp(TypVar,h->TYPVAR,ntv)),(noet || net==strnlen(h->ETIKET,12) && !strncmp(Etiket,h->ETIKET,net)));
+         if( (DateV==-1 || DateV==GetDateV(h->DATEO,h->DEET,h->NPAS))
                && (IP1==-1 || IP1==h->IP1)
                && (IP2==-1 || IP2==h->IP2)
                && (IP3==-1 || IP3==h->IP3)
@@ -776,7 +789,7 @@ TBFKey BinaryFile_Find(TBFFiles *File,int *NI,int *NJ,int *NK,int DateO,const ch
                && (notv || ntv==strnlen(h->TYPVAR,2) && !strncmp(TypVar,h->TYPVAR,ntv))
                && (noet || net==strnlen(h->ETIKET,12) && !strncmp(Etiket,h->ETIKET,net)) ) {
             // We found the field, return its key
-            //printf("Found field dateo=(%d|%d) ip1=(%d|%d) ip2=(%d|%d) ip3=(%d|%d) NomVar=(%.*s|%.4s) TypVar=(%.*s|%.2s) Etiket=(%.*s|%.12s)\n",DateO,h->DATEO,IP1,h->IP1,IP2,h->IP2,IP3,h->IP3,nnv,NomVar,h->NOMVAR,ntv,TypVar,h->TYPVAR,net,Etiket,h->ETIKET);
+            //printf("Found field datev=(%d|%d) ip1=(%d|%d) ip2=(%d|%d) ip3=(%d|%d) NomVar=(%.*s|%.4s) TypVar=(%.*s|%.2s) Etiket=(%.*s|%.12s)\n",DateV,GetDateV(h->DATEO,h->DEET,h->NPAS),IP1,h->IP1,IP2,h->IP2,IP3,h->IP3,nnv,NomVar,h->NOMVAR,ntv,TypVar,h->TYPVAR,net,Etiket,h->ETIKET);
             //printf("Note that nnv=%d ntv=%d net=%d nlenNV=%d nlenTV=%d nlenET=%d\n",nnv,ntv,net,(int)strnlen(h->NOMVAR,4),(int)strnlen(h->TYPVAR,2),(int)strnlen(h->ETIKET,12));
             *NI=h->NI; *NJ=h->NJ; *NK=h->NK;
             return BinaryFile_MakeKey(f,i);
@@ -852,7 +865,7 @@ TBFKey BinaryFile_ReadIndex(void *Buf,TBFKey Key,TBFFiles *File) {
  *    <NI>        : [OUT] Dimension du champ en I
  *    <NJ>        : [OUT] Dimension du champ en J
  *    <NK>        : [OUT] Dimension du champ en K
- *    <DateO>     : Date d'origine (-1 pour toutes les dates)
+ *    <DateV>     : Date valide (-1 pour toutes les dates)
  *    <Etiket>    : L'etiket du champ (String vide ou NULL pour toutes les etiket)
  *    <IP1>       : IP1 du champ (-1 pour tous les IP1)
  *    <IP2>       : IP2 du champ (-1 pour tous les IP2)
@@ -866,10 +879,10 @@ TBFKey BinaryFile_ReadIndex(void *Buf,TBFKey Key,TBFFiles *File) {
  *
  *----------------------------------------------------------------------------
  */
-TBFKey BinaryFile_Read(void *Buf,TBFFiles *File,int *NI,int *NJ,int *NK,int DateO,const char *Etiket,int IP1,int IP2,int IP3,const char* TypVar,const char *NomVar) {
+TBFKey BinaryFile_Read(void *Buf,TBFFiles *File,int *NI,int *NJ,int *NK,int DateV,const char *Etiket,int IP1,int IP2,int IP3,const char* TypVar,const char *NomVar) {
    TBFKey key;
    
-   if( (key=BinaryFile_Find(File,NI,NJ,NK,DateO,Etiket,IP1,IP2,IP3,TypVar,NomVar))>=0 ) {
+   if( (key=BinaryFile_Find(File,NI,NJ,NK,DateV,Etiket,IP1,IP2,IP3,TypVar,NomVar))>=0 ) {
       return BinaryFile_ReadIndex(Buf,key,File);
    }
    return key;
@@ -1010,7 +1023,7 @@ TBFKey BinaryFile_ReadIndexInto(void *Buf,TBFKey Key,TBFFiles *File,TBFType Dest
  *    <NI>        : [OUT] Dimension du champ en I
  *    <NJ>        : [OUT] Dimension du champ en J
  *    <NK>        : [OUT] Dimension du champ en K
- *    <DateO>     : Date d'origine (-1 pour toutes les dates)
+ *    <DateV>     : Date valide (-1 pour toutes les dates)
  *    <Etiket>    : L'etiket du champ (String vide ou NULL pour toutes les etiket)
  *    <IP1>       : IP1 du champ (-1 pour tous les IP1)
  *    <IP2>       : IP2 du champ (-1 pour tous les IP2)
@@ -1025,10 +1038,10 @@ TBFKey BinaryFile_ReadIndexInto(void *Buf,TBFKey Key,TBFFiles *File,TBFType Dest
  *
  *----------------------------------------------------------------------------
  */
-TBFKey BinaryFile_ReadInto(void *Buf,TBFFiles *File,int *NI,int *NJ,int *NK,int DateO,const char *Etiket,int IP1,int IP2,int IP3,const char* TypVar,const char *NomVar,TBFType DestType) {
+TBFKey BinaryFile_ReadInto(void *Buf,TBFFiles *File,int *NI,int *NJ,int *NK,int DateV,const char *Etiket,int IP1,int IP2,int IP3,const char* TypVar,const char *NomVar,TBFType DestType) {
    TBFKey key;
    
-   if( (key=BinaryFile_Find(File,NI,NJ,NK,DateO,Etiket,IP1,IP2,IP3,TypVar,NomVar))!=-1 ) {
+   if( (key=BinaryFile_Find(File,NI,NJ,NK,DateV,Etiket,IP1,IP2,IP3,TypVar,NomVar))!=-1 ) {
       return BinaryFile_ReadIndexInto(Buf,key,File,DestType);
    }
    return -1;
