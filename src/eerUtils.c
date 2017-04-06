@@ -389,6 +389,9 @@ int System_Seconds2Stamp(long Sec) {
    struct tm  *tsec;
 
 #ifdef HAVE_RMN
+   if (!Sec) {
+      return(0);
+   }
    tsec=gmtime(&Sec);
    date=(tsec->tm_year+1900)*10000+(tsec->tm_mon+1)*100+tsec->tm_mday;
    time=tsec->tm_hour*1000000+tsec->tm_min*10000+tsec->tm_sec*100;
@@ -423,6 +426,10 @@ long System_Stamp2Seconds(int Stamp) {
 
    extern time_t timezone;
 
+   if (!Stamp) {
+      return(0);
+   }
+   
    System_StampDecode(Stamp,&yyyy,&mm,&dd,&hh,&nn,&ss);
 
    tdate.tm_sec=ss;           /*seconds apres la minute [0,61]*/
