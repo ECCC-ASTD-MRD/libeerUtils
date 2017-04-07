@@ -370,7 +370,7 @@ TRPNField* RPN_FieldReadIndex(int FileId,int Index,TRPNField *Fld) {
    if (Fld) {
       fld=Fld;
    } else {
-      fld=(TRPNField*)malloc(sizeof(TRPNField));
+      fld=(TRPNField*)calloc(1,sizeof(TRPNField));
       if (!(fld->Def=Def_New(h.NI,h.NJ,h.NK,1,TD_Float32))) {
          App_Log(ERROR,"%s: Could not allocate memory for fld\n",__func__);
          return(NULL);
