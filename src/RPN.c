@@ -992,7 +992,6 @@ int RPN_LinkPattern(const char* Pattern) {
    // Expand the pattern into a list of files
    glob_t gfiles = (glob_t){0,NULL,0};
    if( glob(Pattern,0,NULL,&gfiles) || !gfiles.gl_pathc ) {
-      App_Log(ERROR,"(%s) Could not find any file matching pattern \"%s\"\n",__func__,Pattern);
       return -1;
    }
 

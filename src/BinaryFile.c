@@ -360,7 +360,6 @@ TBFFiles* BinaryFile_LinkPattern(const char* Pattern) {
    // Expand the pattern into a list of files
    glob_t gfiles = (glob_t){0,NULL,0};
    if( glob(Pattern,0,NULL,&gfiles) || !gfiles.gl_pathc ) {
-      App_Log(ERROR,"Could not find any file matching pattern \"%s\"\n",Pattern);
       return NULL;
    }
 
