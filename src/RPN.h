@@ -103,6 +103,7 @@ int RPN_GetAllIps(int *Flds,int NbFlds,int IpN,int Uniq,int **Ips,int *NbIp);
 int RPN_GenerateIG(int *IG1,int *IG2,int *IG3);
 int RPN_LinkFiles(char **Files,int N);
 int RPN_UnLinkFiles(int FID);
+int RPN_LinkPattern(const char* Pattern);
 
 #ifdef HAVE_RMN
 #include "rpnmacros.h"
