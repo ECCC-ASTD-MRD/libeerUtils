@@ -38,6 +38,7 @@
 #include "App.h"
 #include "RPN.h"
 #include <string.h>
+#include <glob.h>
 
 const int32_t BF_MAGIC=0x45454642; //BFEE (Binary File Env. Emergencies) in little endian
 const int32_t BF_VERSION=1;
@@ -337,6 +338,35 @@ TBFFiles* BinaryFile_Link(const char** FileNames,int N) {
          ;
    }
    return BinaryFile_OpenFiles(FileNames,N,BF_READ);
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <BinaryFile_LinkPattern>
+ * Creation : Avril 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Ouvre et lie les fichiers correspondant au pattern donné en
+ *            mode lecture seulement
+ *
+ * Parametres :
+ *    <Pattern>   : Le pattern des fichiers à ouvrir et lier.
+ *
+ * Retour   : Un pointeur vers les fichiers ouvert
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
+TBFFiles* BinaryFile_LinkPattern(const char* Pattern) {
+   // Expand the pattern into a list of files
+   glob_t gfiles = (glob_t){0,NULL,0};
+   if( glob(Pattern,0,NULL,&gfiles) || !gfiles.gl_pathc ) {
+      App_Log(ERROR,"Could not find any file matching pattern \"%s\"\n",Pattern);
+      return NULL;
+   }
+
+   TBFFiles *bf = BinaryFile_Link((const char**)gfiles.gl_pathv,(int)gfiles.gl_pathc);
+   globfree(&gfiles);
+   return bf;
 }
 
 /*----------------------------------------------------------------------------
