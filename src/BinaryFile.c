@@ -41,7 +41,7 @@
 #include <glob.h>
 
 const int32_t BF_MAGIC=0x45454642; //BFEE (Binary File Env. Emergencies) in little endian
-const int32_t BF_VERSION=1;
+const int32_t BF_VERSION=2;
 
 static int BFTypeSize[] = {1,1,1,2,4,8,1,2,4,8,4,8,4,8,0};
 
@@ -670,7 +670,7 @@ int BinaryFile_Write(void *Data,TBFType DataType,TBFFiles *File,int DateO,int De
    h->DATEO = DateO;
    h->DEET  = Deet;
    h->NPAS  = NPas;
-   h->NBITS = BFTypeSize[DataType]*4;
+   h->NBITS = BFTypeSize[DataType]*CHAR_BIT;
    h->DATYP = DataType;
    h->IP1   = IP1;
    h->IP2   = IP2;
