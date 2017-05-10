@@ -547,7 +547,7 @@ int Def_Paste(TDef *DefTo,TDef *DefPaste,int X0, int Y0) {
    }
 
    // Maximum number of band to paste
-   nc=FMIN(DefTo->NC,DefPaste->NC);
+   nc=fmin(DefTo->NC,DefPaste->NC);
    
    dy=Y0;
    for (y=y0;y<y1;y++) {
@@ -869,8 +869,8 @@ int Def_GridCell2OGR(OGRGeometryH Geom,TGeoRef *RefTo,TGeoRef *RefFrom,int I,int
    for(n=-0.5;n<(0.5+df);n+=dn) {
       RefFrom->Project(RefFrom,I-0.5,J+n,&la,&lo,1,1);
       RefTo->UnProject(RefTo,&x,&y,la,lo,1,1);
-      x0=FMIN(x0,x);
-      x1=FMAX(x1,x);
+      x0=fmin(x0,x);
+      x1=fmax(x1,x);
       OGR_G_SetPoint_2D(Geom,pt++,x,y);
    }
 
@@ -878,8 +878,8 @@ int Def_GridCell2OGR(OGRGeometryH Geom,TGeoRef *RefTo,TGeoRef *RefFrom,int I,int
    for(n=-0.5;n<(0.5+df);n+=dn) {
       RefFrom->Project(RefFrom,I+n,J+0.5,&la,&lo,1,1);
       RefTo->UnProject(RefTo,&x,&y,la,lo,1,1);
-      x0=FMIN(x0,x);
-      x1=FMAX(x1,x);
+      x0=fmin(x0,x);
+      x1=fmax(x1,x);
       OGR_G_SetPoint_2D(Geom,pt++,x,y);
    }
 
@@ -887,8 +887,8 @@ int Def_GridCell2OGR(OGRGeometryH Geom,TGeoRef *RefTo,TGeoRef *RefFrom,int I,int
    for(n=0.5;n>-(0.5+df);n-=dn) {
       RefFrom->Project(RefFrom,I+0.5,J+n,&la,&lo,1,1);
       RefTo->UnProject(RefTo,&x,&y,la,lo,1,1);
-      x0=FMIN(x0,x);
-      x1=FMAX(x1,x);
+      x0=fmin(x0,x);
+      x1=fmax(x1,x);
       OGR_G_SetPoint_2D(Geom,pt++,x,y);
    }
 
@@ -896,8 +896,8 @@ int Def_GridCell2OGR(OGRGeometryH Geom,TGeoRef *RefTo,TGeoRef *RefFrom,int I,int
    for(n=0.5;n>-(0.5+df);n-=dn) {
       RefFrom->Project(RefFrom,I+n,J-0.5,&la,&lo,1,1);
       RefTo->UnProject(RefTo,&x,&y,la,lo,1,1);
-      x0=FMIN(x0,x);
-      x1=FMAX(x1,x);
+      x0=fmin(x0,x);
+      x1=fmax(x1,x);
       OGR_G_SetPoint_2D(Geom,pt++,x,y);
    }
 
@@ -2098,13 +2098,13 @@ int Def_GridInterpAverage(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *From
                if (s>1) {
                   di[0]=gscan.X[n];
                   dj[0]=gscan.Y[n];
-                  di[1]=gscan.X[n+1]; di0=FMIN(di[0],di[1]); di1=FMAX(di[0],di[1]);
-                  dj[1]=gscan.Y[n+1]; dj0=FMIN(dj[0],dj[1]); dj1=FMAX(dj[0],dj[1]);
+                  di[1]=gscan.X[n+1]; di0=fmin(di[0],di[1]); di1=fmax(di[0],di[1]);
+                  dj[1]=gscan.Y[n+1]; dj0=fmin(dj[0],dj[1]); dj1=fmax(dj[0],dj[1]);
 
-                  di[2]=gscan.X[n+gscan.DX+1]; di0=FMIN(di0,di[2]); di1=FMAX(di1,di[2]);
-                  dj[2]=gscan.Y[n+gscan.DX+1]; dj0=FMIN(dj0,dj[2]); dj1=FMAX(dj1,dj[2]);
-                  di[3]=gscan.X[n+gscan.DX+2]; di0=FMIN(di0,di[3]); di1=FMAX(di1,di[3]);
-                  dj[3]=gscan.Y[n+gscan.DX+2]; dj0=FMIN(dj0,dj[3]); dj1=FMAX(dj1,dj[3]);
+                  di[2]=gscan.X[n+gscan.DX+1]; di0=fmin(di0,di[2]); di1=fmax(di1,di[2]);
+                  dj[2]=gscan.Y[n+gscan.DX+1]; dj0=fmin(dj0,dj[2]); dj1=fmax(dj1,dj[2]);
+                  di[3]=gscan.X[n+gscan.DX+2]; di0=fmin(di0,di[3]); di1=fmax(di1,di[3]);
+                  dj[3]=gscan.Y[n+gscan.DX+2]; dj0=fmin(dj0,dj[3]); dj1=fmax(dj1,dj[3]);
 
                   di0=ROUND(di0);dj0=ROUND(dj0);
                   di1=ROUND(di1);dj1=ROUND(dj1);

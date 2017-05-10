@@ -114,10 +114,10 @@ int _GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef
    }
 
    // Check limits
-   X0=FMAX(X0,FromRef->X0);
-   Y0=FMAX(Y0,FromRef->Y0);
-   X1=FMIN(X1,FromRef->X1);
-   Y1=FMIN(Y1,FromRef->Y1);
+   X0=fmax(X0,FromRef->X0);
+   Y0=fmax(Y0,FromRef->Y0);
+   X1=fmin(X1,FromRef->X1);
+   Y1=fmin(Y1,FromRef->Y1);
 
    // Adjust scan buffer sizes
    Scan->DX=X1-X0+1;
@@ -267,10 +267,10 @@ int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
    }
 
    // Check limits
-   X0=FMAX(X0,FromRef->X0);
-   Y0=FMAX(Y0,FromRef->Y0);
-   X1=FMIN(X1,FromRef->X1);
-   Y1=FMIN(Y1,FromRef->Y1);
+   X0=fmax(X0,FromRef->X0);
+   Y0=fmax(Y0,FromRef->Y0);
+   X1=fmin(X1,FromRef->X1);
+   Y1=fmin(Y1,FromRef->Y1);
 
    // Adjust scan buffer sizes
    Scan->DX=X1-X0+1;
@@ -1097,10 +1097,10 @@ TQTree* GeoRef_BuildIndex(TGeoRef* __restrict const Ref) {
    for(n=0;n<Ref->NX*Ref->NY;n++) {
       dy=Ref->AY[n];
       dx=CLAMPLON(Ref->AX[n]);
-      lat0=FMIN(lat0,dy);
-      lon0=FMIN(lon0,dx);
-      lat1=FMAX(lat1,dy);
-      lon1=FMAX(lon1,dx);
+      lat0=fmin(lat0,dy);
+      lon0=fmin(lon0,dx);
+      lat1=fmax(lat1,dy);
+      lon1=fmax(lon1,dx);
    }
       
    if (Ref->Grid[0]=='M') {
@@ -1393,37 +1393,37 @@ int GeoRef_Intersect(TGeoRef* __restrict const Ref0,TGeoRef* __restrict const Re
       for(x=Ref0->X0;x<=Ref0->X1;x++) {
          Ref0->Project(Ref0,x,Ref0->Y0,&lat,&lon,0,1);
          Ref1->UnProject(Ref1,&di,&dj,lat,lon,1,1);
-         x0=FMIN(x0,di); y0=FMIN(y0,dj);
-         x1=FMAX(x1,di); y1=FMAX(y1,dj);
+         x0=fmin(x0,di); y0=fmin(y0,dj);
+         x1=fmax(x1,di); y1=fmax(y1,dj);
 
          Ref0->Project(Ref0,x,Ref0->Y1,&lat,&lon,0,1);
          Ref1->UnProject(Ref1,&di,&dj,lat,lon,1,1);
-         x0=FMIN(x0,di); y0=FMIN(y0,dj);
-         x1=FMAX(x1,di); y1=FMAX(y1,dj);
+         x0=fmin(x0,di); y0=fmin(y0,dj);
+         x1=fmax(x1,di); y1=fmax(y1,dj);
       }
 
       for(y=Ref0->Y0;y<=Ref0->Y1;y++) {
          Ref0->Project(Ref0,Ref0->X0,y,&lat,&lon,0,1);
          Ref1->UnProject(Ref1,&di,&dj,lat,lon,1,1);
-         x0=FMIN(x0,di); y0=FMIN(y0,dj);
-         x1=FMAX(x1,di); y1=FMAX(y1,dj);
+         x0=fmin(x0,di); y0=fmin(y0,dj);
+         x1=fmax(x1,di); y1=fmax(y1,dj);
 
          Ref0->Project(Ref0,Ref0->X1,y,&lat,&lon,0,1);
          Ref1->UnProject(Ref1,&di,&dj,lat,lon,1,1);
-         x0=FMIN(x0,di); y0=FMIN(y0,dj);
-         x1=FMAX(x1,di); y1=FMAX(y1,dj);
+         x0=fmin(x0,di); y0=fmin(y0,dj);
+         x1=fmax(x1,di); y1=fmax(y1,dj);
       }
 
       /*Test for north and south pole including grid*/
       if (Ref0->UnProject(Ref0,&di,&dj,89.9,0.0,0,1) && dj>Ref0->Y0+2 && dj<Ref0->Y1-2 && di>Ref0->X0+2 && di<Ref0->X1-2) {
          Ref1->UnProject(Ref1,&di,&dj,89.9,0.0,1,1);
-         x0=FMIN(x0,di); y0=FMIN(y0,dj);
-         x1=FMAX(x1,di); y1=FMAX(y1,dj);
+         x0=fmin(x0,di); y0=fmin(y0,dj);
+         x1=fmax(x1,di); y1=fmax(y1,dj);
       }
       if (Ref0->UnProject(Ref0,&di,&dj,-89.9,0.0,0,1) && dj>Ref0->Y0+2 && dj<Ref0->Y1-2 && di>Ref0->X0+2 && di<Ref0->X1-2) {
          Ref1->UnProject(Ref1,&di,&dj,-89.9,0.0,1,1);
-         x0=FMIN(x0,di); y0=FMIN(y0,dj);
-         x1=FMAX(x1,di); y1=FMAX(y1,dj);
+         x0=fmin(x0,di); y0=fmin(y0,dj);
+         x1=fmax(x1,di); y1=fmax(y1,dj);
       }
 
       *X0=floor(x0); *Y0=floor(y0);
@@ -1477,8 +1477,8 @@ int GeoRef_Limits(TGeoRef* __restrict const Ref,double *Lat0,double *Lon0,double
    // Source grid Y
    if (Ref->Grid[0]=='Y' || Ref->Grid[1]=='Y' || Ref->Grid[0]=='X' || Ref->Grid[1]=='X') {
       for(x=0;x<((Ref->X1-Ref->X0)+1)*((Ref->Y1-Ref->Y0)+1);x++) {
-         *Lat0=FMIN(*Lat0,Ref->AY[x]); *Lon0=FMIN(*Lon0,Ref->AX[x]);
-         *Lat1=FMAX(*Lat1,Ref->AY[x]); *Lon1=FMAX(*Lon1,Ref->AX[x]);
+         *Lat0=fmin(*Lat0,Ref->AY[x]); *Lon0=fmin(*Lon0,Ref->AX[x]);
+         *Lat1=fmax(*Lat1,Ref->AY[x]); *Lon1=fmax(*Lon1,Ref->AX[x]);
       }
       return(1);
    }
@@ -1493,26 +1493,26 @@ int GeoRef_Limits(TGeoRef* __restrict const Ref,double *Lat0,double *Lon0,double
    // Project Ref0 Border within Ref1 and get limits
    for(x=Ref->X0,y=Ref->Y0;x<=Ref->X1;x++) {
       Ref->Project(Ref,x,y,&lat,&lon,0,1);
-      *Lat0=FMIN(*Lat0,lat); *Lon0=FMIN(*Lon0,lon);
-      *Lat1=FMAX(*Lat1,lat); *Lon1=FMAX(*Lon1,lon);
+      *Lat0=fmin(*Lat0,lat); *Lon0=fmin(*Lon0,lon);
+      *Lat1=fmax(*Lat1,lat); *Lon1=fmax(*Lon1,lon);
    }
 
    for(x=Ref->X0,y=Ref->Y1;x<=Ref->X1;x++) {
       Ref->Project(Ref,x,y,&lat,&lon,0,1);
-      *Lat0=FMIN(*Lat0,lat); *Lon0=FMIN(*Lon0,lon);
-      *Lat1=FMAX(*Lat1,lat); *Lon1=FMAX(*Lon1,lon);
+      *Lat0=fmin(*Lat0,lat); *Lon0=fmin(*Lon0,lon);
+      *Lat1=fmax(*Lat1,lat); *Lon1=fmax(*Lon1,lon);
    }
 
    for(y=Ref->Y0,x=Ref->X0;y<=Ref->Y1;y++) {
       Ref->Project(Ref,x,y,&lat,&lon,0,1);
-      *Lat0=FMIN(*Lat0,lat); *Lon0=FMIN(*Lon0,lon);
-      *Lat1=FMAX(*Lat1,lat); *Lon1=FMAX(*Lon1,lon);
+      *Lat0=fmin(*Lat0,lat); *Lon0=fmin(*Lon0,lon);
+      *Lat1=fmax(*Lat1,lat); *Lon1=fmax(*Lon1,lon);
    }
 
    for(y=Ref->Y0,x=Ref->X1;y<=Ref->Y1;y++) {
       Ref->Project(Ref,x,y,&lat,&lon,0,1);
-      *Lat0=FMIN(*Lat0,lat); *Lon0=FMIN(*Lon0,lon);
-      *Lat1=FMAX(*Lat1,lat); *Lon1=FMAX(*Lon1,lon);
+      *Lat0=fmin(*Lat0,lat); *Lon0=fmin(*Lon0,lon);
+      *Lat1=fmax(*Lat1,lat); *Lon1=fmax(*Lon1,lon);
    }
 
    // Test for north and south pole including grid
@@ -1615,10 +1615,10 @@ int GeoRef_WithinRange(TGeoRef* __restrict const Ref,double Lat0,double Lon0,dou
    }
 
    /* Check range within image */
-   lat[0]=FMIN(FMIN(FMIN(lat[0],lat[1]),lat[2]),lat[3]);
-   lat[1]=FMAX(FMAX(FMAX(lat[0],lat[1]),lat[2]),lat[3]);
-   lon[0]=FMIN(FMIN(FMIN(lon[0],lon[1]),lon[2]),lon[3]);
-   lon[1]=FMAX(FMAX(FMAX(lon[0],lon[1]),lon[2]),lon[3]);
+   lat[0]=fmin(fmin(fmin(lat[0],lat[1]),lat[2]),lat[3]);
+   lat[1]=fmax(fmax(fmax(lat[0],lat[1]),lat[2]),lat[3]);
+   lon[0]=fmin(fmin(fmin(lon[0],lon[1]),lon[2]),lon[3]);
+   lon[1]=fmax(fmax(fmax(lon[0],lon[1]),lon[2]),lon[3]);
 
    if (FWITHIN(dl,lat[0],lon[0],lat[1],lon[1],Lat0,Lon0)) return(1);
    if (FWITHIN(dl,lat[0],lon[0],lat[1],lon[1],Lat0,Lon1)) return(1);

@@ -101,10 +101,10 @@ TQTree* EZGrid_Build(TGeoRef *Ref) {
    lat1=lon1=-1e10;
    
    for(n=0;n<Ref->NX;n++) {
-      lat0=FMIN(lat0,Ref->Lat[n]);
-      lon0=FMIN(lon0,Ref->Lon[n]);
-      lat1=FMAX(lat1,Ref->Lat[n]);
-      lon1=FMAX(lon1,Ref->Lon[n]);
+      lat0=fmin(lat0,Ref->Lat[n]);
+      lon0=fmin(lon0,Ref->Lon[n]);
+      lat1=fmax(lat1,Ref->Lat[n]);
+      lon1=fmax(lon1,Ref->Lon[n]);
    }
       
    // Create the tree on the data limits
