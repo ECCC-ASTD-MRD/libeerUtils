@@ -96,10 +96,15 @@ int main(int argc, char *argv[]) {
    }
 
    if (state) {
-      if (!strcasecmp(state,"obsolete"))   st=DICT_OBSOLETE;
-      if (!strcasecmp(state,"current"))    st=DICT_CURRENT;
-      if (!strcasecmp(state,"future"))     st=DICT_FUTURE;
-      if (!strcasecmp(state,"incomplete")) st=DICT_INCOMPLETE;
+      if (!strncasecmp(state,"obsolete",3))          { st=DICT_OBSOLETE;
+      } else if (!strncasecmp(state,"current",3))    { st=DICT_CURRENT;
+      } else if (!strncasecmp(state,"future",3))     { st=DICT_FUTURE;
+      } else if (!strncasecmp(state,"incomplete",3)) { st=DICT_INCOMPLETE;
+      } else if (!strncasecmp(state,"deprecated",3)) { st=DICT_DEPRECATED;
+      } else { 
+         App_Log(ERROR,"Invalid state (%s), must be current, future, incomplete, obsolete or deprecated\n",state);
+         exit(EXIT_FAILURE);
+      }
    }
    
    // Apply search method
@@ -116,7 +121,7 @@ int main(int argc, char *argv[]) {
       } else if (!strcmp(encoding,"ascii")) {
          coding=DICT_ASCII;
       } else {
-         App_Log(ERROR,"Invalid encoding, must me iso8859-1, utf8 or ascii\n");
+         App_Log(ERROR,"Invalid encoding (%s), must me iso8859-1, utf8 or ascii\n",encoding);
          exit(EXIT_FAILURE);
       }
    }
