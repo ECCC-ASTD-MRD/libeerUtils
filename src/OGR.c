@@ -1220,4 +1220,34 @@ int OGM_Simplify(double Tolerance,OGRGeometryH Geom) {
    return(m); // m vertices in simplified polyline
 }
 
+double OGM_AngleMin(OGRGeometryH Geom) {
+
+   int    i,vi,n;
+   double a,ma=M_2PI;
+   Vect3d pt[3],v[2];
+   
+   // Parse subgeometry
+   for(i=0;i<OGR_G_GetGeometryCount(Geom);i++) {
+      a=OGM_AngleMin(OGR_G_GetGeometryRef(Geom,i));
+      ma=fmin(DEG2RAD(a),ma);
+   }
+   
+   // On polygons, don't use the last point as it's a repeat of the first. on other, don't use the last 2
+   n=OGR_G_GetPointCount(Geom);
+   for(i=0;i<n-(OGR_G_GetGeometryType(Geom)!=wkbLinearRing?2:1);i++) {
+      vi=i;   OGR_G_GetPoint(Geom,vi<n?vi:vi-n,&pt[0][0],&pt[0][1],&pt[0][2]);
+      vi=i+1; OGR_G_GetPoint(Geom,vi<n?vi:vi-n,&pt[1][0],&pt[1][1],&pt[1][2]);
+      vi=i+2; OGR_G_GetPoint(Geom,vi<n?vi:vi-n,&pt[2][0],&pt[2][1],&pt[2][2]);
+      
+      // Use dot product method to get the angle
+      Vect_Init(v[0],pt[1][0]-pt[0][0],pt[1][1]-pt[0][1],0.0);
+      Vect_Init(v[1],pt[1][0]-pt[2][0],pt[1][1]-pt[2][1],0.0);
+      
+      a=fabs(acos(Vect_DotProduct(v[0],v[1])/Vect_Norm(v[0])/Vect_Norm(v[1])));    
+      ma=fmin(a,ma);
+   }
+   
+   return(RAD2DEG(ma));
+}
+
 #endif
