@@ -38,9 +38,10 @@
 #include "App.h"
 #include "RPN.h"
 #include <string.h>
+#include <glob.h>
 
 const int32_t BF_MAGIC=0x45454642; //BFEE (Binary File Env. Emergencies) in little endian
-const int32_t BF_VERSION=1;
+const int32_t BF_VERSION=2;
 
 static int BFTypeSize[] = {1,1,1,2,4,8,1,2,4,8,4,8,4,8,0};
 
@@ -337,6 +338,34 @@ TBFFiles* BinaryFile_Link(const char** FileNames,int N) {
          ;
    }
    return BinaryFile_OpenFiles(FileNames,N,BF_READ);
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <BinaryFile_LinkPattern>
+ * Creation : Avril 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Ouvre et lie les fichiers correspondant au pattern donné en
+ *            mode lecture seulement
+ *
+ * Parametres :
+ *    <Pattern>   : Le pattern des fichiers à ouvrir et lier.
+ *
+ * Retour   : Un pointeur vers les fichiers ouvert
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
+TBFFiles* BinaryFile_LinkPattern(const char* Pattern) {
+   // Expand the pattern into a list of files
+   glob_t gfiles = (glob_t){0,NULL,0};
+   if( glob(Pattern,0,NULL,&gfiles) || !gfiles.gl_pathc ) {
+      return NULL;
+   }
+
+   TBFFiles *bf = BinaryFile_Link((const char**)gfiles.gl_pathv,(int)gfiles.gl_pathc);
+   globfree(&gfiles);
+   return bf;
 }
 
 /*----------------------------------------------------------------------------
@@ -641,7 +670,7 @@ int BinaryFile_Write(void *Data,TBFType DataType,TBFFiles *File,int DateO,int De
    h->DATEO = DateO;
    h->DEET  = Deet;
    h->NPAS  = NPas;
-   h->NBITS = BFTypeSize[DataType]*4;
+   h->NBITS = BFTypeSize[DataType]*CHAR_BIT;
    h->DATYP = DataType;
    h->IP1   = IP1;
    h->IP2   = IP2;

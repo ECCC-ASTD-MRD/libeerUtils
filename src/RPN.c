@@ -37,6 +37,7 @@
 #include "Def.h"
 #include "EZGrid.h"
 #include "fnom.h"
+#include <glob.h>
 
 static int **LNK_FID = NULL;
 static int LNK_NB = 0;
@@ -969,6 +970,34 @@ int RPN_UnLinkFiles(int FID) {
     }
 
     return APP_OK;
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <RPN_LinkPattern>
+ * Creation : Avril 2017 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Ouvre et lie les fichiers correspondant au pattern donné en
+ *            mode lecture seulement
+ *
+ * Parametres :
+ *    <Pattern>   : Le pattern des fichiers à ouvrir et lier.
+ *
+ * Retour   : Le FID à utiliser ou un nombre négatif si erreur.
+ *
+ * Remarques : Cette fonction N'EST PAS thread safe
+ *
+ *----------------------------------------------------------------------------
+ */
+int RPN_LinkPattern(const char* Pattern) {
+   // Expand the pattern into a list of files
+   glob_t gfiles = (glob_t){0,NULL,0};
+   if( glob(Pattern,0,NULL,&gfiles) || !gfiles.gl_pathc ) {
+      return -1;
+   }
+
+   int fid = RPN_LinkFiles(gfiles.gl_pathv,(int)gfiles.gl_pathc);
+   globfree(&gfiles);
+   return fid;
 }
 
 #endif
