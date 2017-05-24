@@ -514,9 +514,11 @@ int GeoRef_WKTSet(TGeoRef *GRef,char *String,double *Transform,double *InvTransf
       if (GRef->Transform)
          memcpy(GRef->Transform,Transform,6*sizeof(double));
    } else {
-      if (GRef->Transform) {
-         free(GRef->Transform);
-         GRef->Transform=NULL;
+      if (!InvTransform || !GDALInvGeoTransform(InvTransform,GRef->Transform)) {
+         if (GRef->Transform) {
+            free(GRef->Transform);
+            GRef->Transform=NULL;
+         }
       }
    }
 
@@ -526,9 +528,11 @@ int GeoRef_WKTSet(TGeoRef *GRef,char *String,double *Transform,double *InvTransf
       if (GRef->InvTransform)
          memcpy(GRef->InvTransform,InvTransform,6*sizeof(double));
    } else {
-     if (GRef->InvTransform) {
-         free(GRef->InvTransform);
-         GRef->InvTransform=NULL;
+      if (!Transform || !GDALInvGeoTransform(Transform,GRef->InvTransform)) {
+         if (GRef->InvTransform) {
+            free(GRef->InvTransform);
+            GRef->InvTransform=NULL;
+         }
       }
    }
 
