@@ -508,11 +508,15 @@ int GeoRef_WKTSet(TGeoRef *GRef,char *String,double *Transform,double *InvTransf
 
    GeoRef_Clear(GRef,0);
 
-   if (Transform) {
+   if (Transform || InvTransform) {
       if (!GRef->Transform)
          GRef->Transform=(double*)calloc(6,sizeof(double));
-      if (GRef->Transform)
-         memcpy(GRef->Transform,Transform,6*sizeof(double));
+      if (!GRef->InvTransform)
+         GRef->InvTransform=(double*)calloc(6,sizeof(double));
+   }
+   
+   if (Transform) {
+      memcpy(GRef->Transform,Transform,6*sizeof(double));
    } else {
       if (!InvTransform || !GDALInvGeoTransform(InvTransform,GRef->Transform)) {
          if (GRef->Transform) {
@@ -523,10 +527,7 @@ int GeoRef_WKTSet(TGeoRef *GRef,char *String,double *Transform,double *InvTransf
    }
 
    if (InvTransform) {
-      if (!GRef->InvTransform)
-         GRef->InvTransform=(double*)calloc(6,sizeof(double));
-      if (GRef->InvTransform)
-         memcpy(GRef->InvTransform,InvTransform,6*sizeof(double));
+      memcpy(GRef->InvTransform,InvTransform,6*sizeof(double));
    } else {
       if (!Transform || !GDALInvGeoTransform(Transform,GRef->InvTransform)) {
          if (GRef->InvTransform) {
