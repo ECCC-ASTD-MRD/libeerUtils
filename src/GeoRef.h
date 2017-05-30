@@ -226,7 +226,7 @@ static inline double GeoRef_GeoDir(TGeoRef* __restrict const Ref,double X, doubl
    
    double latd[2],lond[2],dir=0.0;
    
-   if (Ref->Grid[0]!='Y') {
+   if (Ref->Grid[0]!='Y' && Ref->Grid[0]!='M') {
       
       // Reproject vector orientation by adding grid projection's north difference
       Ref->Project(Ref,X,Y,&latd[0],&lond[0],1,1);
