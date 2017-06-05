@@ -42,7 +42,7 @@
 static int **LNK_FID = NULL;
 static int LNK_NB = 0;
 
-static const char *RPN_Desc[]={ ">>","^^","^>","!!","##","HY","PROJ","MTRX",NULL };
+static const char *RPN_Desc[]={ ">>  ","^^  ","^>  ","!!  ","##  ","HY  ","PROJ","MTRX",NULL };
 
 static char FGFDTLock[1000];
 
@@ -491,7 +491,7 @@ int RPN_CopyDesc(int FIdTo,TRPNHeader* const H) {
       pthread_mutex_lock(&RPNFieldMutex);
 
       while((desc=RPN_Desc[d++])) {
-         if (strncmp(desc,"HY",2)==0) {
+         if (strncmp(desc,"HY  ",2)==0) {
             ip1=-1;ip2=-1;
          } else {
             ip1=H->IG1;
@@ -523,7 +523,7 @@ int RPN_CopyDesc(int FIdTo,TRPNHeader* const H) {
    return(TRUE);
 }
 
-int RPN_IsDesc(char *Var) {
+int RPN_IsDesc(const char* restrict Var) {
 
    const char *desc;
    int         d=0;

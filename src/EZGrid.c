@@ -1263,11 +1263,25 @@ wordint f77name(ezgrid_read)(wordint *fid,char *var,char *typvar,char *etiket,wo
 
 TGrid *EZGrid_Read(int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2,int Incr) {
 
-   int    key;
-   int    ni,nj,nk;
+   TRPNHeader h;
+   int        key;
+   int       ni,nj,nk;
 
-   /*Get field info*/
+   // Get field info
    key=cs_fstinf(FId,&ni,&nj,&nk,DateV,Etiket,IP1,IP2,-1,TypVar,Var);
+   
+   // If we're searching for any omvar, make sure we don't get a descriptor
+   if (Var[0]=='\0') {
+      strcpy(h.NOMVAR,"    ");
+      c_fstprm(key,&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&h.NK,&h.NBITS,&h.DATYP,&h.IP1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,
+         h.GRTYP,&h.IG1,&h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,&h.UBC,&h.EX1,&h.EX2,&h.EX3);
+      while (RPN_IsDesc(h.NOMVAR) && key>0) {
+         key=cs_fstsui(FId,&ni,&nj,&nk);
+         strcpy(h.NOMVAR,"    ");
+         c_fstprm(key,&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&h.NK,&h.NBITS,&h.DATYP,&h.IP1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,
+            h.GRTYP,&h.IG1,&h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,&h.UBC,&h.EX1,&h.EX2,&h.EX3);
+      }
+   }
 
    if (key<0) {
       return(NULL);

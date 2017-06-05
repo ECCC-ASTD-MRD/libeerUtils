@@ -76,7 +76,7 @@ typedef struct TRPNField {
 } TRPNField;
 
 int  RPN_CopyDesc(int FIdTo,TRPNHeader* const H);
-int  RPN_IsDesc(char *Var);
+int  RPN_IsDesc(const char* restrict Var);
 void RPN_FileLock(void);
 void RPN_FileUnlock(void);
 void RPN_FieldLock(void);
