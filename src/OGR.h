@@ -140,5 +140,6 @@ double       OGM_Centroid2DProcess(OGRGeometryH Geom,double *X,double *Y);
 int          OGM_Simplify(double Tolerance,OGRGeometryH Geom);
 int          OGM_SimplifyDP(double Tolerance,Vect3d *Pt,int J,int K,int *Markers);
 double       OGM_AngleMin(OGRGeometryH Geom);
+int          OGM_Clean(OGRGeometryH Geom);
 
 #endif

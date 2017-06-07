@@ -1250,4 +1250,38 @@ double OGM_AngleMin(OGRGeometryH Geom) {
    return(RAD2DEG(ma));
 }
 
+int OGM_Clean(OGRGeometryH Geom) {
+
+   unsigned int g;
+   int    i,v,r=0;
+   
+   // Get vertices into a temporary vector array
+   g=OGM_ToVect3d(Geom,OGM_ARRAY0);
+
+   // Check for contiguous vextex repeat
+   for(i=0;i<g-1;i++) {
+      if (Vect_Equal(OGM_Geom[0][i],OGM_Geom[0][i+1])) {
+         for(v=i;v<g-1;v++) {
+            Vect_Assign(OGM_Geom[0][v],OGM_Geom[0][v+1]);
+            r=1;
+         }
+         g--;
+         i--;
+      }
+   }
+   
+   // If found any, rebuild geometry without the repeats
+   if (r) {
+      v=OGR_G_GetCoordinateDimension(Geom);
+      OGR_G_SetPoints(Geom,g,&OGM_Geom[0][0][0],sizeof(Vect3d),&OGM_Geom[0][0][1],sizeof(Vect3d),&OGM_Geom[0][0][2],sizeof(Vect3d));
+      OGR_G_SetCoordinateDimension(Geom,v);
+   }
+   
+   // Parse subgeometry
+   for(i=0;i<OGR_G_GetGeometryCount(Geom);i++) {
+      r+=OGM_Clean(OGR_G_GetGeometryRef(Geom,i));
+   }
+   
+   return(r);
+}
 #endif

@@ -1270,7 +1270,7 @@ TGrid *EZGrid_Read(int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1
    // Get field info
    key=cs_fstinf(FId,&ni,&nj,&nk,DateV,Etiket,IP1,IP2,-1,TypVar,Var);
    
-   // If we're searching for any omvar, make sure we don't get a descriptor
+   // If we're searching for any nomvar, make sure we don't get a descriptor
    if (Var[0]=='\0') {
       strcpy(h.NOMVAR,"    ");
       c_fstprm(key,&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&h.NK,&h.NBITS,&h.DATYP,&h.IP1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,
