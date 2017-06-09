@@ -1853,7 +1853,6 @@ int EZGrid_LLGetValue(TGrid* restrict const Grid,TGridInterpMode Mode,float Lat,
          // RPN_IntLock();
          c_gdxyfll(Grid->GID,&i,&j,&Lat,&Lon,1);
          // RPN_IntUnlock();
-
          return(EZGrid_IJGetValue(Grid,Mode,i-1.0f,j-1.0f,K0,K1,Value));         
    }
    
@@ -2601,7 +2600,7 @@ int EZGrid_GetDelta(TGrid* restrict const Grid,int Invert,float* DX,float* DY,fl
 
    unsigned int i,gi,j,gj,idx,*tidx;
    float        di[4],dj[4],dlat[4],dlon[4];
-   double       fx,fy,fz,dx[4],dy[4],s;
+   double       fx,fy,fz,dx[4],dy[4],s,a,b,c;
 
 //   RPN_IntLock();
    if (!Grid || Grid->H.GRTYP[0]=='X' || Grid->H.GRTYP[0]=='Y') {
@@ -2613,6 +2612,7 @@ int EZGrid_GetDelta(TGrid* restrict const Grid,int Invert,float* DX,float* DY,fl
       }
       
       if (DA) {
+         a=(EARTHRADIUS*EARTHRADIUS)*0.5;
          tidx=Grid->GRef->Idx;
          for(idx=0;idx<Grid->GRef->NIdx-3;idx+=3) {
             
@@ -2620,18 +2620,17 @@ int EZGrid_GetDelta(TGrid* restrict const Grid,int Invert,float* DX,float* DY,fl
             dx[1]=DEG2RAD(Grid->GRef->AX[tidx[idx+1]]); dy[1]=DEG2RAD(Grid->GRef->AY[tidx[idx+1]]);
             dx[2]=DEG2RAD(Grid->GRef->AX[tidx[idx+2]]); dy[2]=DEG2RAD(Grid->GRef->AY[tidx[idx+2]]);
             
-            // Get triangle area using heron's formula            
-//            fx=DIST(0.0,dy[0],dx[0],dy[1],dx[1]);
-//            fy=DIST(0.0,dy[1],dx[1],dy[2],dx[2]);
-//            fz=DIST(0.0,dy[2],dx[2],dy[0],dx[0]);
-//            s=(fx+fy+fz)*0.5;
-//            s=sqrt(fabs(s*(s-fx)*(s-fy)*(s-fz)));
-
             s =(dx[1]-dx[0])*(2+sin(dy[0])+sin(dy[1]));
             s+=(dx[2]-dx[1])*(2+sin(dy[1])+sin(dy[2]));
             s+=(dx[0]-dx[2])*(2+sin(dy[2])+sin(dy[0]));          
-            s*=(EARTHRADIUS*EARTHRADIUS)*-0.5;
-//            
+            s=fabs(s*a);
+
+//             a =(dx[1]-dx[0])*(2+sin(dy[0])+sin(dy[1]));
+//             b =(dx[2]-dx[1])*(2+sin(dy[1])+sin(dy[2]));
+//             c =(dx[0]-dx[2])*(2+sin(dy[2])+sin(dy[0]));    
+//             s = (a+b+c)*0.5;           
+//             s = atan(sqrt(tan(s/2.0)*tan((s-a)/2.0)*tan((s-b)/2.0)*tan((s-c)/2.0)))*0.25*EARTHRADIUS;
+            
             // Split area over 3 vertices
             s/=3.0;
             DA[tidx[idx]]+=s;
