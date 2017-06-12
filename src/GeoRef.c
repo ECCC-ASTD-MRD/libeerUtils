@@ -1890,3 +1890,110 @@ int GeoRef_Coords(TGeoRef *Ref,float *Lat,float *Lon) {
    return(nxy);
 }
 
+
+/*----------------------------------------------------------------------------
+ * Nom      : <GeoRef_CellDims>
+ * Creation : Avril 2010 - J.P. Gauthier - CMC/CMOE
+ *
+ * But      : Obtenir les valeurs de distance en X et Y ainsi que l'aire
+ *            pour chaque cellule de la grille
+ *
+ * Parametres :
+ *   <Grid>       : Grille
+ *   <Invert>     : Invert (1/area)
+ *   <DX>         : Valeurs de distance en X
+ *   <DY>         : Valeurs de distance en Y
+ *   <DA>         : Valeurs de l'aire
+ *
+ * Retour:
+ *   <int>       : Code d'erreur (0=erreur, 1=ok)
+ *
+ * Remarques :
+ *    - Si un des tableau est NULL, il ne sera pas remplie
+ *----------------------------------------------------------------------------
+*/
+int GeoRef_CellDims(TGeoRef *Ref,int Invert,float* DX,float* DY,float* DA) {
+
+   unsigned int i,gi,j,gj,idx,*tidx;
+   float        di[4],dj[4],dlat[4],dlon[4];
+   double       fx,fy,fz,dx[4],dy[4],s,a,b,c;
+
+//   RPN_IntLock();
+   if (!Ref || Ref->Grid[0]=='X' || Ref->Grid[0]=='Y') {
+      App_Log(WARNING,"%s: DX, DY and DA cannot be calculated on an X or Y grid\n",__func__);        
+      return(FALSE);
+   } else if (Ref->Grid[0]=='M') {
+      
+      if (DX || DY) {
+         App_Log(WARNING,"%s: DX and DY cannot be calculated on an M grid\n",__func__);        
+      }
+      
+      if (DA) {
+         a=(EARTHRADIUS*EARTHRADIUS)*0.5;
+         tidx=Ref->Idx;
+         for(idx=0;idx<Ref->NIdx-3;idx+=3) {
+            
+            dx[0]=DEG2RAD(Ref->AX[tidx[idx]]);   dy[0]=DEG2RAD(Ref->AY[tidx[idx]]);
+            dx[1]=DEG2RAD(Ref->AX[tidx[idx+1]]); dy[1]=DEG2RAD(Ref->AY[tidx[idx+1]]);
+            dx[2]=DEG2RAD(Ref->AX[tidx[idx+2]]); dy[2]=DEG2RAD(Ref->AY[tidx[idx+2]]);
+            
+            s =(dx[1]-dx[0])*(2+sin(dy[0])+sin(dy[1]));
+            s+=(dx[2]-dx[1])*(2+sin(dy[1])+sin(dy[2]));
+            s+=(dx[0]-dx[2])*(2+sin(dy[2])+sin(dy[0]));          
+            s=fabs(s*a);
+
+//             a =(dx[1]-dx[0])*(2+sin(dy[0])+sin(dy[1]));
+//             b =(dx[2]-dx[1])*(2+sin(dy[1])+sin(dy[2]));
+//             c =(dx[0]-dx[2])*(2+sin(dy[2])+sin(dy[0]));    
+//             s = (a+b+c)*0.5;           
+//             s = atan(sqrt(tan(s/2.0)*tan((s-a)/2.0)*tan((s-b)/2.0)*tan((s-c)/2.0)))*0.25*EARTHRADIUS;
+            
+            // Split area over 3 vertices
+            s/=3.0;
+            DA[tidx[idx]]+=s;
+            DA[tidx[idx+1]]+=s;
+            DA[tidx[idx+2]]+=s;    
+         }
+
+         if (Invert) {
+            for(idx=0;idx<Ref->NX;idx++) DA[idx]=1.0/DA[idx];
+         }
+      }
+
+   } else {
+            
+      for(j=0,gj=1;j<Ref->NY;j++,gj++) {
+         idx=j*Ref->NX;
+         for(i=0,gi=1;i<Ref->NY;i++,idx++,gi++) {
+            
+            di[0]=gi-0.5; dj[0]=gj;
+            di[1]=gi+0.5; dj[1]=gj;
+            di[2]=gi;     dj[2]=gj-0.5;
+            di[3]=gi;     dj[3]=gj+0.5;
+
+            // Reproject gridpoint length coordinates of segments crossing center of cell
+            c_gdllfxy(Ref->Ids[Ref->NId],dlat,dlon,di,dj,4);
+            dx[0]=DEG2RAD(dlon[0]); dy[0]=DEG2RAD(dlat[0]);
+            dx[1]=DEG2RAD(dlon[1]); dy[1]=DEG2RAD(dlat[1]);
+
+            dx[2]=DEG2RAD(dlon[2]); dy[2]=DEG2RAD(dlat[2]);
+            dx[3]=DEG2RAD(dlon[3]); dy[3]=DEG2RAD(dlat[3]);
+
+            // Get distance in meters
+            fx=DIST(0.0,dy[0],dx[0],dy[1],dx[1]);
+            fy=DIST(0.0,dy[2],dx[2],dy[3],dx[3]);
+
+            // If x distance is null, we crossed the pole
+            if (fx==0.0)
+               fx=(M_PI*fy)/Ref->NX;
+
+            if (DX) DX[idx]=(Invert?1.0/fx:fx);
+            if (DY) DY[idx]=(Invert?1.0/fy:fy);
+            if (DA) DA[idx]=(Invert?1.0/(fx*fy):(fx*fy));
+         }
+      }
+   }
+//   RPN_IntUnlock();
+
+   return(TRUE);
+}

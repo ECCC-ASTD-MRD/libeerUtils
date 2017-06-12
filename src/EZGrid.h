@@ -157,7 +157,7 @@ int    EZGrid_LLGetValueM(TGrid* __restrict const GridU,TGrid* __restrict const 
 int    EZGrid_GetArray(TGrid* restrict const Grid,int K,float* restrict Value);
 float* EZGrid_GetArrayPtr(TGrid* restrict const Grid,int K);
 int    EZGrid_GetRange(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1,int J1,int K1,float* restrict Value);
-int    EZGrid_GetDelta(TGrid* restrict const Grid,int Invert,float* DX,float* DY,float* DA);
+int    EZGrid_GetDims(TGrid* restrict const Grid,int Invert,float* DX,float* DY,float* DA);
 int    EZGrid_GetLL(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float* J,int Nb);
 int    EZGrid_GetIJ(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float* J,int Nb);
 int    EZGrid_GetBary(TGrid* __restrict const Grid,float Lat,float Lon,Vect3d Bary,Vect3i Index);

@@ -190,6 +190,7 @@ int      GeoRef_WithinRange(TGeoRef* __restrict const Ref,double Lat0,double Lon
 int      GeoRef_WithinCell(TGeoRef *GRef,Vect2d Pos,Vect2d Pt[4],int Idx0,int Idx1,int Idx2,int Idx3);
 int      GeoRef_Intersect(TGeoRef* __restrict const Ref0,TGeoRef* __restrict const Ref1,int *X0,int *Y0,int *X1,int *Y1,int BD);
 int      GeoRef_Equal(TGeoRef* __restrict const Ref0,TGeoRef* __restrict const Ref1);
+int      GeoRef_CellDims(TGeoRef *Ref,int Invert,float* DX,float* DY,float* DA);
 TGeoRef* GeoRef_New();
 TGeoRef* GeoRef_Copy(TGeoRef* __restrict const Ref);
 TGeoRef *GeoRef_HardCopy(TGeoRef* __restrict const Ref);

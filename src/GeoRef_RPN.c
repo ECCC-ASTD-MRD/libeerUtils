@@ -485,7 +485,6 @@ int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
                      return(TRUE);
                   }
                }
-               return(FALSE);
             }            
          } else if (GRef->Grid[0]=='Y') {
             // Get nearest point

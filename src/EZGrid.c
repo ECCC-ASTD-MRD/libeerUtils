@@ -862,10 +862,6 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
 
    switch(Grid->H.GRTYP[0]) {
       case 'M':
-//         Grid->GRef=GeoRef_New();
-//         Grid->GRef->Grid[0]=Grid->H.GRTYP[0];
-//         GeoRef_Size(Grid->GRef,0,0,Grid->H.NI-1,Grid->H.NJ-1,0);
-   
          cs_fstinf(Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","##");
          Grid->GRef->NIdx=ni*nj*nk;
          Grid->GRef->Idx=(unsigned int*)malloc(Grid->GRef->NIdx*sizeof(unsigned int));
@@ -881,10 +877,6 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
    
       case 'X':
       case 'Y':
-//         Grid->GRef=GeoRef_New();
-//         Grid->GRef->Grid[0]=Grid->H.GRTYP[0];
-//         GeoRef_Size(Grid->GRef,0,0,Grid->H.NI-1,Grid->H.NJ-1,0);
-   
          Grid->GRef->AY=(float*)malloc(Grid->H.NIJ*sizeof(float));
          Grid->GRef->AX=(float*)malloc(Grid->H.NIJ*sizeof(float));
 
@@ -2572,7 +2564,7 @@ int EZGrid_GetRange(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1
 }
 
 /*----------------------------------------------------------------------------
- * Nom      : <EZGrid_GetDelta>
+ * Nom      : <EZGrid_GetDims>
  * Creation : Avril 2010 - J.P. Gauthier - CMC/CMOE
  *
  * But      : Obtenir les valeurs de distance en X et Y ainsi que l'aire
@@ -2592,93 +2584,14 @@ int EZGrid_GetRange(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1
  *    - Si un des tableau est NULL, il ne sera pas remplie
  *----------------------------------------------------------------------------
 */
-int f77name(ezgrid_getdelta)(wordint *gdid,wordint *k,ftnfloat *dx,ftnfloat *dy,ftnfloat *da) {
-   return(EZGrid_GetDelta(GridCache[*gdid],*k-1,dx,dy,da));
+int f77name(ezgrid_getdims)(wordint *gdid,wordint *k,ftnfloat *dx,ftnfloat *dy,ftnfloat *da) {
+   return(EZGrid_GetDims(GridCache[*gdid],*k-1,dx,dy,da));
 }
 
-int EZGrid_GetDelta(TGrid* restrict const Grid,int Invert,float* DX,float* DY,float* DA) {
+int EZGrid_GetDims(TGrid* restrict const Grid,int Invert,float* DX,float* DY,float* DA) {
 
-   unsigned int i,gi,j,gj,idx,*tidx;
-   float        di[4],dj[4],dlat[4],dlon[4];
-   double       fx,fy,fz,dx[4],dy[4],s,a,b,c;
+   return(GeoRef_CellDims(Grid->GRef,Invert,DX,DY,DA));
 
-//   RPN_IntLock();
-   if (!Grid || Grid->H.GRTYP[0]=='X' || Grid->H.GRTYP[0]=='Y') {
-      App_Log(WARNING,"%s: DX, DY and DA cannot be calculated on an X or Y grid\n",__func__);        
-   } else if (Grid->H.GRTYP[0]=='M') {
-      
-      if (DX || DY) {
-         App_Log(WARNING,"%s: DX and DY cannot be calculated on an M grid\n",__func__);        
-      }
-      
-      if (DA) {
-         a=(EARTHRADIUS*EARTHRADIUS)*0.5;
-         tidx=Grid->GRef->Idx;
-         for(idx=0;idx<Grid->GRef->NIdx-3;idx+=3) {
-            
-            dx[0]=DEG2RAD(Grid->GRef->AX[tidx[idx]]);   dy[0]=DEG2RAD(Grid->GRef->AY[tidx[idx]]);
-            dx[1]=DEG2RAD(Grid->GRef->AX[tidx[idx+1]]); dy[1]=DEG2RAD(Grid->GRef->AY[tidx[idx+1]]);
-            dx[2]=DEG2RAD(Grid->GRef->AX[tidx[idx+2]]); dy[2]=DEG2RAD(Grid->GRef->AY[tidx[idx+2]]);
-            
-            s =(dx[1]-dx[0])*(2+sin(dy[0])+sin(dy[1]));
-            s+=(dx[2]-dx[1])*(2+sin(dy[1])+sin(dy[2]));
-            s+=(dx[0]-dx[2])*(2+sin(dy[2])+sin(dy[0]));          
-            s=fabs(s*a);
-
-//             a =(dx[1]-dx[0])*(2+sin(dy[0])+sin(dy[1]));
-//             b =(dx[2]-dx[1])*(2+sin(dy[1])+sin(dy[2]));
-//             c =(dx[0]-dx[2])*(2+sin(dy[2])+sin(dy[0]));    
-//             s = (a+b+c)*0.5;           
-//             s = atan(sqrt(tan(s/2.0)*tan((s-a)/2.0)*tan((s-b)/2.0)*tan((s-c)/2.0)))*0.25*EARTHRADIUS;
-            
-            // Split area over 3 vertices
-            s/=3.0;
-            DA[tidx[idx]]+=s;
-            DA[tidx[idx+1]]+=s;
-            DA[tidx[idx+2]]+=s;          
-         }
-
-         if (Invert) {
-            for(idx=0;idx<Grid->H.NI;idx++) DA[idx]=1.0/DA[idx];
-         }
-      }
-
-   } else {
-            
-      for(j=0,gj=1;j<Grid->H.NJ;j++,gj++) {
-         idx=j*Grid->H.NI;
-         for(i=0,gi=1;i<Grid->H.NI;i++,idx++,gi++) {
-            
-            di[0]=gi-0.5; dj[0]=gj;
-            di[1]=gi+0.5; dj[1]=gj;
-            di[2]=gi;     dj[2]=gj-0.5;
-            di[3]=gi;     dj[3]=gj+0.5;
-
-            // Reproject gridpoint length coordinates of segments crossing center of cell
-            c_gdllfxy(Grid->GID,dlat,dlon,di,dj,4);
-            dx[0]=DEG2RAD(dlon[0]); dy[0]=DEG2RAD(dlat[0]);
-            dx[1]=DEG2RAD(dlon[1]); dy[1]=DEG2RAD(dlat[1]);
-
-            dx[2]=DEG2RAD(dlon[2]); dy[2]=DEG2RAD(dlat[2]);
-            dx[3]=DEG2RAD(dlon[3]); dy[3]=DEG2RAD(dlat[3]);
-
-            // Get distance in meters
-            fx=DIST(0.0,dy[0],dx[0],dy[1],dx[1]);
-            fy=DIST(0.0,dy[2],dx[2],dy[3],dx[3]);
-
-            // If x distance is null, we crossed the pole
-            if (fx==0.0)
-               fx=(M_PI*fy)/Grid->H.NI;
-
-            if (DX) DX[idx]=(Invert?1.0/fx:fx);
-            if (DY) DY[idx]=(Invert?1.0/fy:fy);
-            if (DA) DA[idx]=(Invert?1.0/(fx*fy):(fx*fy));
-         }
-      }
-   }
-//   RPN_IntUnlock();
-
-   return(TRUE);
 }
 
 /*----------------------------------------------------------------------------
@@ -2754,7 +2667,9 @@ int EZGrid_GetIJ(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float
    
    if (Grid && Grid->GID>=0) {
   //   RPN_IntLock();
-      ok=c_gdxyfll(Grid->GID,I,J,Lat,Lon,Nb);
+      if (c_gdxyfll(Grid->GID,I,J,Lat,Lon,Nb)!=0) {
+         return(FALSE);
+      }
    //   RPN_IntUnlock();
 
       for(i=0;i<Nb;i++) {
@@ -2763,14 +2678,14 @@ int EZGrid_GetIJ(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float
       }
    } else {
       for(i=0;i<Nb;i++) {
-         Grid->GRef->UnProject(Grid->GRef,&x,&y,Lat[i],Lon[i],FALSE,TRUE);   
+         if (!Grid->GRef->UnProject(Grid->GRef,&x,&y,Lat[i],Lon[i],FALSE,TRUE)) {
+            return(FALSE);
+         }
          I[i]=x;
          J[i]=y;
-//         I[i]=Lon[i];
-//         J[i]=Lat[i];
       }    
    }
-   return(ok==0);
+   return(TRUE);
 }
 
 /*----------------------------------------------------------------------------
