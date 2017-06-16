@@ -42,9 +42,9 @@ int              EZGRID_YLINEARCOUNT = 4;                       // Number of poi
 int              EZGRID_YQTREESIZE   = 1000;                    // Size of the QTree index for Y grids
 int              EZGRID_MQTREEDEPTH  = 8;                       // Depth of the QTree index for M grids
 
-static pthread_mutex_t CacheMutex=PTHREAD_MUTEX_INITIALIZER;
-static TGrid          *GridCache[EZGRID_CACHEMAX];
-
+static pthread_mutex_t CacheMutex=PTHREAD_MUTEX_INITIALIZER;    // Grid cache mutex
+static TGrid          *GridCache[EZGRID_CACHEMAX];              // Grid cache list
+static __thread int    MIdx=-1;                                 // Cached previously used mesh index
 
 /*----------------------------------------------------------------------------
  * Nom      : <EZGrid_Wrap>
@@ -1809,13 +1809,7 @@ wordint f77name(ezgrid_llgetvalue)(wordint *gdid,wordint *mode,ftnfloat *lat,ftn
 
 int EZGrid_LLGetValue(TGrid* restrict const Grid,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* restrict Value) {
 
-   TGridTile *t;
-   TQTree    *node;
-   Vect3d     bary;
    float      i,j;
-   double     dx,dy,r,w,wt,efact,dists[EZGRID_YLINEARCOUNT];
-   int        n,nb,idxs[EZGRID_YLINEARCOUNT];
-   unsigned int idx;
    
    if (!Grid) {
       App_Log(ERROR,"%s: Invalid grid\n",__func__);
@@ -1983,12 +1977,12 @@ int EZGrid_LLGetValueY(TGrid* restrict const GridU,TGrid* restrict const GridV,T
 
 int EZGrid_LLGetValueM(TGrid* restrict const GridU,TGrid* restrict const GridV,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* restrict UU,float* restrict VV,float Conv) {
 
-   TGridTile *tu,*tv;
-   int        k=0,ik=0;
-   TQTree    *node;
-   TGeoRef   *gref;
-   Vect3d     bary;
-   int        n,idxs[EZGRID_YLINEARCOUNT];
+   TGridTile   *tu,*tv;
+   int          k=0,ik=0;
+   TQTree      *node;
+   TGeoRef     *gref;
+   Vect3d       bary;
+   int          n,idxs[3];
    unsigned int idx;
    
    if (!GridU || GridU->H.GRTYP[0]!='M') {
@@ -1997,27 +1991,39 @@ int EZGrid_LLGetValueM(TGrid* restrict const GridU,TGrid* restrict const GridV,T
    }
    
    CLAMPLON(Lon);
-   
-   // Find enclosing triangle
    gref=GridU->GRef;
-   if ((node=QTree_Find(gref->QTree,Lon,Lat)) && node->NbData) {
-      // Loop on this nodes data payload
-      for(n=0;n<node->NbData;n++) {
-         idx=(unsigned int)node->Data[n].Ptr-1; // Remove false pointer increment
-         idxs[0]=gref->Idx[idx];
-         idxs[1]=gref->Idx[idx+1];
-         idxs[2]=gref->Idx[idx+2];
-         
-         // if the Barycentric coordinates are within this triangle, get its interpolated value
-         if ((k=Bary_Get(bary,Lon,Lat,gref->AX[idxs[0]],gref->AY[idxs[0]],gref->AX[idxs[1]],gref->AY[idxs[1]],gref->AX[idxs[2]],gref->AY[idxs[2]]))) {
-            break;
+  
+   // Check with previously cached triangle (30% faster overall)
+   if (MIdx!=-1) {
+      idxs[0]=gref->Idx[MIdx];
+      idxs[1]=gref->Idx[MIdx+1];
+      idxs[2]=gref->Idx[MIdx+2];
+      
+      // If the barycentric coordinates are within this triangle, get its interpolated value
+      k=Bary_Get(bary,Lon,Lat,gref->AX[idxs[0]],gref->AY[idxs[0]],gref->AX[idxs[1]],gref->AY[idxs[1]],gref->AX[idxs[2]],gref->AY[idxs[2]]);
+   }
+
+   // Otherwise, look for the enclosing triangle
+   if (!k) {
+      if ((node=QTree_Find(gref->QTree,Lon,Lat)) && node->NbData) {
+         // Loop on this nodes data payload
+         for(n=0;n<node->NbData;n++) {
+            idx=(unsigned int)node->Data[n].Ptr-1; // Remove false pointer increment
+            idxs[0]=gref->Idx[idx];
+            idxs[1]=gref->Idx[idx+1];
+            idxs[2]=gref->Idx[idx+2];
+            
+            // if the Barycentric coordinates are within this triangle, get its interpolated value
+            if ((k=Bary_Get(bary,Lon,Lat,gref->AX[idxs[0]],gref->AY[idxs[0]],gref->AX[idxs[1]],gref->AY[idxs[1]],gref->AX[idxs[2]],gref->AY[idxs[2]]))) {
+               MIdx=idx;
+               break;
+            }
          }
       }
-     
-      // Out of meshe
-      if (!k)
-         return(FALSE);
-      
+   }
+   
+   // If we found one, get the interpolated values
+   if (k) {
       tu=tv=NULL;
       k=K0;
       do {
@@ -2025,8 +2031,9 @@ int EZGrid_LLGetValueM(TGrid* restrict const GridU,TGrid* restrict const GridV,T
          if (GridV) { tv=&GridV->Tiles[0]; if (!EZGrid_IsLoaded(tv,k)) EZGrid_TileGetData(GridV,tv,k); }
                
          if (Mode==EZ_NEAREST) {
-                    UU[ik]=tu->Data[k][(bary[0]>bary[1]?(bary[0]>bary[2]?0:2):(bary[1]>bary[2]?1:2))];
-            if (tv) VV[ik]=tv->Data[k][(bary[0]>bary[1]?(bary[0]>bary[2]?0:2):(bary[1]>bary[2]?1:2))];
+                    n=(bary[0]>bary[1]?(bary[0]>bary[2]?0:2):(bary[1]>bary[2]?1:2));
+                    UU[ik]=tu->Data[k][n];
+            if (tv) VV[ik]=tv->Data[k][n];
          } else {
                     UU[ik]=Bary_Interp(bary,tu->Data[k][idxs[0]],tu->Data[k][idxs[1]],tu->Data[k][idxs[2]]);    
             if (tv) VV[ik]=Bary_Interp(bary,tv->Data[k][idxs[0]],tv->Data[k][idxs[1]],tv->Data[k][idxs[2]]);    
@@ -2038,6 +2045,9 @@ int EZGrid_LLGetValueM(TGrid* restrict const GridU,TGrid* restrict const GridV,T
          }
          ik++;
       } while ((K0<=K1?k++:k--)!=K1);
+   } else {
+      // Out of meshe
+      return(FALSE);      
    }
                 
    return(TRUE);  
@@ -2367,6 +2377,7 @@ int EZGrid_GetValue(const TGrid* restrict const Grid,int I,int J,int K0,int K1,f
    }
 
    k=K0;
+
    do {
       if (!EZGrid_IsLoaded(t,k))
          EZGrid_TileGetData(Grid,t,k);
