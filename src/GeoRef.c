@@ -1964,7 +1964,7 @@ int GeoRef_CellDims(TGeoRef *Ref,int Invert,float* DX,float* DY,float* DA) {
             
       for(j=0,gj=1;j<Ref->NY;j++,gj++) {
          idx=j*Ref->NX;
-         for(i=0,gi=1;i<Ref->NY;i++,idx++,gi++) {
+         for(i=0,gi=1;i<Ref->NX;i++,idx++,gi++) {
             
             di[0]=gi-0.5; dj[0]=gj;
             di[1]=gi+0.5; dj[1]=gj;
@@ -1994,6 +1994,5 @@ int GeoRef_CellDims(TGeoRef *Ref,int Invert,float* DX,float* DY,float* DA) {
       }
    }
 //   RPN_IntUnlock();
-
    return(TRUE);
 }
