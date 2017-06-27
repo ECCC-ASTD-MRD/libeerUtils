@@ -50,6 +50,7 @@
  *
  * Parametres    :
  *   <B>         : Barycentric coordinare
+ *   <W>         : Barycentric weight
  *   <X>         : X coordinate to interpolate
  *   <Y>         : Y coordinate to interpolate
  *   <X0>        : Triangle 1st point X
@@ -65,7 +66,7 @@
  *
  *---------------------------------------------------------------------------------------------------------------
 */
-static inline int Bary_Get(Vect3d B,double X,double Y,double X0,double Y0,double X1,double Y1,double X2,double Y2) {
+static inline int Bary_Get(Vect3d B,double W,double X,double Y,double X0,double Y0,double X1,double Y1,double X2,double Y2) {
 
    double b,x0,x1,x2,y0,y1,y2;
 
@@ -73,9 +74,11 @@ static inline int Bary_Get(Vect3d B,double X,double Y,double X0,double Y0,double
    x1=X1-X; y1=Y1-Y;
    x2=X2-X; y2=Y2-Y;
 
-   b=1.0/((X1-X0)*(Y2-Y0)-(X2-X0)*(Y1-Y0));
-   B[0]=(x1*y2-x2*y1)*b;
-   B[1]=(x2*y0-x0*y2)*b;
+   if (W==0.0) 
+      W=1.0/((X1-X0)*(Y2-Y0)-(X2-X0)*(Y1-Y0));
+   
+   B[0]=(x1*y2-x2*y1)*W;
+   B[1]=(x2*y0-x0*y2)*W;
    B[2]=1.0-B[0]-B[1];
 
    return(B[0]>=-BARY_PREC && B[1]>=-BARY_PREC && B[2]>=-BARY_PREC);

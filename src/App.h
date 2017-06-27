@@ -168,9 +168,6 @@ TApp *App_Init(int Type,char* Name,char* Version,char* Desc,char* Stamp);
 void  App_Free(void);
 void  App_Start(void);
 int   App_End(int Status);
-int   App_IsDone(void);
-int   App_IsMPI(void);
-int   App_IsOMP(void);
 void  App_Log(TApp_LogLevel Level,const char *Format,...);
 void  App_LogOpen(void);
 void  App_LogClose(void);
@@ -186,5 +183,8 @@ void  App_SeedInit(void);
 char* App_ErrorGet(void);
 int   App_ThreadPlace(void);
 void  App_Trap(int Signal);
+int   App_IsDone(void); 
+int   App_IsMPI(void);
+int   App_IsOMP(void);
 
 #endif

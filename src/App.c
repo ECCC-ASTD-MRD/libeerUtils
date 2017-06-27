@@ -60,6 +60,10 @@ char* App_ErrorGet(void) {
 
 unsigned int App_OnceTable[APP_MAXONCE];                // Log once table
 
+int App_IsDone(void) { return(App->State==DONE); }
+int App_IsMPI(void)  { return(App->NbMPI>1); }
+int App_IsOMP(void)  { return(App->NbThread>1); }
+
 /*----------------------------------------------------------------------------
  * Nom      : <App_Init>
  * Creation : Septembre 2008 - J.P. Gauthier
@@ -159,31 +163,6 @@ void App_Free(void) {
 }
 
 /*----------------------------------------------------------------------------
- * Nom      : <App_IsDone>
- * Creation : Aout 2011 - J.P. Gauthier
- *
- * But      : Check if the application has finished.
- *
- * Parametres  :
- *
- * Retour:
- *  <Done>     : Finished (0,1)
- *
- * Remarques :
- *----------------------------------------------------------------------------
- */
-int App_IsDone(void) {
-
-   if (App->State==DONE) {
-      return(1);
-   }
-   return(0);
-}
-
-int App_IsMPI(void) { return(App->NbMPI>1); }
-int App_IsOMP(void) { return(App->NbThread>1); }
-
-/*----------------------------------------------------------------------------
  * Nom      : <App_ThreadPlace>
  * Creation : Janvier 2017 - J.P. Gauthier
  *
@@ -265,8 +244,7 @@ int App_ThreadPlace(void) {
 #endif
    return(TRUE);
 }
-
-      
+  
 /*----------------------------------------------------------------------------
  * Nom      : <App_Start>
  * Creation : Septembre 2008 - J.P. Gauthier
@@ -711,7 +689,6 @@ int App_LogLevel(char *Val) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-
 void App_PrintArgs(TApp_Arg *AArgs,char *Token,int Flags) {
    
    TApp_Arg *aarg=NULL;

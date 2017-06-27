@@ -683,6 +683,7 @@ void GeoRef_Clear(TGeoRef *Ref,int New) {
       if (Ref->Lat)          free(Ref->Lat);          Ref->Lat=NULL;
       if (Ref->Lon)          free(Ref->Lon);          Ref->Lon=NULL;
       if (Ref->Hgt)          free(Ref->Hgt);          Ref->Hgt=NULL;
+      if (Ref->Wght)         free(Ref->Wght);         Ref->Wght=NULL;
       if (Ref->Idx)          free(Ref->Idx);          Ref->Idx=NULL; Ref->NIdx=0;
       if (Ref->AX)           free(Ref->AX);           Ref->AX=NULL;
       if (Ref->AY)           free(Ref->AY);           Ref->AY=NULL;
@@ -1020,6 +1021,7 @@ TGeoRef* GeoRef_New() {
    ref->Lat=NULL;
    ref->Lon=NULL;
    ref->Hgt=NULL;
+   ref->Wght=NULL;
    ref->Idx=NULL;
    ref->AX=NULL;
    ref->AY=NULL;
@@ -1082,14 +1084,14 @@ TGeoRef* GeoRef_New() {
 */
 TQTree* GeoRef_BuildIndex(TGeoRef* __restrict const Ref) {
 
-   unsigned int  n,x,y;
+   unsigned int  n,x,y,t;
    double        dx,dy,lat0,lon0,lat1,lon1;
    Vect2d        tr[3],pt;
    
    if (!Ref->AX || !Ref->AY) {
       return(NULL);
    }
-      
+            
    // Check data limits   
    lat0=lon0=1e10;
    lat1=lon1=-1e10;
@@ -1105,6 +1107,13 @@ TQTree* GeoRef_BuildIndex(TGeoRef* __restrict const Ref) {
       
    if (Ref->Grid[0]=='M') {
       
+      // Allocate barycentric weight array if needed
+      if (!Ref->Wght) {
+         if (!(Ref->Wght=(double*)calloc(Ref->NIdx/3,sizeof(double)))) {
+            App_Log(WARNING,"%s: Failed to allocate baricentric weight array\n",__func__);
+         }
+      }
+      
       // Create the tree on the data limits
       if (!(Ref->QTree=QTree_New(lon0,lat0,lon1,lat1,NULL))) {
          App_Log(ERROR,"%s: Failed to create QTree index\n",__func__);
@@ -1112,11 +1121,15 @@ TQTree* GeoRef_BuildIndex(TGeoRef* __restrict const Ref) {
       }
 
       // Loop on triangles
-      for(n=0;n<Ref->NIdx-3;n+=3) {          
+      for(n=0,t=0;n<Ref->NIdx-3;n+=3,t++) {          
          tr[0][0]=Ref->AX[Ref->Idx[n]];     tr[0][1]=Ref->AY[Ref->Idx[n]];
          tr[1][0]=Ref->AX[Ref->Idx[n+1]];   tr[1][1]=Ref->AY[Ref->Idx[n+1]];
          tr[2][0]=Ref->AX[Ref->Idx[n+2]];   tr[2][1]=Ref->AY[Ref->Idx[n+2]];
          
+         // Calculate barycentric weight
+          if (Ref->Wght)
+             Ref->Wght[t]=1.0/((tr[1][0]-tr[0][0])*(tr[2][1]-tr[0][1])-(tr[2][0]-tr[0][0])*(tr[1][1]-tr[0][1]));
+ 
          // Put it in the quadtree, in any child nodes intersected and set false pointer increment (+1)
          if (!QTree_AddTriangle(Ref->QTree,tr,GRID_MQTREEDEPTH,(void*)(n+1))) {
             App_Log(ERROR,"%s: Failed to add node\n",__func__);
@@ -1651,10 +1664,9 @@ int GeoRef_WithinCell(TGeoRef *GRef,Vect2d Pos,Vect2d Pt[4],int Idx0,int Idx1,in
          if (Pt[1][0]>0) Pt[1][0]-=360;   
          if (Pt[2][0]>0) Pt[2][0]-=360;   
          if (Pt[3][0]>0) Pt[3][0]-=360;        
-      }
-      
-      t0=Bary_Get(b,Pos[0],Pos[1],Pt[0][0],Pt[0][1],Pt[1][0],Pt[1][1],Pt[2][0],Pt[2][1]);
-      t1=Bary_Get(b,Pos[0],Pos[1],Pt[0][0],Pt[0][1],Pt[2][0],Pt[2][1],Pt[3][0],Pt[3][1]);
+      }      
+      t0=Bary_Get(b,0.0,Pos[0],Pos[1],Pt[0][0],Pt[0][1],Pt[1][0],Pt[1][1],Pt[2][0],Pt[2][1]);
+      t1=Bary_Get(b,0.0,Pos[0],Pos[1],Pt[0][0],Pt[0][1],Pt[2][0],Pt[2][1],Pt[3][0],Pt[3][1]);
 
       return(t0 || t1);
    }

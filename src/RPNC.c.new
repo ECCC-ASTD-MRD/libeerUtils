@@ -1,0 +1,560 @@
+/*==============================================================================
+ * Environnement Canada
+ * Centre Meteorologique Canadian
+ * 2100 Trans-Canadienne
+ * Dorval, Quebec
+ *
+ * Projet       : Fonctions et definitions relatives aux fichiers standards et rmnlib
+ * Fichier      : RPNC.c
+ * Creation     : Juin 2015 - J.P. Gauthier
+ * Revision     : $Id: RPN.h 1045 2015-06-09 18:58:51Z gauthierjp $
+ *
+ * Description:
+ *
+ * License:
+ *    This library is free software; you can redistribute it and/or
+ *    modify it under the terms of the GNU Lesser General Public
+ *    License as published by the Free Software Foundation,
+ *    version 2.1 of the License.
+ *
+ *    This library is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *    Lesser General Public License for more details.
+ *
+ *    You should have received a copy of the GNU Lesser General Public
+ *    License along with this library; if not, write to the
+ *    Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ *    Boston, MA 02111-1307, USA.
+ *
+ *==============================================================================
+ */
+
+#include "RPNC.h"
+#include "App.h"
+
+#ifdef HAVE_RPNC
+
+#define RPNC_ERR(e) { App_Log(ERROR,"%s: %s\n",__func__,nc_strerror(e)); return FALSE; }
+
+#define TIME      "time"
+#define SINCE     "seconds since 1970-1-1 0:0:0"
+#define CALENDAR  "standard"
+#define LATITUDE  "latitude"
+#define LONGITUDE "longitude"
+#define DEG_EAST  "degrees_east"
+#define DEG_NORTH "degrees_north"
+#define GRID_LL   "latitude_longitude"
+#define GRID_PS   "polar_stereographic"
+#define GRID_Z    "irregular"
+#define SIGMA     "atmosphere_sigma_coordinate"
+#define HYBRID    "atmosphere_hybrid_sigma_pressure_coordinate"
+#define PRES      "air_pressure"
+#define MASL      "altitude"
+#define MAGL      "surface_altitude"
+#define ANGLE     "platform_pitch_angle"
+   
+
+int RPNC_WriteGeoRef(TRPNC_File *File,TGeoRef *GRef) {
+   
+   int err;
+   int lat_id,lon_id;
+   char buf[NC_MAX_NAME+1];
+   double *lat,*lon;
+   
+   if ((err=nc_redef(File->NC_Id))) RPNC_ERR(err);
+
+   snprintf(buf,NC_MAX_NAME,"i_%s",GRef->Name);
+   if ((err=nc_def_dim(File->NC_Id,buf,GRef->NY,&GRef->NC_NYDimId)))  RPNC_ERR(err);
+   snprintf(buf,NC_MAX_NAME,"j_%s",GRef->Name);
+   if ((err=nc_def_dim(File->NC_Id,buf,GRef->NX,&GRef->NC_NXDimId)))  RPNC_ERR(err);
+   
+   // Define grid
+   snprintf(buf,NC_MAX_NAME,"ref:g:%s",GRef->Name);
+   if ((err=nc_def_var(File->NC_Id,buf,NC_CHAR,0,NULL,&GRef->NC_Id))) RPNC_ERR(err);
+   switch(GRef->Grid[0]) {
+      case 'L' : if ((err=nc_put_att_text(File->NC_Id,GRef->NC_Id,"grid_mapping_name",strlen(GRID_LL),GRID_LL))) RPNC_ERR(err); break;
+      case 'N' : 
+      case 'S' : if ((err=nc_put_att_text(File->NC_Id,GRef->NC_Id,"grid_mapping_name",strlen(GRID_PS),GRID_PS))) RPNC_ERR(err); break;
+      case 'Z' :
+      case 'E' : if ((err=nc_put_att_text(File->NC_Id,GRef->NC_Id,"grid_mapping_name",strlen(GRID_Z),GRID_Z)))   RPNC_ERR(err); break;
+//     case 'Y' : if ((err=nc_put_att_text(File->NC_Id,GRef->NC_Id,"grid_mapping_name",strlen(Name),Name)))      RPNC_ERR(err);
+//     case 'W' : if ((err=nc_put_att_text(File->NC_Id,GRef->NC_Id,"grid_mapping_name",strlen(Name),Name)))      RPNC_ERR(err);
+   }
+   
+   // RPN grid desctiptor
+   if (GRef->IG1 || GRef->IG2 || GRef->IG3 || GRef->IG4) { 
+      if ((err=nc_put_att_text(File->NC_Id,GRef->NC_Id,"fst:grtyp",1,GRef->Grid)))       RPNC_ERR(err);
+      if ((err=nc_put_att_int(File->NC_Id,GRef->NC_Id,"fst:ig1",NC_INT,1,&GRef->IG1)))   RPNC_ERR(err);
+      if ((err=nc_put_att_int(File->NC_Id,GRef->NC_Id,"fst:ig2",NC_INT,1,&GRef->IG2)))   RPNC_ERR(err);
+      if ((err=nc_put_att_int(File->NC_Id,GRef->NC_Id,"fst:ig3",NC_INT,1,&GRef->IG3)))   RPNC_ERR(err);
+      if ((err=nc_put_att_int(File->NC_Id,GRef->NC_Id,"fst:ig4",NC_INT,1,&GRef->IG4)))   RPNC_ERR(err);
+   }
+   
+   // WKT description
+   if (GRef->String) {
+      if ((err=nc_put_att_text(File->NC_Id,GRef->NC_Id,"crs_wkt",strlen(GRef->String),GRef->String))) RPNC_ERR(err);
+   }
+   
+   snprintf(buf,NC_MAX_NAME,"ref:lat:%s",GRef->Name);
+   if ((err=nc_def_var(File->NC_Id,buf,NC_DOUBLE,1,&GRef->NC_NYDimId,&lat_id)))               RPNC_ERR(err);
+   if ((err=nc_put_att_text(File->NC_Id,lat_id,"standard_name",strlen(LATITUDE),LATITUDE)))   RPNC_ERR(err);
+   if ((err=nc_put_att_text(File->NC_Id,lat_id,"units",strlen(DEG_NORTH),DEG_NORTH)))         RPNC_ERR(err);
+
+   snprintf(buf,NC_MAX_NAME,"ref:lon:%s",GRef->Name);
+   if ((err=nc_def_var(File->NC_Id,buf,NC_DOUBLE,1,&GRef->NC_NXDimId,&lon_id)))               RPNC_ERR(err);
+   if ((err=nc_put_att_text(File->NC_Id,lon_id,"standard_name",strlen(LONGITUDE),LONGITUDE))) RPNC_ERR(err);
+   if ((err=nc_put_att_text(File->NC_Id,lon_id,"units",strlen(DEG_EAST),DEG_EAST)))           RPNC_ERR(err);
+   
+   // Put in latlon coordinates
+   if ((err=nc_enddef(File->NC_Id))) RPNC_ERR(err);
+   
+//   GeoRef_Coords(GRef,lat,lon);
+//   if ((err=nc_put_var_double(File->NC_Id,lat_id,lat))) RPNC_ERR(err);   
+//   if ((err=nc_put_var_double(File->NC_Id,lon_id,lon))) RPNC_ERR(err);   
+   
+   return(TRUE);
+}
+
+int RPNC_WriteZRef(TRPNC_File *File,TZRef *ZRef) {
+   
+   int err;
+   int zref_id;
+   char buf[NC_MAX_NAME+1];
+   
+   if ((err=nc_redef(File->NC_Id))) RPNC_ERR(err);
+
+   snprintf(buf,NC_MAX_NAME,"k_%s",ZRef->Name);
+   if ((err=nc_def_dim(File->NC_Id,buf,ZRef->LevelNb,&ZRef->NC_NZDimId)))        RPNC_ERR(err);
+   
+   snprintf(buf,NC_MAX_NAME,"ref:z:%s",ZRef->Name);
+   if ((err=nc_def_var(File->NC_Id,buf,NC_FLOAT,1,&ZRef->NC_NZDimId,&ZRef->NC_Id)))  RPNC_ERR(err);
+   
+   // ZRef attributes
+   switch(ZRef->Type) {
+      case LVL_NIL    :
+      case LVL_MASL   : if ((err=nc_put_att_text(File->NC_Id,ZRef->NC_Id,"standard_name",strlen(MASL),MASL))) RPNC_ERR(err); break;
+      case LVL_SIGMA  : if ((err=nc_put_att_text(File->NC_Id,ZRef->NC_Id,"standard_name",strlen(SIGMA),SIGMA))) RPNC_ERR(err); break;
+      case LVL_PRES   : if ((err=nc_put_att_text(File->NC_Id,ZRef->NC_Id,"standard_name",strlen(PRES),PRES))) RPNC_ERR(err); break;
+      case LVL_GALCHEN: 
+      case LVL_MAGL   : if ((err=nc_put_att_text(File->NC_Id,ZRef->NC_Id,"standard_name",strlen(MAGL),MAGL))) RPNC_ERR(err); break;
+      case LVL_HYBRID : if ((err=nc_put_att_text(File->NC_Id,ZRef->NC_Id,"standard_name",strlen(HYBRID),HYBRID))) RPNC_ERR(err); break;
+      case LVL_THETA  : if ((err=nc_put_att_text(File->NC_Id,ZRef->NC_Id,"standard_name",strlen(SIGMA),SIGMA))) RPNC_ERR(err); break; 
+      case LVL_ETA    : if ((err=nc_put_att_text(File->NC_Id,ZRef->NC_Id,"standard_name",strlen(SIGMA),SIGMA))) RPNC_ERR(err); break;   
+      case LVL_ANGLE  : if ((err=nc_put_att_text(File->NC_Id,ZRef->NC_Id,"standard_name",strlen(ANGLE),ANGLE))) RPNC_ERR(err); break;
+      case LVL_UNDEF  : 
+      case LVL_NBR    : 
+      case LVL_HOUR   :
+      case LVL_INT    :
+      case LVL_IDX    :
+      case LVL_MPRES  : break;
+//   if ((err=nc_put_att_text(File->NC_Id,ZRef->NC_Id,"long_name",strlen(Name),Name))) RPNC_ERR(err);
+//   if ((err=nc_put_att_text(File->NC_Id,ZRef->NC_Id,"units",strlen(Name),Name))) RPNC_ERR(err);
+//   if ((err=nc_put_att_text(File->NC_Id,ZRef->NC_Id,"positive",strlen(Name),Name))) RPNC_ERR(err);
+//   if ((err=nc_put_att_text(File->NC_Id,ZRef->NC_Id,"formula_terms",strlen(Name),Name))) RPNC_ERR(err);
+   }
+   
+   // Put in the levels
+   if ((err=nc_enddef(File->NC_Id)))                                 RPNC_ERR(err);
+   if ((err=nc_put_var_float(File->NC_Id,ZRef->NC_Id,ZRef->Levels))) RPNC_ERR(err);   
+   
+   return(TRUE);
+}
+
+int RPNC_WriteTimeRef(TRPNC_File *File,TTimeRef *TRef) {
+   
+   int err;
+   int itmp;
+   char buf[NC_MAX_NAME+1];
+   
+   if ((err=nc_redef(File->NC_Id))) RPNC_ERR(err);
+   
+   // Define the dimensions. The time dimension is defined to have unlimited length
+   snprintf(buf,NC_MAX_NAME,"t_%s",TRef->Name);
+   if ((err=nc_def_dim(File->NC_Id,buf,NC_UNLIMITED,&TRef->NC_NTDimId)))                                RPNC_ERR(err);
+   
+   snprintf(buf,NC_MAX_NAME,"ref:t:%s",TRef->Name);
+   if ((err=nc_def_var(File->NC_Id,buf,NC_INT,1,&TRef->NC_NTDimId,&TRef->NC_Id)))                       RPNC_ERR(err);
+   if ((err=nc_put_att_text(File->NC_Id,TRef->NC_Id,"standard_name",strlen(TIME),TIME)))                RPNC_ERR(err);
+   if ((err=nc_put_att_text(File->NC_Id,TRef->NC_Id,"units",strlen(SINCE),SINCE)))                      RPNC_ERR(err);
+   if ((err=nc_put_att_text(File->NC_Id,TRef->NC_Id,"calendar",strlen(CALENDAR),CALENDAR)))             RPNC_ERR(err);
+   if ((err=nc_put_att_long(File->NC_Id,TRef->NC_Id,"forecast_step",NC_INT,1,&TRef->Step)))             RPNC_ERR(err);
+   if ((err=nc_put_att_long(File->NC_Id,TRef->NC_Id,"forecast_reference_time",NC_INT,1,&TRef->Origin))) RPNC_ERR(err);
+   
+   itmp=TRef->Step;
+   if ((err=nc_put_att_int(File->NC_Id,TRef->NC_Id,"fst:deet",NC_INT,1,&itmp)))                         RPNC_ERR(err);
+   itmp=System_Seconds2Stamp(TRef->Origin);
+   if ((err=nc_put_att_int(File->NC_Id,TRef->NC_Id,"fst:dateo",NC_INT,1,&itmp)))                        RPNC_ERR(err);
+   
+   if ((err=nc_enddef(File->NC_Id))) RPNC_ERR(err);
+   
+   return(TRUE);
+}
+
+/*
+Title="Dispersion modelling for ..."
+Institution="EERS/CMC/SMS"
+Source="MLDPn 3.0.0"
+History=""
+Reference="MLDPn article web link"
+Comment=""
+Convention="CF-1.7"
+*/
+
+int RPNC_WriteContent(TRPNC_File *File,char *Title,char *Institution,char *Source,char *History,char *Reference,char *Comment,char *Convention) {
+   int err;
+
+   if ((err=nc_redef(File->NC_Id))) RPNC_ERR(err);
+
+   if ((err=nc_put_att_text(File->NC_Id,NC_GLOBAL,"title",strlen(Title),Title))) RPNC_ERR(err);
+   if ((err=nc_put_att_text(File->NC_Id,NC_GLOBAL,"institution",strlen(Institution),Institution))) RPNC_ERR(err);
+   if ((err=nc_put_att_text(File->NC_Id,NC_GLOBAL,"source",strlen(Source),Source))) RPNC_ERR(err);
+   if ((err=nc_put_att_text(File->NC_Id,NC_GLOBAL,"history",strlen(History),History))) RPNC_ERR(err);
+   if ((err=nc_put_att_text(File->NC_Id,NC_GLOBAL,"references",strlen(Reference),Reference))) RPNC_ERR(err);
+   if ((err=nc_put_att_text(File->NC_Id,NC_GLOBAL,"comment",strlen(Comment),Comment))) RPNC_ERR(err);
+   if ((err=nc_put_att_text(File->NC_Id,NC_GLOBAL,"Conventions",strlen(Convention),Convention))) RPNC_ERR(err);      
+
+   if ((err=nc_enddef(File->NC_Id))) RPNC_ERR(err);
+   
+   return(TRUE);
+}
+
+TRPNC_File* RPNC_Open(char *Filename,char *Mode) {
+
+   TRPNC_File *file=NULL;
+   int err;
+   
+   if (!(file=(TRPNC_File*)malloc(sizeof(TRPNC_File)))) {
+      App_Log(ERROR,"%s: Unable to allocate file object\n",__func__); 
+      return(NULL);
+   }
+      
+   switch(Mode[0]) {
+      case 'C': if ((err=nc_create(Filename,NC_NOCLOBBER|NC_NETCDF4,&file->NC_Id))) RPNC_ERR(err);
+                break;
+      case 'R': if ((err=nc_open(Filename,NC_NOWRITE,&file->NC_Id)))                RPNC_ERR(err);
+                break;
+      case 'W': 
+      case 'A': if ((err=nc_open(Filename,NC_WRITE,&file->NC_Id)))                  RPNC_ERR(err);
+                break;
+   }
+   
+   if ((err=nc_enddef(file->NC_Id))) RPNC_ERR(err);
+      
+   return(file);
+}   
+
+int RPNC_Close(TRPNC_File *File) {
+
+   int err;
+   
+   if (!File) {
+      App_Log(ERROR,"%s: Invalid file\n",__func__); 
+      return(FALSE);
+   }
+   
+   if ((err=nc_close(File->NC_Id))) RPNC_ERR(err);
+  
+   free(File);
+   
+   return(TRUE);
+}
+
+int RPNC_GetFSTHead(TRPNC_File *File,int VarId,TRPNHeader *Head) {
+
+   int err;
+   int att_id;
+   
+   // Read RPN specifics
+   if (!nc_inq_attid(File->NC_Id,VarId,"fst:nomvar",&att_id)) {      
+      if ((err=nc_get_att_text(File->NC_Id,VarId,"fst:nomvar",Head->NOMVAR))) RPNC_ERR(err);
+      if ((err=nc_get_att_text(File->NC_Id,VarId,"fst:typvar",Head->TYPVAR))) RPNC_ERR(err);
+      if ((err=nc_get_att_text(File->NC_Id,VarId,"fst:etiket",Head->ETIKET))) RPNC_ERR(err);
+
+      return(TRUE);
+   }
+   
+   return(FALSE);
+}
+
+int RPNC_PutFSTHead(TRPNC_File *File,int VarId,TRPNHeader *Head) {
+
+   int err;
+
+   if ((err=nc_put_att_text(File->NC_Id,VarId,"fst:nomvar",4,Head->NOMVAR)))      RPNC_ERR(err);
+   if ((err=nc_put_att_text(File->NC_Id,VarId,"fst:typvar",2,Head->TYPVAR)))      RPNC_ERR(err);
+   if ((err=nc_put_att_text(File->NC_Id,VarId,"fst:etiket",12,Head->ETIKET)))     RPNC_ERR(err);
+  
+   return(TRUE);
+}
+
+int RPNC_List(TRPNC_File *File) {
+
+   int err;
+   int n,nvar,*var_ids;
+   int a,natt;
+   int ndim,dim_ids[NC_MAX_VAR_DIMS];
+   int time_id;
+   char var_name[NC_MAX_NAME+1],att_name[NC_MAX_NAME+1],dim_name[NC_MAX_NAME+1];
+   nc_type type; 
+   size_t  size;
+   
+   TRPNHeader head;
+
+   if ((err=nc_inq(File->NC_Id,&ndim,&nvar,&natt,&time_id))) RPNC_ERR(err);
+        
+   fprintf(stderr,"found %i dim %i var %i att\n",ndim,nvar,natt);     
+   
+   // Get the dimensions
+   if ((err=nc_inq_dimids(File->NC_Id,&ndim,dim_ids,TRUE)))   RPNC_ERR(err);
+
+   for(n=0;n<ndim;n++) {
+      if ((err=nc_inq_dim(File->NC_Id,dim_ids[n],dim_name,&size)))   RPNC_ERR(err);
+      fprintf(stderr,"   dim %-10s %li\n",dim_name,size);     
+   }
+   
+   // Get the number of variables
+   if ((err=nc_inq_nvars(File->NC_Id,&nvar)))                RPNC_ERR(err);
+
+   // Get the list of variables
+   if (!(var_ids=(int*)calloc(nvar,sizeof(int)))) { App_Log(ERROR,"%s: Unable to allocate variable array\n",__func__);      return(FALSE); }
+   if ((err=nc_inq_varids(File->NC_Id,&nvar,var_ids))) RPNC_ERR(err);
+   
+   for(n=0;n<nvar;n++) {
+      if ((err=nc_inq_var(File->NC_Id,var_ids[n],var_name,&type,&ndim,dim_ids,&natt))) RPNC_ERR(err);
+      fprintf(stderr,"   var %-10s (dim=%i att=%i)\n",var_name,ndim,natt);     
+      for(a=0;a<natt;a++) {
+         if ((err=nc_inq_attname(File->NC_Id,var_ids[n],a,att_name))) RPNC_ERR(err);
+            fprintf(stderr,"      att %-10s\n",att_name);     
+      }
+//      RPNC_GetFSTHead(File,var_ids[n],&head);
+   }
+   
+   return(TRUE);
+}
+
+int RPNC_GetDim(TRPNC_File *File,int VarId,size_t *NI,size_t *NJ,size_t *NK,size_t *NT,size_t *NByte) {
+
+   int     err;
+   int     natt;
+   int     ndim,dim_ids[NC_MAX_VAR_DIMS];
+   char    var_name[NC_MAX_NAME+1];
+   nc_type type;                
+   
+   // Get the dimensions
+   if ((err=nc_inq_var(File->NC_Id,VarId,var_name,&type,&ndim,dim_ids,&natt))) RPNC_ERR(err);
+
+   nc_inq_dimlen(File->NC_Id,dim_ids[0],NT);
+   nc_inq_dimlen(File->NC_Id,dim_ids[1],NK);
+   nc_inq_dimlen(File->NC_Id,dim_ids[2],NJ);
+   nc_inq_dimlen(File->NC_Id,dim_ids[3],NI);
+   
+   if (NByte) {
+      nc_inq_type(File->NC_Id,type,NULL,NByte);
+   }
+   
+   return(TRUE);
+}
+
+int RPNC_Find(TRPNC_File *File,char *VarName,int DateV,float Level) {
+   
+   int err;
+   int var_id;
+   int tref_id,zref_id,dim,t=0,k=0;
+   size_t nk;
+   size_t  start,count;
+   float *levels;
+   char buf[NC_MAX_NAME*4+1],*save,*str;
+   time_t step,origin;
+   
+   // Get the variable pointer
+   if ((err=nc_inq_varid(File->NC_Id,VarName,&var_id))) RPNC_ERR(err);
+   
+   // Get it's coordinates list
+   if ((err=nc_get_att_text(File->NC_Id,var_id,"coordinates",buf))) RPNC_ERR(err);
+   
+   // First it time
+   if (!(str=strtok_r(buf," ",&save)))  { App_Log(ERROR,"%s: Invalid coordinate table, no time reference found\n",__func__);      return(FALSE); }
+      
+   if (DateV>-1) {
+      if ((err=nc_inq_varid(File->NC_Id,str,&tref_id))) RPNC_ERR(err);
+      if ((err=nc_get_att_long(File->NC_Id,tref_id,"forecast_step",&step)))             RPNC_ERR(err);
+      if ((err=nc_get_att_long(File->NC_Id,tref_id,"forecast_reference_time",&origin))) RPNC_ERR(err);
+      
+      t=(DateV-origin)/step;
+   }
+   
+   // second is vertical
+   if (!(str=strtok_r(NULL," ",&save)))  { App_Log(ERROR,"%s: Invalid coordinate table, no vertical reference found\n",__func__);      return(FALSE); }
+   
+   if (Level>-1) {
+      if ((err=nc_inq_varid(File->NC_Id,str,&zref_id))) RPNC_ERR(err);
+      nc_inq_vardimid (File->NC_Id,zref_id,&dim);
+      nc_inq_dimlen(File->NC_Id,dim,&nk);
+      levels=(float*)alloca(nk*sizeof(float));
+      
+      start=0;count=nk;
+      if ((err=nc_get_vara_float(File->NC_Id,zref_id,&start,&count,levels)))           RPNC_ERR(err);
+
+      while(fabs((levels[k]-Level)/Level)>0.0001) {
+         k++;
+      }
+      k=k>=nk?-1:k;
+   }
+   
+//   fprintf(stderr,"---- %i %i\n",t,k);
+   return(var_id);
+}
+
+int RPNC_Read(TRPNC_File *File,int VarId,int T,int K,char *Data) {
+   
+   int     err;
+   int     natt;
+   nc_type type;                
+   size_t  start[4]= { 0,0,0,0 },count[4];
+   
+   // Get the dimensions
+   RPNC_GetDim(File,VarId,&count[3],&count[2],&count[1],&count[0],NULL);
+   
+   // If a specific time is specified
+   if (T!=RPNC_ALL) {
+      start[0]=T;
+      count[1]=1;  
+   }
+
+   // If a specific level is specified
+   if (K!=RPNC_ALL) {
+      start[1]=K;
+      count[1]=1;  
+   }
+
+   // Read the right data type
+   if ((err=nc_inq_vartype(File->NC_Id,VarId,&type))) RPNC_ERR(err);
+
+   switch(type) {
+      case NC_UBYTE : if ((err=nc_get_vara_uchar(File->NC_Id,VarId,start,count,Data)))                          RPNC_ERR(err);
+                      break;
+      case NC_BYTE  : 
+      case NC_CHAR  : if ((err=nc_get_vara_schar(File->NC_Id,VarId,start,count,Data)))                          RPNC_ERR(err);
+                      break;
+      case NC_USHORT: if ((err=nc_get_vara_ushort(File->NC_Id,VarId,start,count,(unsigned short*)Data)))        RPNC_ERR(err);
+                      break;
+      case NC_SHORT : if ((err=nc_get_vara_short(File->NC_Id,VarId,start,count,(short*)Data)))                  RPNC_ERR(err);
+                      break;
+      case NC_UINT  : if ((err=nc_get_vara_uint(File->NC_Id,VarId,start,count,(unsigned int*)Data)))            RPNC_ERR(err);
+                      break;
+      case NC_INT   : if ((err=nc_get_vara_int(File->NC_Id,VarId,start,count,(int*)Data)))                      RPNC_ERR(err);
+                      break;
+      case NC_UINT64: if ((err=nc_get_vara_ulonglong(File->NC_Id,VarId,start,count,(unsigned long long*)Data))) RPNC_ERR(err);
+                      break;
+      case NC_INT64 : if ((err=nc_get_vara_longlong(File->NC_Id,VarId,start,count,(long long*)Data)))           RPNC_ERR(err);
+                      break;
+      case NC_FLOAT : if ((err=nc_get_vara_float(File->NC_Id,VarId,start,count,(float*)Data)))                  RPNC_ERR(err);
+                      break;
+      case NC_DOUBLE: if ((err=nc_get_vara_double(File->NC_Id,VarId,start,count,(double*)Data)))                RPNC_ERR(err);
+                      break;
+   }
+   
+   return(TRUE);   
+}
+
+int RPNC_Write(TRPNC_File *File,TGeoRef *GRef,TZRef *ZRef,TTimeRef *TRef,char *Data,int T,int K,char *VarName,nc_type Type,int NPak) {
+
+   int err;
+   int var_id,dimids[4];
+   size_t start[4],count[4];
+   char buf[NC_MAX_NAME+1];
+   
+   // Error checking
+   if (!GRef) { App_Log(ERROR,"%s: Invalid geo reference\n",__func__);      return(FALSE); }
+   if (!ZRef) { App_Log(ERROR,"%s: Invalid vertical reference\n",__func__); return(FALSE); }
+   if (!TRef) { App_Log(ERROR,"%s: Invalid time reference\n",__func__);     return(FALSE); }
+   if (!Data) { App_Log(ERROR,"%s: Invalid data reference\n",__func__);     return(FALSE); }
+      
+   if (T<0)                           { App_Log(ERROR,"%s: Invalid time step\n",__func__); return(FALSE); }
+   if (K<RPNC_ALL || K>ZRef->LevelNb) { App_Log(ERROR,"%s: Invalid level\n",__func__);     return(FALSE); }
+
+   // Define the dimids array used to pass the dimensions of the netCDF variables.
+   dimids[0] = TRef->NC_NTDimId;
+   dimids[1] = ZRef->NC_NZDimId;
+   dimids[2] = GRef->NC_NYDimId;
+   dimids[3] = GRef->NC_NXDimId;
+
+   if ((err=nc_redef(File->NC_Id))) RPNC_ERR(err);
+ 
+   // Add time step if not already done
+//   if ((err=nc_put_vara_longlong(File->NC_Id,TRef->NC_Id,T,1,(long long*)Data)))           RPNC_ERR(err);
+   
+   // Define the netCDF variables to be saved
+   if (nc_inq_varid(File->NC_Id,VarName,&var_id)<0) {
+      if ((err=nc_def_var(File->NC_Id,VarName,Type,4,dimids,&var_id)))   RPNC_ERR(err);
+      if ((err=nc_def_var_deflate(File->NC_Id,var_id,TRUE,TRUE,5)))      RPNC_ERR(err);
+   }
+//   if ((err=nc_def_var_endian(File->NC_Id,var_id,NC_ENDIAN_NATIVE)))      RPNC_ERR(err);
+                               
+   // Assign attributes to the variable
+//   if ((err=nc_put_att_text(File->NC_Id,var_id,"long_name",strlen(Name),Name))) RPNC_ERR(err);
+   // TODO: get standard name
+//   if ((err=nc_put_att_text(File->NC_Id,var_id,"standard_name",strlen(Name),Name))) RPNC_ERR(err);
+//   if ((err=nc_put_att_text(File->NC_Id,var_id,"units",strlen(Unit),Unit)))         RPNC_ERR(err);
+   
+   snprintf(buf,NC_MAX_NAME,"ref:g:%s\n",GRef->Name);
+   if ((err=nc_put_att_text(File->NC_Id,var_id,"grid_mapping",strlen(GRef->Name),GRef->Name))) RPNC_ERR(err);
+ 
+   snprintf(buf,NC_MAX_NAME,"ref:t:%s ref:z:%s ref:lat:%s ref:lon:%s",TRef->Name,ZRef->Name,GRef->Name,GRef->Name);
+   if ((err=nc_put_att_text(File->NC_Id,var_id,"coordinates",strlen(buf),buf)))         RPNC_ERR(err);
+//   if ((err=nc_put_att_text(File->NC_Id,var_id,"ancillary_variables",strlen(Unit),Unit)))         RPNC_ERR(err);
+   
+   // Packing parameters
+//   if ((err=nc_put_att_double(File->NC_Id,var_id,"scale_factor",NC_DOUBLE,scale))) RPNC_ERR(err);
+//   if ((err=nc_put_att_double(File->NC_Id,var_id,"add_offset",NC_DOUBLE,offset)))  RPNC_ERR(err);
+   
+//   if ((err=nc_put_att_double(File->NC_Id,var_id,"missing_value",NC_DOUBLE,nodata)))  RPNC_ERR(err);
+//   if ((err=nc_put_att_double(File->NC_Id,var_id,"_FillValue_value",NC_DOUBLE,nodata)))  RPNC_ERR(err);
+//   if ((err=nc_put_att_double(File->NC_Id,var_id,"valid_min",NC_DOUBLE,nodata)))  RPNC_ERR(err);
+//   if ((err=nc_put_att_double(File->NC_Id,var_id,"valid_max",NC_DOUBLE,nodata)))  RPNC_ERR(err);
+   
+   // End define mode
+   if ((err=nc_enddef(File->NC_Id))) RPNC_ERR(err);
+   
+   // Define write index position and size
+   start[0]=T;  start[1]=0;              start[2]=0;         start[3]=0;
+   count[0]=1;  count[1]=ZRef->LevelNb;  count[2]=GRef->NX;  count[3]=GRef->NY;
+   
+   // If a specific level is specified
+   if (K!=RPNC_ALL) {
+      start[1]=K;
+      count[1]=1;  
+   }
+   
+   // Add timestep
+//   if ((err=nc_put_vara_int(File->NC_Id,TRef-NC_Id,start,count,Data)))    RPNC_ERR(err);
+
+   switch(Type) {
+      case NC_UBYTE : if ((err=nc_put_vara_uchar(File->NC_Id,var_id,start,count,Data)))                          RPNC_ERR(err);
+                      break;
+      case NC_BYTE  : 
+      case NC_CHAR  : if ((err=nc_put_vara_schar(File->NC_Id,var_id,start,count,Data)))                          RPNC_ERR(err);
+                      break;
+      case NC_USHORT: if ((err=nc_put_vara_ushort(File->NC_Id,var_id,start,count,(unsigned short*)Data)))        RPNC_ERR(err);
+                      break;
+      case NC_SHORT : if ((err=nc_put_vara_short(File->NC_Id,var_id,start,count,(short*)Data)))                  RPNC_ERR(err);
+                      break;
+      case NC_UINT  : if ((err=nc_put_vara_uint(File->NC_Id,var_id,start,count,(unsigned int*)Data)))            RPNC_ERR(err);
+                      break;
+      case NC_INT   : if ((err=nc_put_vara_int(File->NC_Id,var_id,start,count,(int*)Data)))                      RPNC_ERR(err);
+                      break;
+      case NC_UINT64: if ((err=nc_put_vara_ulonglong(File->NC_Id,var_id,start,count,(unsigned long long*)Data))) RPNC_ERR(err);
+                      break;
+      case NC_INT64 : if ((err=nc_put_vara_longlong(File->NC_Id,var_id,start,count,(long long*)Data)))           RPNC_ERR(err);
+                      break;
+      case NC_FLOAT : if ((err=nc_put_vara_float(File->NC_Id,var_id,start,count,(float*)Data)))                  RPNC_ERR(err);
+                      break;
+      case NC_DOUBLE: if ((err=nc_put_vara_double(File->NC_Id,var_id,start,count,(double*)Data)))                RPNC_ERR(err);
+                      break;
+   }
+
+   return(var_id);
+}   
+
+#endif
