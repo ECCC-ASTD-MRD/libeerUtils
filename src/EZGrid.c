@@ -2148,6 +2148,7 @@ int EZGrid_LLGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
 wordint f77name(ezgrid_ijgetvalue)(wordint *gdid,wordint *mode,ftnfloat *i,ftnfloat *j,wordint *k0,wordint *k1,ftnfloat *val) {
    return(EZGrid_IJGetValue(GridCache[*gdid],*mode,*i-1,*j-1,*k0-1,*k1-1,val));
 }
+
 int EZGrid_IJGetValue(TGrid* restrict const Grid,TGridInterpMode Mode,float I,float J,int K0,int K1,float* restrict Value) {
 
    TGridTile *t,*tw=NULL;
@@ -2171,7 +2172,8 @@ int EZGrid_IJGetValue(TGrid* restrict const Grid,TGridInterpMode Mode,float I,fl
       wrap=0;
    }
    
-   if (I>=Grid->H.NI-1) {
+   // Check for overshoot in X (For linear its NI-1 but nearest it's NI)
+   if (I>=Grid->H.NI-Mode) {
       if (Grid->Wrap) {
          wrap=1;
       } else {

@@ -49,7 +49,7 @@ ifeq ($(OS),Linux)
       CCOPTIONS   := $(CCOPTIONS) -fopenmp -mpi
    endif
 
-   CDEBUGFLAGS = -g -Winline
+   CDEBUGFLAGS = -g -Winline 
    CPFLAGS     = -d 
 
    ifeq ($(PROC),x86-64)

@@ -85,7 +85,7 @@ static inline int Bary_Get(Vect3d B,double W,double X,double Y,double X0,double 
 }
 
 /*--------------------------------------------------------------------------------------------------------------
- * Nom          : <Bary_Interp>
+ * Nom          : <Bary_InterpPos>
  * Creation     : Janvier 2014 J.P. Gauthier - CMC/CMOE
  *
  * But          : interpolate value at barycentric coordinate

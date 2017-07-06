@@ -667,7 +667,7 @@ int RPN_GetAllFields(int FID,int DateV,char *Etiket,int Ip1,int Ip2,int Ip3,char
     do {
         APP_MEM_ASRT(arr,realloc(arr,(n*=2)*sizeof(*arr)));
         if( (err=cs_fstinl(FID,&ni,&nj,&nk,DateV,Etiket,Ip1,Ip2,Ip3,Typvar,Nomvar,arr,&s,n)) && err!=-4762 ) {
-            App_Log(ERROR,"(RPN_GetAllFields) Couldn't get list of fields (cs_fstinl) code=%d\n",s,n,err);
+            App_Log(ERROR,"(%s) Couldn't get list of fields (cs_fstinl) code=%d\n",__func__,s,n,err);
             APP_FREE(arr);
             return(APP_ERR);
         }

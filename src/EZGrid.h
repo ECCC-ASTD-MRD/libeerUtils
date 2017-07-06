@@ -76,8 +76,8 @@
    } \
 }
 
-typedef enum { EZ_NEAREST, EZ_LINEAR }  TGridInterpMode;
-typedef enum { EZ_CRESSMAN, EZ_BARNES } TGridYInterpMode;
+typedef enum { EZ_NEAREST=0, EZ_LINEAR=1 }  TGridInterpMode;
+typedef enum { EZ_CRESSMAN=0, EZ_BARNES=1 } TGridYInterpMode;
 
 typedef struct TGridTile {
    pthread_mutex_t Mutex;               // Per tile mutex for IO
