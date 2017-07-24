@@ -68,7 +68,7 @@
 */
 static inline int Bary_Get(Vect3d B,double W,double X,double Y,double X0,double Y0,double X1,double Y1,double X2,double Y2) {
 
-   double b,x0,x1,x2,y0,y1,y2;
+   double x0,x1,x2,y0,y1,y2;
 
    x0=X0-X; y0=Y0-Y;
    x1=X1-X; y1=Y1-Y;
