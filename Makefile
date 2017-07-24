@@ -1,6 +1,6 @@
 NAME       = eerUtils
 DESC       = SMC-CMC-CMOE Utility librairie package.
-VERSION    = 3.2.1
+VERSION    = 3.3.0
 #BUILDINFO = $(shell svnversion -n)
 BUILDINFO  = $(shell HOME=/dev/null git describe --always)
 MAINTAINER = $(USER)
