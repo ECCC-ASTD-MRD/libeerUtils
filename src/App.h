@@ -113,12 +113,23 @@ typedef enum { APP_AFFINITY_NONE=0,APP_AFFINITY_COMPACT=1,APP_AFFINITY_SCATTER=2
       App_Log(ERROR, __VA_ARGS__); \
       return(APP_ERR); \
    }
+// Memory helpers
 #define APP_MEM_ASRT(Buf,Fct) \
    if( !(Buf=(Fct)) ) { \
       App_Log(ERROR,"(%s) Could not allocate memory for field %s at line %d.\n",__func__,#Buf,__LINE__); \
       return(APP_ERR); \
    }
 #define APP_FREE(Ptr) if(Ptr) { free(Ptr); Ptr=NULL; }
+// MPI helpers
+#ifdef _MPI
+#define APP_MPI_ASRT(Fct) { \
+   int err = (Fct); \
+   if( err!=MPI_SUCCESS ) { \
+      App_Log(ERROR,"(%s) MPI call %s at line %d failed with code %d for MPI node %d\n",__func__,#Fct,__LINE__,err,App->RankMPI); \
+      return(APP_ERR); \
+   } \
+}
+#endif //_MPI
 
 // Argument definitions
 typedef struct TApp_Arg {
@@ -156,6 +167,10 @@ typedef struct TApp {
     int            NbThread;             // Number of OpenMP threads
     int            Signal;               // Trapped signal
     TApp_Affinity  Affinity;             // Thread placement affinity
+    int            NbNodeMPI,NodeRankMPI;// Number of MPI process on the current node
+#ifdef _MPI
+    MPI_Comm       NodeComm,NodeHeadComm;// Communicator for the current node and the head nodes
+#endif //_MPI
 } TApp;
 
 #ifndef APP_BUILD
@@ -186,5 +201,7 @@ void  App_Trap(int Signal);
 int   App_IsDone(void); 
 int   App_IsMPI(void);
 int   App_IsOMP(void);
+int   App_IsSingleNode(void);
+int   App_IsAloneNode(void);
 
 #endif

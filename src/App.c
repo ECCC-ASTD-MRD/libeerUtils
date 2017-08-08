@@ -60,9 +60,11 @@ char* App_ErrorGet(void) {
 
 unsigned int App_OnceTable[APP_MAXONCE];                // Log once table
 
-int App_IsDone(void) { return(App->State==DONE); }
-int App_IsMPI(void)  { return(App->NbMPI>1); }
-int App_IsOMP(void)  { return(App->NbThread>1); }
+int App_IsDone(void)       { return(App->State==DONE); }
+int App_IsMPI(void)        { return(App->NbMPI>1); }
+int App_IsOMP(void)        { return(App->NbThread>1); }
+int App_IsSingleNode(void) { return(App->NbNodeMPI==App->NbMPI); }
+int App_IsAloneNode(void)  { return(App->NbNodeMPI==1); }
 
 /*----------------------------------------------------------------------------
  * Nom      : <App_Init>
@@ -108,11 +110,18 @@ TApp *App_Init(int Type,char *Name,char *Version,char *Desc,char* Stamp) {
    App->NbThread=0;
    App->NbMPI=1;
    App->RankMPI=0;
+   App->NbNodeMPI=1;
+   App->NodeRankMPI=0;
    App->CountsMPI=NULL;
    App->DisplsMPI=NULL;
    App->OMPSeed=NULL;
    App->Seed=time(NULL);
    App->Signal=0;
+
+#ifdef _MPI
+   App->NodeComm=MPI_COMM_NULL;
+   App->NodeHeadComm=MPI_COMM_NULL;
+#endif
 
    // Check the log parameters in the environment 
    if ((c=getenv("APP_VERBOSE"))) {
@@ -163,6 +172,80 @@ void App_Free(void) {
 }
 
 /*----------------------------------------------------------------------------
+ * Nom      : <App_NodeGroup>
+ * Creation : Janvier 2017 - J.P. Gauthier
+ *
+ * But      : Initialiser les communicateurs intra-node et inter-nodes
+ *
+ * Parametres :
+ *
+ * Retour     :
+ *
+ * Remarques  :
+ *    - On fait ca ici car quand on combine MPI et OpenMP, les threads se supperpose sur
+ *      un meme CPU pour plusieurs job MPI sur un meme "socket@
+ *----------------------------------------------------------------------------
+*/
+int App_NodeGroup() {
+   if( App_IsMPI() ) {
+#ifdef _MPI
+      int i,color,mult;
+      char *n,*names,*cptr;
+
+      // Get the physical node unique name of mpi procs
+      APP_MEM_ASRT(names,calloc(MPI_MAX_PROCESSOR_NAME*App->NbMPI,sizeof(*names)));
+
+      n=names+App->RankMPI*MPI_MAX_PROCESSOR_NAME;
+      APP_MPI_ASRT( MPI_Get_processor_name(n,&i) );
+      APP_MPI_ASRT( MPI_Allgather(MPI_IN_PLACE,0,MPI_DATATYPE_NULL,names,MPI_MAX_PROCESSOR_NAME,MPI_CHAR,MPI_COMM_WORLD) );
+
+      // Go through the names and check how many different nodes we have before our node
+      for(i=0,color=-1,cptr=names; i<=App->RankMPI; ++i,cptr+=MPI_MAX_PROCESSOR_NAME) {
+         ++color;
+         if( !strncmp(n,cptr,MPI_MAX_PROCESSOR_NAME) ) {
+            break;
+         }
+      }
+
+      // Check if we have more than one group
+      mult = color;
+      for(cptr=names; !mult&&i<App->NbMPI; ++i,cptr+=MPI_MAX_PROCESSOR_NAME) {
+         if( strncmp(n,cptr,MPI_MAX_PROCESSOR_NAME) ) {
+            mult = 1;
+         }
+      }
+
+      // If we have more than one node
+      if( mult ) {
+         // Split the MPI procs into node groups
+         APP_MPI_ASRT( MPI_Comm_split(MPI_COMM_WORLD,color,App->RankMPI,&App->NodeComm) );
+
+         // Get the number and rank of each nodes in this new group
+         APP_MPI_ASRT( MPI_Comm_rank(App->NodeComm,&App->NodeRankMPI) );
+         APP_MPI_ASRT( MPI_Comm_size(App->NodeComm,&App->NbNodeMPI) );
+
+         // Create a communicator for the head process of each node
+         APP_MPI_ASRT( MPI_Comm_split(MPI_COMM_WORLD,App->NodeRankMPI?MPI_UNDEFINED:0,App->RankMPI,&App->NodeHeadComm) );
+      } else {
+         App->NbNodeMPI = App->NbMPI;
+         App->NodeRankMPI = App->RankMPI;
+         App->NodeComm = MPI_COMM_WORLD;
+         App->NodeHeadComm = MPI_COMM_NULL;
+      }
+#endif //_MPI
+   } else {
+      App->NbNodeMPI = App->NbMPI;
+      App->NodeRankMPI = App->RankMPI;
+#ifdef _MPI
+      App->NodeComm = MPI_COMM_NULL;
+      App->NodeHeadComm = MPI_COMM_NULL;
+#endif //_MPI
+   }
+
+   return APP_OK;
+}
+
+/*----------------------------------------------------------------------------
  * Nom      : <App_ThreadPlace>
  * Creation : Janvier 2017 - J.P. Gauthier
  *
@@ -179,36 +262,11 @@ void App_Free(void) {
 */
 int App_ThreadPlace(void) {
    
-   int nompi=0;
-   
 #ifndef _AIX
    // No thread affinity request
    if (!App->Affinity)
       return(TRUE);
    
-#ifdef _MPI
-   int len,i;
-   char *n,*names,*cptr;
-   
-   if (App_IsMPI()) {
-      // Get the physical node unique name of mpi procs
-      APP_MEM_ASRT(names,calloc(MPI_MAX_PROCESSOR_NAME*App->NbMPI,sizeof(*names)));
-
-      n=names+App->RankMPI*MPI_MAX_PROCESSOR_NAME;
-      MPI_Get_processor_name(n,&len);
-      MPI_Allgather(n,MPI_MAX_PROCESSOR_NAME,MPI_CHAR,names,MPI_MAX_PROCESSOR_NAME,MPI_CHAR,MPI_COMM_WORLD);
-      
-      // Go through the names and check sequence in proc sharing order for this proc's physical node
-      for(i=0,nompi=-1,cptr=names; i<=App->RankMPI; ++i,cptr+=MPI_MAX_PROCESSOR_NAME) {
-         if (!strncmp(n,cptr,MPI_MAX_PROCESSOR_NAME)) {
-            ++nompi;
-         }
-      }
-
-      free(names);
-   }
-#endif
-
 #ifdef _OPENMP
    if (App->NbThread>1) {
       
@@ -225,15 +283,15 @@ int App_ThreadPlace(void) {
 
          switch(App->Affinity) {
             case APP_AFFINITY_SCATTER:   // Scatter threads evenly across all processors
-                    CPU_SET((nompi*incmpi)+omp_get_thread_num()*incmpi/App->NbThread,&set);
+                    CPU_SET((App->NodeRankMPI*incmpi)+omp_get_thread_num()*incmpi/App->NbThread,&set);
                     break;
                
             case APP_AFFINITY_COMPACT:   // Place threads closely packed
-                    CPU_SET((nompi*App->NbThread)+omp_get_thread_num(),&set);
+                    CPU_SET((App->NodeRankMPI*App->NbThread)+omp_get_thread_num(),&set);
                     break;
                  
             case APP_AFFINITY_SOCKET:    // Pack threads over scattered MPI (hope it fits with sockets) 
-                    CPU_SET((nompi*incmpi)+omp_get_thread_num(),&set);
+                    CPU_SET((App->NodeRankMPI*incmpi)+omp_get_thread_num(),&set);
                     break;
                           
          }
@@ -294,6 +352,8 @@ void App_Start(void) {
       App->TotalsMPI=(int*)malloc((App->NbMPI+1)*sizeof(int));
       App->CountsMPI=(int*)malloc((App->NbMPI+1)*sizeof(int));
       App->DisplsMPI=(int*)malloc((App->NbMPI+1)*sizeof(int));
+
+      App_NodeGroup();
    }
 #endif
 
