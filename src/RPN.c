@@ -502,7 +502,8 @@ int RPN_CopyDesc(int FIdTo,TRPNHeader* const H) {
             key=c_fstinf(H->FID,&ni,&nj,&nk,-1,"",ip1,ip2,-1,"",desc);
             if (key>=0) {
                if (ni*nj>sz) {
-                  data=(char*)realloc(data,ni*nj*sizeof(float));
+                  // Some descriptors are 64 bit so always allocate double buffer
+                  data=(char*)realloc(data,ni*nj*sizeof(double));
                   sz=ni*nj;
                }
                c_fstluk(data,key,&ni,&nj,&nk);
