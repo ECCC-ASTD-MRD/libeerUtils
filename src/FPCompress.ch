@@ -130,7 +130,7 @@ inline static int BSRl(unsigned long X) {
  *
  *----------------------------------------------------------------------------
  */
-static TFPCCtx* FPC_New(char *restrict CData,int FD) {
+static TFPCCtx* FPC_New(void *restrict CData,int FD) {
     TFPCCtx *ctx = malloc(sizeof(*ctx));
 
     if( ctx ) {
