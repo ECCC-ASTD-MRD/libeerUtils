@@ -78,11 +78,8 @@ typedef struct TBFIndex {
 
 typedef struct TBFFile {
    void           *Addr;   // Address of the memory mapping as returned by mmap
-   void           *WAddr;  // Write address of the memory mapping as returned by mmap (only in W/O no trunctation mode)
    TBFFileHeader  Header;  // File header
    TBFIndex       Index;   // File index
-   size_t         WSize;   // Actual size of the file (only if writing)
-   size_t         WOff;    // Offset from the begginning of the file of WAddr
    int            FD;      // File descriptor
    int            Flags;   // Mode, dirty flags
 } TBFFile;
