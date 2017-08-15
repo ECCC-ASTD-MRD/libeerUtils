@@ -36,13 +36,13 @@ static size_t SM_GetSize(void *Addr) {
  * Nom      : <SM_RoundPageSize>
  * Creation : Août 2017 - E. Legault-Ouellet
  *
- * But      : Arrondir à l'entier supérieur qui est un multiple de la taille
+ * But      : Arrondir à l'entier inférieur qui est un multiple de la taille
  *            d'une page mémoire
  *
  * Parametres :
  *  <Size>    : Taille minimum voulue
  *
- * Retour     : Taille arrondie au multiple supérieur de la taille de la page
+ * Retour     : Taille arrondie au multiple inférieur de la taille de la page
  *              mémoire
  *
  * Remarques  :
