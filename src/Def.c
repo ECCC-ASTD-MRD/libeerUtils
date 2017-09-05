@@ -1408,87 +1408,128 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
  *
  *---------------------------------------------------------------------------------------------------------------
 */
-int Def_GridInterp(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *FromDef,char Degree) {
 
-   double   val;
-   int      y,x0,y0,x1,y1,idx,dy;
-   TGeoScan scan;
+int Def_EZInterp(TDef *ToDef,TDef *FromDef,TGeoRef *ToRef,TGeoRef *FromRef,char *Interp,char *Extrap,char Mask,float *Index) {
+   
+   void *pf0,*pt0,*pf1,*pt1;
+   int   ok,k;
+   
+   RPN_IntLock();
 
-   if (!ToRef || !ToDef) {
-      App_Log(ERROR,"%s: Invalid destination\n",__func__);
-      return(0);
+   // Set interpolation and extrapolation mode
+   switch(Interp[0]) {
+      case 'N': c_ezsetopt("INTERP_DEGREE","NEAREST"); break;
+      case 'L': c_ezsetopt("INTERP_DEGREE","LINEAR");  break;
+      case 'C': c_ezsetopt("INTERP_DEGREE","CUBIC");   break;
    }
-   if (!FromRef || !FromDef) {
-      App_Log(ERROR,"%s: Def_GridInterp: Invalid source\n",__func__);
-      return(0);
+   
+   if (Extrap[0]=='V') {
+      c_ezsetval("EXTRAP_VALUE",ToDef->NoData);
    }
+   c_ezsetopt("EXTRAP_DEGREE",(char*)Extrap);
+   
+   ok=c_ezdefset(ToRef->Ids[ToRef->NId],FromRef->Ids[FromRef->NId]);
 
-   GeoScan_Init(&scan);
-
-   /*If grids are the same, copy the data*/
-   if (GeoRef_Equal(ToRef,FromRef)) {
-      for(idx=0;idx<=FSIZE2D(FromDef);idx++){
-         Def_Get(FromDef,0,idx,val);
-         Def_Set(ToDef,0,idx,val);
-      }
-      return(1);
-   }
-   /*Check for intersection limits*/
-   if (!GeoRef_Intersect(FromRef,ToRef,&x0,&y0,&x1,&y1,1)) {
-      return(1);
+   if (ok<0) {
+      App_Log(ERROR,"%s: EZSCINT internal error, could not define gridset\n",__func__);
+      RPN_IntUnlock();
+      return(FALSE);
    }
 
-   /*Check if we can reproject all in one shot, otherwise, do by scanline*/
-   dy=((y1-y0)*(x1-x0))>4194304?0:(y1-y0);
-   for(y=y0;y<=y1;y+=(dy+1)) {
+   for(k=0;k<ToDef->NK;k++) {
+      // Effectuer l'interpolation selon le type de champs
+      if (ToDef->Data[1]) {
+         /*Interpolation vectorielle*/
+         Def_Pointer(ToDef,0,k*FSIZE2D(ToDef),pt0);
+         Def_Pointer(FromDef,0,k*FSIZE2D(FromDef),pf0);
+         Def_Pointer(ToDef,1,k*FSIZE2D(ToDef),pt1);
+         Def_Pointer(FromDef,1,k*FSIZE2D(FromDef),pf1);
 
-      /*Reproject*/
-      if (!GeoScan_Get(&scan,FromRef,FromDef,ToRef,ToDef,x0,y,x1,y+dy,1,&Degree)) {
-         App_Log(ERROR,"%s: Unable to allocate coordinate scanning buffer\n",__func__);
-         return(0);
-      }
-
-      for(idx=0;idx<scan.N;idx++){
-         /*Get the value of the data field at this latlon coordinate*/
-         if (DEFVALID(ToDef,scan.D[idx])) {
-            Def_Set(ToDef,0,scan.V[idx],scan.D[idx]);
+         // In case of Y grid, get the speed and dir instead of wind components
+         // since grid oriented components dont mean much
+         if (ToRef->Grid[0]=='Y') {
+            ok=c_ezwdint(pt0,pt1,pf0,pf1);
          } else {
-            /*Set as nodata*/
-            Def_Set(ToDef,0,scan.V[idx],ToDef->NoData);
+            ok=c_ezuvint(pt0,pt1,pf0,pf1);
+         }
+      } else{
+         // Interpolation scalaire
+         Def_Pointer(ToDef,0,k*FSIZE2D(ToDef),pt0);
+         Def_Pointer(FromDef,0,k*FSIZE2D(FromDef),pf0);
+         ok=c_ezsint(pt0,pf0);
+      }
+   }
+   RPN_IntUnlock();
+   
+   return(TRUE);
+}
+         
+int Def_JPInterp(TDef *ToDef,TDef *FromDef,TGeoRef *ToRef,TGeoRef *FromRef,char *Interp,char *Extrap,char Mask,float *Index) {
+   
+   double     val,dir,lat,lon,di,dj,dval;
+   int        ok=-1,idx,i,j,k,gotidx;
+   float     *ip=NULL;
+   
+   idx=0;  
+         
+   for(k=0;k<ToDef->NK;k++) {
+      ip=Index;
+      gotidx=(Index && Index[0]!=DEF_INDEX_EMPTY);
+
+      for(j=0;j<ToDef->NJ;j++) {
+         for(i=0;i<ToDef->NI;i++,idx++) {
+
+            if (gotidx) {
+               // Got the index, use coordinates from it
+               di=*(ip++);
+               dj=*(ip++);
+
+//                  if (di>=0.0 && !FIN2D(FieldFrom->Def,di,dj)) {
+//                     App_Log(ERROR,"%s: Wrong index, index coordinates (%f,%f)\n",__func__,di,dj);
+//                     return(TCL_ERROR);
+//                  }
+            } else {
+               // No index, project coordinate and store in index if provided
+               ToRef->Project(ToRef,i,j,&lat,&lon,0,1);
+               ok=FromRef->UnProject(FromRef,&di,&dj,lat,lon,0,1);
+               if (ip) {
+                  *(ip++)=di;
+                  *(ip++)=dj;
+               }
+            }
+            if (di>=0.0 && FromRef->Value(FromRef,FromDef,Interp[0],0,di,dj,k,&val,&dir)) {
+               if (ToDef->Data[1]) {
+                  // Have to reproject vector
+                  dir=DEG2RAD(dir)+GeoRef_GeoDir(ToRef,i,j);
+                  dval=Mask?val!=0.0:-val*sin(dir);
+                  Def_Set(ToDef,0,idx,dval);
+                  dval=Mask?val!=0.0:-val*cos(dir);
+                  Def_Set(ToDef,1,idx,dval); 
+               } else {
+                  Def_Set(ToDef,0,idx,val);
+               } 
+            } else {  
+               Def_Set(ToDef,0,idx,ToDef->NoData);
+               if (ToDef->Data[1]) {
+                  Def_Set(ToDef,1,idx,ToDef->NoData); 
+               }
+            } 
          }
       }
+      
+      // Mark end of index
+//         if (!gotidx && ip) *(ip++)=DEF_INDEX_END;
    }
-
-   GeoScan_Clear(&scan);
-
-   return(1);
+   
+   return(TRUE);
 }
 
-/*----------------------------------------------------------------------------
- * Nom      : <Def_GridInterpRPN>
- * Creation : Fevrier 2001 - J.P. Gauthier - CMC/CMOE
- *
- * But      : Effectue l'interpolation d'un champs dans un autre
- *
- * Parametres  :
- *  <FieldTo>  : Champs de destination
- *  <FieldFrom>: Champs d'origine
- *  <Mode>     : Mode d'interpolation (0=NEAREST, 1=LINEAR, 6=CUBIC, autre=INTERPDEGREE du champs FieldTo)
- *
- * Retour:
- *   <OK>      : ERROR=0
- *
- * Remarques :
- *
- *----------------------------------------------------------------------------
-*/
-int Def_GridInterpRPN(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *FromDef,int Degree){
+int Def_GridInterp(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *FromDef,char Degree) {
 
-   double     val,lat,lon,di,dj;
-   int        ez=1,ok=-1,idx,n,i,j,k;
-   void      *pf0,*pt0,*pf1,*pt1;
+   double val;
+   int    ezto=1,ezfrom=1,idx,c;
+   char  *interp;
 
-#ifdef HAVE_RMN
    if (!ToRef || !ToDef) {
       App_Log(ERROR,"%s: Invalid destination\n",__func__);
       return(0);
@@ -1498,104 +1539,45 @@ int Def_GridInterpRPN(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *FromDef,
       return(0);
    }
 
-   /*Verifier la compatibilite entre source et destination*/
-   if (!Def_Compat(ToDef,FromDef)) {
-      ToRef=GeoRef_Resize(ToRef,ToDef->NI,ToDef->NJ);
-   }
-
-   if (FromDef->Type!=TD_Float32 || FromRef->Grid[0]=='R' || ToRef->Grid[0]=='R' || FromRef->Grid[0]=='W' || ToRef->Grid[0]=='W' || ToRef->Hgt) {
-      ez=0;
-   }
-
-//   if (FromRef->Grid[0]!='R' && FieldTo->Ref->Grid[0]!='R') {
-//      FSTD_FieldSetTo(FieldTo,FieldFrom);
-//   }
-
-   /*Use ezscint*/
-   if (ez) {
-      RPN_IntLock();
-      if (Degree==0) {
-         c_ezsetopt("INTERP_DEGREE","NEAREST");
-      } else if (Degree==1) {
-         c_ezsetopt("INTERP_DEGREE","LINEAR");
-      } else if (Degree==2) {
-         c_ezsetopt("INTERP_DEGREE","CUBIC");
+   // If grids are the same, copy the data
+   if (GeoRef_Equal(ToRef,FromRef)) {
+      for(idx=0;idx<=FSIZE3D(FromDef);idx++){
+         for(c=0;c<FromDef->NC;c++){
+            Def_Get(FromDef,c,idx,val);
+            Def_Set(ToDef,c,idx,val);
+         }
+      }
+   } else {
+      // Check for ezscint capability
+      if (FromDef->Type!=TD_Float32) {
+         ezfrom=0;
       }
 
-//      if (FieldTo->Spec->ExtrapDegree[0]=='V') {
-//         c_ezsetval("EXTRAP_VALUE",FieldTo->Def->NoData);
-//      }
-//      c_ezsetopt("EXTRAP_DEGREE",FieldTo->Spec->ExtrapDegree);
-
-      if (c_ezdefset(ToRef->Ids[ToRef->NId],FromRef->Ids[FromRef->NId])<0) {
-         App_Log(ERROR,"%s: EZSCINT internal error, could not define gridset\n",__func__);
-         RPN_IntUnlock();
-         return(0);
+      if (FromRef->Grid[0]=='R' || FromRef->Grid[0]=='W' || FromRef->Grid[0]=='X' || FromRef->Grid[0]=='M') {
+         ezfrom=0;
       }
 
-      for(k=0;k<ToDef->NK;k++) {
-         /*Effectuer l'interpolation selon le type de champs*/
-         if (ToDef->Data[1]) {
-            /*Interpolation vectorielle*/
-            Def_Pointer(ToDef,0,k*FSIZE2D(ToDef),pt0);
-            Def_Pointer(FromDef,0,k*FSIZE2D(FromDef),pf0);
-            Def_Pointer(ToDef,1,k*FSIZE2D(ToDef),pt1);
-            Def_Pointer(FromDef,1,k*FSIZE2D(FromDef),pf1);
-
-            /*In case of Y grid, get the speed and dir instead of wind components
-              since grid oriented components dont mean much*/
-            if (ToRef->Grid[0]=='Y') {
-               ok=c_ezwdint(pt0,pt1,pf0,pf1);
-            } else {
-               ok=c_ezuvint(pt0,pt1,pf0,pf1);
-           }
-        } else{
-            /*Interpolation scalaire*/
-            Def_Pointer(ToDef,0,k*FSIZE2D(ToDef),pt0);
-            Def_Pointer(FromDef,0,k*FSIZE2D(FromDef),pf0);
-            ok=c_ezsint(pt0,pf0);
-        }
+      if (ToRef->Grid[0]=='R' || ToRef->Grid[0]=='W' || ToRef->Grid[0]=='X' || ToRef->Grid[0]=='Y' || ToRef->Grid[0]=='M' || ToRef->Hgt) {
+         ezto=0;
       }
-      if (ok<0) {
-         App_Log(ERROR,"%s: EZSCINT internal error, interpolation problem\n",__func__);
-         RPN_IntUnlock();
-         return(0);
-      }
-      RPN_IntUnlock();
-  } else {
-      for(j=0;j<ToDef->NJ;j++) {
-         for(i=0;i<ToDef->NI;i++) {
-            ToRef->Project(ToRef,i,j,&lat,&lon,0,1);
-            ok=FromRef->UnProject(FromRef,&di,&dj,lat,lon,0,1);
 
-            for(k=0;k<ToDef->NK;k++) {
-               idx=FIDX3D(ToDef,i,j,k);
-
-               n=0;
-               while(ToDef->Data[n]) {
-                  if (ok) {
-                     val=VertexVal(FromDef,n,di,dj,k);
-                  } else {
-                     val=ToDef->NoData;
-                  }
-                  Def_Set(ToDef,n,idx,val);
-                  n++;
-               }
-            }
+      interp=(char*)TDef_InterpRString[Degree];
+         
+      // Use ezscint
+      if (ezto && ezfrom) {
+         if (!Def_EZInterp(ToDef,FromDef,ToRef,FromRef,interp,"NEUTRAL",FALSE,NULL)) {
+            App_Log(ERROR,"%s: EZSCINT interpolation problem",__func__);
+            return(FALSE);
+         }
+      } else { 
+         if (!Def_JPInterp(ToDef,FromDef,ToRef,FromRef,interp,"NEUTRAL",FALSE,NULL)) {
+            App_Log(ERROR,"%s: Interpolation problem",__func__);
+            return(FALSE);
          }
       }
    }
 
-// TODO: Remove end put in Tcl
-   /*In case of vectorial field, we have to recalculate the module*/
-//   if (FieldTo->Def->NC>1) {
-//      Data_GetStat(FieldTo);
-//   }
-#else
-   App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
-#endif
-
-   return(1);
+   return(TRUE);
 }
 
 /*--------------------------------------------------------------------------------------------------------------
