@@ -998,8 +998,11 @@ static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,char Mode
          if (Area>0.0) {
             switch(Type) {
                case 'A':  // Area mode
-//                  inter=OGR_G_Intersection(Geom,Def->Poly);
+#ifdef HAVE_GPC
                   inter=OGM_GPCOnOGR(GPC_INT,Geom,Def->Poly);
+#else                  
+                  inter=OGR_G_Intersection(Geom,Def->Poly);
+#endif
                   if (Mode=='C' || Mode=='N') {
                      dp=OGR_G_Area(inter)/Area;
                   } else if (Mode=='A') {

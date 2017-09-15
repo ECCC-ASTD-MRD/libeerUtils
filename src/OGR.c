@@ -231,6 +231,7 @@ int OGM_ClipSegment(OGRGeometryH Line,OGRGeometryH Poly,OGRGeometryH Clip) {
 
 void OGM_GPCFromOGR(gpc_polygon *Poly,OGRGeometryH *Geom) {
 
+#ifdef HAVE_GPC
    OGRGeometryH       geom;
    OGRwkbGeometryType type;
    gpc_vertex_list   *gpc;
@@ -263,10 +264,14 @@ void OGM_GPCFromOGR(gpc_polygon *Poly,OGRGeometryH *Geom) {
    } else {
       App_Log(ERROR,"%s: Unsupported geometry type\n",__func__);
    }
+#else
+   App_Log(ERROR,"%s: Library not built with GPC\n",__func__);
+#endif
 }
 
 void OGM_GPCToOGR(gpc_polygon *Poly,OGRGeometryH *Geom) {
 
+#ifdef HAVE_GPC
    OGRGeometryH     geom,ring,poly=NULL,multi=NULL;
    gpc_vertex_list *gpc;
    unsigned int     n,g,nb=0,in;
@@ -342,17 +347,25 @@ void OGM_GPCToOGR(gpc_polygon *Poly,OGRGeometryH *Geom) {
       }
    }
    *Geom=multi?multi:poly;
+#else
+      App_Log(ERROR,"%s: Library not built with GPC\n",__func__);
+#endif
 }
 
 void OGM_GPCNew(gpc_polygon *Poly) {
 
+#ifdef HAVE_GPC
    Poly->num_contours=0;
    Poly->hole=NULL;
    Poly->contour=NULL;
+#else
+   App_Log(ERROR,"%s: Library not built with GPC\n",__func__);
+#endif
 }
 
 OGRGeometryH OGM_GPCOnOGR(gpc_op Op,OGRGeometryH Geom0,OGRGeometryH Geom1) {
 
+#ifdef HAVE_GPC
    gpc_polygon  poly0,poly1,poly;
    OGRGeometryH geom=NULL;
 
@@ -371,10 +384,14 @@ OGRGeometryH OGM_GPCOnOGR(gpc_op Op,OGRGeometryH Geom0,OGRGeometryH Geom1) {
    gpc_free_polygon(&poly1);
 
    return(geom);
+#else
+   App_Log(ERROR,"%s: Library not built with GPC\n",__func__);
+#endif
 }
 
 OGRGeometryH OGM_GPCOnOGRLayer(gpc_op Op,OGR_Layer *Layer) {
 
+#ifdef HAVE_GPC
    gpc_polygon  poly0,poly1,result,*r,*p,*t;
    OGRGeometryH geom=NULL;
    unsigned int f;
@@ -410,10 +427,14 @@ OGRGeometryH OGM_GPCOnOGRLayer(gpc_op Op,OGR_Layer *Layer) {
    gpc_free_polygon(&poly1);
 
    return(geom);
+#else
+   App_Log(ERROR,"%s: Library not built with GPC\n",__func__);
+#endif
 }
 
 OGRGeometryH OGM_GPCOnOGRGeometry(gpc_op Op,OGRGeometryH *Geom) {
 
+#ifdef HAVE_GPC
    gpc_polygon  poly0,poly1,result,*r,*p,*t;
    OGRGeometryH geom=NULL;
    unsigned int g;
@@ -446,6 +467,9 @@ OGRGeometryH OGM_GPCOnOGRGeometry(gpc_op Op,OGRGeometryH *Geom) {
    gpc_free_polygon(&poly1);
 
    return(geom);
+#else
+   App_Log(ERROR,"%s: Library not built with GPC\n",__func__);
+#endif
 }
 
 int OGM_Within(OGRGeometryH Geom0,OGRGeometryH Geom1,OGREnvelope *Env0,OGREnvelope *Env1) {

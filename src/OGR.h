@@ -35,18 +35,13 @@
 #define _OGR_h
 
 #include "GeoRef.h"
-#include "gpc.h"
 
 #ifdef HAVE_GDAL
-
-#include "gdal.h"
-#include "ogr_api.h"
-#include "ogr_srs_api.h"
-
+   #include "gdal.h"
+   #include "ogr_api.h"
+   #include "ogr_srs_api.h"
 #else
-
-#include "ogr_stub.h"
-
+   #include "ogr_stub.h"
 #endif
 
 #define OGR_G_EnvelopeIntersect(ENV0,ENV1) (!(ENV0.MaxX<ENV1.MinX || ENV0.MinX>ENV1.MaxX || ENV0.MaxY<ENV1.MinY || ENV0.MinY>ENV1.MaxY))
@@ -108,12 +103,20 @@ typedef struct OGR_Layer {
 #define OGM_ARRAY1   1
 #define OGM_ARRAYPTR 2
 
+#ifdef HAVE_GPC
+   #include "gpc.h"
+#else
+   typedef char gpc_polygon;
+   typedef char gpc_op;
+#endif
+
 void         OGM_GPCFromOGR(gpc_polygon* Poly,OGRGeometryH *Geom);
 void         OGM_GPCToOGR(gpc_polygon *Poly,OGRGeometryH *Geom);
 OGRGeometryH OGM_GPCOnOGR(gpc_op Op,OGRGeometryH Geom0,OGRGeometryH Geom1);
 OGRGeometryH OGM_GPCOnOGRLayer(gpc_op Op,OGR_Layer *Layer);
 OGRGeometryH OGM_GPCOnOGRGeometry(gpc_op Op,OGRGeometryH *Geom);
 void         OGM_GPCNew(gpc_polygon *Poly);
+
 
 Vect3d*      OGM_GetVect3d(unsigned int Size,unsigned int No);
 void         OGM_ClearVect3d(void);

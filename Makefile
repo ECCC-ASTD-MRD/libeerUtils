@@ -6,7 +6,7 @@ BUILDINFO  = $(shell HOME=/dev/null git describe --always)
 MAINTAINER = $(USER)
 OS         = $(shell uname -s)
 PROC       = $(shell uname -m | tr _ -)
-RMN        = -DHAVE_RMN
+RMN        = -DHAVE_RMN -DHAVE_GPC
 #-DHAVE_RPNC
 
 ifdef COMP_ARCH
