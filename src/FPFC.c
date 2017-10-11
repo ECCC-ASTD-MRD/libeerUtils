@@ -4,8 +4,8 @@
  * 2121 Trans-Canadienne
  * Dorval, Quebec
  *
- * Projet    : Librairie de compression de nombre flotants
- * Fichier   : FPCompress.ch
+ * Projet    : Librairie de compression de nombre flottants
+ * Fichier   : FPFC.c
  * Creation  : Octobre 2017
  * Auteur    : Eric Legault-Ouellet
  *
@@ -37,6 +37,7 @@
  *==============================================================================
  */
 #include "FPFC.h"
+#include "App.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -406,6 +407,7 @@ static uint64_t FPFC_BufReadHalfBytes(TFPFCBuf *restrict Buf,unsigned int NHB) {
  *  <Data>  : Les données à compresser
  *  <N>     : Le nombre de double à compresser
  *  <Buf>   : Le buffer où écrire les données compressées
+ *  <CSize> : [OUT] La taille (Bytes) des données compressées
  *
  * Retour   :
  *
@@ -413,13 +415,14 @@ static uint64_t FPFC_BufReadHalfBytes(TFPFCBuf *restrict Buf,unsigned int NHB) {
  *
  *----------------------------------------------------------------------------
  */
-void FPFC_Compressl(double *restrict Data,unsigned long N,TFPFCBuf *restrict Buf) {
+int FPFC_Compressl(double *restrict Data,unsigned long N,TFPFCBuf *restrict Buf,unsigned long *CSize) {
     int64_t         *htbl=NULL,*dpred;
     uint32_t        hash,delta[3]={0u};
     int64_t         val,pred,prev;
     const uint64_t  dmsk=(1ul<<((int)sizeof(int64_t)*8-14))-1ul;
     const uint32_t  hmsk=((1u<<20)-1u);
     unsigned int    d0,d2,lzc;
+    unsigned long   nb=N*sizeof(*Data);
 
     // Allocate the hash table's space (2*2^20)
     htbl = calloc((1l<<21),sizeof(*htbl));
@@ -469,8 +472,16 @@ void FPFC_Compressl(double *restrict Data,unsigned long N,TFPFCBuf *restrict Buf
     }
 
     FPFC_BufFlush(Buf);
+    *CSize = Buf->NB;
+
+    App_Log(DEBUG,"Compression ratio : %.4f\n",(double)Buf->NB/nb);
+    if( Buf->NB > nb ) {
+        App_Log(WARNING,"Compressed data is larger than original (compressed=%ld ori=%ld)\n",Buf->NB,nb);
+    }
 
     free(htbl);
+
+    return APP_OK;
 }
 
 /*----------------------------------------------------------------------------
@@ -490,7 +501,7 @@ void FPFC_Compressl(double *restrict Data,unsigned long N,TFPFCBuf *restrict Buf
  *
  *----------------------------------------------------------------------------
  */
-void FPFC_Inflatel(double *restrict Data,unsigned long N,TFPFCBuf *restrict Buf) {
+int FPFC_Inflatel(double *restrict Data,unsigned long N,TFPFCBuf *restrict Buf) {
     int64_t         *htbl=NULL,*dpred;
     uint32_t        hash,delta[3]={0u};
     int64_t         val,pred,prev;
@@ -540,6 +551,8 @@ void FPFC_Inflatel(double *restrict Data,unsigned long N,TFPFCBuf *restrict Buf)
     }
 
     free(htbl);
+
+    return APP_OK;
 }
 
 /*----------------------------------------------------------------------------
@@ -552,6 +565,7 @@ void FPFC_Inflatel(double *restrict Data,unsigned long N,TFPFCBuf *restrict Buf)
  *  <Data>  : Les données à compresser
  *  <N>     : Le nombre de float à compresser
  *  <Buf>   : Le buffer où écrire les données compressées
+ *  <CSize> : [OUT] La taille (Bytes) des données compressées
  *
  * Retour   :
  *
@@ -559,13 +573,14 @@ void FPFC_Inflatel(double *restrict Data,unsigned long N,TFPFCBuf *restrict Buf)
  *
  *----------------------------------------------------------------------------
  */
-void FPFC_Compress(float *restrict Data,unsigned long N,TFPFCBuf *restrict Buf) {
+int FPFC_Compress(float *restrict Data,unsigned long N,TFPFCBuf *restrict Buf,unsigned long *CSize) {
     int32_t         *htbl=NULL,*dpred;
     uint32_t        hash,delta[3]={0u};
     int32_t         val,pred,prev;
     const uint32_t  dmsk=(1u<<((int)sizeof(int32_t)*8-14))-1u;
     const uint32_t  hmsk=((1u<<20)-1u);
     unsigned int    d0,d2,lzc;
+    unsigned long   nb=N*sizeof(*Data);
 
     // Allocate the hash table's space (2*2^20)
     htbl = calloc((1l<<21),sizeof(*htbl));
@@ -615,8 +630,16 @@ void FPFC_Compress(float *restrict Data,unsigned long N,TFPFCBuf *restrict Buf) 
     }
 
     FPFC_BufFlush(Buf);
+    *CSize = Buf->NB;
+
+    App_Log(DEBUG,"Compression ratio : %.4f\n",(double)Buf->NB/nb);
+    if( Buf->NB > nb ) {
+        App_Log(WARNING,"Compressed data is larger than original (compressed=%ld ori=%ld)\n",Buf->NB,nb);
+    }
 
     free(htbl);
+
+    return APP_OK;
 }
 
 /*----------------------------------------------------------------------------
@@ -636,7 +659,7 @@ void FPFC_Compress(float *restrict Data,unsigned long N,TFPFCBuf *restrict Buf) 
  *
  *----------------------------------------------------------------------------
  */
-void FPFC_Inflate(float *restrict Data,unsigned long N,TFPFCBuf *restrict Buf) {
+int FPFC_Inflate(float *restrict Data,unsigned long N,TFPFCBuf *restrict Buf) {
     int32_t         *htbl=NULL,*dpred;
     uint32_t        hash,delta[3]={0u};
     int32_t         val,pred,prev;
@@ -686,4 +709,6 @@ void FPFC_Inflate(float *restrict Data,unsigned long N,TFPFCBuf *restrict Buf) {
     }
 
     free(htbl);
+
+    return APP_OK;
 }
