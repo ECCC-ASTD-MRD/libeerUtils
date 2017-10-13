@@ -617,14 +617,16 @@ int FPFC_Compress(float *restrict Data,unsigned long N,TFPFCBuf *restrict Buf,un
         // XOR the prediction and the value. The better the prediction, the more significant bits will be set to zero
         pred ^= val;
 
-        // Get the leading zeros count we'll encode
+        // Get the leading zeros count we'll encode and Write the remaining 32-4*LZC bits
         // We encode the LZC using 4 bits and work at half-byte granularity.
-        // Ergo, we can't encode more than 28 bits and have to round down to the lowest multiple of 4
-        lzc = pred ? LZCNT(pred)>>2 : 0x7;
-
-        // Write the LZC and the remaining 64-4*LZC bits
-        FPFC_BufWriteHalfByte(Buf,(TBufByte)lzc);
-        FPFC_BufWriteHalfBytes(Buf,pred,(unsigned int)sizeof(pred)*2u-lzc);
+        // Ergo, for floats, we can encode the full 32 bits, but still have to round down to the lowest multiple of 4
+        if( pred ) {
+            lzc = LZCNT(pred)>>2;
+            FPFC_BufWriteHalfByte(Buf,(TBufByte)lzc);
+            FPFC_BufWriteHalfBytes(Buf,pred,(unsigned int)sizeof(pred)*2u-lzc);
+        } else {
+            FPFC_BufWriteHalfByte(Buf,(TBufByte)8);
+        }
 
         prev = val;
     }
@@ -675,7 +677,7 @@ int FPFC_Inflate(float *restrict Data,unsigned long N,TFPFCBuf *restrict Buf) {
     for(d0=0,hash=0,prev=0; N; --N) {
         // Read the LZC and the remaining bytes
         lzc = FPFC_BufReadHalfByte(Buf);
-        val = FPFC_BufReadHalfBytes(Buf,(unsigned int)sizeof(pred)*2-lzc);
+        val = lzc!=8u ? FPFC_BufReadHalfBytes(Buf,(unsigned int)sizeof(pred)*2-lzc) : 0;
 
         // Locate the previous differences that will help with the prediction
         dpred = &htbl[hash*2];
