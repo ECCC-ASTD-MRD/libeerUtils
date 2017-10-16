@@ -417,18 +417,18 @@ static uint64_t FPFC_BufReadHalfBytes(TFPFCBuf *restrict Buf,unsigned int NHB) {
  */
 int FPFC_Compressl(double *restrict Data,unsigned long N,TFPFCBuf *restrict Buf,unsigned long *CSize) {
     int64_t         *htbl=NULL,*dpred;
-    uint32_t        hash,delta[3]={0u};
+    uint32_t        hash,delta[3]={0u},d2;
     int64_t         val,pred,prev;
     const uint64_t  dmsk=(1ul<<((int)sizeof(int64_t)*8-14))-1ul;
     const uint32_t  hmsk=((1u<<20)-1u);
-    unsigned int    d0,d2,lzc;
+    unsigned int    d,lzc;
     unsigned long   nb=N*sizeof(*Data);
 
     // Allocate the hash table's space (2*2^20)
     htbl = calloc((1l<<21),sizeof(*htbl));
 
     // Calculate the hash
-    for(d0=0,hash=0,prev=0; N; --N) {
+    for(d=0,d2=0,hash=0,prev=0; N; --N) {
         // Encode the value as an int
         val = *(int64_t*)Data++;
 
@@ -439,11 +439,11 @@ int FPFC_Compressl(double *restrict Data,unsigned long N,TFPFCBuf *restrict Buf,
         // We only keep the 14 MSB (1(sign)+11(exp)+2(MSB mantissa)) of the delta to calculate the hash
         // Note that hash(d0,d1,d2) = lsb0..19(d0 XOR d1<<5 XOR d2<<10)
         // So to get the next hash, we only need to re-XOR d2<<10, shift by 5 and XOR d0
-        d2 = (d0+2u)%3;
-        hash ^= delta[d0]<<10;
-        delta[d0] = (uint32_t)((uint64_t)(val-prev)>>50);
-        hash = (hash<<5 ^ delta[d0])&hmsk;
-        d0 = d2;
+        hash ^= d2<<10;
+        d2 = delta[d];
+        delta[d] = (uint32_t)((uint64_t)(val-prev)>>50);
+        hash = (hash<<5 ^ delta[d])&hmsk;
+        d = (d+1)&1;
 
         // Use the previous differences to make the prediction
         pred = prev + dpred[0];
@@ -503,18 +503,18 @@ int FPFC_Compressl(double *restrict Data,unsigned long N,TFPFCBuf *restrict Buf,
  */
 int FPFC_Inflatel(double *restrict Data,unsigned long N,TFPFCBuf *restrict Buf) {
     int64_t         *htbl=NULL,*dpred;
-    uint32_t        hash,delta[3]={0u};
+    uint32_t        hash,delta[3]={0u},d2;
     int64_t         val,pred,prev;
     const uint64_t  dmsk=(1ul<<((int)sizeof(int64_t)*8-14))-1ul;
     const uint32_t  hmsk=((1u<<20)-1u);
-    unsigned int    d0,d2,lzc;
+    unsigned int    d,lzc;
     uint64_t        n=0;
 
     // Allocate the hash table's space (2*2^20)
     htbl = calloc((1l<<21),sizeof(*htbl));
 
     // Calculate the hash
-    for(d0=0,hash=0,prev=0; N; --N) {
+    for(d=0,d2=0,hash=0,prev=0; N; --N) {
         // Read the LZC and the remaining bytes
         lzc = FPFC_BufReadHalfByte(Buf);
         val = FPFC_BufReadHalfBytes(Buf,(unsigned int)sizeof(pred)*2-lzc);
@@ -540,11 +540,11 @@ int FPFC_Inflatel(double *restrict Data,unsigned long N,TFPFCBuf *restrict Buf) 
         // We only keep the 14 MSB (1(sign)+11(exp)+2(MSB mantissa)) of the delta to calculate the hash
         // Note that hash(d0,d1,d2) = lsb0..19(d0 XOR d1<<5 XOR d2<<10)
         // So to get the next hash, we only need to re-XOR d2<<10, shift by 5 and XOR d0
-        d2 = (d0+2u)%3;
-        hash ^= delta[d0]<<10;
-        delta[d0] = (uint32_t)((uint64_t)(val-prev)>>50);
-        hash = (hash<<5 ^ delta[d0])&hmsk;
-        d0 = d2;
+        hash ^= d2<<10;
+        d2 = delta[d];
+        delta[d] = (uint32_t)((uint64_t)(val-prev)>>50);
+        hash = (hash<<5 ^ delta[d])&hmsk;
+        d = (d+1)&1;
 
         prev = val;
         Data[n++] = *(double*)&val;
@@ -575,18 +575,18 @@ int FPFC_Inflatel(double *restrict Data,unsigned long N,TFPFCBuf *restrict Buf) 
  */
 int FPFC_Compress(float *restrict Data,unsigned long N,TFPFCBuf *restrict Buf,unsigned long *CSize) {
     int32_t         *htbl=NULL,*dpred;
-    uint32_t        hash,delta[3]={0u};
+    uint32_t        hash,delta[2]={0},d2;
     int32_t         val,pred,prev;
     const uint32_t  dmsk=(1u<<((int)sizeof(int32_t)*8-14))-1u;
     const uint32_t  hmsk=((1u<<20)-1u);
-    unsigned int    d0,d2,lzc;
+    unsigned int    d,lzc;
     unsigned long   nb=N*sizeof(*Data);
 
     // Allocate the hash table's space (2*2^20)
     htbl = calloc((1l<<21),sizeof(*htbl));
 
     // Calculate the hash
-    for(d0=0,hash=0,prev=0; N; --N) {
+    for(d=0,d2=0,hash=0,prev=0; N; --N) {
         // Encode the value as an int
         val = *(int32_t*)Data++;
 
@@ -597,11 +597,11 @@ int FPFC_Compress(float *restrict Data,unsigned long N,TFPFCBuf *restrict Buf,un
         // We only keep the 11 MSB of the delta (1(sign)+8(exp)+2(MSB mantissa)) to calculate the hash
         // Note that hash(d0,d1,d2) = lsb0..19(d0 XOR d1<<5 XOR d2<<10)
         // So to get the next hash, we only need to re-XOR d2<<10, shift by 5 and XOR d0
-        d2 = (d0+2u)%3;
-        hash ^= delta[d0]<<10;
-        delta[d0] = (uint32_t)(val-prev)>>21;
-        hash = (hash<<5 ^ delta[d0])&hmsk;
-        d0 = d2;
+        hash ^= d2<<10;
+        d2 = delta[d];
+        delta[d] = (uint32_t)(val-prev)>>21;
+        hash = (hash<<5 ^ delta[d])&hmsk;
+        d = (d+1)&1;
 
         // Use the previous differences to make the prediction
         pred = prev + dpred[0];
@@ -663,18 +663,18 @@ int FPFC_Compress(float *restrict Data,unsigned long N,TFPFCBuf *restrict Buf,un
  */
 int FPFC_Inflate(float *restrict Data,unsigned long N,TFPFCBuf *restrict Buf) {
     int32_t         *htbl=NULL,*dpred;
-    uint32_t        hash,delta[3]={0u};
+    uint32_t        hash,delta[3]={0u},d2;
     int32_t         val,pred,prev;
     const uint32_t  dmsk=(1u<<((int)sizeof(int32_t)*8-14))-1u;
     const uint32_t  hmsk=((1u<<20)-1u);
-    unsigned int    d0,d2,lzc;
+    unsigned int    d,lzc;
     uint64_t        n=0;
 
     // Allocate the hash table's space (2*2^20)
     htbl = calloc((1l<<21),sizeof(*htbl));
 
     // Calculate the hash
-    for(d0=0,hash=0,prev=0; N; --N) {
+    for(d=0,d2=0,hash=0,prev=0; N; --N) {
         // Read the LZC and the remaining bytes
         lzc = FPFC_BufReadHalfByte(Buf);
         val = lzc!=8u ? FPFC_BufReadHalfBytes(Buf,(unsigned int)sizeof(pred)*2-lzc) : 0;
@@ -700,11 +700,11 @@ int FPFC_Inflate(float *restrict Data,unsigned long N,TFPFCBuf *restrict Buf) {
         // We only keep the 11 MSB of the delta (1(sign)+8(exp)+2(MSB mantissa)) to calculate the hash
         // Note that hash(d0,d1,d2) = lsb0..19(d0 XOR d1<<5 XOR d2<<10)
         // So to get the next hash, we only need to re-XOR d2<<10, shift by 5 and XOR d0
-        d2 = (d0+2u)%3;
-        hash ^= delta[d0]<<10;
-        delta[d0] = (uint32_t)(val-prev)>>21;
-        hash = (hash<<5 ^ delta[d0])&hmsk;
-        d0 = d2;
+        hash ^= d2<<10;
+        d2 = delta[d];
+        delta[d] = (uint32_t)(val-prev)>>21;
+        hash = (hash<<5 ^ delta[d])&hmsk;
+        d = (d+1)&1;
 
         prev = val;
         Data[n++] = *(float*)&val;
