@@ -41,33 +41,23 @@
 
 #include <stdio.h>
 
+// Comment to use FILE IO
+#define FPFC_USE_MEM_IO
+
 typedef unsigned char TBufByte;
 
-typedef struct TFPFCBuf TFPFCBuf;
-typedef struct TFPFCBuf {
-    TBufByte        *Buf;   // Buffer where to read/write the half-bytes
-    FILE            *FD;    // File descriptor
-    unsigned long   NB;     // Number of bytes written to the buffer
-    unsigned long   Size;   // Total size of the buffer (in half-bytes)
-
-    // Buffer functions
-    void    (*WriteByte)    (TFPFCBuf*);
-    void    (*ReadByte)     (TFPFCBuf*);
-
-    TBufByte    Byte;   // Half byte temp storage
-    TBufByte    Half;   // Flag indicating if there is a half byte in the storage
-} TFPFCBuf;
-
-#define FPFC_BufFree(Buf) if(Buf){free(Buf);Buf=NULL;}
-TFPFCBuf* FPFC_BufNewMem(void* Data,unsigned long N);
-TFPFCBuf* FPFC_BufNewIO(FILE* FD);
+#ifdef FPFC_USE_MEM_IO
+#define FPFC_IO_PARAM TBufByte *restrict CData,unsigned long CBufSize
+#else //FPFC_USE_MEM_IO
+#define FPFC_IO_PARAM FILE *restrict FD
+#endif //FPFC_USE_MEM_IO
 
 // Double functions
-int FPFC_Compressl(double *restrict Data,unsigned long N,TFPFCBuf *restrict Buf,unsigned long *CSize);
-int FPFC_Inflatel(double *restrict Data,unsigned long N,TFPFCBuf *restrict Buf);
+int FPFC_Compressl(double *restrict Data,unsigned long N,FPFC_IO_PARAM,unsigned long *CSize);
+int FPFC_Inflatel(double *restrict Data,unsigned long N,FPFC_IO_PARAM);
 
 // Float functions
-int FPFC_Compress(float *restrict Data,unsigned long N,TFPFCBuf *restrict Buf,unsigned long *CSize);
-int FPFC_Inflate(float *restrict Data,unsigned long N,TFPFCBuf *restrict Buf);
+int FPFC_Compress(float *restrict Data,unsigned long N,FPFC_IO_PARAM,unsigned long *CSize);
+int FPFC_Inflate(float *restrict Data,unsigned long N,FPFC_IO_PARAM);
 
 #endif // _FPFC_H

@@ -50,6 +50,20 @@
 const TBufByte LOW_BYTE = 0x0f;
 const TBufByte HIGH_BYTE = 0xf0;
 
+
+typedef struct TFPFCBuf TFPFCBuf;
+typedef struct TFPFCBuf {
+#ifdef FPFC_USE_MEM_IO
+    TBufByte        *Buf;   // Buffer where to read/write the half-bytes
+    unsigned long   Size;   // Total size of the buffer (in half-bytes)
+#else //FPFC_USE_MEM_IO
+    FILE            *FD;    // File descriptor
+#endif //FPFC_USE_MEM_IO
+    unsigned long   NB;     // Number of bytes written to the buffer
+    TBufByte        Byte;   // Half byte temp storage
+    TBufByte        Half;   // Flag indicating if there is a half byte in the storage
+} TFPFCBuf;
+
 /*----------------------------------------------------------------------------
  * Nom      : <LZCNT>
  * Creation : Octobre 2017 - E. Legault-Ouellet - CMC/CMOE
@@ -91,10 +105,10 @@ inline static int LZCNTl(uint64_t X) {
 }
 
 /*----------------------------------------------------------------------------
- * Nom      : <FPC_BufWriteByteMem>
+ * Nom      : <FPC_BufWriteByte>
  * Creation : Octobre 2017 - E. Legault-Ouellet - CMC/CMOE
  *
- * But      : Flush l'octet du buffer en mémoire
+ * But      : Flush l'octet au IO
  *
  * Parametres :
  *  <Buf>   : Le buffer
@@ -105,57 +119,21 @@ inline static int LZCNTl(uint64_t X) {
  *
  *----------------------------------------------------------------------------
  */
-static void FPFC_BufWriteByteMem(TFPFCBuf *restrict Buf) {
+static void FPFC_BufWriteByte(TFPFCBuf *restrict Buf) {
+#ifdef FPFC_USE_MEM_IO
     if( Buf->NB < Buf->Size )
         Buf->Buf[Buf->NB++] = Buf->Byte;
-}
-
-/*----------------------------------------------------------------------------
- * Nom      : <FPFC_BufReadByteMem>
- * Creation : Octobre 2017 - E. Legault-Ouellet - CMC/CMOE
- *
- * But      : Lit un octet de la mémoire dans l'octet du buffer
- *
- * Parametres :
- *  <Buf>   : Le buffer
- *
- * Retour   :
- *
- * Remarques :
- *
- *----------------------------------------------------------------------------
- */
-static void FPFC_BufReadByteMem(TFPFCBuf *restrict Buf) {
-    if( Buf->NB < Buf->Size )
-        Buf->Byte = Buf->Buf[Buf->NB++];
-}
-
-
-/*----------------------------------------------------------------------------
- * Nom      : <FPFC_BufWriteByteMem>
- * Creation : Octobre 2017 - E. Legault-Ouellet - CMC/CMOE
- *
- * But      : Flush le byte du buffer dans le stream
- *
- * Parametres :
- *  <Buf>   : Le buffer
- *
- * Retour   :
- *
- * Remarques :
- *
- *----------------------------------------------------------------------------
- */
-static void FPFC_BufWriteByteIO(TFPFCBuf *restrict Buf) {
+#else
     putc(Buf->Byte,Buf->FD);
     ++Buf->NB;
+#endif
 }
 
 /*----------------------------------------------------------------------------
- * Nom      : <FPFC_BufReadByteMem>
+ * Nom      : <FPFC_BufReadByte>
  * Creation : Octobre 2017 - E. Legault-Ouellet - CMC/CMOE
  *
- * But      : Lit un octet du stream dans l'octet du buffer
+ * But      : Lit un octet du IO
  *
  * Parametres :
  *  <Buf>   : Le buffer
@@ -166,72 +144,14 @@ static void FPFC_BufWriteByteIO(TFPFCBuf *restrict Buf) {
  *
  *----------------------------------------------------------------------------
  */
-static void FPFC_BufReadByteIO(TFPFCBuf *restrict Buf) {
+static void FPFC_BufReadByte(TFPFCBuf *restrict Buf) {
+#ifdef FPFC_USE_MEM_IO
+    if( Buf->NB < Buf->Size )
+        Buf->Byte = Buf->Buf[Buf->NB++];
+#else
     Buf->Byte = (TBufByte)getc(Buf->FD);
     ++Buf->NB;
-}
-
-/*----------------------------------------------------------------------------
- * Nom      : <FPFC_BufNewMem>
- * Creation : Octobre 2017 - E. Legault-Ouellet - CMC/CMOE
- *
- * But      : Initialise un buffer à partir d'un espace mémoire
- *
- * Parametres :
- *  <Data>  : L'espace mémoire où écrire/lire les données
- *  <N>     : La taille de l'espace mémoire (pour éviter les segfaults)
- *
- * Retour   : Le buffer initialisé
- *
- * Remarques :
- *
- *----------------------------------------------------------------------------
- */
-TFPFCBuf* FPFC_BufNewMem(void* Data,unsigned long N) {
-    TFPFCBuf *buf;
-    if( (buf=malloc(sizeof(*buf))) ) {
-        buf->Buf = Data;
-        buf->FD = NULL;
-        buf->NB = 0;
-        buf->Size = N;
-
-        buf->WriteByte = FPFC_BufWriteByteMem;
-        buf->ReadByte = FPFC_BufReadByteMem;
-
-        buf->Half = 0;
-    }
-    return buf;
-}
-
-/*----------------------------------------------------------------------------
- * Nom      : <FPFC_BufNewIO>
- * Creation : Octobre 2017 - E. Legault-Ouellet - CMC/CMOE
- *
- * But      : Initialise un buffer à partir d'un espace mémoire
- *
- * Parametres :
- *  <FD>    : Le file descriptor du fichier où lire/écrire les données
- *
- * Retour   : Le buffer initialisé
- *
- * Remarques :
- *
- *----------------------------------------------------------------------------
- */
-TFPFCBuf* FPFC_BufNewIO(FILE* FD) {
-    TFPFCBuf *buf;
-    if( (buf=malloc(sizeof(*buf))) ) {
-        buf->Buf = NULL;
-        buf->FD = FD;
-        buf->NB = 0;
-        buf->Size = 0;
-
-        buf->WriteByte = FPFC_BufWriteByteIO;
-        buf->ReadByte = FPFC_BufReadByteIO;
-
-        buf->Half = 0;
-    }
-    return buf;
+#endif
 }
 
 /*----------------------------------------------------------------------------
@@ -251,7 +171,7 @@ TFPFCBuf* FPFC_BufNewIO(FILE* FD) {
  */
 static void FPFC_BufFlush(TFPFCBuf *restrict Buf) {
     if( Buf->Half ) {
-        Buf->WriteByte(Buf);
+        FPFC_BufWriteByte(Buf);
         Buf->Half=0;
     }
 }
@@ -275,7 +195,7 @@ static void FPFC_BufFlush(TFPFCBuf *restrict Buf) {
 static void FPFC_BufWriteHalfByte(TFPFCBuf *restrict Buf,TBufByte HByte) {
     if( Buf->Half ) {
         Buf->Byte |= HByte&LOW_BYTE;
-        Buf->WriteByte(Buf);
+        FPFC_BufWriteByte(Buf);
         Buf->Half = 0;
     } else {
         Buf->Byte = HByte<<4;
@@ -304,7 +224,7 @@ static void FPFC_BufWriteHalfBytes(TFPFCBuf *restrict Buf,uint64_t HBytes,unsign
     // Complete the half byte in the buffer
     if( Buf->Half ) {
         Buf->Byte |= (TBufByte)HBytes&LOW_BYTE;
-        Buf->WriteByte(Buf);
+        FPFC_BufWriteByte(Buf);
         Buf->Half = 0;
         HBytes >>= 4;
         --NHB;
@@ -313,7 +233,7 @@ static void FPFC_BufWriteHalfBytes(TFPFCBuf *restrict Buf,uint64_t HBytes,unsign
     // Write complete bytes
     while( NHB >= 2 ) {
         Buf->Byte = (TBufByte)HBytes;
-        Buf->WriteByte(Buf);
+        FPFC_BufWriteByte(Buf);
         HBytes >>= 8;
         NHB -= 2;
     }
@@ -345,7 +265,7 @@ static TBufByte FPFC_BufReadHalfByte(TFPFCBuf *restrict Buf) {
         Buf->Half = 0;
         return Buf->Byte&LOW_BYTE;
     } else {
-        Buf->ReadByte(Buf);
+        FPFC_BufReadByte(Buf);
         Buf->Half = 1;
         return Buf->Byte>>4;
     }
@@ -381,7 +301,7 @@ static uint64_t FPFC_BufReadHalfBytes(TFPFCBuf *restrict Buf,unsigned int NHB) {
 
     // Read complete bytes
     while( NHB >= 2 ) {
-        Buf->ReadByte(Buf);
+        FPFC_BufReadByte(Buf);
         bytes |= ((uint64_t)Buf->Byte)<<bs;
         NHB -= 2;
         bs += 8;
@@ -389,7 +309,7 @@ static uint64_t FPFC_BufReadHalfBytes(TFPFCBuf *restrict Buf,unsigned int NHB) {
 
     // Read the last half byte (high bits)
     if( NHB ) {
-        Buf->ReadByte(Buf);
+        FPFC_BufReadByte(Buf);
         Buf->Half = 1;
         bytes |= ((uint64_t)(Buf->Byte>>4))<<bs;
     }
@@ -404,10 +324,12 @@ static uint64_t FPFC_BufReadHalfBytes(TFPFCBuf *restrict Buf,unsigned int NHB) {
  * But      : Compresse des double
  *
  * Parametres :
- *  <Data>  : Les données à compresser
- *  <N>     : Le nombre de double à compresser
- *  <Buf>   : Le buffer où écrire les données compressées
- *  <CSize> : [OUT] La taille (Bytes) des données compressées
+ *  <Data>      : Les données à compresser
+ *  <N>         : Le nombre de double à compresser
+ *  <CData>     : [?] Le buffer où écrire les données compressées
+ *  <CBufSize>  : [?] La taille du buffer de données compressées
+ *  <FD>        : [?] Le handle du fichier où écrire les données compressées
+ *  <CSize>     : [OUT] La taille (Bytes) des données compressées
  *
  * Retour   :
  *
@@ -415,7 +337,7 @@ static uint64_t FPFC_BufReadHalfBytes(TFPFCBuf *restrict Buf,unsigned int NHB) {
  *
  *----------------------------------------------------------------------------
  */
-int FPFC_Compressl(double *restrict Data,unsigned long N,TFPFCBuf *restrict Buf,unsigned long *CSize) {
+int FPFC_Compressl(double *restrict Data,unsigned long N,FPFC_IO_PARAM,unsigned long *CSize) {
     int64_t         *htbl=NULL,*dpred;
     uint32_t        hash,delta[3]={0u},d2;
     int64_t         val,pred,prev;
@@ -423,6 +345,12 @@ int FPFC_Compressl(double *restrict Data,unsigned long N,TFPFCBuf *restrict Buf,
     const uint32_t  hmsk=((1u<<20)-1u);
     unsigned int    d,lzc;
     unsigned long   nb=N*sizeof(*Data);
+
+#ifdef FPFC_USE_MEM_IO
+    TFPFCBuf buf = (TFPFCBuf){CData,CBufSize,0,0,0};
+#else //FPFC_USE_MEM_IO
+    TFPFCBuf buf = (TFPFCBuf){FD,0,0,0};
+#endif //FPFC_USE_MEM_IO
 
     // Allocate the hash table's space (2*2^20)
     htbl = calloc((1l<<21),sizeof(*htbl));
@@ -465,18 +393,18 @@ int FPFC_Compressl(double *restrict Data,unsigned long N,TFPFCBuf *restrict Buf,
         lzc = pred ? LZCNTl(pred)>>2 : 0xf;
 
         // Write the LZC and the remaining 64-4*LZC bits
-        FPFC_BufWriteHalfByte(Buf,(TBufByte)lzc);
-        FPFC_BufWriteHalfBytes(Buf,pred,(unsigned int)sizeof(pred)*2u-lzc);
+        FPFC_BufWriteHalfByte(&buf,(TBufByte)lzc);
+        FPFC_BufWriteHalfBytes(&buf,pred,(unsigned int)sizeof(pred)*2u-lzc);
 
         prev = val;
     }
 
-    FPFC_BufFlush(Buf);
-    *CSize = Buf->NB;
+    FPFC_BufFlush(&buf);
+    *CSize = buf.NB;
 
-    App_Log(DEBUG,"Compression ratio : %.4f\n",(double)Buf->NB/nb);
-    if( Buf->NB > nb ) {
-        App_Log(WARNING,"Compressed data is larger than original (compressed=%ld ori=%ld)\n",Buf->NB,nb);
+    App_Log(DEBUG,"Compression ratio : %.4f\n",(double)buf.NB/nb);
+    if( buf.NB > nb ) {
+        App_Log(WARNING,"Compressed data is larger than original (compressed=%ld ori=%ld)\n",buf.NB,nb);
     }
 
     free(htbl);
@@ -491,17 +419,19 @@ int FPFC_Compressl(double *restrict Data,unsigned long N,TFPFCBuf *restrict Buf,
  * But      : Décompresse des double
  *
  * Parametres :
- *  <Data>  : [OUT] Les données décompressés
- *  <N>     : Le nombre de double à décompresser
- *  <Buf>   : Le buffer où lire les données compressées
+ *  <Data>      : [OUT] Les données décompressés
+ *  <N>         : Le nombre de double à décompresser
+ *  <CData>     : [?] Le buffer où lire les données compressées
+ *  <CBufSize>  : [?] La taille du buffer de données compressées
+ *  <FD>        : [?] Le handle du fichier où lire les données compressées
  *
- * Retour   :
+ * Retour   : APP_OK si ok, APP_ERR sinon
  *
  * Remarques :
  *
  *----------------------------------------------------------------------------
  */
-int FPFC_Inflatel(double *restrict Data,unsigned long N,TFPFCBuf *restrict Buf) {
+int FPFC_Inflatel(double *restrict Data,unsigned long N,FPFC_IO_PARAM) {
     int64_t         *htbl=NULL,*dpred;
     uint32_t        hash,delta[3]={0u},d2;
     int64_t         val,pred,prev;
@@ -510,14 +440,20 @@ int FPFC_Inflatel(double *restrict Data,unsigned long N,TFPFCBuf *restrict Buf) 
     unsigned int    d,lzc;
     uint64_t        n=0;
 
+#ifdef FPFC_USE_MEM_IO
+    TFPFCBuf buf = (TFPFCBuf){CData,CBufSize,0,0,0};
+#else //FPFC_USE_MEM_IO
+    TFPFCBuf buf = (TFPFCBuf){FD,0,0,0};
+#endif //FPFC_USE_MEM_IO
+
     // Allocate the hash table's space (2*2^20)
     htbl = calloc((1l<<21),sizeof(*htbl));
 
     // Calculate the hash
     for(d=0,d2=0,hash=0,prev=0; N; --N) {
         // Read the LZC and the remaining bytes
-        lzc = FPFC_BufReadHalfByte(Buf);
-        val = FPFC_BufReadHalfBytes(Buf,(unsigned int)sizeof(pred)*2-lzc);
+        lzc = FPFC_BufReadHalfByte(&buf);
+        val = FPFC_BufReadHalfBytes(&buf,(unsigned int)sizeof(pred)*2-lzc);
 
         // Locate the previous differences that will help with the prediction
         dpred = &htbl[hash*2];
@@ -562,10 +498,12 @@ int FPFC_Inflatel(double *restrict Data,unsigned long N,TFPFCBuf *restrict Buf) 
  * But      : Compresse des float
  *
  * Parametres :
- *  <Data>  : Les données à compresser
- *  <N>     : Le nombre de float à compresser
- *  <Buf>   : Le buffer où écrire les données compressées
- *  <CSize> : [OUT] La taille (Bytes) des données compressées
+ *  <Data>      : Les données à compresser
+ *  <N>         : Le nombre de float à compresser
+ *  <CData>     : [?] Le buffer où écrire les données compressées
+ *  <CBufSize>  : [?] La taille du buffer de données compressées
+ *  <FD>        : [?] Le handle du fichier où écrire les données compressées
+ *  <CSize>     : [OUT] La taille (Bytes) des données compressées
  *
  * Retour   :
  *
@@ -573,7 +511,7 @@ int FPFC_Inflatel(double *restrict Data,unsigned long N,TFPFCBuf *restrict Buf) 
  *
  *----------------------------------------------------------------------------
  */
-int FPFC_Compress(float *restrict Data,unsigned long N,TFPFCBuf *restrict Buf,unsigned long *CSize) {
+int FPFC_Compress(float *restrict Data,unsigned long N,FPFC_IO_PARAM,unsigned long *CSize) {
     int32_t         *htbl=NULL,*dpred;
     uint32_t        hash,delta[2]={0},d2;
     int32_t         val,pred,prev;
@@ -581,6 +519,12 @@ int FPFC_Compress(float *restrict Data,unsigned long N,TFPFCBuf *restrict Buf,un
     const uint32_t  hmsk=((1u<<20)-1u);
     unsigned int    d,lzc;
     unsigned long   nb=N*sizeof(*Data);
+
+#ifdef FPFC_USE_MEM_IO
+    TFPFCBuf buf = (TFPFCBuf){CData,CBufSize,0,0,0};
+#else //FPFC_USE_MEM_IO
+    TFPFCBuf buf = (TFPFCBuf){FD,0,0,0};
+#endif //FPFC_USE_MEM_IO
 
     // Allocate the hash table's space (2*2^20)
     htbl = calloc((1l<<21),sizeof(*htbl));
@@ -622,21 +566,21 @@ int FPFC_Compress(float *restrict Data,unsigned long N,TFPFCBuf *restrict Buf,un
         // Ergo, for floats, we can encode the full 32 bits, but still have to round down to the lowest multiple of 4
         if( pred ) {
             lzc = LZCNT(pred)>>2;
-            FPFC_BufWriteHalfByte(Buf,(TBufByte)lzc);
-            FPFC_BufWriteHalfBytes(Buf,pred,(unsigned int)sizeof(pred)*2u-lzc);
+            FPFC_BufWriteHalfByte(&buf,(TBufByte)lzc);
+            FPFC_BufWriteHalfBytes(&buf,pred,(unsigned int)sizeof(pred)*2u-lzc);
         } else {
-            FPFC_BufWriteHalfByte(Buf,(TBufByte)8);
+            FPFC_BufWriteHalfByte(&buf,(TBufByte)8);
         }
 
         prev = val;
     }
 
-    FPFC_BufFlush(Buf);
-    *CSize = Buf->NB;
+    FPFC_BufFlush(&buf);
+    *CSize = buf.NB;
 
-    App_Log(DEBUG,"Compression ratio : %.4f\n",(double)Buf->NB/nb);
-    if( Buf->NB > nb ) {
-        App_Log(WARNING,"Compressed data is larger than original (compressed=%ld ori=%ld)\n",Buf->NB,nb);
+    App_Log(DEBUG,"Compression ratio : %.4f\n",(double)buf.NB/nb);
+    if( buf.NB > nb ) {
+        App_Log(WARNING,"Compressed data is larger than original (compressed=%ld ori=%ld)\n",buf.NB,nb);
     }
 
     free(htbl);
@@ -651,9 +595,11 @@ int FPFC_Compress(float *restrict Data,unsigned long N,TFPFCBuf *restrict Buf,un
  * But      : Décompresse des float
  *
  * Parametres :
- *  <Data>  : [OUT] Les données décompressés
- *  <N>     : Le nombre de float à décompresser
- *  <Buf>   : Le buffer où lire les données compressées
+ *  <Data>      : [OUT] Les données décompressés
+ *  <N>         : Le nombre de float à décompresser
+ *  <CData>     : [?] Le buffer où lire les données compressées
+ *  <CBufSize>  : [?] La taille du buffer de données compressées
+ *  <FD>        : [?] Le handle du fichier où lire les données compressées
  *
  * Retour   :
  *
@@ -661,7 +607,7 @@ int FPFC_Compress(float *restrict Data,unsigned long N,TFPFCBuf *restrict Buf,un
  *
  *----------------------------------------------------------------------------
  */
-int FPFC_Inflate(float *restrict Data,unsigned long N,TFPFCBuf *restrict Buf) {
+int FPFC_Inflate(float *restrict Data,unsigned long N,FPFC_IO_PARAM) {
     int32_t         *htbl=NULL,*dpred;
     uint32_t        hash,delta[3]={0u},d2;
     int32_t         val,pred,prev;
@@ -670,14 +616,20 @@ int FPFC_Inflate(float *restrict Data,unsigned long N,TFPFCBuf *restrict Buf) {
     unsigned int    d,lzc;
     uint64_t        n=0;
 
+#ifdef FPFC_USE_MEM_IO
+    TFPFCBuf buf = (TFPFCBuf){CData,CBufSize,0,0,0};
+#else //FPFC_USE_MEM_IO
+    TFPFCBuf buf = (TFPFCBuf){FD,0,0,0};
+#endif //FPFC_USE_MEM_IO
+
     // Allocate the hash table's space (2*2^20)
     htbl = calloc((1l<<21),sizeof(*htbl));
 
     // Calculate the hash
     for(d=0,d2=0,hash=0,prev=0; N; --N) {
         // Read the LZC and the remaining bytes
-        lzc = FPFC_BufReadHalfByte(Buf);
-        val = lzc!=8u ? FPFC_BufReadHalfBytes(Buf,(unsigned int)sizeof(pred)*2-lzc) : 0;
+        lzc = FPFC_BufReadHalfByte(&buf);
+        val = lzc!=8u ? FPFC_BufReadHalfBytes(&buf,(unsigned int)sizeof(pred)*2-lzc) : 0;
 
         // Locate the previous differences that will help with the prediction
         dpred = &htbl[hash*2];
