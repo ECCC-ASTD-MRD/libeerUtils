@@ -54,14 +54,14 @@ const TBufByte HIGH_BYTE = 0xf0;
 typedef struct TFPFCBuf TFPFCBuf;
 typedef struct TFPFCBuf {
 #ifdef FPFC_USE_MEM_IO
-    TBufByte        *Buf;   // Buffer where to read/write the half-bytes
-    unsigned long   Size;   // Total size of the buffer (in half-bytes)
+    TBufByte    *Buf;   // Buffer where to read/write the half-bytes
+    size_t      Size;   // Total size of the buffer (in half-bytes)
 #else //FPFC_USE_MEM_IO
-    FILE            *FD;    // File descriptor
+    FILE        *FD;    // File descriptor
 #endif //FPFC_USE_MEM_IO
-    unsigned long   NB;     // Number of bytes written to the buffer
-    TBufByte        Byte;   // Half byte temp storage
-    TBufByte        Half;   // Flag indicating if there is a half byte in the storage
+    size_t      NB;     // Number of bytes written to the buffer
+    TBufByte    Byte;   // Half byte temp storage
+    TBufByte    Half;   // Flag indicating if there is a half byte in the storage
 } TFPFCBuf;
 
 /*----------------------------------------------------------------------------
@@ -122,7 +122,8 @@ inline static int LZCNTl(uint64_t X) {
 static void FPFC_BufWriteByte(TFPFCBuf *restrict Buf) {
 #ifdef FPFC_USE_MEM_IO
     if( Buf->NB < Buf->Size )
-        Buf->Buf[Buf->NB++] = Buf->Byte;
+        Buf->Buf[Buf->NB] = Buf->Byte;
+    ++Buf->NB;
 #else
     putc(Buf->Byte,Buf->FD);
     ++Buf->NB;
@@ -147,7 +148,8 @@ static void FPFC_BufWriteByte(TFPFCBuf *restrict Buf) {
 static void FPFC_BufReadByte(TFPFCBuf *restrict Buf) {
 #ifdef FPFC_USE_MEM_IO
     if( Buf->NB < Buf->Size )
-        Buf->Byte = Buf->Buf[Buf->NB++];
+        Buf->Byte = Buf->Buf[Buf->NB];
+    ++Buf->NB;
 #else
     Buf->Byte = (TBufByte)getc(Buf->FD);
     ++Buf->NB;
@@ -337,7 +339,7 @@ static uint64_t FPFC_BufReadHalfBytes(TFPFCBuf *restrict Buf,unsigned int NHB) {
  *
  *----------------------------------------------------------------------------
  */
-int FPFC_Compressl(double *restrict Data,unsigned long N,FPFC_IO_PARAM,unsigned long *CSize) {
+int FPFC_Compressl(double *restrict Data,size_t N,FPFC_IO_PARAM,size_t *CSize) {
     int64_t         *htbl=NULL,*dpred;
     uint32_t        hash,delta[3]={0u},d2;
     int64_t         val,pred,prev;
@@ -355,7 +357,7 @@ int FPFC_Compressl(double *restrict Data,unsigned long N,FPFC_IO_PARAM,unsigned 
     // Allocate the hash table's space (2*2^20)
     htbl = calloc((1l<<21),sizeof(*htbl));
 
-    // Calculate the hash
+    // Loop on the data to compress
     for(d=0,d2=0,hash=0,prev=0; N; --N) {
         // Encode the value as an int
         val = *(int64_t*)Data++;
@@ -399,16 +401,16 @@ int FPFC_Compressl(double *restrict Data,unsigned long N,FPFC_IO_PARAM,unsigned 
         prev = val;
     }
 
+    free(htbl);
     FPFC_BufFlush(&buf);
-    *CSize = buf.NB;
 
     App_Log(DEBUG,"Compression ratio : %.4f\n",(double)buf.NB/nb);
-    if( buf.NB > nb ) {
+    if( buf.NB >= nb ) {
         App_Log(WARNING,"Compressed data is larger than original (compressed=%ld ori=%ld)\n",buf.NB,nb);
+        return APP_ERR;
     }
 
-    free(htbl);
-
+    *CSize = buf.NB;
     return APP_OK;
 }
 
@@ -431,7 +433,7 @@ int FPFC_Compressl(double *restrict Data,unsigned long N,FPFC_IO_PARAM,unsigned 
  *
  *----------------------------------------------------------------------------
  */
-int FPFC_Inflatel(double *restrict Data,unsigned long N,FPFC_IO_PARAM) {
+int FPFC_Inflatel(double *restrict Data,size_t N,FPFC_IO_PARAM) {
     int64_t         *htbl=NULL,*dpred;
     uint32_t        hash,delta[3]={0u},d2;
     int64_t         val,pred,prev;
@@ -449,7 +451,7 @@ int FPFC_Inflatel(double *restrict Data,unsigned long N,FPFC_IO_PARAM) {
     // Allocate the hash table's space (2*2^20)
     htbl = calloc((1l<<21),sizeof(*htbl));
 
-    // Calculate the hash
+    // Loop on the data to inflate
     for(d=0,d2=0,hash=0,prev=0; N; --N) {
         // Read the LZC and the remaining bytes
         lzc = FPFC_BufReadHalfByte(&buf);
@@ -488,7 +490,11 @@ int FPFC_Inflatel(double *restrict Data,unsigned long N,FPFC_IO_PARAM) {
 
     free(htbl);
 
+#ifdef FPFC_USE_MEM_IO
+    return buf.NB<=buf.Size ? APP_OK : APP_ERR;
+#else //FPFC_USE_MEM_IO
     return APP_OK;
+#endif //FPFC_USE_MEM_IO
 }
 
 /*----------------------------------------------------------------------------
@@ -511,7 +517,7 @@ int FPFC_Inflatel(double *restrict Data,unsigned long N,FPFC_IO_PARAM) {
  *
  *----------------------------------------------------------------------------
  */
-int FPFC_Compress(float *restrict Data,unsigned long N,FPFC_IO_PARAM,unsigned long *CSize) {
+int FPFC_Compress(float *restrict Data,size_t N,FPFC_IO_PARAM,size_t *CSize) {
     int32_t         *htbl=NULL,*dpred;
     uint32_t        hash,delta[2]={0},d2;
     int32_t         val,pred,prev;
@@ -529,7 +535,7 @@ int FPFC_Compress(float *restrict Data,unsigned long N,FPFC_IO_PARAM,unsigned lo
     // Allocate the hash table's space (2*2^20)
     htbl = calloc((1l<<21),sizeof(*htbl));
 
-    // Calculate the hash
+    // Loop on the data to compress
     for(d=0,d2=0,hash=0,prev=0; N; --N) {
         // Encode the value as an int
         val = *(int32_t*)Data++;
@@ -575,16 +581,16 @@ int FPFC_Compress(float *restrict Data,unsigned long N,FPFC_IO_PARAM,unsigned lo
         prev = val;
     }
 
+    free(htbl);
     FPFC_BufFlush(&buf);
-    *CSize = buf.NB;
 
     App_Log(DEBUG,"Compression ratio : %.4f\n",(double)buf.NB/nb);
-    if( buf.NB > nb ) {
+    if( buf.NB >= nb ) {
         App_Log(WARNING,"Compressed data is larger than original (compressed=%ld ori=%ld)\n",buf.NB,nb);
+        return APP_ERR;
     }
 
-    free(htbl);
-
+    *CSize = buf.NB;
     return APP_OK;
 }
 
@@ -607,7 +613,7 @@ int FPFC_Compress(float *restrict Data,unsigned long N,FPFC_IO_PARAM,unsigned lo
  *
  *----------------------------------------------------------------------------
  */
-int FPFC_Inflate(float *restrict Data,unsigned long N,FPFC_IO_PARAM) {
+int FPFC_Inflate(float *restrict Data,size_t N,FPFC_IO_PARAM) {
     int32_t         *htbl=NULL,*dpred;
     uint32_t        hash,delta[3]={0u},d2;
     int32_t         val,pred,prev;
@@ -625,7 +631,7 @@ int FPFC_Inflate(float *restrict Data,unsigned long N,FPFC_IO_PARAM) {
     // Allocate the hash table's space (2*2^20)
     htbl = calloc((1l<<21),sizeof(*htbl));
 
-    // Calculate the hash
+    // Loop on the data to inflate
     for(d=0,d2=0,hash=0,prev=0; N; --N) {
         // Read the LZC and the remaining bytes
         lzc = FPFC_BufReadHalfByte(&buf);
@@ -664,5 +670,9 @@ int FPFC_Inflate(float *restrict Data,unsigned long N,FPFC_IO_PARAM) {
 
     free(htbl);
 
+#ifdef FPFC_USE_MEM_IO
+    return buf.NB<=buf.Size ? APP_OK : APP_ERR;
+#else //FPFC_USE_MEM_IO
     return APP_OK;
+#endif //FPFC_USE_MEM_IO
 }

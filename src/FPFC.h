@@ -47,17 +47,17 @@
 typedef unsigned char TBufByte;
 
 #ifdef FPFC_USE_MEM_IO
-#define FPFC_IO_PARAM TBufByte *restrict CData,unsigned long CBufSize
+#define FPFC_IO_PARAM TBufByte *restrict CData,size_t CBufSize
 #else //FPFC_USE_MEM_IO
 #define FPFC_IO_PARAM FILE *restrict FD
 #endif //FPFC_USE_MEM_IO
 
 // Double functions
-int FPFC_Compressl(double *restrict Data,unsigned long N,FPFC_IO_PARAM,unsigned long *CSize);
-int FPFC_Inflatel(double *restrict Data,unsigned long N,FPFC_IO_PARAM);
+int FPFC_Compressl(double *restrict Data,size_t N,FPFC_IO_PARAM,size_t *CSize);
+int FPFC_Inflatel(double *restrict Data,size_t N,FPFC_IO_PARAM);
 
 // Float functions
-int FPFC_Compress(float *restrict Data,unsigned long N,FPFC_IO_PARAM,unsigned long *CSize);
-int FPFC_Inflate(float *restrict Data,unsigned long N,FPFC_IO_PARAM);
+int FPFC_Compress(float *restrict Data,size_t N,FPFC_IO_PARAM,size_t *CSize);
+int FPFC_Inflate(float *restrict Data,size_t N,FPFC_IO_PARAM);
 
 #endif // _FPFC_H
