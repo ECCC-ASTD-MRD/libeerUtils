@@ -33,8 +33,7 @@
  *==============================================================================
  */
 #include "BinaryFile.h"
-#include "FPCompressF.h"
-#include "FPCompressD.h"
+#include "FPFC.h"
 #include "App.h"
 #include "RPN.h"
 #include <string.h>
@@ -288,7 +287,7 @@ static TBFFiles* BinaryFile_OpenFiles(const char **FileNames,int N,TBFFlag Mode)
             App_Log(ERROR,"BinaryFile: File %s is not of BinaryFile type\n",FileNames[i]);
             goto error;
          }
-         
+
          // Make sure the filesystem agrees with our header on the size
          if( file->Header.Size != statbuf.st_size ) {
             App_Log(ERROR,"BinaryFile: The filesystem says the file is %zd bytes != %zd bytes per the BF file header for file %s\n",(size_t)statbuf.st_size,file->Header.Size,FileNames[i]);
@@ -695,38 +694,37 @@ int BinaryFile_Write(void *Data,TBFType DataType,TBFFiles *File,int DateO,int De
 
    switch( DataType ) {
       case BF_CFLOAT32:
-         if( FPC_CompressF(NULL,file->FD,Data,NI,NJ,NK,&size) != APP_OK ) {
-            // If the compression fails, just write the field uncompressed
-            if( lseek(file->FD,file->Header.IOffset,SEEK_SET) == -1 ) {
-               App_Log(ERROR,"BinaryFile: Could not seek to previous file position : %s\n",strerror(errno));
-               return APP_ERR;
-            }
-            if( write(file->FD,Data,size) != size ) {
-               App_Log(ERROR,"BinaryFile: Could not write the field : %s\n",strerror(errno));
-               if( lseek(file->FD,file->Header.IOffset,SEEK_SET) == -1 ) {
-                  App_Log(ERROR,"BinaryFile: Could not seek to previous file position : %s\n",strerror(errno));
-               }
-               return APP_ERR;
-            }
+         // Allocate a temporary buffer for the compressed data
+         APP_MEM_ASRT( buf,malloc(size) );
+         if( FPFC_Compress(Data,NI*NJ*NK,buf,size,&size) != APP_OK ) {
+            // If the compression failed, just write the field uncompressed
             DataType = BF_FLOAT32;
          }
-         break;
-      case BF_CFLOAT64:
-         if( FPC_CompressD(NULL,file->FD,Data,NI,NJ,NK,&size) != APP_OK ) {
-            // If the compression fails, just write the field uncompressed
+         if( write(file->FD,DataType==BF_FLOAT32?Data:buf,size) != size ) {
+            App_Log(ERROR,"BinaryFile: Could not write the field : %s\n",strerror(errno));
             if( lseek(file->FD,file->Header.IOffset,SEEK_SET) == -1 ) {
                App_Log(ERROR,"BinaryFile: Could not seek to previous file position : %s\n",strerror(errno));
-               return APP_ERR;
             }
-            if( write(file->FD,Data,size) != size ) {
-               App_Log(ERROR,"BinaryFile: Could not write the field : %s\n",strerror(errno));
-               if( lseek(file->FD,file->Header.IOffset,SEEK_SET) == -1 ) {
-                  App_Log(ERROR,"BinaryFile: Could not seek to previous file position : %s\n",strerror(errno));
-               }
-               return APP_ERR;
-            }
+            free(buf);
+            return APP_ERR;
+         }
+         free(buf);
+         break;
+      case BF_CFLOAT64:
+         APP_MEM_ASRT( buf,malloc(size) );
+         if( FPFC_Compressl(Data,NI*NJ*NK,buf,size,&size) != APP_OK ) {
+            // If the compression fails, just write the field uncompressed
             DataType = BF_FLOAT64;
          }
+         if( write(file->FD,Data,size) != size ) {
+            App_Log(ERROR,"BinaryFile: Could not write the field : %s\n",strerror(errno));
+            if( lseek(file->FD,file->Header.IOffset,SEEK_SET) == -1 ) {
+               App_Log(ERROR,"BinaryFile: Could not seek to previous file position : %s\n",strerror(errno));
+            }
+            free(buf);
+            return APP_ERR;
+         }
+         free(buf);
          break;
       default:
          if( write(file->FD,Data,size) != size ) {
@@ -948,12 +946,12 @@ TBFKey BinaryFile_ReadIndex(void *Buf,TBFKey Key,TBFFiles *File) {
       // Read the bytes
       switch( h->DATYP ) {
          case BF_CFLOAT32:
-            if( FPC_InflateF(addr,-1,Buf,h->NI,h->NJ,h->NK) != APP_OK ) {
+            if( FPFC_Inflate(Buf,h->NI*h->NJ*h->NK,addr,h->NBYTES) != APP_OK ) {
                return -1;
             }
             break;
          case BF_CFLOAT64:
-            if( FPC_InflateD(addr,-1,Buf,h->NI,h->NJ,h->NK) != APP_OK ) {
+            if( FPFC_Inflatel(Buf,h->NI*h->NJ*h->NK,addr,h->NBYTES) != APP_OK ) {
                return -1;
             }
             break;
@@ -976,8 +974,8 @@ TBFKey BinaryFile_ReadIndex(void *Buf,TBFKey Key,TBFFiles *File) {
             return -1;
          }
          // Uncompress the bytes
-         if( h->DATYP==BF_CFLOAT32 && FPC_InflateF(addr,-1,Buf,h->NI,h->NJ,h->NK)!=APP_OK
-               || h->DATYP==BF_CFLOAT64 && FPC_InflateD(addr,-1,Buf,h->NI,h->NJ,h->NK)!=APP_OK ) {
+         if( h->DATYP==BF_CFLOAT32 && FPFC_Inflate(Buf,h->NI*h->NJ*h->NK,addr,h->NBYTES)!=APP_OK
+               || h->DATYP==BF_CFLOAT64 && FPFC_Inflatel(Buf,h->NI*h->NJ*h->NK,addr,h->NBYTES)!=APP_OK ) {
             free(addr);
             return -1;
          }
