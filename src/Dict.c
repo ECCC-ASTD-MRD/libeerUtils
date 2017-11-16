@@ -60,7 +60,7 @@ char *TOBSOLETE[]   = { "Obsolète"   ,"Obsolete"   };
 char *TDEPRECATED[] = { "Désuète"    ,"Deprecated" };
 char *TFUTURE[]     = { "Futur"      ,"Future"     };
 char *TCURRENT[]    = { "Courante"   ,"Current"    };
-char *TINCOMPLETE[] = { "Incomplète" ,"Icomplete"  };
+char *TINCOMPLETE[] = { "Incomplète" ,"Incomplete" };
 
 char *TCENTILE[]    = { "e centile"                   ,"th percentile" };
 char *TMIN[]        = { "(minimum)"                   ,"(minimum)" };

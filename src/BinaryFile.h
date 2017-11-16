@@ -77,9 +77,10 @@ typedef struct TBFIndex {
 } TBFIndex;
 
 typedef struct TBFFile {
-   FILE           *FD;     // File descriptor
+   void           *Addr;   // Address of the memory mapping as returned by mmap
    TBFFileHeader  Header;  // File header
    TBFIndex       Index;   // File index
+   int            FD;      // File descriptor
    int            Flags;   // Mode, dirty flags
 } TBFFile;
 
