@@ -1508,7 +1508,7 @@ int Def_JPInterp(TDef *ToDef,TDef *FromDef,TGeoRef *ToRef,TGeoRef *FromRef,char 
                } else {
                   Def_Set(ToDef,0,idx,val);
                } 
-            } else {  
+            } else if (Extrap[0]=='V') {
                Def_Set(ToDef,0,idx,ToDef->NoData);
                if (ToDef->Data[1]) {
                   Def_Set(ToDef,1,idx,ToDef->NoData); 
