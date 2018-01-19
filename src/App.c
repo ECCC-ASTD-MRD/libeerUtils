@@ -367,6 +367,7 @@ void App_Start(void) {
       if ((env=getenv("OMP_NUM_THREADS"))) {
          App->NbThread=atoi(env);
       } else {
+         App->NbThread=1;
          omp_set_num_threads(0);
       }
    }
