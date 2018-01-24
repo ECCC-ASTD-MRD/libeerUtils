@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
         { APP_FLAG,          &xml,      1,             "x", "xml"         , "use xml description" },
         { APP_FLAG,          &search,   1,             "g", "glob"        , "use glob search pattern" },
         { APP_CHAR,          &encoding, 1,             "e", "encoding"    , "encoding type (iso8859-1,"APP_COLOR_GREEN"utf8"APP_COLOR_RESET",ascii)" },
-        { APP_CHAR,          dicfile,   APP_LISTMAX-1, "d", "dictionnary" , "dictionnary file(s) ("APP_COLOR_GREEN"$AFSISIO/datafiles/constants/ops.variable_dictionary.xml"APP_COLOR_RESET")" },
+        { APP_CHAR,          dicfile,   APP_LISTMAX-1, "d", "dictionary"  , "dictionary file(s) ("APP_COLOR_GREEN"$AFSISIO/datafiles/constants/ops.variable_dictionary.xml"APP_COLOR_RESET")" },
         { APP_CHAR,          rpnfile,   APP_LISTMAX-1, "f", "fstd"        , "Check RPN standard file(s) for unknow variables" },
         { APP_CHAR,          &cfgfile,  1,             "c", "cfg"         , "Check GEM configuration file for unknow variables" },
         { APP_FLAG,          &ops    ,  1,             "" , "ops"         , "Force check of operational standards when used with RPN file check" },
