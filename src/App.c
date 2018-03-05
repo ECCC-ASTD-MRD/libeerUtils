@@ -367,6 +367,7 @@ void App_Start(void) {
       if ((env=getenv("OMP_NUM_THREADS"))) {
          App->NbThread=atoi(env);
       } else {
+         App->NbThread=1;
          omp_set_num_threads(0);
       }
    }
@@ -892,7 +893,7 @@ int App_ParseArgs(TApp_Arg *AArgs,int argc,char *argv[],int Flags) {
             i++;
             if ((ner=ok=(i<argc && argv[i][0]!='-'))) {
                free(App->LogFile);
-               App->LogFile=env?strtok(str," "):argv[i];
+               App->LogFile=strdup(env?strtok(str," "):argv[i]);
             }
          } else if ((Flags&APP_ARGSTHREAD) && (!strcasecmp(tok,"-t") || !strcasecmp(tok,"--threads"))) { // Threads
             i++;

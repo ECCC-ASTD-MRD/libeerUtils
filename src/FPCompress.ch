@@ -44,17 +44,27 @@
 #include "App.h"
 #include "QSM.h"
 
+#include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <errno.h>
+
+#define FPC_BUF_SIZE    134217728 // 128 MB
+
 #define bitsizeof(x)    (sizeof(x)*CHAR_BIT)
 #define TOPBYTE(x)      ((x)>>(bitsizeof(x)-8))
 #define FPCTOPBYTE(x)   ((x)>>(bitsizeof(TFPCType)-8))
 
 typedef struct TFPCCtx {
-    TQSM        *QSM;
-    FILE*       FD;
-    size_t      Cnt;
-    TFPCType    Range;
-    TFPCType    Low;
-    TFPCType    Code;
+    TQSM            *QSM;
+    unsigned char   *CData;
+    size_t          Cnt;
+    size_t          BufCnt;
+    TFPCType        Range;
+    TFPCType        Low;
+    TFPCType        Code;
+    int             FD;
 } TFPCCtx;
 
 /*----------------------------------------------------------------------------
@@ -111,8 +121,8 @@ inline static int BSRl(unsigned long X) {
  * But      : Retourne une structure TFPCCtx initialisée
  *
  * Parametres :
- *  <FD>    : File descriptor of the opened file to output the data to/input
- *            the data from
+ *  <CData> : Buffer that contains or will receive the data
+ *  <FD>    : File descriptor where to write directly (-1 to use CData)
  *
  * Retour   : Une structure TFPCCtx initialisée ou NULL en cas d'erreur
  *
@@ -120,7 +130,7 @@ inline static int BSRl(unsigned long X) {
  *
  *----------------------------------------------------------------------------
  */
-static TFPCCtx* FPC_New(FILE* FD) {
+static TFPCCtx* FPC_New(void *restrict CData,int FD) {
     TFPCCtx *ctx = malloc(sizeof(*ctx));
 
     if( ctx ) {
@@ -129,10 +139,12 @@ static TFPCCtx* FPC_New(FILE* FD) {
             return NULL;
         }
         
-        ctx->FD = FD;
+        ctx->CData = CData;
         ctx->Cnt = 0;
+        ctx->BufCnt = 0;
         ctx->Range = (TFPCType)-1;
         ctx->Low = 0;
+        ctx->FD = FD;
     }
 
     return ctx;
@@ -176,9 +188,17 @@ static void FPC_Free(TFPCCtx *Ctx) {
  *----------------------------------------------------------------------------
  */
 static void FPC_PutByte(TFPCCtx *restrict Ctx) {
-    putc(TOPBYTE(Ctx->Low),Ctx->FD);
+    Ctx->CData[Ctx->BufCnt++] = (char)TOPBYTE(Ctx->Low);
     Ctx->Low <<= 8;
     ++Ctx->Cnt;
+
+    // Flush the buffer
+    if( Ctx->FD!=-1 && Ctx->BufCnt>=FPC_BUF_SIZE ) {
+        if( write(Ctx->FD,Ctx->CData,Ctx->BufCnt) != Ctx->BufCnt ) {
+            App_Log(ERROR,"Problem while writing the data : field will be corrupted\n");
+        }
+        Ctx->BufCnt = 0;
+    }
 }
 
 /*----------------------------------------------------------------------------
@@ -202,6 +222,14 @@ static void FPC_FlushBytes(TFPCCtx *restrict Ctx) {
     // Write the last 4 bytes
     for(i=0; i<sizeof(Ctx->Low); ++i) {
         FPC_PutByte(Ctx);
+    }
+
+    // Flush the buffer
+    if( Ctx->FD!=-1 && Ctx->BufCnt ) {
+        if( write(Ctx->FD,Ctx->CData,Ctx->BufCnt) != Ctx->BufCnt ) {
+            App_Log(ERROR,"Problem while writing the data : field will be corrupted\n");
+        }
+        Ctx->BufCnt = 0;
     }
 }
 
@@ -334,10 +362,11 @@ static void FPC_EncodeBits(TFPCCtx *restrict Ctx,TFPCType Bits,TFPCType K) {
  * Nom      : <FPC_Compress>
  * Creation : Mars 2017 - E. Legault-Ouellet - CMC/CMOE
  *
- * But      : Compresse les nombre à points flotants donnés
+ * But      : Compresse les nombre à points flottants donnés
  *
  * Parametres :
- *  <FD>    : Le file descriptor d'un fichier ouvert où écrire les données compressées
+ *  <CData> : Le buffer où écrire les données compressées (NULL si FD)
+ *  <FD>    : Le fichier où écrire les données directement (-1 si CData)
  *  <Data>  : Les nombres flotants à écrire
  *  <NI>    : Dimension en I
  *  <NJ>    : Dimension en J
@@ -347,17 +376,19 @@ static void FPC_EncodeBits(TFPCCtx *restrict Ctx,TFPCType Bits,TFPCType K) {
  * Retour   : APP_OK si ok, APP_ERR si error
  *
  * Remarques :
+ *    The CData buffer must have at least NI*NJ*NK bytes
  *
  *----------------------------------------------------------------------------
  */
 #define BUFDIFF(i,j,k) ((k)*d1*d2+(j)*d1+(i))
 #define BUFIDX(i,j,k)  (bufi<BUFDIFF(i,j,k)?bufs-BUFDIFF(i,j,k)+bufi:bufi-BUFDIFF(i,j,k))
-int R(FPC_Compress)(FILE* FD,TFPCReal *restrict Data,int NI,int NJ,int NK,size_t *restrict CSize) {
+int R(FPC_Compress)(void *restrict CData,int FD,TFPCReal *restrict Data,int NI,int NJ,int NK,size_t *restrict CSize) {
     TFPCCtx         *ctx;
     size_t          bufs,bufi,i,n=NI*NJ*NK,d1=0,d2=0;
     TFPCType        *buf,udata,upred,diff,k,zero=bitsizeof(udata);
     const TFPCType  hbit=L(1u)<<(bitsizeof(hbit)-1);
     const int       ndims=(NI>1)+(NJ>1)+(NK>1),flag=(NI>1)<<2|(NJ>1)<<1|(NK>1);
+    int             code=APP_OK;
 
     // Make sure dimensions are valid
     if( NI<1 || NJ<1 || NK<1 ) {
@@ -371,8 +402,16 @@ int R(FPC_Compress)(FILE* FD,TFPCReal *restrict Data,int NI,int NJ,int NK,size_t
     //    return APP_ERR;
     //}
 
-    if( !(ctx=FPC_New(FD)) ) {
+    // If a file was given, use a write buffer instead
+    if( FD!=-1 && !(CData=malloc(FPC_BUF_SIZE)) ) {
+        App_Log(ERROR,"Could not allocate memory for write buffer\n");
+        return APP_ERR;
+    }
+
+    if( !(ctx=FPC_New(CData,FD)) ) {
         App_Log(ERROR,"Could not allocate memory for context\n");
+        if( FD!=-1 )
+            free(CData);
         return APP_ERR;
     }
 
@@ -418,7 +457,9 @@ int R(FPC_Compress)(FILE* FD,TFPCReal *restrict Data,int NI,int NJ,int NK,size_t
     // Allocate the buffer memory
     APP_MEM_ASRT( buf,calloc(bufs,sizeof(*buf)) );
 
-    for(i=0,bufi=0; i<n; ++i) {
+    // We must not go past the result buffer (if not writing to a file)
+    const size_t maxcnt = (FD==-1) ? n-sizeof(ctx->Low) : SIZE_MAX;
+    for(i=0,bufi=0; i<n && ctx->Cnt<maxcnt; ++i) {
         // To prevent any rounding/order of operation problem with floats, we'll do integer arithmetic instead
         // We can't map to signed int because of the two's complement representation on many archs, so
         // we map the floats to unsigned integers by flipping either the most significant bit (for positive floats)
@@ -471,21 +512,30 @@ int R(FPC_Compress)(FILE* FD,TFPCReal *restrict Data,int NI,int NJ,int NK,size_t
             // Perfect prediction
             FPC_EncodeK(ctx,zero);
         }
-        //if( i>=5 ) break;
     }
 
-    FPC_FlushBytes(ctx);
-    n *= sizeof(*Data);
-    App_Log(DEBUG,"Initial data size : %zu bytes. New data size : %zu bytes. Compression factor : %.2f\n",n,ctx->Cnt,(double)(n)/(double)ctx->Cnt);
-    if( ctx->Cnt > n ) {
-        App_Log(WARNING,"The compressed field is bigger (%lu bytes|%lu MB) than the initial field (%zu bytes|%zu MB) by a factor of %.2f\n",
-                ctx->Cnt,(ctx->Cnt+1024*1024/2)/(1024*1024),n,(n+1024*1024/2)/(1024*1024),(double)ctx->Cnt/(double)(n));
+    if( ctx->Cnt < maxcnt ) {
+       FPC_FlushBytes(ctx);
+       n *= sizeof(*Data);
+       if( ctx->Cnt <= n ) {
+           *CSize = ctx->Cnt;
+           App_Log(DEBUG,"Initial data size : %zu bytes. New data size : %zu bytes. Compression factor : %.2f\n",n,ctx->Cnt,(double)(n)/(double)ctx->Cnt);
+       } else {
+           App_Log(WARNING,"Compression was aborted because the size of the compressed data would have been over the inital size.\n");
+           code = APP_ERR;
+       }
+    } else {
+       App_Log(WARNING,"Compression was aborted because we were going to be over the resulting buffer size, which means the compression wasn't working very well on this dataset anyway.\n");
+       code = APP_ERR;
     }
-    *CSize = ctx->Cnt;
+
+    if( FD != -1 ) {
+        free(CData);
+    }
 
     free(buf);
     FPC_Free(ctx);
-    return APP_OK;
+    return code;
 }
 
 /*----------------------------------------------------------------------------
@@ -504,9 +554,8 @@ int R(FPC_Compress)(FILE* FD,TFPCReal *restrict Data,int NI,int NJ,int NK,size_t
  *----------------------------------------------------------------------------
  */
 static void FPC_GetByte(TFPCCtx *restrict Ctx) {
-    Ctx->Code = (Ctx->Code<<8)|getc(Ctx->FD);
+    Ctx->Code = (Ctx->Code<<8)|Ctx->CData[Ctx->Cnt++];
     Ctx->Low <<= 8;
-    ++Ctx->Cnt;
 }
 
 /*----------------------------------------------------------------------------
@@ -662,10 +711,11 @@ static TFPCType FPC_DecodeBits(TFPCCtx *restrict Ctx,TFPCType K) {
  * Nom      : <FPC_Inflate>
  * Creation : Mars 2017 - E. Legault-Ouellet - CMC/CMOE
  *
- * But      : Décompresse les nombre à points flotants
+ * But      : Décompresse les nombre à points flottants
  *
  * Parametres :
- *  <FD>    : Le file descriptor d'un fichier ouvert où lire les données compressées
+ *  <CData> : Le buffer contenant les données compressées (NULL si FD)
+ *  <FD>    : Le fichier où écrire les données directement (-1 si CData)
  *  <Data>  : [OUT] Les nombres flotants décompressés
  *  <NI>    : Dimension en I
  *  <NJ>    : Dimension en J
@@ -677,9 +727,9 @@ static TFPCType FPC_DecodeBits(TFPCCtx *restrict Ctx,TFPCType K) {
  *
  *----------------------------------------------------------------------------
  */
-int R(FPC_Inflate)(FILE* FD,TFPCReal *restrict Data,int NI,int NJ,int NK) {
+int R(FPC_Inflate)(void *restrict CData,int FD,TFPCReal *restrict Data,int NI,int NJ,int NK) {
     TFPCCtx         *ctx;
-    size_t          bufs,bufi,i,n=NI*NJ*NK,d1=0,d2=0;
+    size_t          bufs,bufi,i,n=NI*NJ*NK,d1=0,d2=0,mxtra=0;
     TFPCType        *buf,udata,upred,diff,k,zero=bitsizeof(udata);
     const TFPCType  hbit=L(1u)<<(bitsizeof(hbit)-1);
     const int       ndims=(NI>1)+(NJ>1)+(NK>1),flag=(NI>1)<<2|(NJ>1)<<1|(NK>1);
@@ -690,7 +740,27 @@ int R(FPC_Inflate)(FILE* FD,TFPCReal *restrict Data,int NI,int NJ,int NK) {
         return APP_ERR;
     }
 
-    if( !(ctx=FPC_New(FD)) ) {
+    // If FD was given, map the file
+    if( FD != -1 ) {
+        off_t off,poff;
+
+        // Get where we are in the file
+        if( (off=lseek(FD,0,SEEK_CUR)) == -1 ) {
+            App_Log(ERROR,"Could not tell position in the file : %s\n",strerror(errno));
+            return APP_ERR;
+        }
+        // Get a page-floored offset
+        poff = off & ~((size_t)sysconf(_SC_PAGESIZE)-1);
+        // Get the size of the extra mapping (from the floored offset to the begining of the data we want)
+        mxtra = off-poff;
+        // Map that part of the file
+        if( (CData=mmap(NULL,mxtra+n*sizeof(*Data),PROT_READ,MAP_SHARED,FD,poff)) == MAP_FAILED ) {
+            App_Log(ERROR,"Could not map file to decompress data : %s\n",strerror(errno));
+            return APP_ERR;
+        }
+    }
+
+    if( !(ctx=FPC_New((char*)CData+mxtra,-1)) ) {
         App_Log(ERROR,"Could not allocate memory for context\n");
         return APP_ERR;
     }
@@ -790,7 +860,11 @@ int R(FPC_Inflate)(FILE* FD,TFPCReal *restrict Data,int NI,int NJ,int NK) {
         udata = udata&hbit ? udata&~hbit : ~udata;
         Data[i] = *(TFPCReal*)&udata;
     }
-    App_Log(DEBUG,"Inflated size : %zu. Read : %zu bytes\n",n*sizeof(*Data),ctx->Cnt);
+    App_Log(DEBUG,"Inflated size : %zu bytes. Read : %zu bytes\n",n*sizeof(*Data),ctx->Cnt);
+
+    if( FD != -1 ) {
+        munmap(CData,mxtra+n*sizeof(*Data));
+    }
 
     free(buf);
     FPC_Free(ctx);

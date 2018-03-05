@@ -4,19 +4,19 @@
  * 2121 Trans-Canadienne
  * Dorval, Quebec
  *
- * Projet    : Librairie de compression de nombre flotants
- * Fichier   : FPCompressD.h
- * Creation  : Mars 2017
+ * Projet    : Librairie de compression de nombre flottants
+ * Fichier   : FPFC.h
+ * Creation  : Octobre 2017
  * Auteur    : Eric Legault-Ouellet
  *
- * Description: Compress and inflate floating point numbers
+ * Description: Floating Point Fast Compress : Compress and inflate floating point
+ *              numbers using a faster technique
  *
  * Note:
         This is an implementation of the paper
- *      "Fast and Efficient Compression of Floating-Point Data" written
- *      by Peter Lindstrom and Martin Isenburg, published in
- *      IEEE Transactions on Visualization and Computer Graphics 12(5):1245-50,
- *      September 2006
+ *      "Fast lossless compression of scientific floating-point data" written
+ *      by P. Ratanaworabhan J. Ke and M. Burtscher, published in
+ *      Data Compression Conference 2006 pp. 133-142.
  *
  * License:
  *    This library is free software; you can redistribute it and/or
@@ -36,13 +36,28 @@
  *
  *==============================================================================
  */
-#ifndef _FPCOMPRESSD_H
-#define _FPCOMPRESSD_H
+#ifndef _FPFC_H
+#define _FPFC_H
 
 #include <stdio.h>
-#include <inttypes.h>
 
-int FPC_InflateD(void *restrict CData,int FD,double *restrict Data,int NI,int NJ,int NK);
-int FPC_CompressD(void *restrict CData,int FD,double *restrict Data,int NI,int NJ,int NK,size_t *restrict CSize);
+// Comment to use FILE IO
+#define FPFC_USE_MEM_IO
 
-#endif //_FPCOMPRESSD_H
+typedef unsigned char TBufByte;
+
+#ifdef FPFC_USE_MEM_IO
+#define FPFC_IO_PARAM TBufByte *restrict CData,size_t CBufSize
+#else //FPFC_USE_MEM_IO
+#define FPFC_IO_PARAM FILE *restrict FD
+#endif //FPFC_USE_MEM_IO
+
+// Double functions
+int FPFC_Compressl(double *restrict Data,size_t N,FPFC_IO_PARAM,size_t *CSize);
+int FPFC_Inflatel(double *restrict Data,size_t N,FPFC_IO_PARAM);
+
+// Float functions
+int FPFC_Compress(float *restrict Data,size_t N,FPFC_IO_PARAM,size_t *CSize);
+int FPFC_Inflate(float *restrict Data,size_t N,FPFC_IO_PARAM);
+
+#endif // _FPFC_H

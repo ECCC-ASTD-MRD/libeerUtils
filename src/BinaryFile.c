@@ -33,17 +33,23 @@
  *==============================================================================
  */
 #include "BinaryFile.h"
-#include "FPCompressF.h"
-#include "FPCompressD.h"
+#include "FPFC.h"
 #include "App.h"
 #include "RPN.h"
 #include <string.h>
 #include <glob.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <errno.h>
 
 const int32_t BF_MAGIC=0x45454642; //BFEE (Binary File Env. Emergencies) in little endian
 const int32_t BF_VERSION=2;
 
 static int BFTypeSize[] = {1,1,1,2,4,8,1,2,4,8,4,8,4,8,0};
+
+#define AddrAt(Addr,bytes) ( (char*)(Addr) + (bytes) )
 
 /*----------------------------------------------------------------------------
  * Nom      : <FtnStrSize>
@@ -68,6 +74,26 @@ static size_t FtnStrSize(const char *Str,size_t Max) {
    for(n=strnlen(Str,Max); n>0&&Str[n-1]==' '; --n)
       ;
    return n;
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <PageSizeCeil>
+ * Creation : Août 2017 - E. Legault-Ouellet
+ *
+ * But      : Arrondir à l'entier inférieur qui est un multiple de la taille
+ *            d'une page mémoire
+ *
+ * Parametres :
+ *  <Size>    : Taille minimum voulue
+ *
+ * Retour     : Taille arrondie au multiple inférieur de la taille de la page
+ *              mémoire
+ *
+ * Remarques  :
+ *----------------------------------------------------------------------------
+ */
+static size_t PageSizeFloor(size_t Size) {
+   return Size & ~((size_t)sysconf(_SC_PAGESIZE)-1);
 }
 
 /*----------------------------------------------------------------------------
@@ -108,9 +134,10 @@ static TBFFiles* BinaryFile_New(int N) {
 
    // Init the files
    for(file=files->Files; N; --N,++file) {
-      file->FD    = NULL;
+      file->Addr  = MAP_FAILED;
       file->Header= (TBFFileHeader){sizeof(TBFFileHeader),0,BF_MAGIC,BF_VERSION,sizeof(TBFFileHeader),sizeof(TBFFldHeader)};
       file->Index = (TBFIndex){NULL,0};
+      file->FD    = -1;
       file->Flags = 0;
    }
 
@@ -137,8 +164,12 @@ static void BinaryFile_Free(TBFFiles *Files) {
 
    if( Files ) {
       for(file=Files->Files; Files->N; --Files->N) {
-         if( file->FD ) {
-            fclose(file->FD);
+         if( file->FD >= 0 ) {
+            close(file->FD);
+         }
+
+         if( file->Addr != MAP_FAILED ) {
+            munmap(file->Addr,file->Header.Size);
          }
 
          APP_FREE(file->Index.Headers);
@@ -169,10 +200,10 @@ static void BinaryFile_Free(TBFFiles *Files) {
 static TBFFiles* BinaryFile_OpenFiles(const char **FileNames,int N,TBFFlag Mode) {
    TBFFiles *restrict files = BinaryFile_New(N);
    TBFFile  *restrict file;
-   int      i,append=0;
-   char     mode[]={'\0','b','\0','\0'};
+   struct stat statbuf;
+   int      i,mode,mmode;
 
-   // If memory was not allocated, we allocate it
+   // If memory was not allocated, abort
    if( !files ) {
       App_Log(ERROR,"BinaryFile: Could not allocate needed memory\n");
       goto error;
@@ -180,6 +211,7 @@ static TBFFiles* BinaryFile_OpenFiles(const char **FileNames,int N,TBFFlag Mode)
 
    // Limit to relevant flags
    Mode &= BF_READ|BF_WRITE|BF_CLEAR;
+   files->Flags = Mode;
 
    // Make sure we have at least one of READ or WRITE
    if( !(Mode&(BF_READ|BF_WRITE)) ) {
@@ -187,56 +219,80 @@ static TBFFiles* BinaryFile_OpenFiles(const char **FileNames,int N,TBFFlag Mode)
       goto error;
    }
 
-   // Translate our flags into flags accepted by fopen
-   if( Mode&BF_READ || !(Mode&BF_CLEAR) ) {
-      mode[0] = 'r';
-      // Add write mode if needed
-      if( Mode&BF_WRITE )
-         mode[2] = '+';
-   } else {
-      // The file is opened write-only with overwrite on
-      mode[0] = 'w';
+   // Translate our flags into flags accepted by open
+   mode = O_CREAT|O_CLOEXEC;
+   switch( Mode&(BF_READ|BF_WRITE) ) {
+      case BF_WRITE:
+         mode |= (Mode&BF_CLEAR)?O_RDWR|O_TRUNC:O_RDWR;
+         mmode = PROT_READ|PROT_WRITE;
+         break;
+      case BF_READ:
+         mode |= O_RDONLY;
+         mmode = PROT_READ;
+         break;
+      case BF_READ|BF_WRITE:
+         mode |= O_RDWR;
+         mmode = PROT_READ|PROT_WRITE;
+         break;
    }
-
-   files->Flags |= Mode;
    
    for(i=0,file=files->Files; i<N; ++i,++file) {
-      // If we are in write-only non-overwrite mode
-      if( !(Mode&BF_READ) && !(Mode&BF_CLEAR) ) {
-         FILE* fd;
-         long pos;
-         // Open the file in append mode, creating it if it doesn't exist, and then close it
-         // This ensures that the file exists so that we can open it in r+ mode afterwards
-         if( !(fd=fopen(FileNames[i],"ab")) ) {
-            App_Log(ERROR,"BinaryFile: File %s could not be created or accessed. Are you sure the path exists and you have write permissions on that path/file?\n",FileNames[i]);
-            goto error;
-         }
-         if( (pos=ftell(fd))<0 ) {
-            App_Log(ERROR,"BinaryFile: Can't tell where we are in the file %s. Aborting...\n",FileNames[i]);
-            goto error;
-         }
-         append = pos!=0;
-         fclose(fd);
-      }
-      
+      file->Flags |= Mode;
+
       // Open the file
-      if( !(file->FD=fopen(FileNames[i],mode)) ) {
-         App_Log(ERROR,"BinaryFile: Problem opening file %s in mode %s\n",FileNames[i],mode);
+      if( (file->FD=open(FileNames[i],mode,00666)) < 0 ) {
+         App_Log(ERROR,"BinaryFile: Problem opening file %s in mode %s%s%s\n",FileNames[i],Mode&BF_READ?"r":"",Mode&BF_WRITE?"w":"",Mode&BF_CLEAR?"*":"");
          goto error;
       }
 
-      file->Flags |= Mode;
+      // Stat the file
+      if( fstat(file->FD,&statbuf) ) {
+         App_Log(ERROR,"BinaryFile: Could not stat file %s : %s\n",FileNames[i],strerror(errno));
+         goto error;
+      }
 
-      if( Mode&BF_READ || append ) {
+      // Make sure that, if the file is not empty, it has at least enough data for a valid header
+      if( statbuf.st_size && statbuf.st_size<sizeof(file->Header) ) {
+         App_Log(ERROR,"BinaryFile: File is not empty but isn't big enough for a BF header %s. (Size=%zd bytes, header is %zd bytes)\n",FileNames[i],(size_t)statbuf.st_size,sizeof(file->Header));
+         goto error;
+      }
+
+      // If the file is empty, the write flag needs to be there
+      if( !statbuf.st_size && !(Mode&BF_WRITE) ) {
+         App_Log(ERROR,"BinaryFile: File %s is empty, there is nothing to read.\n",FileNames[i]);
+         goto error;
+      }
+
+      if( statbuf.st_size ) {
          // Read the file header
-         if( fread(&file->Header,sizeof(file->Header),1,file->FD)!=1 ) {
-            App_Log(ERROR,"BinaryFile: Problem reading header for file %s\n",FileNames[i]);
-            goto error;
+         if( Mode&BF_WRITE ) {
+            // We'll need to write to the file later on, just use read to read the file header
+            if( read(file->FD,&file->Header,sizeof(file->Header))!=sizeof(file->Header) ) {
+               App_Log(ERROR,"BinaryFile: Problem reading header for file %s\n",FileNames[i]);
+               goto error;
+            }
+         } else {
+            // Map the file (or just the file header if in write-only mode)
+            if( (file->Addr=mmap(NULL,statbuf.st_size,mmode,MAP_SHARED,file->FD,0)) == MAP_FAILED ) {
+               App_Log(ERROR,"BinaryFile: Could not map file %s\n",FileNames[i]);
+               goto error;
+            }
+
+            // Read the file header
+            file->Header = *((TBFFileHeader*)file->Addr);
          }
 
          // Make sure we have a valid BinaryFile
          if( file->Header.Magic != BF_MAGIC ) {
             App_Log(ERROR,"BinaryFile: File %s is not of BinaryFile type\n",FileNames[i]);
+            goto error;
+         }
+
+         // Make sure the filesystem agrees with our header on the size
+         if( file->Header.Size != statbuf.st_size ) {
+            App_Log(ERROR,"BinaryFile: The filesystem says the file is %zd bytes != %zd bytes per the BF file header for file %s\n",(size_t)statbuf.st_size,file->Header.Size,FileNames[i]);
+            // This is to allow the unmap to unmap the right amount
+            file->Header.Size = statbuf.st_size;
             goto error;
          }
 
@@ -247,16 +303,21 @@ static TBFFiles* BinaryFile_OpenFiles(const char **FileNames,int N,TBFFlag Mode)
             goto error;
          }
 
-         // Seek to the index
-         if( fseek(file->FD,file->Header.IOffset,SEEK_SET) ) {
-            App_Log(ERROR,"BinaryFile: Could not seek to index in file %s\n",FileNames[i]);
-            goto error;
-         }
-
          // Read the index size
-         if( fread(&file->Index.N,sizeof(file->Index.N),1,file->FD)!=1 ) {
-            App_Log(ERROR,"BinaryFile: Problem reading index size for file %s\n",FileNames[i]);
-            goto error;
+         if( Mode&BF_WRITE ) {
+            // Seek to the index
+            if( lseek(file->FD,file->Header.IOffset,SEEK_SET) == -1 ) {
+               App_Log(ERROR,"BinaryFile: Could not seek to index in file %s : %s\n",FileNames[i],strerror(errno));
+               goto error;
+            }
+
+            // Read the index size without moving the position in the file
+            if( pread(file->FD,&file->Index.N,sizeof(file->Index.N),file->Header.IOffset)!=sizeof(file->Index.N) ) {
+               App_Log(ERROR,"BinaryFile: Problem reading index size for file %s : %s\n",FileNames[i],strerror(errno));
+               goto error;
+            }
+         } else {
+            file->Index.N = *((int32_t*)AddrAt(file->Addr,file->Header.IOffset));
          }
 
          // Allocate the memory for the index
@@ -266,17 +327,19 @@ static TBFFiles* BinaryFile_OpenFiles(const char **FileNames,int N,TBFFlag Mode)
          }
 
          // Read the index
-         if( fread(file->Index.Headers,sizeof(*file->Index.Headers),file->Index.N,file->FD)!=file->Index.N ) {
-            App_Log(ERROR,"BinaryFile: Problem reading index for file %s\n",FileNames[i]);
-            goto error;
+         if( Mode&BF_WRITE ) {
+            // iUse pread to prevent moving the position of the cursor in the file
+            if( pread(file->FD,file->Index.Headers,sizeof(*file->Index.Headers)*file->Index.N,file->Header.IOffset+sizeof(file->Index.N))!=sizeof(*file->Index.Headers)*file->Index.N ) {
+               App_Log(ERROR,"BinaryFile: Problem reading index for file %s : %s\n",FileNames[i],strerror(errno));
+               goto error;
+            }
+         } else {
+            memcpy(file->Index.Headers,AddrAt(file->Addr,file->Header.IOffset+sizeof(file->Index.N)),sizeof(*file->Index.Headers)*file->Index.N);
          }
-
-         // Mark the fact that we are not in the right position to write a file
-         file->Flags |= BF_SEEKED;
       } else {
          // Write an invalid header as a place holder
-         if( fwrite(&file->Header,sizeof(file->Header),1,file->FD)!=1 ) {
-            App_Log(ERROR,"BinaryFile: Problem writing header for file %s\n",FileNames[i]);
+         if( write(file->FD,&file->Header,sizeof(file->Header))!=sizeof(file->Header) ) {
+            App_Log(ERROR,"BinaryFile: Problem writing header for file %s : %s\n",FileNames[i],strerror(errno));
             goto error;
          }
 
@@ -386,6 +449,7 @@ TBFFiles* BinaryFile_LinkPattern(const char* Pattern) {
 int BinaryFile_Close(TBFFiles *Files) {
    int i,code=APP_OK;
    TBFFile  *restrict file;
+   size_t bytes;
 
    if( !Files )
       return APP_ERR;
@@ -393,23 +457,17 @@ int BinaryFile_Close(TBFFiles *Files) {
    for(i=0,file=Files->Files; i<Files->N; ++i,++file) {
       // Only write something if something changed
       if( file->Flags&BF_DIRTY ) {
-         // If we are at another place than the end of the file
-         if( file->Flags&BF_SEEKED ) {
-            // Seek to the place where we need to write the FileHeader
-            if( fseek(file->FD,file->Header.IOffset,SEEK_SET) ) {
-               App_Log(ERROR,"BinaryFile: Could not seek to file index. The file will be corrupt\n");
-               code = APP_ERR;
-               continue;
-            }
-         }
-
-         // Write the index
-         if( fwrite(&file->Index.N,sizeof(file->Index.N),1,file->FD)!=1 ) {
+         // Write the index size
+         bytes = sizeof(file->Index.N);
+         if( write(file->FD,&file->Index.N,bytes) != bytes ) {
             App_Log(ERROR,"BinaryFile: Problem writing file index. The file will be corrupt\n");
             code = APP_ERR;
             continue;
          }
-         if( fwrite(file->Index.Headers,sizeof(*file->Index.Headers),file->Index.N,file->FD)!=file->Index.N ) {
+
+         // Write the index
+         bytes = sizeof(*file->Index.Headers)*file->Index.N;
+         if( write(file->FD,file->Index.Headers,bytes) != bytes ) {
             App_Log(ERROR,"BinaryFile: Problem writing file index. The file will be corrupt\n");
             code = APP_ERR;
             continue;
@@ -418,29 +476,31 @@ int BinaryFile_Close(TBFFiles *Files) {
          // Update the total file size
          file->Header.Size = file->Header.IOffset+sizeof(file->Index.N)+sizeof(*file->Index.Headers)*file->Index.N;
 
-         // Seek at the start of the file
-         if( fseek(file->FD,0,SEEK_SET) ) {
-            App_Log(ERROR,"BinaryFile: Could not seek to file header. The file will be corrupt\n");
-            code = APP_ERR;
-            continue;
-         }
-
-         // Update the file header
-         if( fwrite(&file->Header,sizeof(file->Header),1,file->FD)!=1 ) {
+         // Write the file header
+         bytes = sizeof(file->Header);
+         if( pwrite(file->FD,&file->Header,bytes,0) != bytes ) {
             App_Log(ERROR,"BinaryFile: Problem writing file header. The file will be corrupt\n");
             code = APP_ERR;
-            continue;
+            goto skip;
          }
       }
+skip:
+
+      // Unmap the file
+      if( file->Addr != MAP_FAILED ) {
+         if( munmap(file->Addr,file->Header.Size) ) {
+            App_Log(ERROR,"BinaryFile: Problem unmapping file. The file might be corrupt\n");
+            code = APP_ERR;
+         }
+      }
+      file->Addr = MAP_FAILED;
 
       // Close the file descriptor
-      if( fclose(file->FD) ) {
-         file->FD = NULL;
+      if( close(file->FD) ) {
          App_Log(ERROR,"BinaryFile: Problem closing file. The file might be corrupt\n");
          code = APP_ERR;
-         continue;
       }
-      file->FD = NULL;
+      file->FD = -1;
    }
 
    BinaryFile_Free(Files);
@@ -555,6 +615,7 @@ TBFType BinaryFile_Type(int DaTyp,int NBytes) {
          }
       }
       // Float
+      case 1:
       case 5:  {
          switch( NBytes ) {
             case 4:  return BF_FLOAT32;
@@ -563,7 +624,8 @@ TBFType BinaryFile_Type(int DaTyp,int NBytes) {
          }
       }
       // Compressed Float
-      case 133: {
+      case 133:
+      case 134: {
          switch( NBytes ) {
             case 4:  return BF_CFLOAT32;
             case 8:  return BF_CFLOAT64;
@@ -620,36 +682,58 @@ int BinaryFile_Write(void *Data,TBFType DataType,TBFFiles *File,int DateO,int De
 
    // Make sure the file is open for writing
    if( !file || !(file->Flags&BF_WRITE) ) {
-      App_Log(ERROR,"BinaryFile: Invalid file given or file is not openned for writing\n");
+      App_Log(ERROR,"BinaryFile: Invalid file given or file is not opened for writing\n");
       return APP_ERR;
    }
 
-   // Make sure we are at the "end" of the file
-   if( file->Flags&BF_SEEKED ) {
-      // Seek to the place where we need to write the Index
-      if( fseek(file->FD,file->Header.IOffset,SEEK_SET) ) {
-         App_Log(ERROR,"BinaryFile: Could not seek to the end of the file, aborting.\n");
-         return APP_ERR;
-      }
-      // Reset the flag
-      file->Flags &= ~BF_SEEKED;
-   }
+   // Calculate an upper limit (in bytes) to the size of the field to write
+   size = NI*NJ*NK*BFTypeSize[DataType];
 
-   // Write the field
+   // From this point on, consider the file dirty (if an error occur, the field will just be ignored)
+   file->Flags |= BF_DIRTY;
+
    switch( DataType ) {
       case BF_CFLOAT32:
-         APP_ASRT_OK( FPC_CompressF(file->FD,Data,NI,NJ,NK,&size) );
-         break;
-      case BF_CFLOAT64:
-         APP_ASRT_OK( FPC_CompressD(file->FD,Data,NI,NJ,NK,&size) );
-         break;
-      default:
-         size = NI*NJ*NK;
-         if( fwrite(Data,BFTypeSize[DataType],size,file->FD)!=size ) {
-            App_Log(ERROR,"BinaryFile: Problem writing field. The file will be corrupt\n");
+         // Allocate a temporary buffer for the compressed data
+         APP_MEM_ASRT( buf,malloc(size) );
+         if( FPFC_Compress(Data,NI*NJ*NK,buf,size,&size) != APP_OK ) {
+            // If the compression failed, just write the field uncompressed
+            DataType = BF_FLOAT32;
+         }
+         if( write(file->FD,DataType==BF_FLOAT32?Data:buf,size) != size ) {
+            App_Log(ERROR,"BinaryFile: Could not write the field : %s\n",strerror(errno));
+            if( lseek(file->FD,file->Header.IOffset,SEEK_SET) == -1 ) {
+               App_Log(ERROR,"BinaryFile: Could not seek to previous file position : %s\n",strerror(errno));
+            }
+            free(buf);
             return APP_ERR;
          }
-         size *= BFTypeSize[DataType];
+         free(buf);
+         break;
+      case BF_CFLOAT64:
+         APP_MEM_ASRT( buf,malloc(size) );
+         if( FPFC_Compressl(Data,NI*NJ*NK,buf,size,&size) != APP_OK ) {
+            // If the compression fails, just write the field uncompressed
+            DataType = BF_FLOAT64;
+         }
+         if( write(file->FD,Data,size) != size ) {
+            App_Log(ERROR,"BinaryFile: Could not write the field : %s\n",strerror(errno));
+            if( lseek(file->FD,file->Header.IOffset,SEEK_SET) == -1 ) {
+               App_Log(ERROR,"BinaryFile: Could not seek to previous file position : %s\n",strerror(errno));
+            }
+            free(buf);
+            return APP_ERR;
+         }
+         free(buf);
+         break;
+      default:
+         if( write(file->FD,Data,size) != size ) {
+            App_Log(ERROR,"BinaryFile: Could not write the field : %s\n",strerror(errno));
+            if( lseek(file->FD,file->Header.IOffset,SEEK_SET) == -1 ) {
+               App_Log(ERROR,"BinaryFile: Could not seek to previous file position : %s\n",strerror(errno));
+            }
+            return APP_ERR;
+         }
          break;
    }
 
@@ -694,9 +778,6 @@ int BinaryFile_Write(void *Data,TBFType DataType,TBFFiles *File,int DateO,int De
 
    // Update the offset
    file->Header.IOffset += size;
-
-   // Flag the update to the index
-   file->Flags |= BF_DIRTY;
 
    return APP_OK;
 }
@@ -850,33 +931,60 @@ TBFKey BinaryFile_Find(TBFFiles *File,int *NI,int *NJ,int *NK,int DateV,const ch
 TBFKey BinaryFile_ReadIndex(void *Buf,TBFKey Key,TBFFiles *File) {
    TBFFldHeader *restrict h;
    TBFFile *restrict file;
+   void *addr;
 
    // Make sure we have a valid file and key
    if( !File || !(File->Flags&BF_READ) || !(file=BinaryFile_GetFile(File,Key)) || !(h=BinaryFile_GetHeader(File,Key)) ) {
       return -1;
    }
 
-   // Seek to the field's position in the file
-   if( fseek(file->FD,h->KEY,SEEK_SET) ) {
-      App_Log(ERROR,"BinaryFile: Could not seek to field position\n");
-      return -1;
-   }
+   // Check if we have a file mapping or we are using traditionnal means
+   if( file->Addr != MAP_FAILED ) {
+      // Get the address where the data is
+      addr = AddrAt(file->Addr,h->KEY);
 
-   // Read the bytes
-   switch( h->DATYP ) {
-      case BF_CFLOAT32:
-         APP_ASRT_OK( FPC_InflateF(file->FD,Buf,h->NI,h->NJ,h->NK) );
-         break;
-      case BF_CFLOAT64:
-         APP_ASRT_OK( FPC_InflateD(file->FD,Buf,h->NI,h->NJ,h->NK) );
-         break;
-      default: {
-         size_t n = h->NI*h->NJ*h->NK;
-         if( fread(Buf,BFTypeSize[h->DATYP],n,file->FD)!=n ) {
-            App_Log(ERROR,"BinaryFile: Could not seek to field position\n");
+      // Read the bytes
+      switch( h->DATYP ) {
+         case BF_CFLOAT32:
+            if( FPFC_Inflate(Buf,h->NI*h->NJ*h->NK,addr,h->NBYTES) != APP_OK ) {
+               return -1;
+            }
+            break;
+         case BF_CFLOAT64:
+            if( FPFC_Inflatel(Buf,h->NI*h->NJ*h->NK,addr,h->NBYTES) != APP_OK ) {
+               return -1;
+            }
+            break;
+         default:
+            memcpy(Buf,addr,h->NI*h->NJ*h->NK*BFTypeSize[h->DATYP]);
+            break;
+      }
+   } else {
+      // Read the bytes
+      if( h->DATYP==BF_CFLOAT32 || h->DATYP==BF_CFLOAT64 ) {
+         // Allocate a temporary buffer
+         if( !(addr=malloc(h->NBYTES)) ) {
+            App_Log(ERROR,"BinaryFile: Could not allocate memory for temporary buffer\n");
             return -1;
          }
-         break;
+         // Read the compressed bytes
+         if( pread(file->FD,addr,h->NBYTES,h->KEY) != h->NBYTES ) {
+            App_Log(ERROR,"BinaryFile: Could not read compressed field\n");
+            free(addr);
+            return -1;
+         }
+         // Uncompress the bytes
+         if( h->DATYP==BF_CFLOAT32 && FPFC_Inflate(Buf,h->NI*h->NJ*h->NK,addr,h->NBYTES)!=APP_OK
+               || h->DATYP==BF_CFLOAT64 && FPFC_Inflatel(Buf,h->NI*h->NJ*h->NK,addr,h->NBYTES)!=APP_OK ) {
+            free(addr);
+            return -1;
+         }
+         free(addr);
+      } else {
+         if( pread(file->FD,Buf,h->NBYTES,h->KEY) != h->NBYTES ) {
+            App_Log(ERROR,"BinaryFile: Could not read field\n");
+            return -1;
+         }
       }
    }
 

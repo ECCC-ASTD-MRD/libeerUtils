@@ -60,7 +60,7 @@ char *TOBSOLETE[]   = { "Obsolète"   ,"Obsolete"   };
 char *TDEPRECATED[] = { "Désuète"    ,"Deprecated" };
 char *TFUTURE[]     = { "Futur"      ,"Future"     };
 char *TCURRENT[]    = { "Courante"   ,"Current"    };
-char *TINCOMPLETE[] = { "Incomplète" ,"Icomplete"  };
+char *TINCOMPLETE[] = { "Incomplète" ,"Incomplete" };
 
 char *TCENTILE[]    = { "e centile"                   ,"th percentile" };
 char *TMIN[]        = { "(minimum)"                   ,"(minimum)" };
@@ -75,9 +75,9 @@ char *TDAY[]        = { "le jour","day" };
 char *THOUR[]       = { "l'heure","hour" };
 
 typedef struct {
-   char          *Name,*Date,*Version,String[64];     // Dictionnary metadata
-   TList         *Vars;                               // List of dictionnary variables
-   TList         *Types;                              // List of dictionnary types
+   char          *Name,*Date,*Version,String[64];     // Dictionary metadata
+   TList         *Vars;                               // List of dictionary variables
+   TList         *Types;                              // List of dictionary types
 } TDict;
 
 typedef struct {
@@ -90,7 +90,7 @@ typedef struct {
    int            AltIP1,AltIP2,AltIP3;               // Alternate IP to look for (OLD/NEW)
 } TDictSearch;
 
-static          TDict       Dict;                     // Global dictionnary
+static          TDict       Dict;                     // Global dictionary
 static __thread TDictSearch DictSearch;               // Per thread search params
 
 static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encoding Encoding);
@@ -305,10 +305,10 @@ void Dict_SetModifier(char *Modifier) {
  * Nom      : <Dict_Parse>
  * Creation : Mai 2014 - J.P. Gauthier
  *
- * But      : Read and parse an XML dictionnary file.
+ * But      : Read and parse an XML dictionary file.
  *
  * Parametres  :
- *  <Filename> : XML dictionnary file
+ *  <Filename> : XML dictionary file
  *  <Encoding> : Encoding mode (DICT_ASCII,DICT_UTF8,DICT_ISO8859_1)
  *
  * Retour:
@@ -333,7 +333,7 @@ int Dict_Parse(char *Filename,TDict_Encoding Encoding) {
 
    // Build the XML tree from the file
    if (!(doc=xmlParseFile(Filename))) {
-      App_Log(ERROR,"%s: Invalid dictionnary file: %s\n",__func__,Filename);
+      App_Log(ERROR,"%s: Invalid dictionary file: %s\n",__func__,Filename);
       return(0);
    }
 
@@ -713,7 +713,7 @@ static int Dict_ParseType(xmlDocPtr Doc, xmlNsPtr NS, xmlNodePtr Node,TDict_Enco
  * But      : Add a type.
  *
  * Parametres  :
- *  <Var>      : Variable to add to dictionnary
+ *  <Var>      : Variable to add to dictionary
  *
  * Retour:
  *
@@ -864,7 +864,7 @@ TDictVar *Dict_IterateVar(TList **Iterator,char *Var) {
  * But      : Add a type.
  *
  * Parametres  :
- *  <Type>     : Typevar to add to dictionnary
+ *  <Type>     : Typevar to add to dictionary
  *
  * Retour:
  *
