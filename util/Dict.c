@@ -485,10 +485,10 @@ int Dict_CheckRPN(char **RPNFile,int CheckOPS) {
                            App_Log(ERROR,"Descriptor %s ETIKET is different from fields (\"%s\"!=\"%s\")\n",headtable[z].NOMVAR,etiket,headtable[h].ETIKET);
                            err++;                         
                         }
-                        if (dateo!=headtable[z].DATEO) {
-                           App_Log(ERROR,"Descriptor %s DATEO is different from fields (%i!=%i)\n",headtable[z].NOMVAR,dateo,headtable[h].DATEO);
-                           err++;                         
-                        }         
+//                        if (dateo!=headtable[z].DATEO) {
+//                           App_Log(ERROR,"Descriptor %s DATEO is different from fields (%i!=%i)\n",headtable[z].NOMVAR,dateo,headtable[h].DATEO);
+//                           err++;                         
+//                        }         
                      }
                   }
                }
