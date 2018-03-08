@@ -680,6 +680,7 @@ void GeoRef_Clear(TGeoRef *Ref,int New) {
       if (Ref->String)       free(Ref->String);       Ref->String=NULL;
       if (Ref->Transform)    free(Ref->Transform);    Ref->Transform=NULL;
       if (Ref->InvTransform) free(Ref->InvTransform); Ref->InvTransform=NULL;
+      if (Ref->RotTransform) free(Ref->RotTransform); Ref->RotTransform=NULL;
       if (Ref->Lat)          free(Ref->Lat);          Ref->Lat=NULL;
       if (Ref->Lon)          free(Ref->Lon);          Ref->Lon=NULL;
       if (Ref->Hgt)          free(Ref->Hgt);          Ref->Hgt=NULL;
@@ -863,9 +864,14 @@ int GeoRef_Equal(TGeoRef* __restrict const Ref0,TGeoRef* __restrict const Ref1) 
       return(0);
 #endif
 
+   if ((Ref0->RotTransform && !Ref1->RotTransform) || (!Ref0->RotTransform && Ref1->RotTransform))
+      return(0);
+   if (Ref0->RotTransform && Ref1->RotTransform)
+      if (memcmp(Ref0->RotTransform,Ref1->RotTransform,sizeof(TRotationTransform))!=0)
+         return(0);
+
    if ((Ref0->Transform && !Ref1->Transform) || (!Ref0->Transform && Ref1->Transform))
       return(0);
-
    if (Ref0->Transform && Ref1->Transform)
       if (memcmp(Ref0->Transform,Ref1->Transform,6*sizeof(double))!=0)
          return(0);
@@ -950,6 +956,8 @@ TGeoRef *GeoRef_HardCopy(TGeoRef* __restrict const Ref) {
             ref->ResA=Ref->ResA;
          case 'W' :
             GeoRef_WKTSet(ref,Ref->String,Ref->Transform,Ref->InvTransform,Ref->Spatial);
+            ref->RotTransform=(TRotationTransform*)malloc(sizeof(TRotationTransform));
+            memcpy(ref->RotTransform,Ref->RotTransform,sizeof(TRotationTransform));
       }
    }
    return(ref);
@@ -1038,6 +1046,7 @@ TGeoRef* GeoRef_New() {
    ref->Function=NULL;
    ref->InvFunction=NULL;
    ref->Transform=NULL;
+   ref->RotTransform=NULL;
    ref->InvTransform=NULL;
    ref->GCPTransform=NULL;
    ref->TPSTransform=NULL;
@@ -1829,7 +1838,7 @@ int GeoRef_Positional(TGeoRef *Ref,TDef *XDef,TDef *YDef) {
    }
 
 #ifdef HAVE_GDAL
-   /*Get rid of transforms and projection functions if the positionnale are already in latlon (GDAL case)*/
+   // Get rid of transforms and projection functions if the positionnale are already in latlon (GDAL case)
    if (Ref->Grid[1]=='\0') {
       if (Ref->Transform)    free(Ref->Transform);    Ref->Transform=NULL;
       if (Ref->InvTransform) free(Ref->InvTransform); Ref->InvTransform=NULL;

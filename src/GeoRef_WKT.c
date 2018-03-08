@@ -174,6 +174,52 @@ int GeoRef_WKTValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
    return(valid);
 }
 
+static inline int GeoRef_WKTRotate(TRotationTransform *T,double *Lat,double *Lon) {
+
+   double lat,lon,x,y,z,xr,yr,zr;
+   
+   lon = DEG2RAD(*Lon);
+   lat = DEG2RAD(*Lat);
+
+   // Convert from spherical to cartesian coordinates
+   x = cos(lon)*cos(lat); 
+   y = sin(lon)*cos(lat);
+   z = sin(lat);
+
+   xr = T->CosTheta*T->CosPhi*x + T->CosTheta*T->SinPhi*y + T->SinTheta*z;
+   yr = -T->SinPhi*x + T->CosPhi*y;
+   zr = -T->SinTheta*T->CosPhi*x - T->SinTheta*T->SinPhi*y + T->CosTheta*z;
+      
+   // Convert cartesian back to spherical coordinates
+   *Lon = RAD2DEG(atan2(yr,xr)); 
+   *Lat = RAD2DEG(asin(zr));
+   
+   return(TRUE);
+}
+
+static inline int GeoRef_WKTUnRotate(TRotationTransform *T,double *Lat,double *Lon) {
+
+   double lat,lon,x,y,z,xr,yr,zr;
+   
+   lon = DEG2RAD(*Lon);
+   lat = DEG2RAD(*Lat);
+
+   // Convert from spherical to cartesian coordinates
+   x = cos(lon)*cos(lat); 
+   y = sin(lon)*cos(lat);
+   z = sin(lat);
+
+   xr = T->CosTheta*T->CosPhi*x + -T->SinPhi*y + -T->SinTheta*T->CosPhi*z;
+   yr = -T->CosTheta*-T->SinPhi*x + T->CosPhi*y - -T->SinTheta*-T->SinPhi*z;
+   zr = T->SinTheta*x + T->CosTheta*z;
+      
+   // Convert cartesian back to spherical coordinates
+   *Lon = RAD2DEG(atan2(yr,xr)); 
+   *Lat = RAD2DEG(asin(zr));
+
+   return(TRUE);
+}
+
 /*--------------------------------------------------------------------------------------------------------------
  * Nom          : <GeoRef_WKTProject>
  * Creation     : Mars 2005 J.P. Gauthier - CMC/CMOE
@@ -277,7 +323,10 @@ int GeoRef_WKTProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,in
 
    *Lon=x;
    *Lat=y;
-
+   
+   if (GRef->RotTransform) 
+      GeoRef_WKTUnRotate(GRef->RotTransform,Lat,Lon);
+   
    return(1);
 #else
    App_Log(ERROR,"Function %s is not available, needs to be built with GDAL\n",__func__);
@@ -315,6 +364,9 @@ int GeoRef_WKTUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
    Vect2d pts[4],pt;
    Vect3d b;
    
+   if (GRef->RotTransform) 
+      GeoRef_WKTRotate(GRef->RotTransform,&Lat,&Lon);
+
    if (Lat<=90.0 && Lat>=-90.0 && Lon!=-999.0) {
 
       // Longitude from -180 to 180

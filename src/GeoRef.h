@@ -123,6 +123,10 @@ typedef int    (TGeoRef_Value)     (struct TGeoRef *Ref,struct TDef *Def,char Mo
 typedef double (TGeoRef_Distance)  (struct TGeoRef *Ref,double X0,double Y0,double X1, double Y1);
 typedef double (TGeoRef_Height)    (struct TGeoRef *Ref,TZRef *ZRef,double X,double Y,double Z);
 
+typedef struct TRotationTransform {
+   double Lat,Lon,Angle,SinTheta,CosTheta,SinPhi,CosPhi;   
+} TRotationTransform;
+
 typedef struct TGeoRef {
    char*   Name;                                          // Reference name
    int*    Ids;                                           // Ids des georeferences (>=0 = ezscint)
@@ -147,6 +151,7 @@ typedef struct TGeoRef {
 
    char                         *String;                  // OpenGIS WKT String description
    double                       *Transform,*InvTransform; // Transformation functions
+   TRotationTransform           *RotTransform;            // Rotation transform
    void                         *GCPTransform;            // GPC derivative transform (1,2,3 order)
    void                         *TPSTransform;            // GPC Thin Spline transform
    void                         *RPCTransform;            // GPC Rigorous Projection Model transform
