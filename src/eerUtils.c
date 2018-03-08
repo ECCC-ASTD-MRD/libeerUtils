@@ -32,6 +32,7 @@
  */
 
 #include </usr/include/regex.h>
+#include "App.h"
 #include "eerUtils.h"
 #include "RPN.h"
 

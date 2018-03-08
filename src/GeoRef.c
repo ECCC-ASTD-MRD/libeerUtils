@@ -1907,8 +1907,8 @@ int GeoRef_Coords(TGeoRef *Ref,float *Lat,float *Lon) {
    
    Lat=Ref->Lat;
    Lon=Ref->Lon;
-#endif
    return(nxy);
+#endif
 }
 
 

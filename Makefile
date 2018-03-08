@@ -6,7 +6,7 @@ BUILDINFO  = $(shell HOME=/dev/null git describe --always)
 MAINTAINER = $(USER)
 OS         = $(shell uname -s)
 PROC       = $(shell uname -m | tr _ -)
-RMN        = -DHAVE_RMN -DHAVE_GPC
+OPT        = -DHAVE_RMN -DHAVE_GPC
 #-DHAVE_RPNC
 
 ifdef COMP_ARCH
@@ -27,7 +27,7 @@ INCLUDES    := -I$(LIB_DIR)/include -I$(shell echo $(EC_INCLUDE_PATH) | sed 's/\
 
 ifeq ($(OS),Linux)
 
-   LIBS        := $(LIBS) -Wl,-rpath-link $(LIB_DIR)/lib -lxml2 -lgdal -lnetcdf -lz -lezscint -lrmneer -ldescrip 
+   LIBS        := $(LIBS) -Wl,-rpath-link $(LIB_DIR)/lib -lxml2 -lgdal -lnetcdf -lz -lezscint -lrmneer
 #   LIBS        := $(LIBS) -Wl,-rpath-link $(LIB_DIR)/lib -lxml2 -lezscint -lrmneer 
 
    #----- If not using intel compiler, link with intel libc (RMN)
@@ -80,7 +80,7 @@ else
    CPFLAGS     = -h
 endif
 
-DEFINES     = -DVERSION=\"$(VERSION)-r$(BUILDINFO)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE $(RMN)
+DEFINES     = -DVERSION=\"$(VERSION)-r$(BUILDINFO)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE $(OPT)
 ifdef OMPI
    DEFINES    := $(DEFINES) -D_MPI
 endif
@@ -117,7 +117,7 @@ lib: obj
 
 exec: obj 
 	mkdir -p ./bin
-ifdef RMN
+ifdef OPT
 	$(CC) util/Dict.c -o bin/Dict-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC) 
 	ln -fs Dict-$(VERSION) bin/Dict
 	ln -fs Dict bin/o.dict
@@ -151,7 +151,7 @@ install:
 ssm:
 	rm -f -r  $(SSM_DEV)/workspace/$(SSM_NAME) $(SSM_DEV)/package/$(SSM_NAME).ssm 
 	mkdir -p $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d  $(SSM_DEV)/workspace/$(SSM_NAME)/etc/profile.d $(SSM_DEV)/workspace/$(SSM_NAME)/lib $(SSM_DEV)/workspace/$(SSM_NAME)/include $(SSM_DEV)/workspace/$(SSM_NAME)/bin
-ifdef RMN
+ifdef OPT
 	cp $(CPFLAGS) ./bin/* $(SSM_DEV)/workspace/$(SSM_NAME)/bin
 endif
 	cp $(CPFLAGS) ./lib/* $(SSM_DEV)/workspace/$(SSM_NAME)/lib

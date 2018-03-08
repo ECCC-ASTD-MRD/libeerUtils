@@ -648,6 +648,7 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
          break;
          
       case LVL_HYBRID:
+#ifdef HAVE_RMN         
          if (ZRef->Version<=0) {
             ij=1;
             f77name(hyb_to_pres)(Pres,ZRef->Levels,&ptop,&ZRef->RCoef[0],&pref,&ij,P0,&NIJ,&ij,&ZRef->LevelNb);
@@ -671,6 +672,7 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
             free(ips);
             free(p0);            
          }
+#endif
          break;
          
       default:
