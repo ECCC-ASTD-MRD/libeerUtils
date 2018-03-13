@@ -1301,7 +1301,7 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
 
                // Use enveloppe limits to initialize the initial lookup range
                OGR_G_GetEnvelope(geom,&env);
-               if (!(env.MaxX<ToRef->X0 || env.MinX>ToRef->X1 || env.MaxY<ToRef->Y0 || env.MinY>ToRef->Y1)) {
+               if (!(env.MaxX<(ToRef->X0-0.5) || env.MinX>(ToRef->X1+0.5) || env.MaxY<(ToRef->Y0-0.5) || env.MinY>(ToRef->Y1+0.5))) {
 
                   if (Mode==IV_FAST) {
                      Def_Rasterize(ToDef,ToRef,geom,value,0);
@@ -1332,8 +1332,8 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
                      env.MaxX+=0.5;env.MaxY+=0.5;
                      env.MinX=env.MinX<0?0:env.MinX;
                      env.MinY=env.MinY<0?0:env.MinY;
-                     env.MaxX=env.MaxX>ToRef->X1?ToRef->X1:env.MaxX;
-                     env.MaxY=env.MaxY>ToRef->Y1?ToRef->Y1:env.MaxY;
+                     env.MaxX=env.MaxX>(ToRef->X1+0.5)?(ToRef->X1+0.5):env.MaxX;
+                     env.MaxY=env.MaxY>(ToRef->Y1+0.5)?(ToRef->Y1+0.5):env.MaxY;
                      area=area<0?0.0:area;
 
                      // Append feature into index
