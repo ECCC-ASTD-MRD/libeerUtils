@@ -89,6 +89,8 @@ CFLAGS      = $(CDEBUGFLAGS) $(CCOPTIONS) $(INCLUDES) $(DEFINES)
 
 OBJ_C = $(subst .c,.o,$(wildcard src/*.c))
 OBJ_F = $(subst .f,.o,$(wildcard src/*.f))
+OBJ_V := $(shell ar t ${VGRIDDESCRIPTORS_SRC}/../lib/libdescrip.a)
+OBJ_VG = $(OBJ_V:%=src/%)
 
 %.o:%.f
 #	gfortran $< $(CCOPTIONS) -c -o $@ -L$(LIB_DIR)/librmn-15/lib -lrmneer
@@ -104,7 +106,7 @@ lib: obj
 
         # Need to include vgrid archive
 	cd src;	ar x ${VGRIDDESCRIPTORS_SRC}/../lib/libdescrip.a
-	$(AR) lib/libeerUtils$(OMPI)-$(VERSION).a $(OBJ_C) $(OBJ_F) src/utils.o src/vgrid.o src/vgrid_descriptors.o
+	$(AR) lib/libeerUtils$(OMPI)-$(VERSION).a $(OBJ_C) $(OBJ_F) $(OBJ_VG)
 	ln -fs libeerUtils$(OMPI)-$(VERSION).a lib/libeerUtils$(OMPI).a
 
         #----- Need shared version for Cray
