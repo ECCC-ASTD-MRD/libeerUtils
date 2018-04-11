@@ -309,7 +309,7 @@ int Dict_CheckRPN(char **RPNFile,int CheckOPS) {
    TRPNHeader headtable[DICT_MAXFLD],*head;
    TDictVar  *var;
    TList     *unknown,*known;
-   int        fid,key,ni,nj,nk,n,nb_unknown=0,nb_known=0,nidx,idxs[DICT_MAXREF],dateo;
+   int        fid,key,ni,nj,nk,n,nb_unknown=0,nb_known=0,nidx,idxs[DICT_MAXREF],dateo=0;
    double     nhour;
    char       nvar[5],*etiket;
    
@@ -382,8 +382,14 @@ int Dict_CheckRPN(char **RPNFile,int CheckOPS) {
             if (!RPN_IsDesc(head->NOMVAR)) {
                
                // Keep regular field ETIKET and DATEO for descriptor field checks
-               dateo=head->DATEO;
+               dateo=!dateo?head->DATEO:dateo;
                etiket=head->ETIKET;
+               
+               // Check same DATEO
+               if (dateo!=head->DATEO) {
+                  App_Log(ERROR,"Found different DATEO (%8i): NOMVAR=%4s TYPVAR=%4s IP1=%8i IP2=%8i IP3=%8i DATEO=%8i\n",dateo,head->NOMVAR,head->TYPVAR,head->IP1,head->IP2,head->IP3,head->DATEO);
+                  err++;
+               }
                
                // Check for compression
                if ((head->DATYP==2 || head->DATYP==4 || head->DATYP==5)) {
@@ -402,7 +408,7 @@ int Dict_CheckRPN(char **RPNFile,int CheckOPS) {
                      break;
                   }
                }
-
+               
                // Check horizontal grid
                for(h=0;h<hrefnb;h++) {                
                   if (href[h].IP1==head->IG1 && href[h].IP2==head->IG2 && href[h].IP3==head->IG3) {
