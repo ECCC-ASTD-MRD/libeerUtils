@@ -332,12 +332,12 @@ void Def_Free(TDef *Def){
       if (!Def->Alias && !Def->Idx) {
          if (Def->Mode && Def->Mode!=Def->Data[0]) free(Def->Mode);
          if (Def->Data[0])                         free(Def->Data[0]);
+         if (Def->Mask)                            free(Def->Mask);
       }
 
       if (Def->Buffer)             free(Def->Buffer);
       if (Def->Aux)                free(Def->Aux);
       if (Def->Accum)              free(Def->Accum);
-      if (Def->Mask)               free(Def->Mask);
       if (Def->Sub)                free(Def->Sub);
       if (Def->Pres>(float*)0x1)   free(Def->Pres);
       if (Def->Height>(float*)0x1) free(Def->Height);
