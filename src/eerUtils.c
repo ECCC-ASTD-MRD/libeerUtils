@@ -664,27 +664,22 @@ int QSort_DecInt(const void *A, const void *B) {
  *
  *----------------------------------------------------------------------------
  */
-void Unique(void* restrict Arr, int* restrict Size, int NBytes) {
+void Unique(void *Arr,int* restrict Size,size_t NBytes) {
+   int i;
+   char *a,*b;
 
-   int i,j,b;
-   char *v,*p,*arr=(char*)Arr;
-
-   for(i=1,j=0; i<*Size; ++i) {
-      v=&arr[i*NBytes];
-      p=&arr[j*NBytes];
-
-      for(b=0; b<NBytes; ++b) {
-         if( v[b] != p[b] ) {
-            if( ++j != i ) {
-               for(b=0; b<NBytes; ++b) {
-                  p[b] = v[b];
-               }
+   if( *Size > 0 ) {
+      for(i=*Size-1,a=Arr,b=a+NBytes; i; --i,b+=NBytes) {
+         if( memcmp(a,b,NBytes) ) {
+            a += NBytes;
+            if( a != b ) {
+               memcpy(a,b,NBytes);
             }
-            break;
          }
       }
+
+      *Size = (int)((a-(char*)Arr)/NBytes) + 1;
    }
-   if( ++j!=i ) *Size=j;
 }
 
 

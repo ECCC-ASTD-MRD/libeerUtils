@@ -183,7 +183,7 @@ int QSort_DecDouble(const void *A,const void *B);
 int QSort_DecFloat(const void *A,const void *B);
 int QSort_DecInt(const void *A,const void *B);
 
-void Unique(void* restrict Arr, int* restrict Size, int NBytes);
+void Unique(void *Arr,int* restrict Size,size_t NBytes);
 
 double InterpCubic(double X0,double X1,double X2, double X3,double F);
 double InterpHermite(double X0,double X1,double X2, double X3,double F,double T,double B);
