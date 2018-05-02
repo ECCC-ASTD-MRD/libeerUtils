@@ -123,6 +123,7 @@ void         OGM_ClearVect3d(void);
 void         OGM_OGRProject(OGRGeometryH Geom,TGeoRef *FromRef,TGeoRef *ToRef);
 int          OGM_QSortInter(const void *A,const void *B);
 int          OGM_Within(OGRGeometryH Geom0,OGRGeometryH Geom1,OGREnvelope *Env0,OGREnvelope *Env1);
+OGRGeometryH OGM_IntersectionPts(OGRGeometryH Geom,double X0,double Y0,double X1,double Y1);
 int          OGM_Intersect(OGRGeometryH Geom0,OGRGeometryH Geom1,OGREnvelope *Env0,OGREnvelope *Env1);
 int          OGM_PointPointIntersect(OGRGeometryH Geom0,OGRGeometryH Geom1,int All);
 int          OGM_PointLineIntersect(OGRGeometryH Geom0,OGRGeometryH Geom1,int All);

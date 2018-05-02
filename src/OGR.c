@@ -32,6 +32,7 @@
 
 #include "App.h"
 #include "OGR.h"
+#include "DynArray.h"
 
 static  __thread Vect3d*  OGM_Geom[2];
 static  __thread Vect3d** OGM_Ptr;
@@ -546,6 +547,125 @@ int OGM_Within(OGRGeometryH Geom0,OGRGeometryH Geom1,OGREnvelope *Env0,OGREnvelo
    } else {
       return(OGM_PointPolyIntersect(Geom0,Geom1,0));
    }
+}
+
+/*--------------------------------------------------------------------------------------------------------------
+ * Nom          : <OGM_IntersectionPts>
+ * Creation     : Mai 2018 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But          : Retourne les points d'intersection entre un segment et une géométrie
+ *
+ * Parametres   :
+ *   <Geom>     : Géométrie OGR
+ *   <X0>       : Coordonnée en X du premier point du segment
+ *   <Y0>       : Coordonnée en Y du premier point du segment
+ *   <X1>       : Coordonnée en X du second point du segment
+ *   <Y1>       : Coordonnée en Y du second point du segment
+ *
+ * Retour       : Une géométrie OGR de type MultiPoint
+ *
+ * Remarques    :
+ *
+ *---------------------------------------------------------------------------------------------------------------
+*/
+static int OGM_QSortIntersectionPts(const void *A,const void *B){
+   const double *a=A,*b=B,a2=a[0]*a[0]+a[1]*a[1],b2=b[0]*b[0]+b[1]*b[1];
+
+   if( a2 < b2 )
+      return -1;
+   else if( a2 > b2 )
+      return 1;
+   else
+      return 0;
+}
+static int OGM_IntersectionPts_(OGRGeometryH Geom,double X0,double Y0,double X1,double Y1,DynArray *restrict Pts) {
+   int n,i,npt=0;
+
+   // Loop on the points in the current geometry
+   if( (n=OGR_G_GetPointCount(Geom)) > 1 ) {
+      Vect3d *restrict  v;
+      double            s12x,s13x,s34x,s12y,s13y,s34y,a,b,c;
+
+      // These values won't change
+      s12x = X1-X0;
+      s12y = Y1-Y0;
+
+      // Loop on the segments
+      OGM_ToVect3d(Geom,0);
+      v = OGM_Geom[0];
+      for(i=1; i<n; ++i) {
+         // Calculate the intersection point of the two segments
+         s34x = v[i][0]-v[i-1][0];
+         s34y = v[i][1]-v[i-1][1];
+         c = s34x*s12y - s34y*s12x;
+         // Note that if c==0.0, the lines are parallel, which means that we either have
+         // no intersection or an infinity of it (if both lines overlap). The special case where
+         // both segments are parallel and have points in common (overlap or share an end) is not
+         // taken into account (it is not considered an intersection)
+         if( c != 0.0 ) {
+            // The lines intersects somewhere
+            s13x = X0-v[i-1][0];
+            s13y = v[i-1][1]-Y0;
+
+            a = (s13x*s34y + s13y*s34x) / c;
+            b = (s13x*s12y + s13y*s12x) / c;
+
+            // Check if the intersection is inside both segments
+            if( 0.0<=a && a<=1.0 && 0.0<=b && b<=1.0 ) {
+               // Calculate and add the intersecting point
+               DynArray_Pushd(Pts,X0+a*s12x);
+               DynArray_Pushd(Pts,Y0+a*s12y);
+               ++npt;
+            }
+         }
+      }
+   }
+
+   // Recursive loop in all the sub-geometry
+   n=OGR_G_GetGeometryCount(Geom);
+   for(i=0; i<n; ++i) {
+      npt += OGM_IntersectionPts_(OGR_G_GetGeometryRef(Geom,i),X0,Y0,X1,Y1,Pts);
+   }
+
+   return npt;
+}
+OGRGeometryH OGM_IntersectionPts(OGRGeometryH Geom,double X0,double Y0,double X1,double Y1) {
+   OGRGeometryH   pts,pt;
+   DynArray       da;
+   double         *arr;
+   int            n,i;
+
+   DynArray_Init(&da,0);
+
+   // Process the geometry recursively and fill the array with X,Y pairs of points
+   n = OGM_IntersectionPts_(Geom,X0,Y0,X1,Y1,&da);
+
+   // Sort the points if we have more than one
+   if( n > 1 ) {
+      // Make the position relative to the first point of the segment
+      for(i=n,arr=da.Arr; i; --i) {
+         *arr++ -= X0;
+         *arr++ -= Y0;
+      }
+      // Sort the points in terms of distance from the first point of the segment
+      qsort(da.Arr,n,2*sizeof(double),OGM_QSortIntersectionPts);
+      // Make the position absolute again
+      for(i=n,arr=da.Arr; i; --i) {
+         *arr++ += X0;
+         *arr++ += Y0;
+      }
+   }
+
+   // Create points for each coords and add it to our set
+   pts = OGR_G_CreateGeometry(wkbMultiPoint);
+   for(arr=da.Arr; n; --n,arr+=2) {
+      pt = OGR_G_CreateGeometry(wkbPoint);
+      OGR_G_AddPoint_2D(pt,arr[0],arr[1]);
+      OGR_G_AddGeometryDirectly(pts,pt);
+   }
+
+   DynArray_Free(&da);
+   return pts;
 }
 
 int OGM_Intersect(OGRGeometryH Geom0,OGRGeometryH Geom1,OGREnvelope *Env0,OGREnvelope *Env1) {
