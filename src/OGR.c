@@ -568,7 +568,7 @@ int OGM_Within(OGRGeometryH Geom0,OGRGeometryH Geom1,OGREnvelope *Env0,OGREnvelo
  *
  *---------------------------------------------------------------------------------------------------------------
 */
-static int OGM_QSortIntersectionPts(const void *A,const void *B){
+static int OGM_QSortSegIntersectionPts(const void *A,const void *B){
    const double *a=A,*b=B,a2=a[0]*a[0]+a[1]*a[1],b2=b[0]*b[0]+b[1]*b[1];
 
    if( a2 < b2 )
@@ -578,7 +578,7 @@ static int OGM_QSortIntersectionPts(const void *A,const void *B){
    else
       return 0;
 }
-static int OGM_IntersectionPts_(OGRGeometryH Geom,double X0,double Y0,double X1,double Y1,DynArray *restrict Pts) {
+static int OGM_SegIntersectionPts_(OGRGeometryH Geom,double X0,double Y0,double X1,double Y1,DynArray *restrict Pts) {
    int n,i,npt=0;
 
    // Loop on the points in the current geometry
@@ -624,12 +624,12 @@ static int OGM_IntersectionPts_(OGRGeometryH Geom,double X0,double Y0,double X1,
    // Recursive loop in all the sub-geometry
    n=OGR_G_GetGeometryCount(Geom);
    for(i=0; i<n; ++i) {
-      npt += OGM_IntersectionPts_(OGR_G_GetGeometryRef(Geom,i),X0,Y0,X1,Y1,Pts);
+      npt += OGM_SegIntersectionPts_(OGR_G_GetGeometryRef(Geom,i),X0,Y0,X1,Y1,Pts);
    }
 
    return npt;
 }
-OGRGeometryH OGM_IntersectionPts(OGRGeometryH Geom,double X0,double Y0,double X1,double Y1) {
+OGRGeometryH OGM_SegIntersectionPts(OGRGeometryH Geom,double X0,double Y0,double X1,double Y1) {
    OGRGeometryH   pts,pt;
    DynArray       da;
    double         *arr;
@@ -638,7 +638,7 @@ OGRGeometryH OGM_IntersectionPts(OGRGeometryH Geom,double X0,double Y0,double X1
    DynArray_Init(&da,0);
 
    // Process the geometry recursively and fill the array with X,Y pairs of points
-   n = OGM_IntersectionPts_(Geom,X0,Y0,X1,Y1,&da);
+   n = OGM_SegIntersectionPts_(Geom,X0,Y0,X1,Y1,&da);
 
    // Sort the points if we have more than one
    if( n > 1 ) {
@@ -648,7 +648,7 @@ OGRGeometryH OGM_IntersectionPts(OGRGeometryH Geom,double X0,double Y0,double X1
          *arr++ -= Y0;
       }
       // Sort the points in terms of distance from the first point of the segment
-      qsort(da.Arr,n,2*sizeof(double),OGM_QSortIntersectionPts);
+      qsort(da.Arr,n,2*sizeof(double),OGM_QSortSegIntersectionPts);
       // Make the position absolute again
       for(i=n,arr=da.Arr; i; --i) {
          *arr++ += X0;
