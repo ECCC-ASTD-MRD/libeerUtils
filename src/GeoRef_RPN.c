@@ -668,3 +668,163 @@ TGeoRef* GeoRef_RPNSetup(int NI,int NJ,char *GRTYP,int IG1,int IG2,int IG3,int I
 
    return(ref);
 }
+
+
+/*
+ni = 80;
+nj = 60;
+dx= .5
+dy= .5;
+lonr=180.;
+latr=0.;
+maxcfl = 4;
+*/
+int GEM_grid_param(int *F_bsc_base,int *F_bsc_ext1,int *F_extension ,int F_maxcfl,float *F_lonr,float *F_latr,int *F_ni,int *F_nj,float *F_dx,float *F_dy,double *F_x0_8,double *F_y0_8,double *F_xl_8,double *F_yl_8,int F_overlap,int F_yinyang_L) {
+
+   double delta_8;
+   int iref,jref;
+  
+   // basic global lateral boundary conditions width
+   *F_bsc_base = 5;
+   if (F_yinyang_L) *F_bsc_base=*F_bsc_base+1;
+
+   // added points for proper de-staggering of u,v at physics interface
+   *F_bsc_ext1 = 2;
+
+   // total extension to user specified grid configuration
+   *F_extension= F_maxcfl + *F_bsc_base + *F_bsc_ext1;
+
+   if (F_yinyang_L) {
+
+      *F_x0_8 =   45.0 - 3.0*F_overlap;
+      *F_xl_8 =  315.0 + 3.0*F_overlap;
+      *F_y0_8 = -45.0  -     F_overlap;
+      *F_yl_8 =  45.0  +     F_overlap;
+      
+      delta_8  = ((*F_xl_8)-(*F_x0_8))/(*F_ni-1);
+      *F_dx   = delta_8;
+      *F_x0_8 = *F_x0_8 - (*F_extension)*delta_8;
+      *F_xl_8 = *F_xl_8 + (*F_extension)*delta_8;
+      
+      delta_8  = ((*F_yl_8)-(*F_y0_8))/(*F_nj-1);
+      *F_dy   = delta_8;
+      *F_y0_8 = *F_y0_8 - (*F_extension)*delta_8;
+      *F_yl_8 = *F_yl_8 + (*F_extension)*delta_8;
+      
+      *F_ni   = *F_ni + 2  *(*F_extension);
+      *F_nj   = *F_nj + 2  *(*F_extension);
+
+   } else {
+
+      iref = *F_ni / 2 + (*F_extension);
+      if ((*F_ni)%2==0) {
+         *F_lonr = *F_lonr - (*F_dx)/2.0;
+      } else {
+         iref = iref + 1;
+      }
+      jref = *F_nj / 2 + (*F_extension);
+      if ((*F_nj)%2==0) {
+         *F_latr = *F_latr - (*F_dy)/2.0;
+      } else {
+         jref = *F_nj / 2 + (*F_extension) + 1;
+      }
+      
+      *F_ni   = *F_ni + 2*(*F_extension);
+      *F_nj   = *F_nj + 2*(*F_extension);
+      *F_x0_8 = *F_lonr - (iref-1) * (*F_dx);
+      *F_y0_8 = *F_latr - (jref-1) * (*F_dy);
+      *F_xl_8 = *F_x0_8 + (*F_ni  -1) * (*F_dx);
+      *F_yl_8 = *F_y0_8 + (*F_nj  -1) * (*F_dy);
+      if (*F_x0_8 < 0.) *F_x0_8=*F_x0_8+360.0;
+      if (*F_xl_8 < 0.) *F_xl_8=*F_xl_8+360.0;
+
+      if (*F_x0_8 < 0.) {
+         fprintf(stderr,"Longitude of WEST %f < 0.0\n",*F_x0_8);
+         return(0);
+      }
+      if (*F_y0_8 < -90.) {
+         fprintf(stderr,"Latitude of SOUTH %f < 0.0\n",*F_y0_8);
+         return(0);
+      }
+      if (*F_xl_8 > 360.) {
+         fprintf(stderr,"Longitude of EAST %f < 0.0\n",*F_xl_8);
+         return(0);
+      }
+      if (*F_yl_8 > 90.) {
+         fprintf(stderr,"Latitude of NORTH %f < 0.0\n",*F_yl_8);
+         return(0);
+      }
+   }
+}
+
+void GEM_hgrid4(float *F_xgi_8,float *F_ygi_8,int F_Grd_ni,int F_Grd_nj,float *F_Grd_dx,float *F_Grd_dy,double F_Grd_x0_8,double F_Grd_xl_8,double F_Grd_y0_8,double F_Grd_yl_8, int F_Grd_yinyang_L){
+
+   int i;
+   double delta_8;
+
+   delta_8 = (F_Grd_xl_8-F_Grd_x0_8)/(F_Grd_ni-1);
+   F_xgi_8[0] = F_Grd_x0_8;
+   F_xgi_8[F_Grd_ni-1] = F_Grd_xl_8;
+   for(i=1;i<F_Grd_ni-1;i++) F_xgi_8[i]= F_Grd_x0_8 + i*delta_8;
+
+   delta_8 = (F_Grd_yl_8-F_Grd_y0_8)/(F_Grd_nj-1);
+   F_ygi_8[0] = F_Grd_y0_8;
+   F_ygi_8[F_Grd_nj-1] = F_Grd_yl_8;
+   for(i=1;i<F_Grd_nj-1;i++) F_ygi_8[i]= F_Grd_y0_8 + i*delta_8;
+
+   if (F_Grd_yinyang_L) {
+      *F_Grd_dx   = fabs(F_xgi_8[1]-F_xgi_8[0]);
+      *F_Grd_dy   = fabs(F_ygi_8[1]-F_ygi_8[0]);
+   }
+}
+
+TGeoRef* GeoRef_RPNGridZE(TGeoRef *GRef,int NI,int NJ,float DX,float DY,float LatR,float LonR,int MaxCFL,float XLat1,float XLon1,float XLat2,float XLon2) {
+
+   int    ig1,ig2,ig3,ig4;
+   char   gxtyp='E';
+   int    bsc_base,bsc_ext1,extension,err;
+   int    maxcfl;
+   double x0,x1,y0,y1;
+   float latr,lonr;
+
+   extern void f77name(gem_grid_param)();
+   extern void f77name(set_gemhgrid4)();
+   
+   if (!GRef) {
+      return(NULL);
+   }
+   
+   f77name(cxgaig)(&gxtyp,&GRef->IG1,&GRef->IG2,&GRef->IG3,&GRef->IG4,&XLat1,&XLon1,&XLat2,&XLon2);
+   f77name(cigaxg)(&gxtyp,&XLat1,&XLon1,&XLat2,&XLon2,&GRef->IG1,&GRef->IG2,&GRef->IG3,&GRef->IG4);
+   
+   GEM_grid_param(&bsc_base,&bsc_ext1,&extension,MaxCFL,&LonR,&LatR,&NI,&NJ,&DX,&DY,&x0,&y0,&x1,&y1,-1,FALSE);
+ 
+   if (NI!=GRef->NX+1 || NJ!=GRef->NY+1) {
+      GRef->AX=realloc(GRef->AX,NI*sizeof(float));
+      GRef->AY=realloc(GRef->AY,NJ*sizeof(float));
+
+      GeoRef_Size(GRef,0,0,NI-1,NJ-1,0);
+   }
+
+   //   f77name(set_gemhgrid4)(GRef->AX,GRef->AY,&NI,&NJ,&DX,&DY,&x0,&x1,&y0,&y1,FALSE);
+   GEM_hgrid4(GRef->AX,GRef->AY,NI,NJ,&DX,&DY,x0,x1,y0,y1,FALSE);
+        
+   if (!GRef->Ids && !(GRef->Ids=(int*)malloc(sizeof(int)))) {
+      return(NULL);
+   }
+   
+   RPN_IntLock();
+   GRef->Ids[0]=c_ezgdef_fmem(NI,NJ,"Z","E",GRef->IG1,GRef->IG2,GRef->IG3,GRef->IG4,GRef->AX,GRef->AY);
+   RPN_IntUnlock();
+   
+   GRef->NbId=1;
+   GRef->Grid[0]='Z';
+   GRef->Grid[1]='\0';
+   GRef->Project=GeoRef_RPNProject;
+   GRef->UnProject=GeoRef_RPNUnProject;
+   GRef->Value=(TGeoRef_Value*)GeoRef_RPNValue;
+   GRef->Distance=GeoRef_RPNDistance;
+   GRef->Height=NULL;
+  
+   return(GRef);
+}

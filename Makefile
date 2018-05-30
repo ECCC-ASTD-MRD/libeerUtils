@@ -89,12 +89,13 @@ CFLAGS      = $(CDEBUGFLAGS) $(CCOPTIONS) $(INCLUDES) $(DEFINES)
 
 OBJ_C = $(subst .c,.o,$(wildcard src/*.c))
 OBJ_F = $(subst .f,.o,$(wildcard src/*.f))
+OBJ_F := $(subst .F90,.o,$(wildcard src/*.F90))
 OBJ_V := $(shell ar t ${VGRIDDESCRIPTORS_SRC}/../lib/libdescrip.a)
 OBJ_VG = $(OBJ_V:%=src/%)
 
-%.o:%.f
-#	gfortran $< $(CCOPTIONS) -c -o $@ -L$(LIB_DIR)/librmn-15/lib -lrmneer
+%.o:%.F90
 	s.compile -src $< -optf="-o $@"
+#	gfortran $< $(CCOPTIONS) -c -o $@ -L$(LIB_DIR)/librmn-15/lib -lrmneer
 
 all: obj lib exec
 
