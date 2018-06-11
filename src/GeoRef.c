@@ -261,6 +261,7 @@ int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
    register int idx,x,y,n=0;
    int          d=0,sz,dd;
    double       x0,y0,v;
+   int          ix, iy;
    
    if (!Scan || !ToRef || !FromRef) {
       return(0);
@@ -436,9 +437,11 @@ int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
          Scan->Y[x]=(double)((float*)Scan->Y)[x]-1.0;
 
          if (ToDef) {
-            idx=FIDX2D(ToDef,lrint(Scan->X[x]),lrint(Scan->Y[x]));
+            ix = lrint(Scan->X[x]);
+            iy = lrint(Scan->Y[x]);
+            idx=FIDX2D(ToDef,ix,iy);
             
-            if (!FIN2D(ToDef,Scan->X[x],Scan->Y[x]) || (ToDef->Mask && !ToDef->Mask[idx])) {
+            if (!FIN2D(ToDef,ix,iy) || (ToDef->Mask && !ToDef->Mask[idx])) {
                // If we're outside, set to nodata
                Scan->D[x]=ToDef->NoData;
             } else if (ToDef->Type<TD_Float32) {
