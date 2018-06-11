@@ -1060,11 +1060,13 @@ void Dict_PrintVar(TDictVar *DVar,int Format,TApp_Lang Lang) {
          case DICT_SHORT:
             printf("%-4s\t%-70s\t%-s",var->Name,var->Short[Lang],var->Units);
             if (var->Nature&DICT_OBSOLETE)
-               printf(" \t%s\n",TOBSOLETE[Lang]);
+               printf(" \t%s",TOBSOLETE[Lang]);
             else if (var->Nature&DICT_DEPRECATED)
-               printf(" \t%s\n",TDEPRECATED[Lang]);
-            else 
-               printf("\n");
+               printf(" \t%s",TDEPRECATED[Lang]);
+             
+            // Reset color before end of line
+            if (var->Nature&DICT_OBSOLETE || var->Nature&DICT_DEPRECATED) printf(APP_COLOR_RESET);
+            printf("\n");
 
             break;
 

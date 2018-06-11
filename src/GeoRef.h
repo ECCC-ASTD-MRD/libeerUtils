@@ -212,6 +212,7 @@ int      GeoRef_Valid(TGeoRef* __restrict const Ref);
 
 TGeoRef* GeoRef_RDRSetup(double Lat,double Lon,double Height,int R,double ResR,double ResA);
 TGeoRef* GeoRef_RPNSetup(int NI,int NJ,char *GRTYP,int IG1,int IG2,int IG3,int IG4,int FID);
+TGeoRef* GeoRef_RPNGridZE(TGeoRef *GRef,int NI,int NJ,float DX,float DY,float LatR,float LonR,int MaxCFL,float XLat1,float XLon1,float XLat2,float XLon2);
 TGeoRef* GeoRef_WKTSetup(int NI,int NJ,char *GRTYP,int IG1,int IG2,int IG3,int IG4,char *String,double *Transform,double *InvTransform,OGRSpatialReferenceH Spatial);
 int      GeoRef_WKTSet(TGeoRef *Ref,char *String,double *Transform,double *InvTransform,OGRSpatialReferenceH Spatial);
 TGeoRef* GeoRef_RDRCheck(double Lat,double Lon,double Height,double Radius,double ResR,double ResA);
@@ -245,4 +246,5 @@ static inline double GeoRef_GeoDir(TGeoRef* __restrict const Ref,double X, doubl
    }
    return(dir);
 }
+
 #endif
