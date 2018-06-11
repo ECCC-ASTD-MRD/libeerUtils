@@ -1472,8 +1472,11 @@ int Def_JPInterp(TDef *ToDef,TDef *FromDef,TGeoRef *ToRef,TGeoRef *FromRef,char 
    double     val,dir,lat,lon,di,dj,dval;
    int        ok=-1,idx,i,j,k,gotidx;
    float     *ip=NULL;
+   double     NImp5, NJmp5;
    
-   idx=0;  
+   idx=0;
+   NImp5 = FromDef->NI - 0.5;
+   NJmp5 = FromDef->NJ - 0.5;
          
    for(k=0;k<ToDef->NK;k++) {
       ip=Index;
@@ -1494,13 +1497,13 @@ int Def_JPInterp(TDef *ToDef,TDef *FromDef,TGeoRef *ToRef,TGeoRef *FromRef,char 
             } else {
                // No index, project coordinate and store in index if provided
                ToRef->Project(ToRef,i,j,&lat,&lon,0,1);
-               ok=FromRef->UnProject(FromRef,&di,&dj,lat,lon,0,1);
+               ok=FromRef->UnProject(FromRef,&di,&dj,lat,lon,1,1);
                if (ip) {
                   *(ip++)=di;
                   *(ip++)=dj;
                }
             }
-            if (di>=0.0 && FromRef->Value(FromRef,FromDef,Interp[0],0,di,dj,k,&val,&dir)) {
+            if (di>=-0.5 && di<=NImp5 && dj>=-0.5 && dj<=NJmp5 && FromRef->Value(FromRef,FromDef,Interp[0],0,di,dj,k,&val,&dir)) {
                if (ToDef->Data[1]) {
                   // Have to reproject vector
                   dir=DEG2RAD(dir)+GeoRef_GeoDir(ToRef,i,j);
