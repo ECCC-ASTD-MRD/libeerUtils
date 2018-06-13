@@ -1472,12 +1472,17 @@ int Def_JPInterp(TDef *ToDef,TDef *FromDef,TGeoRef *ToRef,TGeoRef *FromRef,char 
    double     val,dir,lat,lon,di,dj,dval;
    int        ok=-1,idx,i,j,k,gotidx;
    float     *ip=NULL;
-   double     NImp5, NJmp5;
+   double     I0, J0;
+   double     I1, J1;
    
    idx=0;
-   NImp5 = FromDef->NI - 0.5;
-   NJmp5 = FromDef->NJ - 0.5;
-         
+   I1 = FromRef->X1 + 0.5;
+   J1 = FromRef->Y1 + 0.5;
+   I0 = FromRef->X0 - 0.5;
+   J0 = FromRef->Y0 - 0.5;
+
+//   fprintf( stderr, "i0 = %f  i1 = %f  j0 = %f, j1 = %f\n", I0, I1, J0, J1 );
+
    for(k=0;k<ToDef->NK;k++) {
       ip=Index;
       gotidx=(Index && Index[0]!=DEF_INDEX_EMPTY);
@@ -1503,7 +1508,7 @@ int Def_JPInterp(TDef *ToDef,TDef *FromDef,TGeoRef *ToRef,TGeoRef *FromRef,char 
                   *(ip++)=dj;
                }
             }
-            if (di>=-0.5 && di<=NImp5 && dj>=-0.5 && dj<=NJmp5 && FromRef->Value(FromRef,FromDef,Interp[0],0,di,dj,k,&val,&dir)) {
+            if (di>=I0 && di<=I1 && dj>=J0 && dj<=J1 && FromRef->Value(FromRef,FromDef,Interp[0],0,di,dj,k,&val,&dir)) {
                if (ToDef->Data[1]) {
                   // Have to reproject vector
                   dir=DEG2RAD(dir)+GeoRef_GeoDir(ToRef,i,j);
