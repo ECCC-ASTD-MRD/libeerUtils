@@ -1470,7 +1470,7 @@ int Def_EZInterp(TDef *ToDef,TDef *FromDef,TGeoRef *ToRef,TGeoRef *FromRef,char 
 int Def_JPInterp(TDef *ToDef,TDef *FromDef,TGeoRef *ToRef,TGeoRef *FromRef,char *Interp,char *Extrap,char Mask,float *Index) {
    
    double     val,dir,lat,lon,di,dj,dval;
-   int        ok=-1,idx,i,j,k,gotidx;
+   int        ok=-1,idx,i,j,k,gotidx,idxi;
    float     *ip=NULL;
    double     I0, J0;
    double     I1, J1;
@@ -1487,9 +1487,15 @@ int Def_JPInterp(TDef *ToDef,TDef *FromDef,TGeoRef *ToRef,TGeoRef *FromRef,char 
       ip=Index;
       gotidx=(Index && Index[0]!=DEF_INDEX_EMPTY);
 
+#pragma omp parallel for \
+      private( j,i,idx,idxi,lat,lon,di,dj,dir,val,dval,ip,ok ) \
+      shared( k,I0,I1,J0,J1,ToRef,ToDef,FromRef,FromDef,gotidx,Index ) \
+      schedule(static)
       for(j=0;j<ToDef->NJ;j++) {
+         idxi=j*ToDef->NI;
+         ip=Index?Index+idxi*2:NULL;
+         idx=idxi;
          for(i=0;i<ToDef->NI;i++,idx++) {
-
             if (gotidx) {
                // Got the index, use coordinates from it
                di=*(ip++);
