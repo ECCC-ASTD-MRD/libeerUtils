@@ -1,6 +1,6 @@
 NAME       = eerUtils
 DESC       = SMC-CMC-CMOE Utility librairie package.
-VERSION    = 3.3.1
+VERSION    = 3.3.2
 #BUILDINFO = $(shell svnversion -n)
 BUILDINFO  = $(shell HOME=/dev/null git describe --always)
 MAINTAINER = $(USER)
@@ -20,7 +20,7 @@ INSTALL_DIR = $(HOME)
 TCL_DIR     = ${EXT_SRC_PATH}/tcl8.6.6
 
 #----- Uncoment to use dev libs
-LIB_DIR     = ${SSM_DEV}/workspace/libSPI_7.12.2${COMP}_${ORDENV_PLAT}
+LIB_DIR     = ${SSM_DEV}/workspace/libSPI_7.12.3${COMP}_${ORDENV_PLAT}
 
 LIBS        := -L$(LIB_DIR)/lib -L$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g')
 INCLUDES    := -I$(LIB_DIR)/include -I$(shell echo $(EC_INCLUDE_PATH) | sed 's/\s* / -I/g')
