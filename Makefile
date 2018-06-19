@@ -38,15 +38,13 @@ ifeq ($(OS),Linux)
   INCLUDES    := -Isrc -I/usr/include/libxml2 -I$(LIB_DIR)/include/libxml2 -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic  $(INCLUDES)                                 
 #   INCLUDES    := -Isrc -I/usr/include/libxml2 -I$(LIB_DIR)/include/libxml2  -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic -I$(LIB_DIR)/gdal-1.11.0/include  $(INCLUDES)
 
-  ifndef CC
-      CC          = s.cc
-   endif
+   CC          = s.cc
    AR          = ar rv
    LD          = ld -shared -x
    LINK_EXEC   = -lm -lpthread 
 #   LINK_EXEC   = -lm -lpthread -lifcore -lifport
  
-   CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer -DHAVE_GDAL -openmp
+   CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer -DHAVE_GDAL
 #   CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer
    ifdef OMPI
       CCOPTIONS   := $(CCOPTIONS) -fopenmp -mpi
