@@ -586,12 +586,23 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encodin
             while (trotteur1) {
                if (!strcmp((char*)trotteur1->name,"value") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
                   tmpc=xmlNodeListGetString(Doc,trotteur1->children,1);
-                  metvar->Codes[i]=atoi(tmpc);
+                  metvar->Codes[i++]=atoi(tmpc);
                }
                if (!strcmp((char*)trotteur1->name,"meaning") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
-                  strncpy(metvar->Meanings[i], tmpc,64);
-                  Dict_Encoding(metvar->Meanings[i],Encoding);
-                  i++;
+                  if (xmlGetProp(trotteur1,"lang")) {
+                      if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"fr")) {
+                          strncpy(metvar->Meanings[i-1][0],tmpc,64);
+                          Dict_Encoding(metvar->Meanings[i-1][0],Encoding);
+                      } else if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"en")) {
+                          strncpy(metvar->Meanings[i-1][1],tmpc,64);
+                          Dict_Encoding(metvar->Meanings[i-1][1],Encoding);
+                      }
+                  } else {
+                      strncpy(metvar->Meanings[i-1][0],tmpc,64);
+                      Dict_Encoding(metvar->Meanings[i-1][0],Encoding);
+                      strncpy(metvar->Meanings[i-1][1],tmpc,64);
+                      Dict_Encoding(metvar->Meanings[i-1][1],Encoding);
+                  }
                }
                trotteur1=trotteur1->next;
             }
@@ -1141,7 +1152,7 @@ void Dict_PrintVar(TDictVar *DVar,int Format,TApp_Lang Lang) {
                   printf("\tCode\t\t%s\n",TVAL[Lang]);
                   printf("\t----\t\t----------------\n");
                   for (i=0; i < var->NCodes; i++) {
-                     printf("\t%i\t\t%-s\n", var->Codes[i], var->Meanings[i]);
+                     printf("\t%i\t\t%-s\n", var->Codes[i], var->Meanings[i][Lang]);
                   }
                   break;
             }
@@ -1220,7 +1231,9 @@ void Dict_PrintVar(TDictVar *DVar,int Format,TApp_Lang Lang) {
             } else if (var->Nature & DICT_CODE) {
                printf("\t\t<code>\n");
                for (i=0; i < var->NCodes; i++) {
-                  printf("\t\t\t<value>%d</value>\n\t\t\t<meaning>%s</meaning>\n",var->Codes[i], var->Meanings[i]);
+                  printf("\t\t\t<value>%d</value>\n",var->Codes[i]);
+                  printf("\t\t\t<meaning lang=\"fr\">%s</meaning>\n",var->Meanings[i][0]);
+                  printf("\t\t\t<meaning lang=\"en\">%s</meaning>\n",var->Meanings[i][1]);
                }
                printf("\t\t</code>\n");
             }

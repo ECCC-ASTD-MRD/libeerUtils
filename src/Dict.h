@@ -70,7 +70,7 @@ typedef struct {
    int    Nature;                                    // Mask for state and nature of variable
    int    Pack;                                      // Optimum packing number of bits
    int    Codes[64];                                 // List of codes for coded variable
-   char   Meanings[64][64];                          // List of associated meanings
+   char   Meanings[64][2][64];                       // List of associated meanings
    int    NCodes;                                    // Number of codes
    int    IP1,IP2,IP3;                               // Specific IP values
    char   ETIKET[13];                                // Specific etiket value
