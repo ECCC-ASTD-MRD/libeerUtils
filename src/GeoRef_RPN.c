@@ -787,15 +787,12 @@ TGeoRef* GeoRef_RPNGridZE(TGeoRef *GRef,int NI,int NJ,float DX,float DY,float La
    double x0,x1,y0,y1;
    float latr,lonr;
 
-   extern void f77name(gem_grid_param)();
-   extern void f77name(set_gemhgrid4)();
-   
    if (!GRef) {
       return(NULL);
    }
-   
-   f77name(cxgaig)(&gxtyp,&GRef->IG1,&GRef->IG2,&GRef->IG3,&GRef->IG4,&XLat1,&XLon1,&XLat2,&XLon2);
-   f77name(cigaxg)(&gxtyp,&XLat1,&XLon1,&XLat2,&XLon2,&GRef->IG1,&GRef->IG2,&GRef->IG3,&GRef->IG4);
+ 
+   f77name(cxgaig)("E",&GRef->IG1,&GRef->IG2,&GRef->IG3,&GRef->IG4,&XLat1,&XLon1,&XLat2,&XLon2);
+   f77name(cigaxg)("E",&XLat1,&XLon1,&XLat2,&XLon2,&GRef->IG1,&GRef->IG2,&GRef->IG3,&GRef->IG4);
    
    GEM_grid_param(&bsc_base,&bsc_ext1,&extension,MaxCFL,&LonR,&LatR,&NI,&NJ,&DX,&DY,&x0,&y0,&x1,&y1,-1,FALSE);
  
