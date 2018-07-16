@@ -31,6 +31,8 @@
  *
  *=========================================================
  */
+#include <sys/stat.h>
+
 #include "App.h"
 #include "eerUtils.h"
 #include "RPN.h"
@@ -303,6 +305,7 @@ typedef struct {
 
 #define DICT_MAXREF 256
 #define DICT_MAXFLD 256000
+#define DICT_MAXSIZE 8*1073741824
 
 int Dict_CheckRPN(char **RPNFile,int CheckOPS) {
 
@@ -318,17 +321,25 @@ int Dict_CheckRPN(char **RPNFile,int CheckOPS) {
    int        hrefnb,zrefnb,headnb,h,z,nh,ztyp,zver;
    int        p0,pt,hy,tic,tac,toc,tuc,nhtic,nhtac,nhtoc,nhtuc,err=0;
 
+   struct stat st;
+   
    unknown=known=NULL;
    n=0;   
   
    while(RPNFile[n]) {
       App_Log(INFO,"Checking RPN file: %s\n",RPNFile[n]);
       
+      // Check file size (max 8Gb)
+      stat(RPNFile[n],&st);
+      if (st.st_size>((off_t)DICT_MAXSIZE)) {
+         App_Log(ERROR,"File is greater the 8Gb limit: %s\n",RPNFile[n]);
+      }
+
       if  ((fid=cs_fstouv(RPNFile[n],"STD+RND+R/O"))<0) {
          App_Log(ERROR,"Unable to open RPN file: %s\n",RPNFile[n]);
          return(0);
       }
-   
+     
       // Reset counter for this file
       p0=pt=hy=0,tic=tac=toc=tuc=zver=0,ztyp=-1;
       hrefnb=zrefnb=headnb=0;
