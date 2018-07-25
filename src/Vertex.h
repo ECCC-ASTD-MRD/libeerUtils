@@ -42,7 +42,7 @@ void   VertexGradient(TDef *Def,Vect3d Nr);
 float  VertexVal(TDef *Def,int Idx,double X,double Y,double Z);
 double VertexValV(TDef *Def,double X,double Y,double Z,Vect3d V);
 float  Vertex_ValS(float *Data,char *Mask,int NI,int NJ,double X,double Y,char Geo);
-int    VertexLoc(Vect3d **Pos,TDef *Def,Vect3d Vr,double X,double Y,double Z);
+int    VertexLoc(Vect3d **Pos,TDef *Def,Vect3d Vr,double X,double Y,double Z,int Wrap);
 void   VertexInterp(Vect3d Pi,Vect3d P0,Vect3d P1,double V0,double V1,double Level);
 
 #endif

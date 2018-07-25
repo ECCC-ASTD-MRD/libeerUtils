@@ -186,6 +186,7 @@ void VertexInterp(Vect3d Pi,Vect3d P0,Vect3d P1,double V0,double V1,double Level
  *  <X>       : Coordonnee en X ([0 NI-1])
  *  <Y>       : Coordonnee en Y ([0 NJ-1])
  *  <Z>       : Coordonnee en Z ([0 NK-1])
+ *  <Wrap>    : Does the grid wraps in X (-180,180 or 0.360)
  *
  * Retour:
  *
@@ -193,13 +194,13 @@ void VertexInterp(Vect3d Pi,Vect3d P0,Vect3d P1,double V0,double V1,double Level
  *
  *----------------------------------------------------------------------------
 */
-int VertexLoc(Vect3d **Pos,TDef *Def,Vect3d Vr,double X,double Y,double Z) {
+int VertexLoc(Vect3d **Pos,TDef *Def,Vect3d Vr,double X,double Y,double Z,int Wrap) {
 
    Vect3d        v00,v01,v10,v11,v0,v1;
    unsigned long i,j,k,k1;
    unsigned long idx0,idx1,idx2,idx3;
 
-   if (X>Def->NI-1 || Y>Def->NJ-1 || Z>Def->NK-1 || X<0 || Y<0 || Z<0) {
+   if ((X>Def->NI-1 && !Wrap) || Y>Def->NJ-1 || Z>Def->NK-1 || X<0 || Y<0 || Z<0) {
       return(0);
    }
 
@@ -207,13 +208,18 @@ int VertexLoc(Vect3d **Pos,TDef *Def,Vect3d Vr,double X,double Y,double Z) {
    j=Y;Y-=j;
    k=Z;Z-=k;
 
-   /*Get gridpoint indexes*/
-   idx0=Def->Idx+j*Def->NI+i;
+   // Get gridpoint indexes
+   idx0=Def->Idx+j*Def->NI+i%Def->NI;
    idx1=idx0+1;
    idx3=(j==Def->NJ-1)?idx0:idx0+Def->NI;
    idx2=idx3+1;
 
-   /*3D Interpolation case*/
+   if (i>=Def->NI-1) {
+      idx1-=Def->NI;
+      idx2-=Def->NI;
+   }
+      
+   // 3D Interpolation case
    if (Z>TINY_VALUE) {
 
       k1=k+1;
@@ -229,7 +235,7 @@ int VertexLoc(Vect3d **Pos,TDef *Def,Vect3d Vr,double X,double Y,double Z) {
       Vect_Assign(v11,Pos[k][idx2]);
    }
 
-   /*Interpolate over X*/
+   // Interpolate over X
    if (X>TINY_VALUE) {
       Vect_InterpC(v0,v00,v10,X);
       Vect_InterpC(v1,v01,v11,X);
@@ -238,7 +244,7 @@ int VertexLoc(Vect3d **Pos,TDef *Def,Vect3d Vr,double X,double Y,double Z) {
       Vect_Assign(v1,v01);
    }
 
-   /*Interpolate over Y*/
+   // Interpolate over Y
    if (Y>TINY_VALUE) {
       Vect_InterpC(Vr,v0,v1,Y);
    } else {
