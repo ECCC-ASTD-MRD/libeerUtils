@@ -235,6 +235,36 @@ char* Dict_Version(void) {
    return(Dict.String);
 }
 
+void IPDecode(int IP,float *Level,int *Kind) {
+#ifdef HAVE_RMN
+   if( IP>0 ) {
+      int flag=0,mode=-1;
+      char fmt;
+
+      // Convert to real level/value
+      f77name(convip_plus)(&IP,Level,Kind,&mode,&fmt,&flag);
+   }
+#else
+   App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
+#endif
+}
+
+int IPEncode(float Level,int Kind,int New) {
+   int ip=-1;
+
+#ifdef HAVE_RMN
+   int flag=0,mode=New?2:3;
+   char fmt;
+
+   // Encode to IP
+   f77name(convip_plus)(&ip,&Level,&Kind,&mode,&fmt,&flag);
+#else
+   App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
+#endif
+
+   return ip;
+}
+
 /*----------------------------------------------------------------------------
  * Nom      : <Dict_SetSearch>
  * Creation : Mai 2014 - J.P. Gauthier
@@ -271,20 +301,10 @@ void Dict_SetSearch(int SearchMode,int SearchState,char *SearchOrigin,int Search
 #ifdef HAVE_RMN
    if (DictSearch.IP1>0) {
       // Convert to real level/value
-      f77name(convip_plus)(&SearchIP1,&level,&type,&mode,&format,&flag);
+      IPDecode(DictSearch.IP1,&level,&type);
       // Get alternate representation (OLD/NEW)
-      mode=(SearchIP1<32000)?2:3;
-      f77name(convip_plus)(&DictSearch.AltIP1,&level,&type,&mode,&format,&flag);
+      DictSearch.AltIP1 = IPEncode(level,type,DictSearch.IP1<=32767);
    }
-
-//   f77name(convip_plus)(&SearchIP2,&level,Type,&mode,&format,&flag);
-//   f77name(convip_plus)(&SearchIP3,&level,Type,&mode,&format,&flag);
-
-//   mode=(SearchIP2<32000)?2:3;
-//   f77name(convip_plus)(&DictSearch.AltIP2,&level,Type,&mode,&format,&flag);
-
-//   mode=(SearchIP3<32000)?2:3;
-//   f77name(convip_plus)(&DictSearch.AltIP3,&level,Type,&mode,&format,&flag);
 #else
    App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
 #endif
@@ -426,6 +446,8 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encodin
    metvar=(TDictVar*)calloc(1,sizeof(TDictVar));
    metvar->IP1=metvar->IP2=metvar->IP3=metvar->Pack=-1;
    metvar->Min=metvar->Max=metvar->Magnitude=metvar->Precision=DICT_NOTSET;
+   metvar->Level=FLT_MAX;
+   metvar->Kind=-1;
 
    if ((tmpc=(char*)xmlGetProp(Node,"origin"))) {
       strncpy(metvar->Origin,tmpc,32);
@@ -465,6 +487,7 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encodin
          strncpy(metvar->Name,xmlNodeListGetString(Doc,Node->children,1),5);
          if (tmpc=(char*)xmlGetProp(Node,"ip1")) {
             metvar->IP1=atoi(tmpc);
+            IPDecode(metvar->IP1,&metvar->Level,&metvar->Kind);
          }
          if (tmpc=(char*)xmlGetProp(Node,"ip2")) {
             metvar->IP2=atoi(tmpc);
@@ -474,6 +497,12 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encodin
          }
          if (tmpc=(char*)xmlGetProp(Node,"etiket")) {
             strncpy(metvar->ETIKET,tmpc,13);
+         }
+         if (tmpc=(char*)xmlGetProp(Node,"level")) {
+            metvar->Level=atof(tmpc);
+         }
+         if (tmpc=(char*)xmlGetProp(Node,"kind")) {
+            metvar->Kind=atoi(tmpc);
          }
       } else
 
@@ -611,6 +640,11 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encodin
       }
 
       Node=Node->next;
+   }
+
+   // Will be usefull for the search later on
+   if( metvar->IP1==-1 && metvar->Kind!=-1 && metvar->Level!=FLT_MAX ) {
+      metvar->IP1 = IPEncode(metvar->Level,metvar->Kind,1);
    }
 
    Dict.Vars=TList_AddSorted(Dict.Vars,Dict_SortVar,metvar);
@@ -1084,10 +1118,10 @@ void Dict_PrintVar(TDictVar *DVar,int Format,TApp_Lang Lang) {
          case DICT_LONG:
             printf("--------------------------------------------------------------------------------\n");
             printf("Nomvar              : %-s", var->Name);
-            if (var->IP1>=0)          printf(" IP1(%i)",var->IP1);
-            if (var->IP2>=0)          printf(" IP2(%i)",var->IP2);
-            if (var->IP3>=0)          printf(" IP3(%i)",var->IP3);
-            if (var->ETIKET[0]!='\0') printf(" ETIKET(%s)",var->ETIKET);
+            if (var->IP1>=0)           printf(" IP1(old=%i; new=%i; level=%g,kind=%i)",IPEncode(var->Level,var->Kind,0),IPEncode(var->Level,var->Kind,1),var->Level,var->Kind);
+            if (var->IP2>=0)           printf(" IP2(%i)",var->IP2);
+            if (var->IP3>=0)           printf(" IP3(%i)",var->IP3);
+            if (var->ETIKET[0]!='\0')  printf(" ETIKET(%s)",var->ETIKET);
 
             printf("\n%-s : %-s\n", TSHORT[Lang],var->Short[Lang]);
             printf("%-s : %-s\n", TLONG[Lang],var->Long[Lang][0]!='\0'?var->Long[Lang]:"-");
@@ -1177,6 +1211,9 @@ void Dict_PrintVar(TDictVar *DVar,int Format,TApp_Lang Lang) {
             if (var->IP2>=0) printf(" ip2=\"%i\"",var->IP2);
             if (var->IP3>=0) printf(" ip3=\"%i\"",var->IP3);
             if (var->ETIKET[0]!='\0') printf(" etiket=\"%s\"",var->ETIKET);
+
+            if (var->Level!=FLT_MAX)   printf(" level=\"%g\"",var->Level);
+            if (var->Kind>=0)          printf(" kind=\"%i\"",var->Kind);
 
             printf(" origin=\"%s\"",var->Origin);
             

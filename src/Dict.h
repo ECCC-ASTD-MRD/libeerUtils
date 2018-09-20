@@ -73,6 +73,8 @@ typedef struct {
    char   Meanings[64][2][64];                       // List of associated meanings
    int    NCodes;                                    // Number of codes
    int    IP1,IP2,IP3;                               // Specific IP values
+   float  Level;                                     // Level (decoded IP1)
+   int    Kind;                                      // Kind (decoded IP1)_
    char   ETIKET[13];                                // Specific etiket value
 } TDictVar;
 
