@@ -489,7 +489,6 @@ int RPN_CopyDesc(int FIdTo,TRPNHeader* const H) {
       strcpy(h.GRTYP," ");
 
       pthread_mutex_lock(&RPNFieldMutex);
-
       while((desc=RPN_Desc[d++])) {
          if (strncmp(desc,"HY  ",2)==0) {
             ip1=-1;ip2=-1;
@@ -499,8 +498,10 @@ int RPN_CopyDesc(int FIdTo,TRPNHeader* const H) {
          }
          key=c_fstinf(FIdTo,&ni,&nj,&nk,-1,"",ip1,ip2,-1,"",desc);
          if (key<0) {
+            // If not already existing in destination
             key=c_fstinf(H->FID,&ni,&nj,&nk,-1,"",ip1,ip2,-1,"",desc);
             if (key>=0) {
+               // If existing in source
                if (ni*nj>sz) {
                   // Some descriptors are 64 bit so always allocate double buffer
                   data=(char*)realloc(data,ni*nj*sizeof(double));
@@ -513,12 +514,17 @@ int RPN_CopyDesc(int FIdTo,TRPNHeader* const H) {
                   &h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,&h.UBC,&h.EX1,&h.EX2,&h.EX3);
                key=c_fstecr(data,NULL,-h.NBITS,FIdTo,h.DATEO,h.DEET,h.NPAS,h.NI,h.NJ,h.NK,h.IP1,
                   h.IP2,H->GRTYP[0]=='#'?0:h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,h.DATYP,1);
+            } else if (key==-29) {
+               // Input file not openned
+               return(FALSE);
             }
          }
       }
 
       pthread_mutex_unlock(&RPNFieldMutex);
       if (data) free(data);
+   } else {
+      return(FALSE);
    }
 
    return(TRUE);
