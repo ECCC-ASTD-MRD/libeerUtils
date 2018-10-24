@@ -670,7 +670,7 @@ TGeoRef* GeoRef_RPNSetup(int NI,int NJ,char *GRTYP,int IG1,int IG2,int IG3,int I
 }
 
 
-/*
+/* Copied and translated to C from RPN fortran
 ni = 80;
 nj = 60;
 dx= .5
@@ -778,6 +778,32 @@ void GEM_hgrid4(float *F_xgi_8,float *F_ygi_8,int F_Grd_ni,int F_Grd_nj,float *F
    }
 }
 
+/*-------------------------------------------------------------------------------------------------------------
+ * Nom          : <GeoRef_RPNGridZE>
+ * Creation     : Avril 2005 J.P. Gauthier - CMC/CMOE
+ *
+ * But          : Definir le referentiel de type RPN ZE
+ *
+ * Parametres   :
+ *    <GRef>    : Georef definition
+ *    <NI>      : Dimension en X
+ *    <NJ>      : Dimension en Y
+ *    <DX>      : Resolution en X
+ *    <DY>      : Resolution en Y
+ *    <LatR>    : 
+ *    <LonR>    : 
+ *    <MaxCFL>  : 
+ *    <XLat1>   : Latitude centrale
+ *    <XLon1>   : Longitude centrale
+ *    <XLat2>   : Latitude de l'axe de rotation
+ *    <XLon2>   : Longitude de l'axe de rotation
+ *
+ * Retour       :
+ *
+ * Remarques    :
+ *
+ *---------------------------------------------------------------------------------------------------------------
+*/
 TGeoRef* GeoRef_RPNGridZE(TGeoRef *GRef,int NI,int NJ,float DX,float DY,float LatR,float LonR,int MaxCFL,float XLat1,float XLon1,float XLat2,float XLon2) {
 
    int    ig1,ig2,ig3,ig4;
@@ -816,7 +842,8 @@ TGeoRef* GeoRef_RPNGridZE(TGeoRef *GRef,int NI,int NJ,float DX,float DY,float La
    
    GRef->NbId=1;
    GRef->Grid[0]='Z';
-   GRef->Grid[1]='\0';
+   GRef->Grid[1]='E';
+   GRef->Grid[2]='\0';
    GRef->Project=GeoRef_RPNProject;
    GRef->UnProject=GeoRef_RPNUnProject;
    GRef->Value=(TGeoRef_Value*)GeoRef_RPNValue;
