@@ -1582,12 +1582,12 @@ int Def_GridInterp(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *FromDef,cha
          
       // Use ezscint
       if (ezto && ezfrom) {
-         if (!Def_EZInterp(ToDef,FromDef,ToRef,FromRef,interp,"NEUTRAL",FALSE,NULL)) {
+         if (!Def_EZInterp(ToDef,FromDef,ToRef,FromRef,interp,"VALUE",FALSE,NULL)) {
             App_Log(ERROR,"%s: EZSCINT interpolation problem",__func__);
             return(FALSE);
          }
       } else { 
-         if (!Def_JPInterp(ToDef,FromDef,ToRef,FromRef,interp,"NEUTRAL",FALSE,NULL)) {
+         if (!Def_JPInterp(ToDef,FromDef,ToRef,FromRef,interp,"VALUE",FALSE,NULL)) {
             App_Log(ERROR,"%s: Interpolation problem",__func__);
             return(FALSE);
          }
