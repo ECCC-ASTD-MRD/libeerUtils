@@ -1,7 +1,7 @@
 NAME       = eerUtils
-DESC       = SMC-CMC-CMOE Utility librairie package.
-VERSION    = 3.3.2
-#BUILDINFO = $(shell svnversion -n)
+DESCRIPTION= "SMC-CMC-CMOE Utility librairie package"
+SUMMARY    = "Library of common functions usd by various CCMEP tools (SPI, EER Models, ...)"
+VERSION    = 3.4.0
 BUILDINFO  = $(shell HOME=/dev/null git describe --always)
 MAINTAINER = $(USER)
 OS         = $(shell uname -s)
@@ -28,24 +28,21 @@ INCLUDES    := -I$(LIB_DIR)/include -I$(shell echo $(EC_INCLUDE_PATH) | sed 's/\
 ifeq ($(OS),Linux)
 
    LIBS        := $(LIBS) -Wl,-rpath-link $(LIB_DIR)/lib -lxml2 -lgdal -lnetcdf -lz -lezscint -lrmneer
-#   LIBS        := $(LIBS) -Wl,-rpath-link $(LIB_DIR)/lib -lxml2 -lezscint -lrmneer 
 
    #----- If not using intel compiler, link with intel libc (RMN)
    ifndef INTEL_LICENSE_FILE
       LIBS        := $(LIBS) $(LIB_DIR)/lib/libintlc.so.5  
    endif
 
-  INCLUDES    := -Isrc -I/usr/include/libxml2 -I$(LIB_DIR)/include/libxml2 -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic  $(INCLUDES)                                 
-#   INCLUDES    := -Isrc -I/usr/include/libxml2 -I$(LIB_DIR)/include/libxml2  -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic -I$(LIB_DIR)/gdal-1.11.0/include  $(INCLUDES)
+   INCLUDES    := -Isrc -I/usr/include/libxml2 -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic  $(INCLUDES)                                 
 
    CC          = s.cc
    AR          = ar rv
    LD          = ld -shared -x
    LINK_EXEC   = -lm -lpthread 
-#   LINK_EXEC   = -lm -lpthread -lifcore -lifport
+   LINK_EXEC   = -lm -lpthread -lintlc -lifcore -lifport
  
    CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer -DHAVE_GDAL
-#   CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer
    ifdef OMPI
       CCOPTIONS   := $(CCOPTIONS) -fopenmp -mpi
    endif
@@ -161,7 +158,7 @@ endif
 	cp $(CPFLAGS) ./lib/* $(SSM_DEV)/workspace/$(SSM_NAME)/lib
 	cp $(CPFLAGS) ./include/* $(SSM_DEV)/workspace/$(SSM_NAME)/include
 	cp $(CPFLAGS) .ssm.d/post-install  $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d
-	sed -e 's/NAME/$(NAME)/' -e 's/VERSION/$(SSM_VERSION)/' -e 's/PLATFORM/$(ORDENV_PLAT)/' -e 's/MAINTAINER/$(MAINTAINER)/' -e 's/BUILDINFO/${BUILDINFO}/' -e 's/DESC/$(DESC)/' .ssm.d/control >  $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d/control
+	sed -e 's/NAME/$(NAME)/' -e 's/VERSION/$(SSM_VERSION)/' -e 's/PLATFORM/$(ORDENV_PLAT)/' -e 's/MAINTAINER/$(MAINTAINER)/' -e 's/BUILDINFO/${BUILDINFO}/' -e 's/DESCRIPTION/$(DESCRIPTION)/' -e 's/SUMMARY/$(SUMMARY)/' .ssm.d/control.json >  $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d/control.json
 	cd $(SSM_DEV)/workspace; tar -zcvf $(SSM_DEV)/package/$(SSM_NAME).ssm $(SSM_NAME)
 #	rm -f -r  $(SSM_DEV)/workspace/$(SSM_NAME)
 
