@@ -1,6 +1,6 @@
 NAME       = eerUtils
 DESCRIPTION= "SMC-CMC-CMOE Utility librairie package"
-SUMMARY    = "Library of common functions usd by various CCMEP tools (SPI, EER Models, ...)"
+SUMMARY    = "Library of common functions used by various CCMEP tools (SPI, EER Models, ...)"
 VERSION    = 3.4.0
 BUILDINFO  = $(shell HOME=/dev/null git describe --always)
 MAINTAINER = $(USER)
@@ -17,26 +17,16 @@ SSM_VERSION = ${VERSION}${COMP}
 SSM_NAME    = ${NAME}_${SSM_VERSION}_${ORDENV_PLAT}
 
 INSTALL_DIR = $(HOME)
-TCL_DIR     = ${EXT_SRC_PATH}/tcl8.6.6
+TCL_SRC_DIR = ${SSM_DEV}/src/tcl8.6.6
 
-#----- Uncoment to use dev libs
-LIB_DIR     = ${SSM_DEV}/workspace/libSPI_8.0.0${COMP}_${ORDENV_PLAT}
-
-LIBS        := -L$(LIB_DIR)/lib -L$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g')
-INCLUDES    := -I$(LIB_DIR)/include -I$(shell echo $(EC_INCLUDE_PATH) | sed 's/\s* / -I/g')
+LIBS        := -L$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g')
+INCLUDES    := -I$(shell echo $(EC_INCLUDE_PATH) | sed 's/\s* / -I/g')
 
 ifeq ($(OS),Linux)
 
-   LIBS        := $(LIBS) -Wl,-rpath-link $(LIB_DIR)/lib -lxml2 -lgdal -lnetcdf -lz -lezscint -lrmneer
+   LIBS        := $(LIBS) -lxml2 -lgdal -lnetcdf -lz -lezscint -lrmn
+   INCLUDES    := -Isrc -I/usr/include/libxml2 -I$(TCL_SRC_DIR)/unix -I$(TCL_SRC_DIR)/generic $(INCLUDES)                                 
 
-   #----- If not using intel compiler, link with intel libc (RMN)
-   ifndef INTEL_LICENSE_FILE
-      LIBS        := $(LIBS) $(LIB_DIR)/lib/libintlc.so.5  
-   endif
-
-   INCLUDES    := -Isrc -I/usr/include/libxml2 -I$(TCL_DIR)/unix -I$(TCL_DIR)/generic  $(INCLUDES)                                 
-
-   CC          = s.cc
    AR          = ar rv
    LD          = ld -shared -x
    LINK_EXEC   = -lm -lpthread 
@@ -55,7 +45,7 @@ ifeq ($(OS),Linux)
    endif
 else
 
-   LIBS        := $(LIBS) -lxml2 -lezscint -lrmneer
+   LIBS        := $(LIBS) -lxml2 -lezscint -lrmn
    RMN_INCLUDE = -I/ssm/net/rpn/libs/15.2/aix-7.1-ppc7-64/include -I/ssm/net/rpn/libs/15.2/all/include -I/ssm/net/rpn/libs/15.2/all/include/AIX-powerpc7 -I${VGRIDDESCRIPTORS_SRC}/../include
    INCLUDES    := -Isrc $(RMN_INCLUDE) -I/usr/include/libxml2 -I$(LIB_DIR)/gdal-1.11.0/include $(INCLUDES) 
 
