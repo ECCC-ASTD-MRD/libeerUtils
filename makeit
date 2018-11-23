@@ -16,7 +16,45 @@ touch src/App.c
 #----- Build no multi processor version first
 unset OMPI
 $MAKE -f $MAKEFILE clear
-$MAKE -f $MAKEFILE  all
+mkdir -p ./lib ./include
+
+#----- RMNLIB
+rmn=16.2
+path=/fs/ssm/eccc/mrd/rpn/libs/${rmn}
+ln -s ${path}/all/include/rpnmacros.h include/rpnmacros.h
+ln -s ${path}/all/include/rpnmacros_global.h include/rpnmacros_global.h
+ln -s ${path}/all/include/${ARCH}/rpn_macros_arch.h include/rpn_macros_arch.h
+ln -s ${path}/${ORDENV_PLAT}/lib/${ARCH}/librmnshared_0${rmn}.so lib/librmnshared_0${rmn}.so
+ln -s librmnshared_0${rmn}.so lib/librmn.so
+
+#----- EZSCINT
+echo "Building ezscint"
+path=${SSM_DEV}/src/ezscint
+cd ${path}
+$MAKE -f $MAKEFILE clean
+$MAKE -f $MAKEFILE 
+cd -
+cp -frd ${path}/libezscint.* lib
+cp -frd ${path}/*.h include
+
+#----- EZINTERPV
+if [[ -n ${VGRIDDESCRIPTORS_SRC} ]]; then
+   echo "Building ezinterpv"
+   path=${SSM_DEV}/src/cezinterpv-15.2
+   cd ${path}
+   $MAKE -f $MAKEFILE clear all
+   cd -
+   cp -frd ${path}/lib/* lib
+   cp -frd ${path}/src/*.h include
+fi
+
+if [[ -n $INTEL_LICENSE_FILE ]]; then
+   export CC=icc
+   export CXX=icpc
+   export FC=ifort
+fi
+
+$MAKE -f $MAKEFILE all
 
 #----- Build OpenMP/MPI lib only
 export OMPI=-ompi
