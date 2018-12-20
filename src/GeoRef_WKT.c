@@ -143,8 +143,6 @@ int GeoRef_WKTValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
       if (Def->Mask && !Def->Mask[idx]) {
          return(valid);
       }
-
-      valid=1;
       
       // Reproject vector orientation by adding grid projection's north difference
       if (Def->Data[1] && GRef->Type&GRID_NUNORTH) { 
@@ -170,7 +168,9 @@ int GeoRef_WKTValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
             *ThetaXY=180+RAD2DEG(atan2(x,y)-ddir);
          }
       }
+      valid=DEFVALID(Def,*Length);
    }
+   
    return(valid);
 }
 
