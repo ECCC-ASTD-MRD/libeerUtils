@@ -10,31 +10,33 @@ if [[ $HOSTTYPE = "AIX" ]]; then
    MAKE=gmake
 fi
 
-#----- Reset __TIMESTAMP__
-touch src/App.c
+#----- RMN stuff
+if [ -z ${COMP_ARCH} ]; then
+   ARCH=${ARCH}/gfortran
+fi
+RMN_VERSION=16.2
 
-#----- Build no multi processor version first
-unset OMPI
+if [ `domainname -d` = "science.gc.ca" ]; then
+   echo "Building on SCIENCE network"
+   export VGRID_PATH=/fs/ssm/eccc/cmd/cmdn/vgrid/6.1.1/intel-2016.1.156/vgriddescriptors_6.1.1-intel-2016.1.156_ubuntu-14.04-amd64-64
+   RMN_PATH=/fs/ssm/eccc/mrd/rpn/libs/${RMN_VERSION}
+else
+   echo "Building on ECCC network"
+   export VGRID_PATH=/ssm/net/cmdn/vgrid/6.1.1/intel13sp1u2/vgriddescriptors_6.1.1-intel13sp1u2_ubuntu-14.04-amd64-64
+   RMN_PATH=/ssm/net/rpn/libs/${RMN_VERSION}   
+fi
+
 $MAKE -f $MAKEFILE clear
 mkdir -p ./lib ./include
 
-#----- RMNLIB
-rmn=16.2
-#RMN_PATH=/fs/ssm/eccc/mrd/rpn/
-RMN_PATH=/ssm/net/rpn/libs/${rmn}
-
-COMP_ARCH=${COMP_ARCH:-gfortran}
 ln -s ${RMN_PATH}/all/include/rpnmacros.h include/rpnmacros.h
 ln -s ${RMN_PATH}/all/include/rpnmacros_global.h include/rpnmacros_global.h
-ln -s ${RMN_PATH}/all/include/${ARCH}/${COMP_ARCH}/rpn_macros_arch.h include/rpn_macros_arch.h
+ln -s ${RMN_PATH}/all/include/${ARCH}/rpn_macros_arch.h include/rpn_macros_arch.h
 
-# ln -s ${path}/libs/${rmn}/librmn-${COMP_ARCH}_0${rmn}_${ORDENV_PLAT}/lib/${ARCH}/${COMP_ARCH}/librmnshared_0${rmn}.so lib/librmnshared_0${rmn}.so
 # #{path}/${ORDENV_PLAT}/lib/${ARCH}/${COMP_ARCH}/librmnshared_0${rmn}.so lib/librmnshared_0${rmn}.so
 # ln -s librmnshared_0${rmn}.so lib/librmn.so
 cp librmnshared_016.3_beta.so lib
 ln -s librmnshared_016.3_beta.so lib/librmn.so
-
-#export VGRID_PATH=/ssm/net/cmdn/vgrid/6.1.1/intel13sp1u2/vgriddescriptors_6.1.1-intel13sp1u2_ubuntu-14.04-amd64-64/
 
 # #----- EZINTERPV
 # if [[ -n ${VGRIDDESCRIPTORS_SRC} ]]; then
@@ -54,6 +56,7 @@ if [[ -n $INTEL_LICENSE_FILE ]]; then
 fi
 
 #----- Build non parallel lib and bin
+unset OMPI
 $MAKE -f $MAKEFILE all
 
 #----- Build OpenMP/MPI lib only

@@ -10,7 +10,7 @@ HAVE       =-DHAVE_RMN -DHAVE_GPC
 #-DHAVE_RPNC
 
 ifdef VGRID_PATH
-   HAVE = ${HAVE} -DHAVE_VGRID
+   HAVE := $(HAVE) -DHAVE_VGRID
 endif
 
 ifdef COMP_ARCH
@@ -105,10 +105,9 @@ lib: obj
 	mkdir -p ./lib
 	mkdir -p ./include
 
-	cd src 
         ifdef VGRID_PATH
-           # Need to include vgrid archive
-	   ar x ${VGRID_PATH}/lib/libdescrip.a
+	   # Need to include vgrid archive
+	   cd src; ar x ${VGRID_PATH}/lib/libdescrip.a; cd -
         endif
 	$(AR) lib/libeerUtils$(OMPI)-$(VERSION).a $(OBJ_C) $(OBJ_F) $(OBJ_VG)
 	ln -fs libeerUtils$(OMPI)-$(VERSION).a lib/libeerUtils$(OMPI).a
