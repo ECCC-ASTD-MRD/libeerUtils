@@ -1,6 +1,6 @@
 NAME       = eerUtils
-DESCRIPTION= "SMC-CMC-CMOE Utility librairie package"
-SUMMARY    = "Library of common functions used by various CCMEP tools (SPI, EER Models, ...)"
+DESCRIPTION= SMC-CMC-CMOE Utility librairie package
+SUMMARY    = Library of common functions used by various CCMEP tools (SPI, EER Models, ...)
 VERSION    = 3.4.0
 BUILDINFO  = $(shell HOME=/dev/null git describe --always)
 MAINTAINER = $(USER)

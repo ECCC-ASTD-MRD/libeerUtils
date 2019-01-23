@@ -41,6 +41,7 @@ double   GeoRef_RDRDistance(TGeoRef *GRef,double X0,double Y0,double X1, double 
 int      GeoRef_RDRValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double Azimuth,double Bin,double Sweep,double *Length,double *ThetaXY);
 int      GeoRef_RDRProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,int Extrap,int Transform);
 int      GeoRef_RDRUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,int Extrap,int Transform);
+TGeoRef* GeoRef_RDRSetup(double Lat,double Lon,double Height,int R,double ResR,double ResA);
 
 /*--------------------------------------------------------------------------------------------------------------
  * Nom          : <GeoRef_RDRHeight>
