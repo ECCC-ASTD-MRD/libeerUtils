@@ -1286,7 +1286,7 @@ int GeoRef_Nearest(TGeoRef* __restrict const Ref,double X,double Y,int *Idxs,dou
                            
                         // Assign found nearest
                         Dists[nn]=l;
-                        Idxs[nn]=(int)node->Data[n].Ptr-1; // Remove false pointer increment
+                        Idxs[nn]=(intptr_t)node->Data[n].Ptr-1; // Remove false pointer increment
                         nnear++;
                         break;
                      }

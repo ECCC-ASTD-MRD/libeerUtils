@@ -1983,7 +1983,7 @@ int EZGrid_LLGetValueM(TGrid* restrict const GridU,TGrid* restrict const GridV,T
    TGeoRef     *gref;
    Vect3d       bary;
    int          n,idxs[3];
-   unsigned int idx;
+   intptr_t    idx;
    
    if (!GridU || GridU->H.GRTYP[0]!='M') {
       App_Log(ERROR,"%s: Invalid grid\n",__func__);
@@ -2008,7 +2008,7 @@ int EZGrid_LLGetValueM(TGrid* restrict const GridU,TGrid* restrict const GridV,T
       if ((node=QTree_Find(gref->QTree,Lon,Lat)) && node->NbData) {
          // Loop on this nodes data payload
          for(n=0;n<node->NbData;n++) {
-            idx=(unsigned int)node->Data[n].Ptr-1; // Remove false pointer increment
+            idx=(intptr_t)node->Data[n].Ptr-1; // Remove false pointer increment
             idxs[0]=gref->Idx[idx];
             idxs[1]=gref->Idx[idx+1];
             idxs[2]=gref->Idx[idx+2];
@@ -2723,8 +2723,9 @@ int EZGrid_GetIJ(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float
 int EZGrid_GetBary(TGrid* restrict const Grid,float Lat,float Lon,Vect3d Bary,Vect3i Index) {
 
    TQTree       *node;
-   unsigned int *idx,t,n;
-
+   unsigned int *idx,n;
+   intptr_t     t;
+   
    // Is this a triangle mesh
    if (Grid && Grid->H.GRTYP[0]=='M') {
       idx=Grid->GRef->Idx;
@@ -2735,7 +2736,7 @@ int EZGrid_GetBary(TGrid* restrict const Grid,float Lat,float Lon,Vect3d Bary,Ve
          
          // Loop on this nodes data payload
          for(n=0;n<node->NbData;n++) {
-            t=(int)node->Data[n].Ptr-1; // Remove false pointer increment
+            t=(intptr_t)node->Data[n].Ptr-1; // Remove false pointer increment
             
             // if the Barycentric coordinates are within this triangle, get its interpolated value
             if (Bary_Get(Bary,Grid->GRef->Wght?Grid->GRef->Wght[t/3]:0.0,Lon,Lat,Grid->GRef->AX[idx[t]],Grid->GRef->AY[idx[t]],Grid->GRef->AX[idx[t+1]],Grid->GRef->AY[idx[t+1]],Grid->GRef->AX[idx[t+2]],Grid->GRef->AY[idx[t+2]])) {

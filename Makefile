@@ -6,8 +6,12 @@ BUILDINFO  = $(shell HOME=/dev/null git describe --always)
 MAINTAINER = $(USER)
 OS         = $(shell uname -s)
 PROC       = $(shell uname -m | tr _ -)
-OPT        = -DHAVE_RMN -DHAVE_GPC
+HAVE       =-DHAVE_RMN -DHAVE_GPC
 #-DHAVE_RPNC
+
+ifdef VGRID_PATH
+   HAVE = ${HAVE} -DHAVE_VGRID
+endif
 
 ifdef COMP_ARCH
    COMP=-${COMP_ARCH}
@@ -16,25 +20,33 @@ endif
 SSM_VERSION = ${VERSION}${COMP}
 SSM_NAME    = ${NAME}_${SSM_VERSION}_${ORDENV_PLAT}
 
-INSTALL_DIR = $(HOME)
+INSTALL_DIR = $(shell readlink -f .)
 TCL_SRC_DIR = ${SSM_DEV}/src/tcl8.6.6
 
-LIBS        := -L$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g')
-INCLUDES    := -I$(shell echo $(EC_INCLUDE_PATH) | sed 's/\s* / -I/g')
+LIBS        := -L/$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g') -L./lib 
+INCLUDES    := -I/$(shell echo $(EC_INCLUDE_PATH) | sed 's/\s* / -I/g') 
 
 ifeq ($(OS),Linux)
 
-   LIBS        := $(LIBS) -lxml2 -lgdal -lnetcdf -lz -lezscint -lrmn
-   INCLUDES    := -Isrc -I/usr/include/libxml2 -I$(TCL_SRC_DIR)/unix -I$(TCL_SRC_DIR)/generic $(INCLUDES)                                 
+   LIBS        := $(LIBS) $(shell xml2-config --libs) $(shell gdal-config --libs) $(shell nc-config --libs) -lrmn
+   INCLUDES    := -Isrc $(shell xml2-config --cflags) $(shell gdal-config --cflags) $(shell nc-config --cflags) -I$(TCL_SRC_DIR)/unix -I$(TCL_SRC_DIR)/generic $(INCLUDES)                                 
 
    AR          = ar rv
    LD          = ld -shared -x
-   LINK_EXEC   = -lm -lpthread 
-   LINK_EXEC   = -lm -lpthread -lintlc -lifcore -lifport
+   
+   LINK_EXEC   = -lm -lpthread -Wl,-rpath=$(INSTALL_DIR)/lib
+   ifdef INTEL_LICENSE_FILE
+      LINK_EXEC   := $(LINK_EXEC) -lintlc -lifcore -lifport
+   endif
  
    CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer -DHAVE_GDAL
    ifdef OMPI
-      CCOPTIONS   := $(CCOPTIONS) -fopenmp -mpi
+      ifdef INTEL_LICENSE_FILE
+         CCOPTIONS   := $(CCOPTIONS) -fopenmp -mpi
+      else
+         CCOPTIONS   := $(CCOPTIONS) -fopenmp
+         CC= mpicc
+      endif
    endif
 
    CDEBUGFLAGS = -g -Winline 
@@ -45,8 +57,8 @@ ifeq ($(OS),Linux)
    endif
 else
 
-   LIBS        := $(LIBS) -lxml2 -lezscint -lrmn
-   RMN_INCLUDE = -I/ssm/net/rpn/libs/15.2/aix-7.1-ppc7-64/include -I/ssm/net/rpn/libs/15.2/all/include -I/ssm/net/rpn/libs/15.2/all/include/AIX-powerpc7 -I${VGRIDDESCRIPTORS_SRC}/../include
+   LIBS        := $(LIBS) -lxml2 -lrmn
+   RMN_INCLUDE = -I/ssm/net/rpn/libs/15.2/aix-7.1-ppc7-64/include -I/ssm/net/rpn/libs/15.2/all/include -I/ssm/net/rpn/libs/15.2/all/include/AIX-powerpc7 -I${VGRID_PATH}/include
    INCLUDES    := -Isrc $(RMN_INCLUDE) -I/usr/include/libxml2 -I$(LIB_DIR)/gdal-1.11.0/include $(INCLUDES) 
 
    ifdef OMPI
@@ -68,7 +80,7 @@ else
    CPFLAGS     = -h
 endif
 
-DEFINES     = -DVERSION=\"$(VERSION)-r$(BUILDINFO)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE $(OPT)
+DEFINES     = -DVERSION=\"$(VERSION)-r$(BUILDINFO)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE ${HAVE}
 ifdef OMPI
    DEFINES    := $(DEFINES) -D_MPI
 endif
@@ -78,12 +90,12 @@ CFLAGS      = $(CDEBUGFLAGS) $(CCOPTIONS) $(INCLUDES) $(DEFINES)
 OBJ_C = $(subst .c,.o,$(wildcard src/*.c))
 OBJ_F = $(subst .f,.o,$(wildcard src/*.f))
 OBJ_F := $(subst .F90,.o,$(wildcard src/*.F90))
-OBJ_V := $(shell ar t ${VGRIDDESCRIPTORS_SRC}/../lib/libdescrip.a)
+OBJ_V := $(shell ar t ${VGRID_PATH}/lib/libdescrip.a)
 OBJ_VG = $(OBJ_V:%=src/%)
 
 %.o:%.F90
 	s.compile -src $< -optf="-o $@"
-#	gfortran $< $(CCOPTIONS) -c -o $@ -L$(LIB_DIR)/librmn-15/lib -lrmneer
+#	gfortran $< $(CCOPTIONS) -c -o $@ -L./lib -lrmn
 
 all: obj lib exec
 
@@ -93,8 +105,11 @@ lib: obj
 	mkdir -p ./lib
 	mkdir -p ./include
 
-        # Need to include vgrid archive
-	cd src;	ar x ${VGRIDDESCRIPTORS_SRC}/../lib/libdescrip.a
+	cd src 
+        ifdef VGRID_PATH
+           # Need to include vgrid archive
+	   ar x ${VGRID_PATH}/lib/libdescrip.a
+        endif
 	$(AR) lib/libeerUtils$(OMPI)-$(VERSION).a $(OBJ_C) $(OBJ_F) $(OBJ_VG)
 	ln -fs libeerUtils$(OMPI)-$(VERSION).a lib/libeerUtils$(OMPI).a
 
@@ -108,7 +123,6 @@ lib: obj
 
 exec: obj 
 	mkdir -p ./bin
-ifdef OPT
 	$(CC) util/Dict.c -o bin/Dict-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC) 
 	ln -fs Dict-$(VERSION) bin/Dict
 	ln -fs Dict bin/o.dict
@@ -124,7 +138,6 @@ ifdef OPT
 #	$(CC) util/RPNC_Convert.c -o bin/RPNC_Convert-$(VERSION) $(CFLAGS) -L./lib -leerUtils-$(VERSION) $(LIBS) $(LINK_EXEC)
 #	ln -fs RPNC_Convert-$(VERSION) bin/RPNC_Convert
 #	ln -fs RPNC_Convert bin/o.rpnc_convert
-endif
 
 test: obj 
 	mkdir -p ./bin
@@ -142,9 +155,7 @@ install:
 ssm:
 	rm -f -r  $(SSM_DEV)/workspace/$(SSM_NAME) $(SSM_DEV)/package/$(SSM_NAME).ssm 
 	mkdir -p $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d  $(SSM_DEV)/workspace/$(SSM_NAME)/etc/profile.d $(SSM_DEV)/workspace/$(SSM_NAME)/lib $(SSM_DEV)/workspace/$(SSM_NAME)/include $(SSM_DEV)/workspace/$(SSM_NAME)/bin
-ifdef OPT
 	cp $(CPFLAGS) ./bin/* $(SSM_DEV)/workspace/$(SSM_NAME)/bin
-endif
 	cp $(CPFLAGS) ./lib/* $(SSM_DEV)/workspace/$(SSM_NAME)/lib
 	cp $(CPFLAGS) ./include/* $(SSM_DEV)/workspace/$(SSM_NAME)/include
 	cp $(CPFLAGS) .ssm.d/post-install  $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d

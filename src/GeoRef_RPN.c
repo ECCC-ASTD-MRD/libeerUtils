@@ -462,7 +462,7 @@ int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
                   
                   // Loop on this nodes data payload
                   for(n=0;n<node->NbData;n++) {
-                     idx=(int)node->Data[n].Ptr-1; // Remove false pointer increment
+                     idx=(intptr_t)node->Data[n].Ptr-1; // Remove false pointer increment
 
                      if (Bary_Get(b,GRef->Wght?GRef->Wght[idx/3]:0.0,Lon,Lat,GRef->AX[GRef->Idx[idx]],GRef->AY[GRef->Idx[idx]],
                         GRef->AX[GRef->Idx[idx+1]],GRef->AY[GRef->Idx[idx+1]],GRef->AX[GRef->Idx[idx+2]],GRef->AY[GRef->Idx[idx+2]])) {
