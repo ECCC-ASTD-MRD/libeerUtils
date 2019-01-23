@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -e -x
+set -e
 
 MAKE=make
 MAKEFILE=Makefile
@@ -20,33 +20,32 @@ mkdir -p ./lib ./include
 
 #----- RMNLIB
 rmn=16.2
-path=/fs/ssm/eccc/mrd/rpn/libs/${rmn}
-ln -s ${path}/all/include/rpnmacros.h include/rpnmacros.h
-ln -s ${path}/all/include/rpnmacros_global.h include/rpnmacros_global.h
-ln -s ${path}/all/include/${ARCH}/rpn_macros_arch.h include/rpn_macros_arch.h
-ln -s ${path}/${ORDENV_PLAT}/lib/${ARCH}/librmnshared_0${rmn}.so lib/librmnshared_0${rmn}.so
-ln -s librmnshared_0${rmn}.so lib/librmn.so
+#RMN_PATH=/fs/ssm/eccc/mrd/rpn/
+RMN_PATH=/ssm/net/rpn/libs/${rmn}
 
-#----- EZSCINT
-echo "Building ezscint"
-path=${SSM_DEV}/src/ezscint
-cd ${path}
-$MAKE -f $MAKEFILE clean
-$MAKE -f $MAKEFILE 
-cd -
-cp -frd ${path}/libezscint.* lib
-cp -frd ${path}/*.h include
+COMP_ARCH=${COMP_ARCH:-gfortran}
+ln -s ${RMN_PATH}/all/include/rpnmacros.h include/rpnmacros.h
+ln -s ${RMN_PATH}/all/include/rpnmacros_global.h include/rpnmacros_global.h
+ln -s ${RMN_PATH}/all/include/${ARCH}/${COMP_ARCH}/rpn_macros_arch.h include/rpn_macros_arch.h
 
-#----- EZINTERPV
-if [[ -n ${VGRIDDESCRIPTORS_SRC} ]]; then
-   echo "Building ezinterpv"
-   path=${SSM_DEV}/src/cezinterpv-15.2
-   cd ${path}
-   $MAKE -f $MAKEFILE clear all
-   cd -
-   cp -frd ${path}/lib/* lib
-   cp -frd ${path}/src/*.h include
-fi
+# ln -s ${path}/libs/${rmn}/librmn-${COMP_ARCH}_0${rmn}_${ORDENV_PLAT}/lib/${ARCH}/${COMP_ARCH}/librmnshared_0${rmn}.so lib/librmnshared_0${rmn}.so
+# #{path}/${ORDENV_PLAT}/lib/${ARCH}/${COMP_ARCH}/librmnshared_0${rmn}.so lib/librmnshared_0${rmn}.so
+# ln -s librmnshared_0${rmn}.so lib/librmn.so
+cp librmnshared_016.3_beta.so lib
+ln -s librmnshared_016.3_beta.so lib/librmn.so
+
+#export VGRID_PATH=/ssm/net/cmdn/vgrid/6.1.1/intel13sp1u2/vgriddescriptors_6.1.1-intel13sp1u2_ubuntu-14.04-amd64-64/
+
+# #----- EZINTERPV
+# if [[ -n ${VGRIDDESCRIPTORS_SRC} ]]; then
+#    echo "Building ezinterpv"
+#    path=${SSM_DEV}/src/cezinterpv-15.2
+#    cd ${path}
+#    $MAKE -f $MAKEFILE clear all
+#    cd -
+#    cp -frd ${path}/lib/* lib
+#    cp -frd ${path}/src/*.h include
+# fi
 
 if [[ -n $INTEL_LICENSE_FILE ]]; then
    export CC=icc
@@ -54,6 +53,7 @@ if [[ -n $INTEL_LICENSE_FILE ]]; then
    export FC=ifort
 fi
 
+#----- Build non parallel lib and bin
 $MAKE -f $MAKEFILE all
 
 #----- Build OpenMP/MPI lib only

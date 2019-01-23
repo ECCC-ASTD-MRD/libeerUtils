@@ -462,7 +462,7 @@ int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
                   
                   // Loop on this nodes data payload
                   for(n=0;n<node->NbData;n++) {
-                     idx=(int)node->Data[n].Ptr-1; // Remove false pointer increment
+                     idx=(intptr_t)node->Data[n].Ptr-1; // Remove false pointer increment
 
                      if (Bary_Get(b,GRef->Wght?GRef->Wght[idx/3]:0.0,Lon,Lat,GRef->AX[GRef->Idx[idx]],GRef->AY[GRef->Idx[idx]],
                         GRef->AX[GRef->Idx[idx+1]],GRef->AY[GRef->Idx[idx+1]],GRef->AX[GRef->Idx[idx+2]],GRef->AY[GRef->Idx[idx+2]])) {
@@ -669,16 +669,6 @@ TGeoRef* GeoRef_RPNSetup(int NI,int NJ,char *GRTYP,int IG1,int IG2,int IG3,int I
    return(ref);
 }
 
-
-/* Copied and translated to C from RPN fortran
-ni = 80;
-nj = 60;
-dx= .5
-dy= .5;
-lonr=180.;
-latr=0.;
-maxcfl = 4;
-*/
 int GEM_grid_param(int *F_bsc_base,int *F_bsc_ext1,int *F_extension ,int F_maxcfl,float *F_lonr,float *F_latr,int *F_ni,int *F_nj,float *F_dx,float *F_dy,double *F_x0_8,double *F_y0_8,double *F_xl_8,double *F_yl_8,int F_overlap,int F_yinyang_L) {
 
    double delta_8;

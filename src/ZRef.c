@@ -161,7 +161,9 @@ int ZRef_Free(TZRef *ZRef) {
 
    if (ZRef && !ZRef_Decr(ZRef)) {
 
+#ifdef HAVE_VGRID
       if (ZRef->VGD)    Cvgd_free((vgrid_descriptor**)&ZRef->VGD); ZRef->VGD=NULL;
+#endif
       if (ZRef->Levels) free(ZRef->Levels);    ZRef->Levels=NULL;
       if (ZRef->A)      free(ZRef->A);         ZRef->A=NULL;
       if (ZRef->B)      free(ZRef->B);         ZRef->B=NULL;
@@ -197,9 +199,11 @@ int ZRef_Equal(TZRef *ZRef0,TZRef *ZRef1) {
    if (!ZRef0 || !ZRef1)
       return(0);
       
+#ifdef HAVE_VGRID
    if (ZRef0->VGD && ZRef1->VGD)
       return(!Cvgd_vgdcmp((vgrid_descriptor*)ZRef0->VGD,(vgrid_descriptor*)ZRef1->VGD));
-      
+#endif
+   
    if ((ZRef0->LevelNb!=ZRef1->LevelNb) || (ZRef0->Type!=ZRef1->Type) || (ZRef0->Levels && memcmp(ZRef0->Levels,ZRef1->Levels,ZRef0->LevelNb*sizeof(float))!=0))
       return(0);
 
@@ -324,11 +328,12 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
          if (!ZRef->A) ZRef->A=(float*)malloc(ZRef->LevelNb*sizeof(float));
          if (!ZRef->B) ZRef->B=(float*)malloc(ZRef->LevelNb*sizeof(float));
 
+#ifdef HAVE_VGRID
          if (Cvgd_new_read((vgrid_descriptor**)&ZRef->VGD,Unit,-1,-1,-1,-1)==VGD_ERROR) {
             App_Log(ERROR,"%s: Unable to initialize vgrid descriptor.\n",__func__);
             return(0);
          }
-                  
+#endif                  
          cd=c_fstluk(buf,key,&h.NI,&h.NJ,&h.NK);
          if (cd>=0) {
 
@@ -658,16 +663,20 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
                ips[k]=ZRef_Level2IP(ZRef->Levels[k],ZRef->Type,ZRef->Style);
             }
             
-            // Really not ooptimal but Cvgd needs pascals
+            // Really not optimal but Cvgd needs pascals
             p0=(float*)malloc(NIJ*sizeof(float));
             for (ij=0;ij<NIJ;ij++) {
                p0[ij]=P0[ij]*MB2PA;
             }
             
+#ifdef HAVE_VGRID
             if (Cvgd_levels((vgrid_descriptor*)ZRef->VGD,NIJ,1,ZRef->LevelNb,ips,Pres,p0,0)) {
                App_Log(ERROR,"%s: Problems in Cvgd_levels\n",__func__);
                return(0);
             }
+#else
+            App_Log(ERROR,"%s: Library not built with VGRID\n",__func__);
+#endif
             for (ij=0;ij<NIJ*ZRef->LevelNb;ij++) Pres[ij]*=PA2MB;
             free(ips);
             free(p0);            
@@ -806,10 +815,14 @@ double ZRef_Level2Pressure(TZRef* restrict const ZRef,double P0,double Level) {
          } else {
             ip=ZRef_Level2IP(Level,ZRef->Type,ZRef->Style);
             p0=P0*MB2PA;
+#ifdef HAVE_VGRID
             if (Cvgd_levels_8((vgrid_descriptor*)ZRef->VGD,1,1,1,&ip,&pres,&p0,0)) {
                App_Log(ERROR,"%s: Problems in Cvgd_levels_8\n",__func__);
                return(0);
             }
+#else
+            App_Log(ERROR,"%s: Library not built with VGRID\n",__func__);
+#endif
             pres*=PA2MB;
          }
          break;
