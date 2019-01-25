@@ -1,9 +1,3 @@
-NAME       = eerUtils
-DESCRIPTION= SMC-CMC-CMOE Utility librairie package
-SUMMARY    = Library of common functions used by various CCMEP tools (SPI, EER Models, ...)
-VERSION    = 3.4.0
-BUILDINFO  = $(shell HOME=/dev/null git describe --always)
-MAINTAINER = $(USER)
 OS         = $(shell uname -s)
 PROC       = $(shell uname -m | tr _ -)
 HAVE       =-DHAVE_RMN -DHAVE_GPC
@@ -13,15 +7,8 @@ ifdef VGRID_PATH
    HAVE := $(HAVE) -DHAVE_VGRID
 endif
 
-ifdef COMP_ARCH
-   COMP=-${COMP_ARCH}
-endif
-
-SSM_VERSION = ${VERSION}${COMP}
-SSM_NAME    = ${NAME}_${SSM_VERSION}_${ORDENV_PLAT}
-
 INSTALL_DIR = $(shell readlink -f .)
-TCL_SRC_DIR = ${SSM_DEV}/src/tcl8.6.6
+TCL_SRC_DIR = ${SSM_DEV}/src/ext/tcl8.6.6
 
 LIBS        := -L/$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g') -L./lib 
 INCLUDES    := -I/$(shell echo $(EC_INCLUDE_PATH) | sed 's/\s* / -I/g') 
@@ -106,7 +93,6 @@ lib: obj
 	mkdir -p ./include
 
         ifdef VGRID_PATH
-	   # Need to include vgrid archive
 	   cd src; ar x ${VGRID_PATH}/lib/libdescrip.a; cd -
         endif
 	$(AR) lib/libeerUtils$(OMPI)-$(VERSION).a $(OBJ_C) $(OBJ_F) $(OBJ_VG)
@@ -150,17 +136,6 @@ install:
 	cp $(CPFLAGS) ./lib/* $(INSTALL_DIR)/lib/$(ORDENV_PLAT)
 	cp $(CPFLAGS) ./bin/* $(INSTALL_DIR)/bin/$(ORDENV_PLAT)
 	cp $(CPFLAGS) ./include/* $(INSTALL_DIR)/include
-
-ssm:
-	rm -f -r  $(SSM_DEV)/workspace/$(SSM_NAME) $(SSM_DEV)/package/$(SSM_NAME).ssm 
-	mkdir -p $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d  $(SSM_DEV)/workspace/$(SSM_NAME)/etc/profile.d $(SSM_DEV)/workspace/$(SSM_NAME)/lib $(SSM_DEV)/workspace/$(SSM_NAME)/include $(SSM_DEV)/workspace/$(SSM_NAME)/bin
-	cp $(CPFLAGS) ./bin/* $(SSM_DEV)/workspace/$(SSM_NAME)/bin
-	cp $(CPFLAGS) ./lib/* $(SSM_DEV)/workspace/$(SSM_NAME)/lib
-	cp $(CPFLAGS) ./include/* $(SSM_DEV)/workspace/$(SSM_NAME)/include
-	cp $(CPFLAGS) .ssm.d/post-install  $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d
-	sed -e 's/NAME/$(NAME)/' -e 's/VERSION/$(SSM_VERSION)/' -e 's/PLATFORM/$(ORDENV_PLAT)/' -e 's/MAINTAINER/$(MAINTAINER)/' -e 's/BUILDINFO/${BUILDINFO}/' -e 's/DESCRIPTION/$(DESCRIPTION)/' -e 's/SUMMARY/$(SUMMARY)/' .ssm.d/control.json >  $(SSM_DEV)/workspace/$(SSM_NAME)/.ssm.d/control.json
-	cd $(SSM_DEV)/workspace; tar -zcvf $(SSM_DEV)/package/$(SSM_NAME).ssm $(SSM_NAME)
-#	rm -f -r  $(SSM_DEV)/workspace/$(SSM_NAME)
 
 clean:
 	rm -f src/*.o src/*~

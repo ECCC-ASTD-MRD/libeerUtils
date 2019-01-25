@@ -1,6 +1,42 @@
-#!/bin/sh
+#!/bin/bash
 
-set -e
+NAME="libeerUtils"
+DESCRIPTION="ECCC-SMC-CCMEP-CMOE Utility librairie package"
+SUMMARY="Library of common functions used by various CCMEP tools (SPI, EER Models, ...)"
+MAINTAINER="Jean-Philippe.Gauthier@canada.ca"
+export VERSION="3.4.0"
+export BUILDINFO=`git describe --always`
+
+HELP="Arguments must be:\n\n   Information parameters:
+\t-help        : This information
+\t-version     : Version
+
+   Commands:
+\t-clear       : Clear package
+\t-ssm         : Build SSM package
+\t-build       : Compile package\n"
+
+CLR=0
+BLD=0
+SSM=0
+INS=0
+
+#----- Get arguments
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -clear)   CLR=1;;
+        -build)   BLD=1;;
+        -src)     SRC=1;;
+        -ssm)     SSM=1;;
+        -install) INS=1;;
+
+        -h|-help)    printf -- "$HELP\n"; exit 0;;
+        -v|-version) printf -- "$VERSION\n"; exit 0;;
+        --)          shift; break;;
+        *)           printf -- "Invalid argument $1.\n\n$HELP"; exit 1;;
+    esac
+    shift
+done
 
 MAKE=make
 MAKEFILE=Makefile
@@ -26,50 +62,66 @@ else
    RMN_PATH=/ssm/net/rpn/libs/${RMN_VERSION}   
 fi
 
-$MAKE -f $MAKEFILE clear
-mkdir -p ./lib ./include
+if [[ $CLR -eq 1 ]]; then
+   $MAKE -f $MAKEFILE clear
+   mkdir -p ./lib ./include
 
-ln -s ${RMN_PATH}/all/include/rpnmacros.h include/rpnmacros.h
-ln -s ${RMN_PATH}/all/include/rpnmacros_global.h include/rpnmacros_global.h
-ln -s ${RMN_PATH}/all/include/${ARCH}/rpn_macros_arch.h include/rpn_macros_arch.h
+   ln -s ${RMN_PATH}/all/include/rpnmacros.h include/rpnmacros.h
+   ln -s ${RMN_PATH}/all/include/rpnmacros_global.h include/rpnmacros_global.h
+   ln -s ${RMN_PATH}/all/include/${ARCH}/rpn_macros_arch.h include/rpn_macros_arch.h
 
 # #{path}/${ORDENV_PLAT}/lib/${ARCH}/${COMP_ARCH}/librmnshared_0${rmn}.so lib/librmnshared_0${rmn}.so
 # ln -s librmnshared_0${rmn}.so lib/librmn.so
-cp librmnshared_016.3_beta.so lib
-ln -s librmnshared_016.3_beta.so lib/librmn.so
-
-# #----- EZINTERPV
-# if [[ -n ${VGRIDDESCRIPTORS_SRC} ]]; then
-#    echo "Building ezinterpv"
-#    path=${SSM_DEV}/src/cezinterpv-15.2
-#    cd ${path}
-#    $MAKE -f $MAKEFILE clear all
-#    cd -
-#    cp -frd ${path}/lib/* lib
-#    cp -frd ${path}/src/*.h include
-# fi
-
-if [[ -n $INTEL_LICENSE_FILE ]]; then
-   export CC=icc
-   export CXX=icpc
-   export FC=ifort
+   cp ../RMN/${COMP_ARCH}/${ORDENV_PLAT}/lib/librmnshared_016.3_beta.so lib
+   ln -s librmnshared_016.3_beta.so lib/librmn.so
 fi
 
-#----- Build non parallel lib and bin
-unset OMPI
-$MAKE -f $MAKEFILE all
+if [[ $BLD -eq 1 ]]; then
+   if [[ -n $INTEL_LICENSE_FILE ]]; then
+      export CC=icc
+      export CXX=icpc
+      export FC=ifort
+   fi
 
-#----- Build OpenMP/MPI lib only
-export OMPI=-ompi
-$MAKE -f $MAKEFILE clean
-$MAKE -f $MAKEFILE lib
+   #----- Build non parallel lib and bin
+   unset OMPI
+   $MAKE -f $MAKEFILE all
 
-while [ "$1" != "" ]; do
-    if [ "$1" == "-ssm" ]; then
-        $MAKE -f $MAKEFILE ssm
-    elif [ "$1" == "-install" ]; then
-        $MAKE -f $MAKEFILE install
-    fi
-    shift
-done
+   #----- Build OpenMP/MPI lib only
+   export OMPI=-ompi
+   $MAKE -f $MAKEFILE clean
+   $MAKE -f $MAKEFILE lib
+fi
 
+if [[ $SSM -eq 1 ]]; then
+   if [[ -n $COMP_ARCH ]]; then
+      COMP=-${COMP_ARCH}
+   fi
+   ORDENV_PLAT=${ORDENV_PLAT:-`uname -s`-`uname -m`}
+   
+   SSM_VERSION=${VERSION}${COMP}
+   SSM_NAME=${NAME}_${SSM_VERSION}_${ORDENV_PLAT}
+
+   printf -- "\n----- Building ssm package : ${SSM_DEV}/workspace/${SSM_NAME} -----\n"
+
+   rm -f -r  ${SSM_DEV}/workspace/${SSM_NAME} ${SSM_DEV}/package/${SSM_NAME}.ssm 
+   mkdir -p ${SSM_DEV}/workspace/${SSM_NAME}/.ssm.d  ${SSM_DEV}/workspace/${SSM_NAME}/etc/profile.d
+   cp -r bin lib include ${SSM_DEV}/workspace/${SSM_NAME}
+   cp .ssm.d/post-install ${SSM_DEV}/workspace/${SSM_NAME}/.ssm.d
+   sed -e 's/NAME/${NAME}/' -e 's/VERSION/${SSM_VERSION}/' -e 's/PLATFORM/${ORDENV_PLAT}/' -e 's/MAINTAINER/${MAINTAINER}/' -e 's/BUILDINFO/${BUILDINFO}/' -e 's/DESCRIPTION/${DESCRIPTION}/' -e 's/SUMMARY/${SUMMARY}/' .ssm.d/control.json > ${SSM_DEV}/workspace/${SSM_NAME}/.ssm.d/control.json
+   cd ${SSM_DEV}/workspace; tar -zcvf ${SSM_DEV}/package/${SSM_NAME}.ssm ${SSM_NAME}
+#   rm -f -r  $(SSM_DEV)/workspace/$(SSM_NAME)
+fi
+
+if [[ $INS -eq 1 ]]; then
+   $MAKE -f $MAKEFILE install
+fi
+
+if [[ $SRC -eq 1 ]]; then
+   printf -- "\n----- Building source package : ${SSM_DEV}/src/libeerUtils-${VERSION}  -----\n"
+
+   ./makeit -clear
+   rm -f -r ${SSM_DEV}/src/libeerUtils-${VERSION}
+   cp -r ../libeerUtils ${SSM_DEV}/src/libeerUtils-${VERSION}
+   find ${SSM_DEV}/src/libeerUtils-${VERSION} -name .git -prune -exec rm -f -r {} \+
+fi

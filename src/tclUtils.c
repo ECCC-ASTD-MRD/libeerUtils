@@ -42,6 +42,7 @@
 #include <malloc.h>
 #include <string.h>
 
+#define HAVE_UNISTD_H
 #include "tclPort.h"
 #include "tclInt.h"
 #include "tclIO.h"
