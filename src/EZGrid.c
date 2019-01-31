@@ -1277,15 +1277,18 @@ TGrid *EZGrid_Read(int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1
 
    // Get field info
    key=cs_fstinf(FId,&ni,&nj,&nk,DateV,Etiket,IP1,IP2,-1,TypVar,Var);
-   
+
    // If we're searching for any nomvar, make sure we don't get a descriptor
-   if (Var[0]=='\0') {
+   // Likewise, if we're searching for any typvar, make sure we don't get a mask
+   if( key>=0 && (Var[0]=='\0' || TypVar[0]=='\0') ) {
       strcpy(h.NOMVAR,"    ");
+      strcpy(h.TYPVAR,"  ");
       c_fstprm(key,&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&h.NK,&h.NBITS,&h.DATYP,&h.IP1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,
          h.GRTYP,&h.IG1,&h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,&h.UBC,&h.EX1,&h.EX2,&h.EX3);
-      while (RPN_IsDesc(h.NOMVAR) && key>0) {
+      while( key>=0 && (Var[0]=='\0'&&RPN_IsDesc(h.NOMVAR) || TypVar[0]=='\0'&&h.TYPVAR[0]=='@'&&h.TYPVAR[1]=='@')) {
          key=cs_fstsui(FId,&ni,&nj,&nk);
          strcpy(h.NOMVAR,"    ");
+         strcpy(h.TYPVAR,"  ");
          c_fstprm(key,&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&h.NK,&h.NBITS,&h.DATYP,&h.IP1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,
             h.GRTYP,&h.IG1,&h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,&h.UBC,&h.EX1,&h.EX2,&h.EX3);
       }
