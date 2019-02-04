@@ -667,7 +667,7 @@ TGeoRef *GeoRef_WKTSetup(int NI,int NJ,char *GRTYP,int IG1,int IG2,int IG3,int I
    if (!GeoRef_WKTSet(ref,String,Transform,InvTransform,Spatial)) {
       return(NULL);
    }
-
+   
    if (GRTYP) {
       ref->Grid[0]=GRTYP[0];
       ref->Grid[1]=GRTYP[1];

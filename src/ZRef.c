@@ -35,7 +35,10 @@
 #include "RPN.h"
 #include "eerUtils.h"
 #include "ZRef.h"
+
+#ifdef HAVE_VGRID
 #include "vgrid.h"
+#endif
 
 static float       *ZRef_Levels   = NULL;
 static unsigned int ZRef_LevelsNb = 0;

@@ -16,7 +16,7 @@ INCLUDES    := -I/$(shell echo $(EC_INCLUDE_PATH) | sed 's/\s* / -I/g')
 ifeq ($(OS),Linux)
 
    LIBS        := $(LIBS) $(shell xml2-config --libs) $(shell gdal-config --libs) $(shell nc-config --libs) -lrmn
-   INCLUDES    := -Isrc $(shell xml2-config --cflags) $(shell gdal-config --cflags) $(shell nc-config --cflags) -I$(TCL_SRC_DIR)/unix -I$(TCL_SRC_DIR)/generic $(INCLUDES)                                 
+   INCLUDES    := -Isrc -Iinclude $(shell xml2-config --cflags) $(shell gdal-config --cflags) $(shell nc-config --cflags) -I$(TCL_SRC_DIR)/unix -I$(TCL_SRC_DIR)/generic $(INCLUDES)                                 
 
    AR          = ar rv
    LD          = ld -shared -x

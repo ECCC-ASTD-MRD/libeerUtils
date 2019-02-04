@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NAME="libeerUtils"
+NAME="eerUtils"
 DESCRIPTION="ECCC-SMC-CCMEP-CMOE Utility librairie package"
 SUMMARY="Library of common functions used by various CCMEP tools (SPI, EER Models, ...)"
 MAINTAINER="Jean-Philippe.Gauthier@canada.ca"
@@ -48,6 +48,7 @@ fi
 
 #----- RMN stuff
 if [ -z ${COMP_ARCH} ]; then
+echo $ARCH
    ARCH=${ARCH}/gfortran
 fi
 RMN_VERSION=16.2
@@ -56,22 +57,24 @@ if [ `domainname -d` = "science.gc.ca" ]; then
    echo "Building on SCIENCE network"
    export VGRID_PATH=/fs/ssm/eccc/cmd/cmdn/vgrid/6.1.1/intel-2016.1.156/vgriddescriptors_6.1.1-intel-2016.1.156_ubuntu-14.04-amd64-64
    RMN_PATH=/fs/ssm/eccc/mrd/rpn/libs/${RMN_VERSION}
-else
+elif [ `domainname -d` = "cmc.ec.gc.ca" ]; then
    echo "Building on ECCC network"
-   export VGRID_PATH=/ssm/net/cmdn/vgrid/6.1.1/intel13sp1u2/vgriddescriptors_6.1.1-intel13sp1u2_ubuntu-14.04-amd64-64
+#   export VGRID_PATH=/ssm/net/cmdn/vgrid/6.1.1/intel13sp1u2/vgriddescriptors_6.1.1-intel13sp1u2_ubuntu-14.04-amd64-64
    RMN_PATH=/ssm/net/rpn/libs/${RMN_VERSION}   
 fi
 
-if [[ $CLR -eq 1 ]]; then
+if [[ $CLR -eq 1 || $SRC -eq 1 ]]; then
    $MAKE -f $MAKEFILE clear
    mkdir -p ./lib ./include
 
-   ln -s ${RMN_PATH}/all/include/rpnmacros.h include/rpnmacros.h
-   ln -s ${RMN_PATH}/all/include/rpnmacros_global.h include/rpnmacros_global.h
-   ln -s ${RMN_PATH}/all/include/${ARCH}/rpn_macros_arch.h include/rpn_macros_arch.h
+   cp ${RMN_PATH}/all/include/fnom.h include/fnom.h
+   cp ${RMN_PATH}/all/include/rpnmacros.h include/rpnmacros.h
+   cp ${RMN_PATH}/all/include/rpnmacros_global.h include/rpnmacros_global.h
+   cp ${RMN_PATH}/all/include/${ARCH}/rpn_macros_arch.h include/rpn_macros_arch.h
 
 # #{path}/${ORDENV_PLAT}/lib/${ARCH}/${COMP_ARCH}/librmnshared_0${rmn}.so lib/librmnshared_0${rmn}.so
 # ln -s librmnshared_0${rmn}.so lib/librmn.so
+   #----- Temporary use of rmn16.3
    cp ../RMN/${COMP_ARCH}/${ORDENV_PLAT}/lib/librmnshared_016.3_beta.so lib
    ln -s librmnshared_016.3_beta.so lib/librmn.so
 fi
@@ -118,10 +121,9 @@ if [[ $INS -eq 1 ]]; then
 fi
 
 if [[ $SRC -eq 1 ]]; then
-   printf -- "\n----- Building source package : ${SSM_DEV}/src/libeerUtils-${VERSION}  -----\n"
+   printf -- "\n----- Building source package : ${SSM_DEV}/src/${NAME}-${VERSION}  -----\n"
 
-   ./makeit -clear
-   rm -f -r ${SSM_DEV}/src/libeerUtils-${VERSION}
-   cp -r ../libeerUtils ${SSM_DEV}/src/libeerUtils-${VERSION}
-   find ${SSM_DEV}/src/libeerUtils-${VERSION} -name .git -prune -exec rm -f -r {} \+
+   rm -f -r ${SSM_DEV}/src/${NAME}-${VERSION}
+   cp -r ../libeerUtils ${SSM_DEV}/src/${NAME}-${VERSION}
+   find ${SSM_DEV}/src/${NAME}-${VERSION} -name .git -prune -exec rm -f -r {} \+
 fi

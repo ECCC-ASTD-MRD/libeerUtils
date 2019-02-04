@@ -678,7 +678,7 @@ int GeoRef_Incr(TGeoRef *Ref) {
 void GeoRef_Clear(TGeoRef *Ref,int New) {
 
    int n;
-
+   
    if (Ref) {
       if (Ref->String)       free(Ref->String);       Ref->String=NULL;
       if (Ref->Transform)    free(Ref->Transform);    Ref->Transform=NULL;
@@ -699,7 +699,7 @@ void GeoRef_Clear(TGeoRef *Ref,int New) {
          if (Ref->Name)      free(Ref->Name);         Ref->Name=NULL;
       }
 
-#ifdef HAVE_RMN
+      #ifdef HAVE_RMN
       // Release ezscint sub-grid
       if (Ref->Ids) {
          for(n=0;n<Ref->NbId+1;n++) {
@@ -723,16 +723,15 @@ void GeoRef_Clear(TGeoRef *Ref,int New) {
          GDALDestroyRPCTransformer(Ref->RPCTransform);
          Ref->RPCTransform=NULL;
       }
-
       if (Ref->Spatial) {
          OSRDestroySpatialReference(Ref->Spatial);
       }
-
+      
       if (Ref->Function) {
          OCTDestroyCoordinateTransformation(Ref->Function);
          Ref->Function=NULL;
       }
-
+      
       if (Ref->InvFunction) {
          OCTDestroyCoordinateTransformation(Ref->InvFunction);
          Ref->InvFunction=NULL;
