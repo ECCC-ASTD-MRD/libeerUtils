@@ -48,7 +48,6 @@ fi
 
 #----- RMN stuff
 if [ -z ${COMP_ARCH} ]; then
-echo $ARCH
    ARCH=${ARCH}/gfortran
 fi
 RMN_VERSION=16.2
