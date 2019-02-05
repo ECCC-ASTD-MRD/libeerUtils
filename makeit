@@ -47,19 +47,22 @@ if [[ $HOSTTYPE = "AIX" ]]; then
 fi
 
 #----- RMN stuff
-if [ -z ${COMP_ARCH} ]; then
+if [[ -z ${COMP_ARCH} ]]; then
    ARCH=${ARCH}/gfortran
 fi
 RMN_VERSION=16.2
 
-if [ `domainname -d` = "science.gc.ca" ]; then
-   echo "Building on SCIENCE network"
-   export VGRID_PATH=/fs/ssm/eccc/cmd/cmdn/vgrid/6.1.1/intel-2016.1.156/vgriddescriptors_6.1.1-intel-2016.1.156_ubuntu-14.04-amd64-64
-   RMN_PATH=/fs/ssm/eccc/mrd/rpn/libs/${RMN_VERSION}
-elif [ `domainname -d` = "cmc.ec.gc.ca" ]; then
-   echo "Building on ECCC network"
-#   export VGRID_PATH=/ssm/net/cmdn/vgrid/6.1.1/intel13sp1u2/vgriddescriptors_6.1.1-intel13sp1u2_ubuntu-14.04-amd64-64
-   RMN_PATH=/ssm/net/rpn/libs/${RMN_VERSION}   
+if [[ -n ${ORDENV_VERSION} ]]; then
+   if [ `domainname -d` = "science.gc.ca" ]; then
+      echo "Building on SCIENCE network"
+      export VGRID_PATH=/fs/ssm/eccc/cmd/cmdn/vgrid/6.1.1/intel-2016.1.156/vgriddescriptors_6.1.1-intel-2016.1.156_ubuntu-14.04-amd64-64
+      RMN_PATH=/fs/ssm/eccc/mrd/rpn/libs/${RMN_VERSION}
+   elif [ `domainname -d` = "cmc.ec.gc.ca" ]; then
+      echo "Building on ECCC network"
+      #----- Comment this line when testing external build  
+      export VGRID_PATH=/ssm/net/cmdn/vgrid/6.1.1/intel13sp1u2/vgriddescriptors_6.1.1-intel13sp1u2_ubuntu-14.04-amd64-64
+      RMN_PATH=/ssm/net/rpn/libs/${RMN_VERSION}   
+   fi
 fi
 
 if [[ $CLR -eq 1 || $SRC -eq 1 ]]; then
