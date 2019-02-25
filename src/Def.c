@@ -1968,7 +1968,7 @@ int Def_GridInterpConservative(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
  *
  *----------------------------------------------------------------------------
 */
-int Def_GridInterpAverage(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *FromDef,double *Table,TDef *TmpDef,TDef_InterpR Mode,int Final){
+int Def_GridInterpAverage(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *FromDef,double *Table,TDef **lutDef, int lutSize, TDef *TmpDef,TDef_InterpR Mode,int Final){
 
    double        val,vx,di[4],dj[4],*fld,*aux,di0,di1,dj0,dj1;
    int          *acc=NULL,x0,x1,y,y0,y1;
@@ -2061,6 +2061,50 @@ int Def_GridInterpAverage(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *From
             }
          }
       } else {
+         int   *fromClass = NULL;
+         int   *toClass = NULL;
+         int    nbClass = 0;
+         int   *rpnClass = NULL;
+         int    i;
+
+         if (lutDef && ToDef->NK > 0) {
+            Def_Get(lutDef[0],0,0,val);
+            if (val != ToDef->NK) {
+               App_Log(ERROR,"%s: Invalid LUT class size (%d) vs Array size (%d)  \n",__func__,(int)val,ToDef->NK);
+               return(0);
+            }
+            /* first row is the class count and idno */
+            nbClass = lutDef[0]->NI - 1;       
+            fromClass = (int *)malloc( sizeof(int)*nbClass );
+            for (i = 0; i < nbClass ; i++)
+               {
+               Def_Get(lutDef[0],0,i+1,val);
+               fromClass[i] = val;
+               }
+            if (lutSize == 2) { /* only FROM and TO */
+               toClass = (int *)malloc( sizeof(int)*nbClass );
+               for (i = 0; i < nbClass ; i++) {
+                  Def_Get(lutDef[1],0,i+1,val);
+                  /* make sure to value is within range */
+                  if ((val >= 1) && (val <= ToDef->NK))
+                     toClass[i] = val;
+                  else
+                     toClass[i] = -1;
+               }
+            } else {
+               double val;
+               rpnClass = (int *)malloc( sizeof(int)*lutSize );
+               for (i = 1; i < lutSize ; i++) { /* skip 1st column : the class id */
+                  Def_Get(lutDef[i],0,0,val);
+                  rpnClass[i] = val;
+                  if ((val < 1)||(val > ToDef->NK)) {
+                     App_Log(ERROR,"%s: Invalid LUT index(%d)=%f vs Array size (%d)  \n",__func__,i,val,ToDef->NK);
+                     return(0);
+                  }
+               }
+            }
+         }
+
          // grid based interpolations
          GeoScan_Init(&gscan);
 
@@ -2173,6 +2217,33 @@ int Def_GridInterpAverage(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *From
                                                             }
                                                             t++;
                                                          }
+                                                      } else if (lutDef) {
+                                                         int hasvalue=0;
+                                                         t=0;
+                                                         while(t<nbClass) {
+                                                            if (vx==fromClass[t]) {
+                                                               if (toClass) { /* toClass is between 1 and 26 */
+                                                                  if (toClass[t] > 0)
+                                                                     {
+                                                                     fld[(toClass[t]-1)*nij+idxt]+=1.0;
+                                                                     hasvalue = 1;
+                                                                     }
+                                                               } else {
+                                                                  for (i = 1; i < lutSize ; i++) { /* skip 1st column : the class id */
+                                                                     Def_Get(lutDef[i],0,t+1,val);
+                                                                     if (val > 0) {
+                                                                        fld[(rpnClass[i]-1)*nij+idxt]+=val;
+                                                                        hasvalue = 1;
+                                                                     }
+                                                                  }
+                                                               }
+                                                               break;
+                                                            }
+                                                            t++;
+                                                         }
+                                                         /* dont count missing values */
+                                                         if (hasvalue)
+                                                            if (Mode!=IR_COUNT) acc[idxt]++; 
                                                       } else {
                                                          if (DEFVALID(FromDef,vx)) {
                                                             fld[idxt]+=vx;
@@ -2192,6 +2263,9 @@ int Def_GridInterpAverage(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *From
          }
 
          GeoScan_Clear(&gscan);
+         if (fromClass) free(fromClass);
+         if (toClass) free(toClass);
+         if (rpnClass) free(rpnClass);
       }
    }
 
