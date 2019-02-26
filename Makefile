@@ -23,15 +23,18 @@ ifeq ($(OS),Linux)
    
    LINK_EXEC   = -lm -lpthread -Wl,-rpath=$(INSTALL_DIR)/lib
    ifdef INTEL_LICENSE_FILE
-      LINK_EXEC   := $(LINK_EXEC) -lintlc -lifcore -lifport
+      CC=icc
+      CXX=icpc
+      FC=ifort
+      LINK_EXEC := $(LINK_EXEC) -lintlc -lifcore -lifport
    endif
  
    CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer -DHAVE_GDAL
    ifdef OMPI
+      CCOPTIONS   := $(CCOPTIONS) -fopenmp
       ifdef INTEL_LICENSE_FILE
-         CCOPTIONS   := $(CCOPTIONS) -fopenmp -mpi
+         CC= mpiicc
       else
-         CCOPTIONS   := $(CCOPTIONS) -fopenmp
          CC= mpicc
       endif
    endif
