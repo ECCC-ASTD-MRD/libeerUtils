@@ -1,10 +1,11 @@
 #!/bin/bash
+. ./VERSION
 
 NAME="eerUtils"
 DESCRIPTION="ECCC-SMC-CCMEP-CMOE Utility librairie package"
 SUMMARY="Library of common functions used by various CCMEP tools (SPI, EER Models, ...)"
 MAINTAINER="Jean-Philippe.Gauthier@canada.ca"
-export VERSION="3.4.0"
+export VERSION=$EER_VERSION
 export BUILDINFO=`[ -z "\${ORDENV_SETUP}" ] || git describe --always`
 
 HELP="Arguments must be:\n\n   Information parameters:
@@ -19,12 +20,14 @@ HELP="Arguments must be:\n\n   Information parameters:
 CLR=0
 BLD=0
 SSM=0
+REC=0
 INS=0
 
 #----- Get arguments
 while [ $# -gt 0 ]; do
     case "$1" in
         -clear)   CLR=1;;
+        -reconf)  REC=1;;
         -build)   BLD=1;;
         -src)     SRC=1;;
         -ssm)     SSM=1;;
@@ -50,22 +53,21 @@ fi
 if [[ -z ${COMP_ARCH} ]]; then
    ARCH=${ARCH}/gfortran
 fi
-RMN_VERSION=16.2
 
 if [[ -n ${ORDENV_VERSION} ]]; then
    if [ `domainname -d` = "science.gc.ca" ]; then
       echo "Building on SCIENCE network"
-      export VGRID_PATH=/fs/ssm/eccc/cmd/cmdn/vgrid/6.1.1/intel-2016.1.156/vgriddescriptors_6.1.1-intel-2016.1.156_ubuntu-14.04-amd64-64
+      export VGRID_PATH=/fs/ssm/eccc/cmd/cmdn/vgrid/${VGR_VERSION}/${COMP_VERSION}/vgriddescriptors_${VGR_VERSION}-${COMP_VERSION}_${ORDENV_PLAT}
       RMN_PATH=/fs/ssm/eccc/mrd/rpn/libs/${RMN_VERSION}
    elif [ `domainname -d` = "cmc.ec.gc.ca" ]; then
       echo "Building on ECCC network"
       #----- Comment this line when testing external build  
-      export VGRID_PATH=/ssm/net/cmdn/vgrid/6.1.1/intel13sp1u2/vgriddescriptors_6.1.1-intel13sp1u2_ubuntu-14.04-amd64-64
+      export VGRID_PATH=/ssm/net/cmdn/vgrid/${VGR_VERSION}/${COMP_VERSION}/vgriddescriptors_${VGR_VERSION}-${COMP_VERSION}_${ORDENV_PLAT}
       RMN_PATH=/ssm/net/rpn/libs/${RMN_VERSION}   
    fi
 fi
 
-if [[ $CLR -eq 1 || $SRC -eq 1 ]]; then
+if [[ $CLR -eq 1 || $SRC -eq 1 || $REC -eq 1 ]]; then
    $MAKE -f $MAKEFILE clear
    mkdir -p ./lib ./include
 
@@ -74,20 +76,15 @@ if [[ $CLR -eq 1 || $SRC -eq 1 ]]; then
    cp ${RMN_PATH}/all/include/rpnmacros_global.h include/rpnmacros_global.h
    cp ${RMN_PATH}/all/include/${ARCH}/rpn_macros_arch.h include/rpn_macros_arch.h
 
-# #{path}/${ORDENV_PLAT}/lib/${ARCH}/${COMP_ARCH}/librmnshared_0${rmn}.so lib/librmnshared_0${rmn}.so
-# ln -s librmnshared_0${rmn}.so lib/librmn.so
    #----- Temporary use of rmn16.3
-   cp ../RMN/${COMP_ARCH}/${ORDENV_PLAT}/lib/librmnshared_016.3_beta.so lib
-   ln -s librmnshared_016.3_beta.so lib/librmn.so
+#   {path}/${ORDENV_PLAT}/lib/${ARCH}/${COMP_ARCH}/librmnshared_0${rmn}.so lib/librmnshared_0${rmn}.so
+#   cp ../RMN/${COMP_ARCH}/${ORDENV_PLAT}/lib/librmnshared_016.3_beta.so lib
+#   ln -s librmnshared_0${RMN_VERSION}.so lib/librmn.so
+    cp ${RMN_PATH}/${ORDENV_PLAT}/lib/${BASE_ARCH}/${COMP_VERSION}/librmnsharedPTHRD_0${RMN_VERSION}.so lib
+    ln -fs librmnsharedPTHRD_0${RMN_VERSION}.so lib/librmn.so
 fi
 
 if [[ $BLD -eq 1 ]]; then
-   if [[ -n $INTEL_LICENSE_FILE ]]; then
-      export CC=icc
-      export CXX=icpc
-      export FC=ifort
-   fi
-
    #----- Build non parallel lib and bin
    unset OMPI
    $MAKE -f $MAKEFILE all

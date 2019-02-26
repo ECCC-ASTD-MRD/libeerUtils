@@ -1,0 +1,7 @@
+export EER_VERSION=3.4.0
+export RMN_VERSION=16.3-beta
+export VGR_VERSION=6.4.b4
+export COMP_VERSION=intel-2019.0.045
+
+#export VGR_VERSION=6.1.1
+#export COMP_VERSION=intel-2016.1.156
