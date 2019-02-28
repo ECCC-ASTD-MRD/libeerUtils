@@ -699,7 +699,7 @@ void GeoRef_Clear(TGeoRef *Ref,int New) {
          if (Ref->Name)      free(Ref->Name);         Ref->Name=NULL;
       }
 
-      #ifdef HAVE_RMN
+#ifdef HAVE_RMN
       // Release ezscint sub-grid
       if (Ref->Ids) {
          for(n=0;n<Ref->NbId+1;n++) {

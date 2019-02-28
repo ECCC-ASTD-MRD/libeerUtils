@@ -3,7 +3,7 @@ PROC       = $(shell uname -m | tr _ -)
 HAVE       =-DHAVE_RMN -DHAVE_GPC
 #-DHAVE_RPNC
 
-ifdef VGRID_PATH
+ifdef VGRIDDESCRIPTORS_SRC
    HAVE := $(HAVE) -DHAVE_VGRID
 endif
 
@@ -48,7 +48,7 @@ ifeq ($(OS),Linux)
 else
 
    LIBS        := $(LIBS) -lxml2 -lrmn
-   RMN_INCLUDE = -I/ssm/net/rpn/libs/15.2/aix-7.1-ppc7-64/include -I/ssm/net/rpn/libs/15.2/all/include -I/ssm/net/rpn/libs/15.2/all/include/AIX-powerpc7 -I${VGRID_PATH}/include
+   RMN_INCLUDE = -I/ssm/net/rpn/libs/15.2/aix-7.1-ppc7-64/include -I/ssm/net/rpn/libs/15.2/all/include -I/ssm/net/rpn/libs/15.2/all/include/AIX-powerpc7 -I${VGRIDDESCRIPTORS_SRC}/../include
    INCLUDES    := -Isrc $(RMN_INCLUDE) -I/usr/include/libxml2 -I$(LIB_DIR)/gdal-1.11.0/include $(INCLUDES) 
 
    ifdef OMPI
@@ -80,7 +80,7 @@ CFLAGS      = $(CDEBUGFLAGS) $(CCOPTIONS) $(INCLUDES) $(DEFINES)
 OBJ_C = $(subst .c,.o,$(wildcard src/*.c))
 OBJ_F = $(subst .f,.o,$(wildcard src/*.f))
 OBJ_F := $(subst .F90,.o,$(wildcard src/*.F90))
-OBJ_V := $(shell ar t ${VGRID_PATH}/lib/libdescrip.a)
+OBJ_V := $(shell ar t ${VGRIDDESCRIPTORS_SRC}/../lib/libdescrip.a)
 OBJ_VG = $(OBJ_V:%=src/%)
 
 %.o:%.F90
@@ -95,8 +95,8 @@ lib: obj
 	mkdir -p ./lib
 	mkdir -p ./include
 
-        ifdef VGRID_PATH
-	   cd src; ar x ${VGRID_PATH}/lib/libdescrip.a; cd -
+        ifdef VGRIDDESCRIPTORS_SRC
+	   cd src; ar x ${VGRIDDESCRIPTORS_SRC}/../lib/libdescrip.a; cd -
         endif
 	$(AR) lib/libeerUtils$(OMPI)-$(VERSION).a $(OBJ_C) $(OBJ_F) $(OBJ_VG)
 	ln -fs libeerUtils$(OMPI)-$(VERSION).a lib/libeerUtils$(OMPI).a

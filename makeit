@@ -57,12 +57,10 @@ fi
 if [[ -n ${ORDENV_VERSION} ]]; then
    if [ `domainname -d` = "science.gc.ca" ]; then
       echo "Building on SCIENCE network"
-      export VGRID_PATH=/fs/ssm/eccc/cmd/cmdn/vgrid/${VGR_VERSION}/${COMP_VERSION}/vgriddescriptors_${VGR_VERSION}-${COMP_VERSION}_${ORDENV_PLAT}
       RMN_PATH=/fs/ssm/eccc/mrd/rpn/libs/${RMN_VERSION}
    elif [ `domainname -d` = "cmc.ec.gc.ca" ]; then
       echo "Building on ECCC network"
       #----- Comment this line when testing external build  
-      export VGRID_PATH=/ssm/net/cmdn/vgrid/${VGR_VERSION}/${COMP_VERSION}/vgriddescriptors_${VGR_VERSION}-${COMP_VERSION}_${ORDENV_PLAT}
       RMN_PATH=/ssm/net/rpn/libs/${RMN_VERSION}   
    fi
 fi
@@ -77,11 +75,10 @@ if [[ $CLR -eq 1 || $SRC -eq 1 || $REC -eq 1 ]]; then
    cp ${RMN_PATH}/all/include/${ARCH}/rpn_macros_arch.h include/rpn_macros_arch.h
 
    #----- Temporary use of rmn16.3
-#   {path}/${ORDENV_PLAT}/lib/${ARCH}/${COMP_ARCH}/librmnshared_0${rmn}.so lib/librmnshared_0${rmn}.so
-#   cp ../RMN/${COMP_ARCH}/${ORDENV_PLAT}/lib/librmnshared_016.3_beta.so lib
-#   ln -s librmnshared_0${RMN_VERSION}.so lib/librmn.so
-    cp ${RMN_PATH}/${ORDENV_PLAT}/lib/${BASE_ARCH}/${COMP_VERSION}/librmnsharedPTHRD_0${RMN_VERSION}.so lib
-    ln -fs librmnsharedPTHRD_0${RMN_VERSION}.so lib/librmn.so
+   cp ../RMN/${COMP_ARCH}/${ORDENV_PLAT}/lib/librmnshared_0${RMN_VERSION}.so lib
+   ln -s librmnshared_0${RMN_VERSION}.so lib/librmn.so
+#    cp ${RMN_PATH}/${ORDENV_PLAT}/lib/${BASE_ARCH}/${COMP_VERSION}/librmnsharedPTHRD_0${RMN_VERSION}.so lib
+#    ln -fs librmnsharedPTHRD_0${RMN_VERSION}.so lib/librmn.so
 fi
 
 if [[ $BLD -eq 1 ]]; then
@@ -97,11 +94,11 @@ fi
 
 if [[ $SSM -eq 1 ]]; then
    if [[ -n $COMP_ARCH ]]; then
-      COMP=-${COMP_ARCH}
+      SSM_COMP=-${COMP_ARCH}
    fi
    ORDENV_PLAT=${ORDENV_PLAT:-`uname -s`-`uname -m`}
    
-   SSM_VERSION=${VERSION}${COMP}
+   SSM_VERSION=${VERSION}${SSM_COMP}
    SSM_NAME=${NAME}_${SSM_VERSION}_${ORDENV_PLAT}
 
    printf -- "\n----- Building ssm package : ${SSM_DEV}/workspace/${SSM_NAME} -----\n"

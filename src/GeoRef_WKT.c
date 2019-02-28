@@ -36,6 +36,7 @@
 #include "Def.h"
 #include "Vertex.h"
 
+double   GeoRef_WKTDistance(TGeoRef *GRef,double X0,double Y0,double X1, double Y1);
 int      GeoRef_WKTValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,double Z,double *Length,double *ThetaXY);
 int      GeoRef_WKTProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,int Extrap,int Transform);
 int      GeoRef_WKTUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,int Extrap,int Transform);
@@ -62,14 +63,26 @@ int      GeoRef_WKTUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double
 double GeoRef_WKTDistance(TGeoRef *GRef,double X0,double Y0,double X1, double Y1) {
 
 #ifdef HAVE_GDAL
-   double i[2],j[2],lat[2],lon[2];
-
+   double i[2],j[2],lat[2],lon[2],u;
+   char *unit,geo;
+   
    X0+=GRef->X0;
    X1+=GRef->X0;
    Y0+=GRef->Y0;
    Y1+=GRef->Y0;
+   
+   // Check for unit type 
+   geo=0;
+   if (GRef->Grid[1]=='Z') {
+      geo=1;
+   } else {
+      if (GRef->Spatial) {
+         u=OSRGetLinearUnits(GRef->Spatial,&unit);
+         geo=(unit[0]!='M' && unit[0]!='m');
+      }
+   }
 
-   if (GRef->Grid[1]=='Z' || (GRef->Spatial && OSRIsGeographic(GRef->Spatial))) {
+   if (geo) {
       GeoRef_WKTProject(GRef,X0,Y0,&lat[0],&lon[0],1,1);
       GeoRef_WKTProject(GRef,X1,Y1,&lat[1],&lon[1],1,1);
       return(DIST(0.0,DEG2RAD(lat[0]),DEG2RAD(lon[0]),DEG2RAD(lat[1]),DEG2RAD(lon[1])));
@@ -85,7 +98,7 @@ double GeoRef_WKTDistance(TGeoRef *GRef,double X0,double Y0,double X1, double Y1
          i[1]=X1;
          j[1]=Y1;
       }
-      return(hypot(j[1]-j[0],i[1]-i[0])*OSRGetLinearUnits(GRef->Spatial,NULL));
+      return(hypot(j[1]-j[0],i[1]-i[0])*u);
    }
 #else
    App_Log(ERROR,"Function %s is not available, needs to be built with GDAL\n",__func__);
