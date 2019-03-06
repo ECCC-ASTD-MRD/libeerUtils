@@ -33,7 +33,7 @@ ifeq ($(OS),Linux)
    ifdef OMPI
       CCOPTIONS   := $(CCOPTIONS) -fopenmp
       ifdef INTEL_LICENSE_FILE
-         CC= mpiicc
+         CC= mpicc
       else
          CC= mpicc
       endif
