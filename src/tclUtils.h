@@ -33,8 +33,7 @@
 #ifndef _tclUtils_h
 #define _tclUtils_h
 
-// If AIX, we disable any Tcl stuff and use stubs
-#ifndef _AIX
+#ifdef HAVE_TCL
 
 #include "tcl.h"
 //#include "tclPort.h"

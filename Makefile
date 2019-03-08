@@ -3,76 +3,53 @@ PROC       = $(shell uname -m | tr _ -)
 HAVE       =-DHAVE_RMN -DHAVE_GPC
 #-DHAVE_RPNC
 
+INSTALL_DIR = $(shell readlink -f .)
+TCL_SRC_DIR = ${SSM_DEV}/src/ext/tcl8.6.6
+
+#----- Test for VGRID availability
 ifdef VGRIDDESCRIPTORS_SRC
    HAVE := $(HAVE) -DHAVE_VGRID
 endif
 
-INSTALL_DIR = $(shell readlink -f .)
-TCL_SRC_DIR = ${SSM_DEV}/src/ext/tcl8.6.6
-
-LIBS        := -L/$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g') -L./lib 
-INCLUDES    := -I/$(shell echo $(EC_INCLUDE_PATH) | sed 's/\s* / -I/g') 
-
-ifeq ($(OS),Linux)
-
-   LIBS        := $(LIBS) $(shell xml2-config --libs) $(shell gdal-config --libs) $(shell nc-config --libs) -lrmn
-   INCLUDES    := -Isrc -Iinclude $(shell xml2-config --cflags) $(shell gdal-config --cflags) $(shell nc-config --cflags) -I$(TCL_SRC_DIR)/unix -I$(TCL_SRC_DIR)/generic $(INCLUDES)                                 
-
-   AR          = ar rv
-   LD          = ld -shared -x
-   
-   LINK_EXEC   = -lm -lpthread -Wl,-rpath=$(INSTALL_DIR)/lib
-   ifdef INTEL_LICENSE_FILE
-      CC=icc
-      CXX=icpc
-      FC=ifort
-      LINK_EXEC := $(LINK_EXEC) -lintlc -lifcore -lifport
-   endif
- 
-   CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer -DHAVE_GDAL
-   ifdef OMPI
-      CCOPTIONS   := $(CCOPTIONS) -fopenmp
-      ifdef INTEL_LICENSE_FILE
-         CC= mpicc
-      else
-         CC= mpicc
-      endif
-   endif
-
-   CDEBUGFLAGS = -g -Winline 
-   CPFLAGS     = -d 
-
-   ifeq ($(PROC),x86-64)
-        CCOPTIONS   := $(CCOPTIONS) -fPIC -DSTDC_HEADERS
-   endif
-else
-
-   LIBS        := $(LIBS) -lxml2 -lrmn
-   RMN_INCLUDE = -I/ssm/net/rpn/libs/15.2/aix-7.1-ppc7-64/include -I/ssm/net/rpn/libs/15.2/all/include -I/ssm/net/rpn/libs/15.2/all/include/AIX-powerpc7 -I${VGRIDDESCRIPTORS_SRC}/../include
-   INCLUDES    := -Isrc $(RMN_INCLUDE) -I/usr/include/libxml2 -I$(LIB_DIR)/gdal-1.11.0/include $(INCLUDES) 
-
-   ifdef OMPI
-      CC          = mpCC_r
-   else
-      CC          = xlc
-   endif
-
-   AR          = ar rv
-   LD          = ld
-   LINK_EXEC   = -lxlf90 -lxlsmp -lpthread -lm 
-
-   CCOPTIONS   = -std=c99 -O3 -qtls -qnohot -qstrict -Q -v -qkeyword=restrict -qcache=auto -qtune=auto -qarch=auto -qinline 
-   ifdef OMPI
-      CCOPTIONS  := $(CCOPTIONS) -qsmp=omp -qthreaded -qlibmpi -qinline
-   endif
-
-   CDEBUGFLAGS =
-   CPFLAGS     = -h
+#----- Test for GDAL availability
+ifneq ("$(shell which gdal-config)","")
+   HAVE    := $(HAVE) -DHAVE_GDAL
+   LIBS     = $(shell gdal-config --libs) $(shell nc-config --libs)
+   INCLUDES = $(shell gdal-config --cflags) $(shell nc-config --cflags)                         
 endif
 
+#----- Test for Tcl availability
+ifneq ("$(wildcard ${TCL_SRC_DIR})","")
+   HAVE    := $(HAVE) -DHAVE_TCL
+endif
+
+LIBS        := -L/$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g') -L./lib $(LIBS) $(shell xml2-config --libs) -lrmn
+INCLUDES    := -I/$(shell echo $(EC_INCLUDE_PATH) | sed 's/\s* / -I/g') $(INCLUDES) -Isrc -Iinclude $(shell xml2-config --cflags) -I$(TCL_SRC_DIR)/unix -I$(TCL_SRC_DIR)/generic $(INCLUDES)        
+
+AR          = ar rv
+LD          = ld -shared -x
+
+LINK_EXEC   = -lm -lpthread -Wl,-rpath=$(INSTALL_DIR)/lib
+ifdef INTEL_LICENSE_FILE
+   CC=icc
+   CXX=icpc
+   FC=ifort
+   LINK_EXEC := $(LINK_EXEC) -lintlc -lifcore -lifport
+endif
+
+CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer
 DEFINES     = -DVERSION=\"$(VERSION)-r$(BUILDINFO)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE ${HAVE}
 ifdef OMPI
+   CC= mpicc
+   CCOPTIONS   := $(CCOPTIONS) -fopenmp
    DEFINES    := $(DEFINES) -D_MPI
+endif
+
+CDEBUGFLAGS = -g -Winline 
+CPFLAGS     = -d 
+
+ifeq ($(PROC),x86-64)
+   CCOPTIONS   := $(CCOPTIONS) -fPIC -DSTDC_HEADERS
 endif
 
 CFLAGS      = $(CDEBUGFLAGS) $(CCOPTIONS) $(INCLUDES) $(DEFINES)
@@ -141,7 +118,7 @@ install:
 	cp $(CPFLAGS) ./include/* $(INSTALL_DIR)/include
 
 clean:
-	rm -f src/*.o src/*~
+	rm -f src/*.o src/*~ lib/libeerUtils$(OMPI)-$(VERSION).a
 
 clear:	clean
 	rm -fr bin lib include

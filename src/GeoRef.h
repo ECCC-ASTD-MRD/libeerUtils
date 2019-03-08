@@ -34,6 +34,7 @@
 #ifndef _GeoRef_h
 #define _GeoRef_h
 
+#include <stdint.h>
 #include "eerUtils.h"
 #include "Vector.h"
 #include "Triangle.h"

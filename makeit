@@ -84,6 +84,7 @@ fi
 if [[ $BLD -eq 1 ]]; then
    #----- Build non parallel lib and bin
    unset OMPI
+   $MAKE -f $MAKEFILE clean
    $MAKE -f $MAKEFILE all
 
    #----- Build OpenMP/MPI lib only
@@ -119,7 +120,7 @@ fi
 if [[ $SRC -eq 1 ]]; then
    printf -- "\n----- Building source package : ${SSM_DEV}/src/${NAME}-${VERSION}  -----\n"
 
-   rm -f -r ${SSM_DEV}/src/${NAME}-${VERSION}
+   rm -f -r ${SSM_DEV}/src/${NAME}*
    cp -r ../libeerUtils ${SSM_DEV}/src/${NAME}-${VERSION}
    find ${SSM_DEV}/src/${NAME}-${VERSION} -name .git -prune -exec rm -f -r {} \+
 fi

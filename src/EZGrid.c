@@ -418,7 +418,7 @@ static TGrid* EZGrid_CacheFind(TGrid *Grid) {
 
    int     type;
    float   level;
-
+   
    if (Grid) {
 
       pthread_mutex_lock(&CacheMutex);
