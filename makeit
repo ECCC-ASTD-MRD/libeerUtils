@@ -75,10 +75,10 @@ if [[ $CLR -eq 1 || $SRC -eq 1 || $REC -eq 1 ]]; then
    cp ${RMN_PATH}/all/include/${ARCH}/rpn_macros_arch.h include/rpn_macros_arch.h
 
    #----- Temporary use of rmn16.3
-   cp ../RMN/${COMP_ARCH}/${ORDENV_PLAT}/lib/librmnshared_0${RMN_VERSION}.so lib
-   ln -s librmnshared_0${RMN_VERSION}.so lib/librmn.so
-#    cp ${RMN_PATH}/${ORDENV_PLAT}/lib/${BASE_ARCH}/${COMP_VERSION}/librmnsharedPTHRD_0${RMN_VERSION}.so lib
-#    ln -fs librmnsharedPTHRD_0${RMN_VERSION}.so lib/librmn.so
+#   cp ../RMN/${COMP_ARCH}/${ORDENV_PLAT}/lib/librmnshared_0${RMN_VERSION}.so lib
+#   ln -s librmnshared_0${RMN_VERSION}.so lib/librmn.so
+    cp ${RMN_PATH}/${ORDENV_PLAT}/lib/${ARCH}/librmnsharedPTHRD_0${RMN_VERSION}.so lib
+    ln -fs librmnsharedPTHRD_0${RMN_VERSION}.so lib/librmn.so
 fi
 
 if [[ $BLD -eq 1 ]]; then
