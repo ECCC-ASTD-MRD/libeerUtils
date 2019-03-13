@@ -587,7 +587,7 @@ int Def_Paste(TDef *DefTo,TDef *DefPaste,int X0, int Y0) {
  *   <Ref>      : Referentiel des donnnes raster
  *   <Geom>     : Donnees vectorielle a rasteriser
  *   <Value>    : Valuer a assigner
- *   <Comb>    : Mode de combinaison des valeurs multiples (CB_REPLACE,CB_MIN,CB_MAX,CB_AVERAGE)
+ *   <Comb>    : Mode de combinaison des valeurs multiples (CB_REPLACE,CB_MIN,CB_MAX,CB_SUM,CB_AVERAGE)
  *
  * Retour       :
  *
@@ -613,7 +613,8 @@ static void inline Def_SetValue(TDef *Def,int X, int Y,double Value,TDef_Combine
          switch(Comb) {
             case CB_MIN    : if (Value<val) Def_Set(Def,0,idx,Value); break;
             case CB_MAX    : if (Value>val) Def_Set(Def,0,idx,Value); break;
-            case CB_AVERAGE: Def->Accum[idx]++; Value+=val;    Def_Set(Def,0,idx,Value); break;
+            case CB_AVERAGE: Def->Accum[idx]++;
+            case CB_SUM    : Value+=val;  Def_Set(Def,0,idx,Value); break;
             case CB_REPLACE: break;
          }
       }
@@ -941,6 +942,7 @@ int Def_GridCell2OGR(OGRGeometryH Geom,TGeoRef *RefTo,TGeoRef *RefFrom,int I,int
  *   <Y0>       : Coin inferieur gauche
  *   <X1>       : Coin superieur droit
  *   <Y1>       : Coin superieur droit
+ *   <Comb>     : Mode de combinaison des valeurs multiples (CB_REPLACE,CB_MIN,CB_MAX,CB_SUM,CB_AVERAGE)
  *   <Z>        : Niveau
  *
  * Retour       : Nombre de point de grille affecté
@@ -949,7 +951,7 @@ int Def_GridCell2OGR(OGRGeometryH Geom,TGeoRef *RefTo,TGeoRef *RefFrom,int I,int
  *
  *---------------------------------------------------------------------------------------------------------------
 */
-static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,char Mode,char Type,double Area,double Value,int X0,int Y0,int X1,int Y1,int Z,float **Index) {
+static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,char Mode,char Type,double Area,double Value,int X0,int Y0,int X1,int Y1,int Z,TDef_Combine Comb,float **Index) {
 
 #ifdef HAVE_GDAL
    double        dx,dy,dp=0.0,val=0.0;
@@ -1027,9 +1029,12 @@ static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,char Mode
             val+=Value*dp;
             OGR_G_DestroyGeometry(inter);
          }
-
          // Are we within
          if (Mode!='W' || OGM_Within(Def->Poly,Geom,&envp,&envg)) {
+            if (Comb==CB_AVERAGE) {
+               Def->Accum[idx2]+=1;
+            }
+            // TODO: check to replace by this function: Def_SetValue(TDef *Def,int X, int Y,double Value,TDef_Combine Comb)
             Def_Set(Def,0,idx3,val);
 
             if (Mode=='N' && Def->Buffer) {
@@ -1052,14 +1057,14 @@ static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,char Mode
          if (x==0 || y==0) {
             for (x=X0;x<=X1;x++) {
                for (y=Y0;y<=Y1;y++) {
-                  n+=Def_GridInterpQuad(Def,Ref,Geom,Mode,Type,Area,Value,x,y,x,y,Z,Index);
+                  n+=Def_GridInterpQuad(Def,Ref,Geom,Mode,Type,Area,Value,x,y,x,y,Z,Comb,Index);
                }
             }
          } else {
-            n+=Def_GridInterpQuad(Def,Ref,Geom,Mode,Type,Area,Value,X0,Y0,X0+x,Y0+y,Z,Index);
-            n+=Def_GridInterpQuad(Def,Ref,Geom,Mode,Type,Area,Value,X0+x+1,Y0,X1,Y0+y,Z,Index);
-            n+=Def_GridInterpQuad(Def,Ref,Geom,Mode,Type,Area,Value,X0,Y0+y+1,X0+x,Y1,Z,Index);
-            n+=Def_GridInterpQuad(Def,Ref,Geom,Mode,Type,Area,Value,X0+x+1,Y0+y+1,X1,Y1,Z,Index);
+            n+=Def_GridInterpQuad(Def,Ref,Geom,Mode,Type,Area,Value,X0,Y0,X0+x,Y0+y,Z,Comb,Index);
+            n+=Def_GridInterpQuad(Def,Ref,Geom,Mode,Type,Area,Value,X0+x+1,Y0,X1,Y0+y,Z,Comb,Index);
+            n+=Def_GridInterpQuad(Def,Ref,Geom,Mode,Type,Area,Value,X0,Y0+y+1,X0+x,Y1,Z,Comb,Index);
+            n+=Def_GridInterpQuad(Def,Ref,Geom,Mode,Type,Area,Value,X0+x+1,Y0+y+1,X1,Y1,Z,Comb,Index);
          }
       }
    }
@@ -1085,7 +1090,7 @@ static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,char Mode
  *   <Final>    : Finalisation de l'operation (Averaging en plusieurs passe)
  *   <Field>    : Champs de la couche a utiliser
  *   <Value>    : Valeur a assigner
- *   <Comb>     : Mode de combinaison des valeurs multiples (CB_REPLACE,CB_MIN,CB_MAX,CB_AVERAGE)
+ *   <Comb>     : Mode de combinaison des valeurs multiples (CB_REPLACE,CB_MIN,CB_MAX,CB_SUM,CB_AVERAGE)
  *   <Index>    : liste des index , a remplir ou a utiliser
  *
  * Retour       :
@@ -1203,6 +1208,9 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
             // If we are computing areas
             if (area>0.0) {
                val+=value*dp;
+            }
+            if (Comb==CB_AVERAGE)  {
+               ToDef->Accum[idx2]+=1;
             }
             Def_Set(ToDef,0,idx2,val);
          }
@@ -1343,7 +1351,7 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
                         *(ip++)=(fld<0 && fld>=-9)?value:-999.0;
                      }
 
-                     nt+=n=Def_GridInterpQuad(ToDef,ToRef,geom,mode,type,area,value,env.MinX,env.MinY,env.MaxX,env.MaxY,0,&ip);
+                     nt+=n=Def_GridInterpQuad(ToDef,ToRef,geom,mode,type,area,value,env.MinX,env.MinY,env.MaxX,env.MaxY,0,Comb,&ip);
 
                      if (ip) {
                         if (n) {
@@ -1850,7 +1858,7 @@ int Def_GridInterpConservative(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
                         *(ip++)=j;
                      }
 
-                     nt+=n=Def_GridInterpQuad(ToDef,ToRef,cell,IR_CONSERVATIVE?'C':'N','A',area,val1,env.MinX,env.MinY,env.MaxX,env.MaxY,k,&ip);
+                     nt+=n=Def_GridInterpQuad(ToDef,ToRef,cell,IR_CONSERVATIVE?'C':'N','A',area,val1,env.MinX,env.MinY,env.MaxX,env.MaxY,k,CB_SUM,&ip);
 
                      if (ip) {
                         if (n) {
@@ -1900,7 +1908,7 @@ int Def_GridInterpConservative(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
                         *(ip++)=j;
                      }
 
-                     nt+=n=Def_GridInterpQuad(ToDef,ToRef,cell,IR_CONSERVATIVE?'C':'N','A',area,val1,env.MinX,env.MinY,env.MaxX,env.MaxY,k,&ip);
+                     nt+=n=Def_GridInterpQuad(ToDef,ToRef,cell,IR_CONSERVATIVE?'C':'N','A',area,val1,env.MinX,env.MinY,env.MaxX,env.MaxY,k,CB_SUM,&ip);
 
                      if (ip) {
                         if (n) {

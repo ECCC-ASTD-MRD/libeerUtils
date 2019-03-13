@@ -281,7 +281,8 @@ typedef enum {
    CB_REPLACE   = 0,
    CB_MIN       = 1,
    CB_MAX       = 2,
-   CB_AVERAGE   = 3,
+   CB_SUM       = 3,
+   CB_AVERAGE   = 4,
 } TDef_Combine;
 
 // Value data type
