@@ -1165,7 +1165,7 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
             return(0);
          }
       }
-      memset(ToDef->Accum,0x0,FSIZE2D(ToDef));
+      memset(ToDef->Accum,0x0,FSIZE2D(ToDef)*sizeof(int));
    }
 
    // Do we have and index
