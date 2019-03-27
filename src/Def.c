@@ -255,8 +255,7 @@ TDef *Def_CopyPromote(TDef *Def,TDef_Type Type){
    int   n,nijk;
    TDef *def=NULL;
 
-   if (!Def->Idx) {
-      if (Def && (def=(TDef*)malloc(sizeof(TDef)))) {
+      if (Def && !Def->Idx && (def=(TDef*)malloc(sizeof(TDef)))) {
          def->Alias=0;
          def->CellDim=Def->CellDim;
          def->NI=Def->NI;
@@ -306,7 +305,6 @@ TDef *Def_CopyPromote(TDef *Def,TDef_Type Type){
             memcpy(def->Mask,Def->Mask,nijk);
          }         
       }
-   }
 
    return(def);
 }
