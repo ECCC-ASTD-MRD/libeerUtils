@@ -1937,9 +1937,10 @@ int GeoRef_Coords(TGeoRef *Ref,float *Lat,float *Lon) {
 */
 int GeoRef_CellDims(TGeoRef *Ref,int Invert,float* DX,float* DY,float* DA) {
 
-   unsigned int i,gi,j,gj,idx,*tidx;
+   unsigned int i,gi,j,gj,nid,pnid,ig,pidx,idx,*tidx;
    float        di[4],dj[4],dlat[4],dlon[4];
    double       fx,fy,fz,dx[4],dy[4],s,a,b,c;
+   char         grtyp[2];
 
 //   RPN_IntLock();
    if (!Ref || Ref->Grid[0]=='X' || Ref->Grid[0]=='Y') {
@@ -1985,37 +1986,53 @@ int GeoRef_CellDims(TGeoRef *Ref,int Invert,float* DX,float* DY,float* DA) {
 
    } else {
             
-      for(j=0,gj=1;j<Ref->NY;j++,gj++) {
-         idx=j*Ref->NX;
-         for(i=0,gi=1;i<Ref->NX;i++,idx++,gi++) {
-            
-            di[0]=gi-0.5; dj[0]=gj;
-            di[1]=gi+0.5; dj[1]=gj;
-            di[2]=gi;     dj[2]=gj-0.5;
-            di[3]=gi;     dj[3]=gj+0.5;
-
-            // Reproject gridpoint length coordinates of segments crossing center of cell
-            c_gdllfxy(Ref->Ids[Ref->NId],dlat,dlon,di,dj,4);
-            dx[0]=DEG2RAD(dlon[0]); dy[0]=DEG2RAD(dlat[0]);
-            dx[1]=DEG2RAD(dlon[1]); dy[1]=DEG2RAD(dlat[1]);
-
-            dx[2]=DEG2RAD(dlon[2]); dy[2]=DEG2RAD(dlat[2]);
-            dx[3]=DEG2RAD(dlon[3]); dy[3]=DEG2RAD(dlat[3]);
-
-            // Get distance in meters
-            fx=DIST(0.0,dy[0],dx[0],dy[1],dx[1]);
-            fy=DIST(0.0,dy[2],dx[2],dy[3],dx[3]);
-
-            // If x distance is null, we crossed the pole
-            if (fx==0.0)
-               fx=(M_PI*fy)/Ref->NX;
-
-            if (DX) DX[idx]=(Invert?1.0/fx:fx);
-            if (DY) DY[idx]=(Invert?1.0/fy:fy);
-            if (DA) DA[idx]=(Invert?1.0/(fx*fy):(fx*fy));
+      pnid=Ref->NId;
+      pidx=0;
+      
+      // Loop on the subgrids if needed
+      for(nid=(pnid?pnid:(Ref->NbId>1?1:0));nid<=(pnid?pnid:(Ref->NbId>1?Ref->NbId:0));nid++) {
+         if (Ref->NbId>1 && !pnid) {
+            c_ezgprm(Ref->Ids[nid],grtyp,&Ref->NX,&Ref->NY,&ig,&ig,&ig,&ig);
          }
+      
+         for(j=0,gj=1;j<Ref->NY;j++,gj++) {
+            idx=pidx+j*Ref->NX;
+            for(i=0,gi=1;i<Ref->NX;i++,idx++,gi++) {
+               
+               di[0]=gi-0.5; dj[0]=gj;
+               di[1]=gi+0.5; dj[1]=gj;
+               di[2]=gi;     dj[2]=gj-0.5;
+               di[3]=gi;     dj[3]=gj+0.5;
+
+               // Reproject gridpoint length coordinates of segments crossing center of cell
+               c_gdllfxy(Ref->Ids[nid],dlat,dlon,di,dj,4);
+               dx[0]=DEG2RAD(dlon[0]); dy[0]=DEG2RAD(dlat[0]);
+               dx[1]=DEG2RAD(dlon[1]); dy[1]=DEG2RAD(dlat[1]);
+
+               dx[2]=DEG2RAD(dlon[2]); dy[2]=DEG2RAD(dlat[2]);
+               dx[3]=DEG2RAD(dlon[3]); dy[3]=DEG2RAD(dlat[3]);
+
+               // Get distance in meters
+               fx=DIST(0.0,dy[0],dx[0],dy[1],dx[1]);
+               fy=DIST(0.0,dy[2],dx[2],dy[3],dx[3]);
+
+               // If x distance is null, we crossed the pole
+               if (fx==0.0)
+                  fx=(M_PI*fy)/Ref->NX;
+
+               if (DX) DX[idx]=(Invert?1.0/fx:fx);
+               if (DY) DY[idx]=(Invert?1.0/fy:fy);
+               if (DA) DA[idx]=(Invert?1.0/(fx*fy):(fx*fy));
+            }
+         }
+         pidx+=idx;
+      }
+      // Set back original grid
+      if (Ref->NbId>1 && !pnid) {
+         c_ezgprm(Ref->Ids[pnid],grtyp,&Ref->NX,&Ref->NY,&ig,&ig,&ig,&ig);
       }
    }
+   
 //   RPN_IntUnlock();
    return(TRUE);
 }
