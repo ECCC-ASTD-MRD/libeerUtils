@@ -596,13 +596,13 @@ int Def_Paste(TDef *DefTo,TDef *DefPaste,int X0, int Y0) {
  *---------------------------------------------------------------------------------------------------------------
 */
 
-static void inline Def_SetValue(TDef *Def,int X, int Y,double Value,TDef_Combine Comb) {
+static void inline Def_SetValue(TDef *Def,int X, int Y,int Z, double Value,TDef_Combine Comb) {
 
    unsigned long idx;
    double        val;
 
    if (FIN2D(Def,X,Y)) {
-      idx=FIDX2D(Def,X,Y);
+      idx=Z?FIDX3D(Def,X,Y,Z):FIDX2D(Def,X,Y);
 
       if (Comb==CB_REPLACE) {
          Def_Set(Def,0,idx,Value);
@@ -673,7 +673,7 @@ int Def_Rasterize(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,double Value,TDef_Com
             dy1=OGR_G_GetY(Geom,i);
             x=lrint(dx1);
             y=lrint(dy1);
-            Def_SetValue(Def,x,y,Value,Comb);
+            Def_SetValue(Def,x,y,0,Value,Comb);
          }
          break;
 
@@ -718,7 +718,7 @@ int Def_Rasterize(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,double Value,TDef_Com
                   }
                   x0+=sx;
                   fr+=dny;
-                  Def_SetValue(Def,x0,y0,Value,Comb);
+                  Def_SetValue(Def,x0,y0,0,Value,Comb);
                }
             } else {
                fr=dnx-(dny>>1);
@@ -729,7 +729,7 @@ int Def_Rasterize(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,double Value,TDef_Com
                   }
                   y0+=sy;
                   fr+=dnx;
-                  Def_SetValue(Def,x0,y0,Value,Comb);
+                  Def_SetValue(Def,x0,y0,0,Value,Comb);
                }
             }
          }
@@ -795,7 +795,7 @@ int Def_Rasterize(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,double Value,TDef_Com
 
                         // fill the horizontal segment (separately from the rest)
                         for(x=horizontal_x1;x<horizontal_x2;x++)
-                           Def_SetValue(Def,x,y,Value,Comb);
+                           Def_SetValue(Def,x,y,0,Value,Comb);
                         continue;
                      } else {
                         // skip top horizontal segments (they are already filled in the regular loop)
@@ -814,7 +814,7 @@ int Def_Rasterize(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,double Value,TDef_Com
             for (i=0;i<ints;i+=2) {
                if (polyInts[i]<=maxx && polyInts[i+1]>=minx) {
                   for(x=polyInts[i];x<=polyInts[i+1];x++)
-                     Def_SetValue(Def,x,y,Value,Comb);
+                     Def_SetValue(Def,x,y,0,Value,Comb);
                }
             }
          }
@@ -955,7 +955,7 @@ static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,char Mode
 
 #ifdef HAVE_GDAL
    double        dx,dy,dp=0.0,val=0.0;
-   int           x,y,n=0,idx2,idx3,na;
+   int           x,y,n=0,idx2,na;
    OGRGeometryH  inter=NULL;
    OGREnvelope   envg,envp;
 
@@ -977,7 +977,6 @@ static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,char Mode
    OGR_G_GetEnvelope(Def->Pick,&envp);
    OGR_G_GetEnvelope(Geom,&envg);
 
-   val=Value;
    na=(Mode=='C' || Mode=='N' || Mode=='A');
 
    // Test for intersection
@@ -988,13 +987,6 @@ static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,char Mode
       if (X0==X1 && Y0==Y1) {
 
          idx2=FIDX2D(Def,X0,Y0);
-         idx3=Z?FIDX3D(Def,X0,Y0,Z):idx2;
-
-         if (na) {
-            Def_Get(Def,0,idx3,val);
-            if (!DEFVALID(Def,val))
-               val=0.0;
-         }
 
          // If we are computing areas
          if (Area>0.0) {
@@ -1009,6 +1001,8 @@ static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,char Mode
                      dp=OGR_G_Area(inter)/Area;
                   } else if (Mode=='A') {
                      dp=OGR_G_Area(inter);
+                  } else {
+                     dp=1.0;
                   }
                   break;
 
@@ -1026,16 +1020,15 @@ static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,char Mode
                   dp=1.0;
                   break;
             }
-            val+=Value*dp;
+            val=Value*dp;
             OGR_G_DestroyGeometry(inter);
+         } else {
+            val=Value;
          }
          // Are we within
          if (Mode!='W' || OGM_Within(Def->Poly,Geom,&envp,&envg)) {
-            if (Comb==CB_AVERAGE) {
-               Def->Accum[idx2]+=1;
-            }
             // TODO: check to replace by this function: Def_SetValue(TDef *Def,int X, int Y,double Value,TDef_Combine Comb)
-            Def_Set(Def,0,idx3,val);
+            Def_SetValue(Def,X0,Y0,Z,val,Comb);
 
             if (Mode=='N' && Def->Buffer) {
                Def->Buffer[idx2]+=dp;
@@ -1165,7 +1158,7 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
             return(0);
          }
       }
-      memset(ToDef->Accum,0x0,FSIZE2D(ToDef));
+      memset(ToDef->Accum,0x0,FSIZE2D(ToDef)*sizeof(int));
    }
 
    // Do we have and index
