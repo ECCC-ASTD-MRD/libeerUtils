@@ -100,6 +100,7 @@ typedef struct TGrid {
    TZRef          *ZRef;                 // Vertical referential
    TGeoRef        *GRef;                 // Geographic referential
    float          *Data;                 // Data pointer
+   char           *Mask;                 // Mask pointer
    int             Wrap;                 // Flag indicating grid globe wrap-around (global grids)
    float           Pole[2];              // Pole coverage
 

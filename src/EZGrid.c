@@ -340,11 +340,20 @@ float* EZGrid_TileBurn(TGrid* restrict const Grid,TGridTile* restrict const Tile
          }
       }
       Data=Grid->Data;
+      if (!Grid->Mask && Tile->Mask[K]) {
+         if (!(Grid->Mask=(char*)malloc(Grid->H.NIJ*sizeof(char)))) {
+            App_Log(ERROR,"%s: Unable to allocate memory for grid mask (%s)\n",__func__,Grid->H.NOMVAR);
+            pthread_mutex_unlock(&Grid->Mutex);
+            return(NULL);
+         }
+      }
    }
    dj=Tile->J*Grid->H.NI+Tile->I;
 
    for(j=0;j<Tile->NJ;j++) {
       memcpy(&Data[dj],&Tile->Data[K][(j+Tile->HDJ)*Tile->HNI+Tile->HDI],Tile->NI*sizeof(float));
+      if (Grid->Mask)
+         memcpy(&Grid->Mask[dj],&Tile->Mask[K][(j+Tile->HDJ)*Tile->HNI+Tile->HDI],Tile->NI*sizeof(char));
       dj+=Grid->H.NI;
    }
    Tile->KBurn=K;
@@ -774,6 +783,7 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
    cs_fstinl(Grid->H.FID,&h.NI,&h.NJ,&h.NK,Grid->H.DATEV,Grid->H.ETIKET,Grid->H.IP1,Grid->H.IP2,-1,Grid->H.TYPVAR,Grid->H.NOMVAR,idlst,&Grid->NbTiles,RPNMAX);
    Grid->Tiles=(TGridTile*)malloc(Grid->NbTiles*sizeof(TGridTile));
    Grid->Data=NULL;
+   Grid->Mask=NULL;
    Grid->GRef=NULL;
    Grid->Halo=0;
    Grid->NTI=Grid->NTJ=0;
@@ -1019,6 +1029,7 @@ TGrid *EZGrid_New(void) {
       pthread_mutex_init(&new->Mutex,NULL);
       new->Master=0;
       new->Data=NULL;
+      new->Mask=NULL;
       new->T0=new->T1=NULL;
       new->FT0=new->FT1=0.0f;
       new->Factor=1.0f;
@@ -1064,6 +1075,7 @@ TGrid *EZGrid_Copy(TGrid *Master,int Level) {
       pthread_mutex_init(&new->Mutex,NULL);
       new->Master=0;
       new->Data=NULL;
+      new->Mask=NULL;
       new->T0=new->T1=NULL;
       new->FT0=new->FT1=0.0f;
       new->Factor=1.0f;
@@ -1163,6 +1175,10 @@ void EZGrid_Free(TGrid* restrict const Grid) {
          free(Grid->Data);
          Grid->Data=NULL;
       }
+      if (Grid->Mask) {
+         free(Grid->Mask);
+         Grid->Mask=NULL;
+      }
 
       pthread_mutex_destroy(&Grid->Mutex);
 
@@ -1206,6 +1222,8 @@ void EZGrid_Clear(TGrid* restrict const Grid) {
          for(k=0;k<Grid->H.NK;k++) {
             if (tile->Data[k])
                tile->Data[k][tile->HNIJ-1]=f;
+            if (tile->Mask[k])
+               tile->Mask[k][tile->HNIJ-1]=0;
          }
       }
       // If tile is interpolated, mask is a reference
@@ -1559,6 +1577,7 @@ TGrid *EZGrid_InterpFactor(TGrid* restrict const Grid,TGrid* restrict const Grid
       new->GRef=Grid0->GRef;
       new->ZRef=Grid0->ZRef;
       new->Data=NULL;
+      new->Mask=NULL;
       new->Master=0;
       new->H.FID=-1;
       new->Tiles=(TGridTile*)malloc(Grid0->NbTiles*sizeof(TGridTile));
