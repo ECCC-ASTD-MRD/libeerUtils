@@ -201,7 +201,7 @@ int Dict_CheckCFG(char *CFGFile){
    TDictVar *var;
    TList    *unknown,*known;
    char      buf[APP_BUFMAX],*idx,*values,*value,*valuesave;
-   int       nb_unknown=0,nb_known=0;
+   int       nb_unknown=0,nb_known=0,cont=0;
    
    if (!(fp=fopen(CFGFile,"r"))) {
       App_Log(ERROR,"Unable to open config file: %s\n",CFGFile);
@@ -214,20 +214,19 @@ int Dict_CheckCFG(char *CFGFile){
    while(fgets(buf,APP_BUFMAX,fp)) {
       
       // Process directives
-#ifdef _AIX_
-      if ((idx=strstr(buf,"sortie")) || (idx=strstr(buf,"SORTIE"))) {
-#else
-      if ((idx=strcasestr(buf,"sortie"))) {           
-#endif
+      if (cont || (idx=strcasestr(buf,"sortie"))) {
          // Locate var list within []
-         values=strstr(idx,"(")+1;
-         strrep(buf,'[',' ');
-         strrep(buf,']','\0');
+         values=cont?buf:strchr(idx,'[')+1;
+         if( (value=strchr(values,']')) ) {
+             *value = '\0';
+             cont = 0;
+         } else {
+             cont = 1;
+         }
          
          // Parse all var separated by ,
          valuesave=NULL;
-         while((value=strtok_r(values,",",&valuesave))) {
-            strtrim(value,' ');
+         while((value=strtok_r(values,", \n",&valuesave))) {
             
             App_Log(DEBUG,"Found variable: %s\n",value);
             
