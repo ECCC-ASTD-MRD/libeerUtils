@@ -973,7 +973,7 @@ double ZRef_Level2Meter(double Level,int Type) {
       
       case LVL_HYBRID  : m=ETA2METER(Level); break;
       
-      case LVL_THETA   : m=ETA2METER(Level); break;
+      case LVL_THETA   : m=0; break;
       
       case LVL_GALCHEN : m=Level; break;
       
@@ -1080,8 +1080,8 @@ int ZRef_Level2IP(float Level,int Type,TZRef_IP1Mode Mode) {
    } else {
       mode=Mode==DEFAULT?ZREF_IP1MODE:Mode;
          
-      // ETA | THETA -> SIGMA
-      if (Type==LVL_ETA || Type==LVL_THETA) {
+      // ETA -> SIGMA
+      if (Type==LVL_ETA) {
          Type=LVL_SIGMA;
       }
 
@@ -1091,8 +1091,8 @@ int ZRef_Level2IP(float Level,int Type,TZRef_IP1Mode Mode) {
          Type=mode==3?LVL_MASL:LVL_MAGL;
       }
 
-      // Hybrid and MAGL can't be encoded in old style so force new style
-      if (Type==LVL_HYBRID || Type==LVL_MAGL) {
+      // Hybrid,MAGL and Teta can't be encoded in old style so force new style
+      if (Type==LVL_HYBRID || Type==LVL_MAGL || Type==LVL_THETA) {
          mode=2;
       }
 
