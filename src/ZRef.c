@@ -1010,7 +1010,7 @@ double ZRef_IP2Meter(int IP) {
 
 #ifdef HAVE_RMN
    // Convertir en niveau reel
-   f77name(convip)(&IP,&level,&kind,&mode,&format,&flag);
+   f77name(convip_plus)(&IP,&level,&kind,&mode,&format,&flag);
 #else
    App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
 #endif
@@ -1043,7 +1043,7 @@ double ZRef_IP2Level(int IP,int *Type) {
 
 #ifdef HAVE_RMN
    // Convertir en niveau reel
-   f77name(convip)(&IP,&level,Type,&mode,&format,&flag);
+   f77name(convip_plus)(&IP,&level,Type,&mode,&format,&flag);
 #else
    App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
 #endif
@@ -1097,7 +1097,7 @@ int ZRef_Level2IP(float Level,int Type,TZRef_IP1Mode Mode) {
       }
 
 #ifdef HAVE_RMN
-      f77name(convip)(&ip,&Level,&Type,&mode,&format,&flag);
+      f77name(convip_plus)(&ip,&Level,&Type,&mode,&format,&flag);
 #else
    App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
 #endif

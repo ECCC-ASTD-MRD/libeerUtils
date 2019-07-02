@@ -51,17 +51,17 @@ fi
 
 #----- RMN stuff
 if [[ -z ${COMP_ARCH} ]]; then
-   ARCH=${ARCH}/gfortran
+   EC_ARCH=${EC_ARCH}/gfortran
 fi
 
 if [[ -n ${ORDENV_VERSION} ]]; then
    if [ `domainname -d` = "science.gc.ca" ]; then
-      echo "Building on SCIENCE network"
-      RMN_PATH=/fs/ssm/eccc/mrd/rpn/libs/${RMN_VERSION}
+      echo "(INFO) Building on SCIENCE network"
+      RMN_PATH=/fs/ssm/eccc/mrd/rpn
    elif [ `domainname -d` = "cmc.ec.gc.ca" ]; then
-      echo "Building on ECCC network"
+      echo "(INFO) Building on ECCC network"
       #----- Comment this line when testing external build  
-      RMN_PATH=/ssm/net/rpn/libs/${RMN_VERSION}   
+      RMN_PATH=/ssm/net/rpn
    fi
 fi
 
@@ -69,16 +69,23 @@ if [[ $CLR -eq 1 || $SRC -eq 1 || $REC -eq 1 ]]; then
    $MAKE -f $MAKEFILE clear
    mkdir -p ./lib ./include
 
-   cp ${RMN_PATH}/all/include/fnom.h include/fnom.h
-   cp ${RMN_PATH}/all/include/rpnmacros.h include/rpnmacros.h
-   cp ${RMN_PATH}/all/include/rpnmacros_global.h include/rpnmacros_global.h
-   cp ${RMN_PATH}/all/include/${ARCH}/rpn_macros_arch.h include/rpn_macros_arch.h
+   cp ${RMN_PATH}/libs/${RMN_VERSION}/all/include/fnom.h include/fnom.h
+   cp ${RMN_PATH}/libs/${RMN_VERSION}/all/include/rpnmacros.h include/rpnmacros.h
+   cp ${RMN_PATH}/libs/${RMN_VERSION}/all/include/rpnmacros_global.h include/rpnmacros_global.h
+   cp ${RMN_PATH}/libs/${RMN_VERSION}/all/include/${EC_ARCH}/rpn_macros_arch.h include/rpn_macros_arch.h
 
    #----- Temporary use of rmn16.3
 #   cp ../RMN/${COMP_ARCH}/${ORDENV_PLAT}/lib/librmnshared_0${RMN_VERSION}.so lib
 #   ln -s librmnshared_0${RMN_VERSION}.so lib/librmn.so
-    cp ${RMN_PATH}/${ORDENV_PLAT}/lib/${ARCH}/librmnsharedPTHRD_0${RMN_VERSION}.so lib
+    cp ${RMN_PATH}/libs/${RMN_VERSION}/${ORDENV_PLAT}/lib/${EC_ARCH}/librmnsharedPTHRD_0${RMN_VERSION}.so lib
     ln -fs librmnsharedPTHRD_0${RMN_VERSION}.so lib/librmn.so
+    cp ${RMN_PATH}/vgrid/${VGRID_VERSION}/${ORDENV_PLAT}/lib/${EC_ARCH}/libvgrid_${VGRID_VERSION}.a lib
+    if [[ $? -ne 0 ]]; then
+       echo "(WARNING) could not find libvgrid_${VGRID_VERSION}.a"
+       unset VGRID_VERSION
+    else 
+       ln -fs libvgrid_${VGRID_VERSION}.a lib/libvgrid.a
+    fi
 fi
 
 if [[ $BLD -eq 1 ]]; then

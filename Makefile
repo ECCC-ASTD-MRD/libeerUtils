@@ -7,7 +7,7 @@ INSTALL_DIR = $(shell readlink -f .)
 TCL_SRC_DIR = ${SSM_DEV}/src/ext/tcl8.6.6
 
 #----- Test for VGRID availability
-ifdef VGRIDDESCRIPTORS_SRC
+ifdef VGRID_VERSION
    HAVE := $(HAVE) -DHAVE_VGRID
 endif
 
@@ -23,13 +23,14 @@ ifneq ("$(wildcard ${TCL_SRC_DIR})","")
    HAVE    := $(HAVE) -DHAVE_TCL
 endif
 
-LIBS        := -L/$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g') -L./lib $(LIBS) $(shell xml2-config --libs) -lrmn
+LIBS        := -L/$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g') -L./lib $(LIBS) $(shell xml2-config --libs) -lrmn -L/fs/ssm/eccc/mrd/rpn/vgrid/6.4-beta/ubuntu-14.04-amd64-64/lib/Linux_x86-64/intel-2016.1.156 -lvgridshared
 INCLUDES    := -I/$(shell echo $(EC_INCLUDE_PATH) | sed 's/\s* / -I/g') $(INCLUDES) -Isrc -Iinclude $(shell xml2-config --cflags) -I$(TCL_SRC_DIR)/unix -I$(TCL_SRC_DIR)/generic $(INCLUDES)        
 
 AR          = ar rv
 LD          = ld -shared -x
 
-LINK_EXEC   = -lm -lpthread -Wl,-rpath=$(INSTALL_DIR)/lib
+#LINK_EXEC   = -lm -lpthread -Wl,-rpath=$(INSTALL_DIR)/lib
+LINK_EXEC   = -lm -lpthread
 ifdef INTEL_LICENSE_FILE
    CC=icc
    CXX=icpc
@@ -57,7 +58,7 @@ CFLAGS      = $(CDEBUGFLAGS) $(CCOPTIONS) $(INCLUDES) $(DEFINES)
 OBJ_C = $(subst .c,.o,$(wildcard src/*.c))
 OBJ_F = $(subst .f,.o,$(wildcard src/*.f))
 OBJ_F := $(subst .F90,.o,$(wildcard src/*.F90))
-OBJ_V := $(shell ar t ${VGRIDDESCRIPTORS_SRC}/../lib/libdescrip.a)
+OBJ_V := $(shell ar t lib/libvgrid.a)
 OBJ_VG = $(OBJ_V:%=src/%)
 
 %.o:%.F90
@@ -72,8 +73,8 @@ lib: obj
 	mkdir -p ./lib
 	mkdir -p ./include
 
-        ifdef VGRIDDESCRIPTORS_SRC
-	   cd src; ar x ${VGRIDDESCRIPTORS_SRC}/../lib/libdescrip.a; cd -
+        ifdef VGRID_VERSION
+	   cd src; ar x ../lib/libvgrid.a; cd -
         endif
 	$(AR) lib/libeerUtils$(OMPI)-$(VERSION).a $(OBJ_C) $(OBJ_F) $(OBJ_VG)
 	ln -fs libeerUtils$(OMPI)-$(VERSION).a lib/libeerUtils$(OMPI).a
