@@ -731,8 +731,8 @@ int RPN_GetAllDates(int *Flds,int NbFlds,int Uniq,int **DateV,int *NbDateV) {
         }
 
         deltat = h.DEET*h.NPAS/3600.0;
-        err = f77name(incdatr)(&dates[i],&h.DATEO,&deltat);
-        if( err ) {
+        f77name(incdatr)(&dates[i],&h.DATEO,&deltat);
+        if( dates[i] == 101010101 ) {
             App_Log(ERROR,"(RPN_GetAllDates) Couldn't get DateV for dateo(%d),deet(%d),npas(%d),deltat(%f) (incdatr)\n",h.DATEO,h.DEET,h.NPAS,deltat);
             APP_FREE(dates);
             return(APP_ERR);

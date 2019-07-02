@@ -1222,8 +1222,6 @@ void EZGrid_Clear(TGrid* restrict const Grid) {
          for(k=0;k<Grid->H.NK;k++) {
             if (tile->Data[k])
                tile->Data[k][tile->HNIJ-1]=f;
-            if (tile->Mask[k])
-               tile->Mask[k][tile->HNIJ-1]=0;
          }
       }
       // If tile is interpolated, mask is a reference
