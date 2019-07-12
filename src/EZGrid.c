@@ -414,6 +414,7 @@ float* EZGrid_TileBurnAll(TGrid* restrict const Grid,int K,float* restrict Data)
  *
  * Parametres :
  *   <Grid>      : Grille
+ *   <Master>    : Set to 1 for a master grid, 0 for a normal grid and -1 for any grid
  *
  * Retour:
  *  <TGrid*>     : Grille "template" (ou NULL si non existante)
@@ -421,18 +422,22 @@ float* EZGrid_TileBurnAll(TGrid* restrict const Grid,int K,float* restrict Data)
  * Remarques :
  *----------------------------------------------------------------------------
 */
-static TGrid* EZGrid_CacheFind(TGrid *Grid) {
+static TGrid* EZGrid_CacheFind(const TGrid *Grid,int Master) {
 
    register int n,k;
 
    int     type;
    float   level;
-   
+
    if (Grid) {
 
       pthread_mutex_lock(&CacheMutex);
       for(n=0;n<EZGRID_CACHEMAX;n++) {
          if (GridCache[n]) {
+            // Check for master grid
+            if( Master!=-1 && Master!=GridCache[n]->Master ) {
+               continue;
+            }
 
             // Check for same level type and definitions
             level=ZRef_IP2Level(Grid->H.IP1,&type);
@@ -446,7 +451,7 @@ static TGrid* EZGrid_CacheFind(TGrid *Grid) {
             for(k=0;k<GridCache[n]->H.NK;k++) if (GridCache[n]->ZRef->Levels[k]==level) break;
             if (k==GridCache[n]->H.NK)
                continue;
-           
+
             // Check for same grid
             if (Grid->H.GRTYP[0]=='#') {
                if (GridCache[n]->IP1==Grid->H.IG1 && GridCache[n]->IP2==Grid->H.IG2) {
@@ -516,7 +521,7 @@ static inline int EZGrid_CacheIdx(const TGrid* restrict const Grid) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-static inline int EZGrid_CacheAdd(TGrid* restrict const Grid) {
+static int EZGrid_CacheAdd(TGrid* restrict const Grid) {
 
    register int n,i=-1;
 
@@ -1318,7 +1323,8 @@ TGrid *EZGrid_Read(int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1
  *----------------------------------------------------------------------------
 */
 wordint f77name(ezgrid_readidx)(wordint *fid,wordint *key,wordint *incr) {
-   return(EZGrid_CacheIdx(EZGrid_ReadIdx(*fid,*key,*incr)));
+   TGrid *fld = EZGrid_ReadIdx(*fid,*key,*incr);
+   return(fld->Master ? EZGrid_CacheIdx(fld) : EZGrid_CacheAdd(fld));
 }
 
 TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr) {
@@ -1361,7 +1367,7 @@ TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr) {
 
    // Check previous master grid existence
    // mst is not in a critical sectin but its veryyyyyyyyyy unlikelyyyyyy that it will cause problems
-   if ((mst=EZGrid_CacheFind(new))) {
+   if ((mst=EZGrid_CacheFind(new,1))) {
       new->GID=mst->GID;
       new->ZRef=mst->ZRef;
       new->GRef=mst->GRef;
@@ -1392,10 +1398,10 @@ TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr) {
          return(NULL);
       } else {
          new->Master=1;
+         EZGrid_CacheAdd(new);
       }
    }
 
-   EZGrid_CacheAdd(new);
    return(new);
 }
 
@@ -1506,7 +1512,7 @@ int EZGrid_LoadAll(const TGrid* restrict const Grid) {
  *----------------------------------------------------------------------------
 */
 wordint f77name(ezgrid_interptime)(wordint *gdid0,wordint *gdid1,wordint *date) {
-   return(EZGrid_CacheIdx(EZGrid_InterpTime(GridCache[*gdid0],GridCache[*gdid1],*date)));
+   return(EZGrid_CacheAdd(EZGrid_InterpTime(GridCache[*gdid0],GridCache[*gdid1],*date)));
 }
 
 TGrid *EZGrid_InterpTime(const TGrid* restrict const Grid0,const TGrid* restrict const Grid1,int Date) {
@@ -1543,7 +1549,6 @@ TGrid *EZGrid_InterpTime(const TGrid* restrict const Grid0,const TGrid* restrict
          new->Tiles[n].Data=NULL;
       }
    }
-   EZGrid_CacheAdd(new);
    return(new);
 }
 
@@ -1558,7 +1563,7 @@ void EZGrid_Factor(TGrid* restrict Grid,const float Factor) {
 }
 
 wordint f77name(ezgrid_interpfactor)(wordint *gdid0,wordint *gdid1,ftnfloat *f0,ftnfloat *f1) {
-   return(EZGrid_CacheIdx(EZGrid_InterpFactor(NULL,GridCache[*gdid0],GridCache[*gdid1],*f0,*f1)));
+   return(EZGrid_CacheAdd(EZGrid_InterpFactor(NULL,GridCache[*gdid0],GridCache[*gdid1],*f0,*f1)));
 }
 
 TGrid *EZGrid_InterpFactor(TGrid* restrict const Grid,TGrid* restrict const Grid0,TGrid* restrict const Grid1,float Factor0,float Factor1) {
@@ -1588,7 +1593,6 @@ TGrid *EZGrid_InterpFactor(TGrid* restrict const Grid,TGrid* restrict const Grid
          new->Tiles[i].Mask=NULL;
          new->Tiles[i].KBurn=-1;
       }
-      EZGrid_CacheAdd(new);
    }
 
    new->T0=Grid0;
