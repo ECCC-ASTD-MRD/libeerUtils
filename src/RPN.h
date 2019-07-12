@@ -129,24 +129,25 @@ extern int f77name(rmnlib_version)(char *rmn,int *print,int len);
 extern int f77name(r8ipsort)(int *ip,double *a,int *n);
 
 // RPN external C && Fortran functions
-extern int f77name(newdate)(int *dat1,int *dat2,int *dat3,int *mode);
-extern int f77name(incdatr)(int *dat1,int *dat2,double *nhours);
-extern int f77name(difdatr)(int *dat1,int *dat2,double *nhours);
-extern int f77name(convip) (int *ip,ftnfloat *p,int *kind,int *mode,char *string,int *flag);
-extern int f77name(sort)   (ftnfloat *work,int *n);
-extern int f77name(ipsort) (int *ip,ftnfloat *a,int *n);
-extern int f77name(fd1)    (ftnfloat *gd1,ftnfloat *f,ftnfloat *h);
-extern int f77name(fdm)    (ftnfloat *gdm,ftnfloat *f,ftnfloat *h,int *m);
-extern int f77name(int1d1) (ftnfloat *fi,ftnfloat *f,ftnfloat *xi,ftnfloat *x,ftnfloat *fx,ftnfloat *h,int *m,int *mi,ftnfloat *cmu1,ftnfloat *c1,ftnfloat *clmdam,ftnfloat *cm,ftnfloat *a,ftnfloat *c,ftnfloat *d);
-extern int f77name(xyfll)  (ftnfloat *x,ftnfloat *y,ftnfloat *dlat,ftnfloat *dlon,ftnfloat *d60,ftnfloat *dgrw,int *nhem);
-extern int f77name(llfxy)  (ftnfloat *dlat,ftnfloat *dlon,ftnfloat *x,ftnfloat *y,ftnfloat *d60,ftnfloat *dgrw,int *nhem);
-extern int f77name(cigaxg) (char *igtyp,ftnfloat *xg1,ftnfloat *xg2,ftnfloat *xg3,ftnfloat *xg4,int *ig1,int *ig2,int *ig3,int *ig4);
-extern int f77name(cxgaig) (char *igtyp,int *ig1,int *ig2,int *ig3,int *ig4,ftnfloat *xg1,ftnfloat *xg2,ftnfloat *xg3,ftnfloat *xg4);
-extern int f77name(mscale) (ftnfloat *r,ftnfloat *d60,ftnfloat *pi,ftnfloat *pj,int *ni,int *nj);
-extern int f77name(wkoffit)(char *filename,int size);
-extern int f77name(fstlnk) (int *list,int *size);
-extern int f77name(fstunl) (int *list,int *size);
-extern int f77name(hyb_to_pres)(ftnfloat *pres,ftnfloat *hyb,ftnfloat *ptop,ftnfloat *rcoef,ftnfloat *pref,int *kind,ftnfloat *ps,int *NI,int *NJ,int *NK);
+extern int f77name(newdate)     (int *dat1,int *dat2,int *dat3,int *mode);
+extern int f77name(incdatr)     (int *dat1,int *dat2,double *nhours);
+extern int f77name(difdatr)     (int *dat1,int *dat2,double *nhours);
+extern int f77name(convip)      (int *ip,ftnfloat *p,int *kind,int *mode,char *string,int *flag);
+extern int f77name(convip_plus) (int *ip,ftnfloat *p,int *kind,int *mode,char *string,int *flag);
+extern int f77name(sort)        (ftnfloat *work,int *n);
+extern int f77name(ipsort)      (int *ip,ftnfloat *a,int *n);
+extern int f77name(fd1)         (ftnfloat *gd1,ftnfloat *f,ftnfloat *h);
+extern int f77name(fdm)         (ftnfloat *gdm,ftnfloat *f,ftnfloat *h,int *m);
+extern int f77name(int1d1)      (ftnfloat *fi,ftnfloat *f,ftnfloat *xi,ftnfloat *x,ftnfloat *fx,ftnfloat *h,int *m,int *mi,ftnfloat *cmu1,ftnfloat *c1,ftnfloat *clmdam,ftnfloat *cm,ftnfloat *a,ftnfloat *c,ftnfloat *d);
+extern int f77name(xyfll)       (ftnfloat *x,ftnfloat *y,ftnfloat *dlat,ftnfloat *dlon,ftnfloat *d60,ftnfloat *dgrw,int *nhem);
+extern int f77name(llfxy)       (ftnfloat *dlat,ftnfloat *dlon,ftnfloat *x,ftnfloat *y,ftnfloat *d60,ftnfloat *dgrw,int *nhem);
+extern int f77name(cigaxg)      (char *igtyp,ftnfloat *xg1,ftnfloat *xg2,ftnfloat *xg3,ftnfloat *xg4,int *ig1,int *ig2,int *ig3,int *ig4);
+extern int f77name(cxgaig)      (char *igtyp,int *ig1,int *ig2,int *ig3,int *ig4,ftnfloat *xg1,ftnfloat *xg2,ftnfloat *xg3,ftnfloat *xg4);
+extern int f77name(mscale)      (ftnfloat *r,ftnfloat *d60,ftnfloat *pi,ftnfloat *pj,int *ni,int *nj);
+extern int f77name(wkoffit)     (char *filename,int size);
+extern int f77name(fstlnk)      (int *list,int *size);
+extern int f77name(fstunl)      (int *list,int *size);
+extern int f77name(hyb_to_pres) (ftnfloat *pres,ftnfloat *hyb,ftnfloat *ptop,ftnfloat *rcoef,ftnfloat *pref,int *kind,ftnfloat *ps,int *NI,int *NJ,int *NK);
 
 // RPN 1d interpolation functions
 extern void f77name (interp1d_findpos) ();

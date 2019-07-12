@@ -14,14 +14,16 @@ loginPath=${profileDirPath}/${packageName}.csh
 rm -f ${profilePath} ${loginPath}
 mkdir -p ${profileDirPath}
 
+# Added Inel compiler shared lib path ($INTELCOMP_HOME/lib/intel64_lin)
+INTELCOMP_HOME=/fs/ssm/main/opt/intelcomp/intelpsxe-cluster-19.0.3.199/intelpsxe-cluster_19.0.3.199_multi
 cat > ${profilePath} << EOF
 export EC_INCLUDE_PATH="${packageHome}/include \${EC_INCLUDE_PATH}"
 export EC_LD_LIBRARY_PATH="${packageHome}/lib \${EC_LD_LIBRARY_PATH}"
-export LD_LIBRARY_PATH="${packageHome}/lib:\${LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH="${packageHome}/lib:${INTELCOMP_HOME}/lib/intel64_lin:\${LD_LIBRARY_PATH}"
 EOF
 
 cat > ${loginPath} << EOF
-setenv EC_INCLUDE_PATH="${packageHome}/include \${EC_INCLUDE_PATH}"
-setenv EC_LD_LIBRARY_PATH="${packageHome}/lib \${EC_LD_LIBRARY_PATH}"
-setenv LD_LIBRARY_PATH="${packageHome}/lib:\${LD_LIBRARY_PATH}"
+setenv EC_INCLUDE_PATH="${packageHome}/include \${EC_INCLUDE_PATH}" 
+setenv EC_LD_LIBRARY_PATH="${packageHome}/lib \${EC_LD_LIBRARY_PATH}" 
+setenv LD_LIBRARY_PATH="${packageHome}/lib:${INTELCOMP_HOME}/lib/intel64_lin:\${LD_LIBRARY_PATH}"
 EOF

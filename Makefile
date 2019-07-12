@@ -23,7 +23,7 @@ ifneq ("$(wildcard ${TCL_SRC_DIR})","")
    HAVE    := $(HAVE) -DHAVE_TCL
 endif
 
-LIBS        := -L/$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g') -L./lib $(LIBS) $(shell xml2-config --libs) -lrmn -L/fs/ssm/eccc/mrd/rpn/vgrid/6.4-beta/ubuntu-14.04-amd64-64/lib/Linux_x86-64/intel-2016.1.156 -lvgridshared
+LIBS        := -L/$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g') -L./lib $(LIBS) $(shell xml2-config --libs) -lrmn 
 INCLUDES    := -I/$(shell echo $(EC_INCLUDE_PATH) | sed 's/\s* / -I/g') $(INCLUDES) -Isrc -Iinclude $(shell xml2-config --cflags) -I$(TCL_SRC_DIR)/unix -I$(TCL_SRC_DIR)/generic $(INCLUDES)        
 
 AR          = ar rv
@@ -35,13 +35,19 @@ ifdef INTEL_LICENSE_FILE
    CC=icc
    CXX=icpc
    FC=ifort
-   LINK_EXEC := $(LINK_EXEC) -lintlc -lifcore -lifport
+#   LINK_EXEC := $(LINK_EXEC) -Wl,-rpath $(INTELCOMP_HOME)/lib/intel64_lin -lintlc -lifcore -lifport 
+   LINK_EXEC := $(LINK_EXEC) -lintlc -lifcore -lifport 
 endif
 
 CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer
 DEFINES     = -DVERSION=\"$(VERSION)-r$(BUILDINFO)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE ${HAVE}
 ifdef OMPI
-   CC= mpicc
+   #----- CRAY wraps MPI by default
+   ifdef CRAYPE_VERSION
+      CC=cc
+   else
+      CC= mpicc
+   endif
    CCOPTIONS   := $(CCOPTIONS) -fopenmp
    DEFINES    := $(DEFINES) -D_MPI
 endif
@@ -78,7 +84,8 @@ lib: obj
         endif
 	$(AR) lib/libeerUtils$(OMPI)-$(VERSION).a $(OBJ_C) $(OBJ_F) $(OBJ_VG)
 	ln -fs libeerUtils$(OMPI)-$(VERSION).a lib/libeerUtils$(OMPI).a
-
+#	$(CC) -shared -Wl,-soname,libeerUtils$(OMPI)-$(VERSION).so -o lib/libeerUtils$(OMPI)-$(VERSION).so $(OBJ_C) $(OBJ_F) $(OBJ_VG) $(CFLAGS) $(LIBS) $(LINK_EXEC)
+         
         #----- Need shared version for Cray
 #        ifdef CRAYPE_VERSION
 #	   $(CC) -shared -Wl,-soname,libeerUtils-$(VERSION).so -o lib/libeerUtils$(OMPI)-$(VERSION).so $(OBJ_C) $(OBJ_T) $(CFLAGS) $(LIBS)
