@@ -1793,6 +1793,7 @@ int Def_GridInterpConservative(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
             ip++;
          }
       } else {
+         int cnt, intersect;
          if (Index && Index[0]==DEF_INDEX_EMPTY) {
             ip=Index;
          }
@@ -1803,8 +1804,18 @@ int Def_GridInterpConservative(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
 
                // Project the source gridcell into the destination
                wrap=Def_GridCell2OGR(ring,ToRef,FromRef,i,j,Prec);
+               intersect=0;
+               cnt = OGR_G_GetPointCount(ring);
+               for(p=0;p<cnt;p++) {
+                  OGR_G_GetPoint(ring,p,&x,&y,&z);
+                  if (x>=(ToRef->X0-0.5) && x<=(ToRef->X1+0.5) && y>=(ToRef->Y0-0.5) && x<=(ToRef->X1+0.5))
+                     {
+                     intersect=1;
+                     break;
+                     }
+               }
 
-               if (!wrap)
+               if (!wrap || !intersect)
                   continue;
 
                // Are we crossing the wrap around
