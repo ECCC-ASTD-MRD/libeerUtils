@@ -271,20 +271,20 @@ void Dict_SetSearch(int SearchMode,int SearchState,char *SearchOrigin,int Search
 #ifdef HAVE_RMN
    if (DictSearch.IP1>0) {
       // Convert to real level/value
-      f77name(convip)(&SearchIP1,&level,&type,&mode,&format,&flag);
+      f77name(convip_plus)(&SearchIP1,&level,&type,&mode,&format,&flag);
       // Get alternate representation (OLD/NEW)
       mode=(SearchIP1<32000)?2:3;
-      f77name(convip)(&DictSearch.AltIP1,&level,&type,&mode,&format,&flag);
+      f77name(convip_plus)(&DictSearch.AltIP1,&level,&type,&mode,&format,&flag);
    }
 
-//   f77name(convip)(&SearchIP2,&level,Type,&mode,&format,&flag);
-//   f77name(convip)(&SearchIP3,&level,Type,&mode,&format,&flag);
+//   f77name(convip_plus)(&SearchIP2,&level,Type,&mode,&format,&flag);
+//   f77name(convip_plus)(&SearchIP3,&level,Type,&mode,&format,&flag);
 
 //   mode=(SearchIP2<32000)?2:3;
-//   f77name(convip)(&DictSearch.AltIP2,&level,Type,&mode,&format,&flag);
+//   f77name(convip_plus)(&DictSearch.AltIP2,&level,Type,&mode,&format,&flag);
 
 //   mode=(SearchIP3<32000)?2:3;
-//   f77name(convip)(&DictSearch.AltIP3,&level,Type,&mode,&format,&flag);
+//   f77name(convip_plus)(&DictSearch.AltIP3,&level,Type,&mode,&format,&flag);
 #else
    App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
 #endif

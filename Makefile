@@ -7,7 +7,7 @@ INSTALL_DIR = $(shell readlink -f .)
 TCL_SRC_DIR = ${SSM_DEV}/src/ext/tcl8.6.6
 
 #----- Test for VGRID availability
-ifdef VGRIDDESCRIPTORS_SRC
+ifdef VGRID_VERSION
    HAVE := $(HAVE) -DHAVE_VGRID
 endif
 
@@ -23,24 +23,31 @@ ifneq ("$(wildcard ${TCL_SRC_DIR})","")
    HAVE    := $(HAVE) -DHAVE_TCL
 endif
 
-LIBS        := -L/$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g') -L./lib $(LIBS) $(shell xml2-config --libs) -lrmn
+LIBS        := -L/$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g') -L./lib $(LIBS) $(shell xml2-config --libs) -lrmn 
 INCLUDES    := -I/$(shell echo $(EC_INCLUDE_PATH) | sed 's/\s* / -I/g') $(INCLUDES) -Isrc -Iinclude $(shell xml2-config --cflags) -I$(TCL_SRC_DIR)/unix -I$(TCL_SRC_DIR)/generic $(INCLUDES)        
 
 AR          = ar rv
 LD          = ld -shared -x
 
-LINK_EXEC   = -lm -lpthread -Wl,-rpath=$(INSTALL_DIR)/lib
+#LINK_EXEC   = -lm -lpthread -Wl,-rpath=$(INSTALL_DIR)/lib
+LINK_EXEC   = -lm -lpthread
 ifdef INTEL_LICENSE_FILE
    CC=icc
    CXX=icpc
    FC=ifort
-   LINK_EXEC := $(LINK_EXEC) -lintlc -lifcore -lifport
+#   LINK_EXEC := $(LINK_EXEC) -Wl,-rpath $(INTELCOMP_HOME)/lib/intel64_lin -lintlc -lifcore -lifport 
+   LINK_EXEC := $(LINK_EXEC) -lintlc -lifcore -lifport 
 endif
 
 CCOPTIONS   = -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer
 DEFINES     = -DVERSION=\"$(VERSION)-r$(BUILDINFO)\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE ${HAVE}
 ifdef OMPI
-   CC= mpicc
+   #----- CRAY wraps MPI by default
+   ifdef CRAYPE_VERSION
+      CC=cc
+   else
+      CC= mpicc
+   endif
    CCOPTIONS   := $(CCOPTIONS) -fopenmp
    DEFINES    := $(DEFINES) -D_MPI
 endif
@@ -57,7 +64,7 @@ CFLAGS      = $(CDEBUGFLAGS) $(CCOPTIONS) $(INCLUDES) $(DEFINES)
 OBJ_C = $(subst .c,.o,$(wildcard src/*.c))
 OBJ_F = $(subst .f,.o,$(wildcard src/*.f))
 OBJ_F := $(subst .F90,.o,$(wildcard src/*.F90))
-OBJ_V := $(shell ar t ${VGRIDDESCRIPTORS_SRC}/../lib/libdescrip.a)
+OBJ_V := $(shell ar t lib/libvgrid.a)
 OBJ_VG = $(OBJ_V:%=src/%)
 
 %.o:%.F90
@@ -72,12 +79,13 @@ lib: obj
 	mkdir -p ./lib
 	mkdir -p ./include
 
-        ifdef VGRIDDESCRIPTORS_SRC
-	   cd src; ar x ${VGRIDDESCRIPTORS_SRC}/../lib/libdescrip.a; cd -
+        ifdef VGRID_VERSION
+	   cd src; ar x ../lib/libvgrid.a; cd -
         endif
 	$(AR) lib/libeerUtils$(OMPI)-$(VERSION).a $(OBJ_C) $(OBJ_F) $(OBJ_VG)
 	ln -fs libeerUtils$(OMPI)-$(VERSION).a lib/libeerUtils$(OMPI).a
-
+#	$(CC) -shared -Wl,-soname,libeerUtils$(OMPI)-$(VERSION).so -o lib/libeerUtils$(OMPI)-$(VERSION).so $(OBJ_C) $(OBJ_F) $(OBJ_VG) $(CFLAGS) $(LIBS) $(LINK_EXEC)
+         
         #----- Need shared version for Cray
 #        ifdef CRAYPE_VERSION
 #	   $(CC) -shared -Wl,-soname,libeerUtils-$(VERSION).so -o lib/libeerUtils$(OMPI)-$(VERSION).so $(OBJ_C) $(OBJ_T) $(CFLAGS) $(LIBS)
