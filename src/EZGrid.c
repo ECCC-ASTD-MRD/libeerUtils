@@ -340,7 +340,7 @@ float* EZGrid_TileBurn(TGrid* restrict const Grid,TGridTile* restrict const Tile
          }
       }
       Data=Grid->Data;
-      if (!Grid->Mask && Tile->Mask[K]) {
+      if (!Grid->Mask && Tile->Mask && Tile->Mask[K]) {
          if (!(Grid->Mask=(char*)malloc(Grid->H.NIJ*sizeof(char)))) {
             App_Log(ERROR,"%s: Unable to allocate memory for grid mask (%s)\n",__func__,Grid->H.NOMVAR);
             pthread_mutex_unlock(&Grid->Mutex);
