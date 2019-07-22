@@ -107,7 +107,7 @@ typedef struct TGrid {
    int             GID;                  // EZSCINT Tile grid id (for interpolation)
    int             IP1,IP2,IP3,Master;   // Grid template identifier
    int             Incr;                 // Increasing sorting
-   int             Factor;               // Increasing sorting
+   float           Factor;               // Increasing sorting
    unsigned int    NTI,NTJ;              // Number of tiles in I and J
    unsigned int    Halo;                 // Halo width
 

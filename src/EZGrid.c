@@ -228,7 +228,7 @@ static float **EZGrid_TileGetData(const TGrid* restrict const Grid,TGridTile* re
 //         if (datak[Tile->HNIJ-1]!=datak[Tile->HNIJ-1]) datak[Tile->HNIJ-1]=-999.0;
          
          // Apply Factor if needed (TODO: ok for now but need to fix concurent access and might conflict with time interp)
-         if (Grid->Factor!=1.0) {
+         if (Grid->Factor!=1.0f) {
             for(ni=0;ni<Tile->HNIJ;ni++) datak[ni]*=Grid->Factor;
          }
          
