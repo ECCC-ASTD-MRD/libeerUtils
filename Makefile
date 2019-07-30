@@ -6,7 +6,7 @@ HAVE       =-DHAVE_RMN -DHAVE_GPC
 INSTALL_DIR = $(shell readlink -f .)
 TCL_SRC_DIR = ${SSM_DEV}/src/ext/tcl8.6.6
 
-#----- Test for VGRID availability
+#----- Test for  availability
 ifdef VGRID_VERSION
    HAVE := $(HAVE) -DHAVE_VGRID
 endif
@@ -23,7 +23,7 @@ ifneq ("$(wildcard ${TCL_SRC_DIR})","")
    HAVE    := $(HAVE) -DHAVE_TCL
 endif
 
-LIBS        := -L/$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g') -L./lib $(LIBS) $(shell xml2-config --libs) -lrmn 
+LIBS        := -L/$(shell echo $(EC_LD_LIBRARY_PATH) | sed 's/\s* / -L/g') -L./lib $(LIBS) $(shell xml2-config --libs) -lrmn_eer 
 INCLUDES    := -I/$(shell echo $(EC_INCLUDE_PATH) | sed 's/\s* / -I/g') $(INCLUDES) -Isrc -Iinclude $(shell xml2-config --cflags) -I$(TCL_SRC_DIR)/unix -I$(TCL_SRC_DIR)/generic $(INCLUDES)        
 
 AR          = ar rv
@@ -64,12 +64,12 @@ CFLAGS      = $(CDEBUGFLAGS) $(CCOPTIONS) $(INCLUDES) $(DEFINES)
 OBJ_C = $(subst .c,.o,$(wildcard src/*.c))
 OBJ_F = $(subst .f,.o,$(wildcard src/*.f))
 OBJ_F := $(subst .F90,.o,$(wildcard src/*.F90))
-OBJ_V := $(shell ar t lib/libvgrid.a)
+OBJ_V := $(shell ar t lib/libvgrid_eer.a)
 OBJ_VG = $(OBJ_V:%=src/%)
 
 %.o:%.F90
 	s.compile -src $< -optf="-o $@"
-#	gfortran $< $(CCOPTIONS) -c -o $@ -L./lib -lrmn
+#	gfortran $< $(CCOPTIONS) -c -o $@ -L./lib -lrmn_eer
 
 all: obj lib exec
 
@@ -80,7 +80,7 @@ lib: obj
 	mkdir -p ./include
 
         ifdef VGRID_VERSION
-	   cd src; ar x ../lib/libvgrid.a; cd -
+	   cd src; ar x ../lib/libvgrid_eer.a; cd -
         endif
 	$(AR) lib/libeerUtils$(OMPI)-$(VERSION).a $(OBJ_C) $(OBJ_F) $(OBJ_VG)
 	ln -fs libeerUtils$(OMPI)-$(VERSION).a lib/libeerUtils$(OMPI).a
