@@ -1506,16 +1506,13 @@ int EZGrid_LoadAll(const TGrid* restrict const Grid) {
  *   <Grid>      : Grille interpolee (NULL=erreur)
  *
  * Remarques :
- *
- *   - Seule les tuiles avec des donnees sont interpolees. Il faut donc s'assurer
- *     que les donnees y sont en utilisant la fonction EZGrid_Load
  *----------------------------------------------------------------------------
 */
 wordint f77name(ezgrid_interptime)(wordint *gdid0,wordint *gdid1,wordint *date) {
-   return(EZGrid_CacheAdd(EZGrid_InterpTime(GridCache[*gdid0],GridCache[*gdid1],*date)));
+   return(EZGrid_CacheAdd(EZGrid_InterpTime(NULL,GridCache[*gdid0],GridCache[*gdid1],*date)));
 }
 
-TGrid *EZGrid_InterpTime(const TGrid* restrict const Grid0,const TGrid* restrict const Grid1,int Date) {
+TGrid *EZGrid_InterpTime(TGrid* restrict Grid,const TGrid* restrict Grid0,const TGrid* restrict Grid1,int Date) {
 
    TGrid *new;
    double delay,dt;
@@ -1527,29 +1524,7 @@ TGrid *EZGrid_InterpTime(const TGrid* restrict const Grid0,const TGrid* restrict
 
    dt/=delay;
 
-   /*Allocate new tile*/
-   new=(TGrid*)malloc(sizeof(TGrid));
-   memcpy(new,Grid0,sizeof(TGrid));
-   new->Master=0;
-   new->H.FID=-1;
-   new->Tiles=(TGridTile*)malloc(Grid0->NbTiles*sizeof(TGridTile));
-   memcpy(new->Tiles,Grid0->Tiles,Grid0->NbTiles*sizeof(TGridTile));
-
-   for(n=0;n<Grid0->NbTiles;n++) {
-      /*Interpolate data if exists*/
-      if (Grid0->Tiles[n].Data && Grid1->Tiles[n].Data) {
-         new->Tiles[n].Data=(float**)calloc(new->H.NK,sizeof(float*));
-         for(k=0;k<new->H.NK;k++) {
-            new->Tiles[n].Data[k]=(float*)malloc(new->H.NIJ*sizeof(float));
-            for(i=0;i<new->H.NIJ;i++) {
-               new->Tiles[n].Data[k][i]=ILIN(Grid0->Tiles[n].Data[k][i],Grid1->Tiles[n].Data[k][i],dt);
-            }
-         }
-      } else {
-         new->Tiles[n].Data=NULL;
-      }
-   }
-   return(new);
+   return(EZGrid_InterpFactor(Grid,Grid0,Grid1,1.0-dt,dt));
 }
 
 wordint f77name(ezgrid_factor)(wordint *gdid,ftnfloat *f) {
@@ -1566,7 +1541,7 @@ wordint f77name(ezgrid_interpfactor)(wordint *gdid0,wordint *gdid1,ftnfloat *f0,
    return(EZGrid_CacheAdd(EZGrid_InterpFactor(NULL,GridCache[*gdid0],GridCache[*gdid1],*f0,*f1)));
 }
 
-TGrid *EZGrid_InterpFactor(TGrid* restrict const Grid,TGrid* restrict const Grid0,TGrid* restrict const Grid1,float Factor0,float Factor1) {
+TGrid *EZGrid_InterpFactor(TGrid* restrict Grid,const TGrid* restrict Grid0,const TGrid* restrict Grid1,float Factor0,float Factor1) {
 
    TGrid *new;
    int    i;

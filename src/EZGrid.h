@@ -114,8 +114,8 @@ typedef struct TGrid {
    unsigned int    NbTiles;              // Number of tiles
    TGridTile      *Tiles;                // Array of tiles
 
-   struct TGrid   *T0,*T1;               // Time interpolation strat and end grid
-   float           FT0,FT1;              // Time interpolation factor
+   const struct TGrid   *T0,*T1;         // Time interpolation strat and end grid
+   float                FT0,FT1;         // Time interpolation factor
 
 } TGrid;
 
@@ -167,8 +167,8 @@ int    EZGrid_TileGrid(int FIdTo,int NI, int NJ,int Halo,TGrid* restrict const G
 int    EZGrid_UnTile(int FIdTo,int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2);
 
 int    EZGrid_Interp(TGrid* restrict const To,TGrid* restrict const From);
-TGrid *EZGrid_InterpTime(const TGrid* restrict const Grid0,const TGrid* restrict const Grid1,int Date);
-TGrid *EZGrid_InterpFactor(TGrid* restrict const Grid,TGrid* restrict const Grid0,TGrid* restrict const Grid1,float Factor0,float Factor1);
+TGrid *EZGrid_InterpTime(TGrid* restrict Grid,const TGrid* restrict Grid0,const TGrid* restrict Grid1,int Date);
+TGrid *EZGrid_InterpFactor(TGrid* restrict Grid,const TGrid* restrict Grid0,const TGrid* restrict Grid1,float Factor0,float Factor1);
 
 float* EZGrid_TileBurn(TGrid* restrict const Grid,TGridTile* restrict const Tile,int K,float* restrict Data);
 float* EZGrid_TileBurnAll(TGrid* restrict const Grid,int K,float* restrict Data);
