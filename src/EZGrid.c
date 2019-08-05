@@ -1195,6 +1195,7 @@ void EZGrid_Free(TGrid* restrict const Grid) {
          }
    //      ZRef_Free(Grid->ZRef);
          EZGrid_CacheDel(Grid);
+         free(Grid);
       }
    }
 }
