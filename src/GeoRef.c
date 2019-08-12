@@ -691,7 +691,22 @@ void GeoRef_Clear(TGeoRef *Ref,int New) {
       if (Ref->Idx)          free(Ref->Idx);          Ref->Idx=NULL; Ref->NIdx=0;
       if (Ref->AX)           free(Ref->AX);           Ref->AX=NULL;
       if (Ref->AY)           free(Ref->AY);           Ref->AY=NULL;
-      if (Ref->QTree)        QTree_Free(Ref->QTree);  Ref->QTree=NULL;
+
+      if (Ref->QTree) {
+         // Check if we actually have a QTree instead of the special kind of index used for more regular grids
+         // The hypothesis being that we should at least have children on the head node of any real QTree
+         if( Ref->QTree[0].Childs[0] ) {
+            QTree_Free(Ref->QTree);
+         } else {
+            // We have a special kind of index used for more regular grids instead
+            for(n=0; n<(GRID_YQTREESIZE+1)*(GRID_YQTREESIZE+1); ++n) {
+               QTree_DelData(&Ref->QTree[n]);
+            }
+            free(Ref->QTree);
+         }
+
+         Ref->QTree=NULL;
+      }
 
       Ref->IG1=Ref->IG2=Ref->IG3=Ref->IG4=0;
 
