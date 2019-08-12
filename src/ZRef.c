@@ -176,6 +176,8 @@ int ZRef_Free(TZRef *ZRef) {
 
       ZRef->Version=-1;
       ZRef->LevelNb=0;
+
+      free(ZRef);
    }
    return(1);
 }
