@@ -407,7 +407,8 @@ void App_Start(void) {
 #ifdef _OPENMP
       if (App->NbThread>1) {
          // OpenMP specification version
-         if       (_OPENMP >= 201511)  App_Log(MUST,"OpenMP threads : %i (Standard: %d -- OpenMP %s4.5)\n",App->NbThread,_OPENMP,_OPENMP>201511?">":"");
+         if       (_OPENMP >= 201811)  App_Log(MUST,"OpenMP threads : %i (Standard: %d -- OpenMP %s5.0)\n",App->NbThread,_OPENMP,_OPENMP>201811?">":"");
+         else if  (_OPENMP >= 201511)  App_Log(MUST,"OpenMP threads : %i (Standard: %d -- OpenMP %s4.5)\n",App->NbThread,_OPENMP,_OPENMP>201511?">":"");
          else if  (_OPENMP >= 201307)  App_Log(MUST,"OpenMP threads : %i (Standard: %d -- OpenMP %s4.0)\n",App->NbThread,_OPENMP,_OPENMP>201307?">":"");
          else if  (_OPENMP >= 201107)  App_Log(MUST,"OpenMP threads : %i (Standard: %d -- OpenMP %s3.1)\n",App->NbThread,_OPENMP,_OPENMP>201107?">":"");
          else if  (_OPENMP >= 200805)  App_Log(MUST,"OpenMP threads : %i (Standard: %d -- OpenMP %s3.0)\n",App->NbThread,_OPENMP,_OPENMP>200805?">":"");
