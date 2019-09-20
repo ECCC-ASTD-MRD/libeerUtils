@@ -716,7 +716,7 @@ int BinaryFile_Write(void *Data,TBFType DataType,TBFFiles *File,int DateO,int De
             // If the compression fails, just write the field uncompressed
             DataType = BF_FLOAT64;
          }
-         if( write(file->FD,Data,size) != size ) {
+         if( write(file->FD,DataType==BF_FLOAT64?Data:buf,size) != size ) {
             App_Log(ERROR,"BinaryFile: Could not write the field : %s\n",strerror(errno));
             if( lseek(file->FD,file->Header.IOffset,SEEK_SET) == -1 ) {
                App_Log(ERROR,"BinaryFile: Could not seek to previous file position : %s\n",strerror(errno));
