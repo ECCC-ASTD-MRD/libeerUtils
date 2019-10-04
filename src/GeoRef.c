@@ -973,8 +973,10 @@ TGeoRef *GeoRef_HardCopy(TGeoRef* __restrict const Ref) {
             ref->ResA=Ref->ResA;
          case 'W' :
             GeoRef_WKTSet(ref,Ref->String,Ref->Transform,Ref->InvTransform,Ref->Spatial);
-            ref->RotTransform=(TRotationTransform*)malloc(sizeof(TRotationTransform));
-            memcpy(ref->RotTransform,Ref->RotTransform,sizeof(TRotationTransform));
+            if (Ref->RotTransform) {
+               ref->RotTransform=(TRotationTransform*)malloc(sizeof(TRotationTransform));
+               memcpy(ref->RotTransform,Ref->RotTransform,sizeof(TRotationTransform));
+            }
       }
    }
    return(ref);
