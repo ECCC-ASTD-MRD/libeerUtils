@@ -1144,7 +1144,9 @@ int ZRef_IPFormat(char *Buf,int IP,int Interval) {
          case LVL_HYBRID: sprintf(Buf," %8.6f %-2s",lvl,ZRef_Units[type]); break;
          case LVL_THETA : sprintf(Buf," %8.4f %-2s",lvl,ZRef_Units[type]); break;
          case LVL_HOUR  : sprintf(Buf," %8.1f %-2s",lvl,ZRef_Units[type]); break;
-      }
+         case LVL_MPRES : sprintf(Buf," %8.1f %-2s",lvl,ZRef_Units[type]); break;
+         default        : sprintf(Buf," %8.1f %-2s",lvl,ZRef_Units[type]); break;
+      }    
    }
    return(type);
 }
