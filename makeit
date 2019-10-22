@@ -64,7 +64,7 @@ if [[ -n ${ORDENV_VERSION} ]]; then
       RMN_PATH=/ssm/net/rpn
    fi
 fi
-#      RMN_PATH=/fs/ssm/eccc/mrd/rpn
+#XC50  RMN_PATH=/fs/ssm/eccc/mrd/rpn
 
 if [[ $CLR -eq 1 || $SRC -eq 1 || $REC -eq 1 ]]; then
    $MAKE -f $MAKEFILE clear
