@@ -5,10 +5,10 @@
  * Dorval, Quebec
  *
  * Projet    : Librairie de fonctions utiles
- * Fichier   : App->c
+ * Fichier   : App.c
  * Creation  : Septembre 2008 - J.P. Gauthier
  *
- * Description: Fonctions g�n�riques � toute les applications.
+ * Description: Fonctions génériques à toute les applications.
  *
  * Remarques :
  *    This package can uses the following environment variables if defined
@@ -592,7 +592,7 @@ void App_LogClose(void) {
  * Nom      : <App_Log>
  * Creation : Septembre 2008 - J.P. Gauthier
  *
- * But      : Imprimer un message de manière standard
+ * But      : Imprimer un message de maniÃ¨re standard
  *
  * Parametres :
  *  <Level>   : Niveau d'importance du message (MUST,ERROR,WARNING,INFO,DEBUG,EXTRA)

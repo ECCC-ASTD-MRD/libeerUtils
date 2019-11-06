@@ -6,7 +6,7 @@
  *
  * Projet       : EZVrInt
  * Creation     : version 1.0 mai 2003
- * Auteur       : Stéphane Gaudreault
+ * Auteur       : StÃ©phane Gaudreault
  *
  * Description:
  *    Ezvrint is based on EzInterpv, a front end to the
