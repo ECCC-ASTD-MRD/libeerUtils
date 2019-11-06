@@ -393,7 +393,7 @@ void App_Start(void) {
 
       App_Log(MUST,"-------------------------------------------------------------------------------------\n");
       App_Log(MUST,"Application    : %s %s (%s)\n",App->Name,App->Version,App->TimeStamp);
-      App_Log(MUST,"Lib eerUtils   : %s (%s)\n",VERSION,__TIMESTAMP__);
+      App_Log(MUST,"Lib eerUtils   : %s (%s)\n",VERSION,BUILD_TIMESTAMP);
 
 #ifdef HAVE_RMN
       // Extract RMNLIB version
