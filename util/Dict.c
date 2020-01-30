@@ -84,12 +84,12 @@ int main(int argc, char *argv[]) {
 
    desc=xml?DICT_XML:lng?DICT_LONG:DICT_SHORT;
    
-   if (!var && !type && !cfgfile && !rpnfile[0]) {
+   if (!var && !type && !cfgfile && !rpnfile[0] && ip1<0 && ip3<0 && !state && !origin) {
       var=strdup("");
       type=strdup("");
       search=DICT_GLOB;
    } else {
-      if (var==(void*)APP_FLAG || (var && strncmp(var,"all",3)==0)) {
+      if (var==(void*)APP_FLAG || (var && strncmp(var,"all",3)==0) || !var&&(ip1>=0||ip3>=0||state||origin)) {
          var=strdup("");
          search=DICT_GLOB;
       }      
