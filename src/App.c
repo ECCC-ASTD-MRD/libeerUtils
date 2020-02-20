@@ -472,6 +472,13 @@ void App_Start(void) {
        APP_MPI_CHK( MPI_Gather(node,MPI_MAX_PROCESSOR_NAME,MPI_CHAR,NULL,0,MPI_DATATYPE_NULL,0,MPI_COMM_WORLD) );
 #endif //_MPI
    }
+
+   // Make sure the header is printed before any other messages from other MPI tasks
+#ifdef _MPI
+   if (App->NbMPI>1) {
+       MPI_Barrier(MPI_COMM_WORLD);
+   }
+#endif //_MPI
 }
 
 /*----------------------------------------------------------------------------
