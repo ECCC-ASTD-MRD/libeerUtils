@@ -463,7 +463,7 @@ static TGrid* EZGrid_CacheFind(const TGrid *Grid,int Master) {
                   pthread_mutex_unlock(&CacheMutex);
                   return(GridCache[n]);
                }
-            } else if (GridCache[n]->H.GRTYP[0]==Grid->H.GRTYP[0] && GridCache[n]->H.IG1==Grid->H.IG1 && GridCache[n]->H.IG2==Grid->H.IG2 && GridCache[n]->H.IG3==Grid->H.IG3) {
+            } else if (GridCache[n]->H.GRTYP[0]==Grid->H.GRTYP[0] && GridCache[n]->H.IG1==Grid->H.IG1 && GridCache[n]->H.IG2==Grid->H.IG2 && GridCache[n]->H.IG3==Grid->H.IG3 && GridCache[n]->H.IG4==Grid->H.IG4) {
                pthread_mutex_unlock(&CacheMutex);
                return(GridCache[n]);
             }
