@@ -129,6 +129,12 @@ typedef enum { APP_AFFINITY_NONE=0,APP_AFFINITY_COMPACT=1,APP_AFFINITY_SCATTER=2
       return(APP_ERR); \
    } \
 }
+#define APP_MPI_CHK(Fct) { \
+   int err = (Fct); \
+   if( err!=MPI_SUCCESS ) { \
+      App_Log(ERROR,"(%s) MPI call %s at line %d failed with code %d for MPI node %d\n",__func__,#Fct,__LINE__,err,App->RankMPI); \
+   } \
+}
 #endif //_MPI
 
 // Argument definitions
