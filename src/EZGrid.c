@@ -68,7 +68,7 @@ int EZGrid_Wrap(TGrid* restrict const Grid) {
    Grid->Wrap=0;
    Grid->Pole[0]=Grid->Pole[1]=0.0f;
 
-   if (Grid->H.GRTYP[0]!='M' && Grid->H.GRTYP[0]!='W' && Grid->H.GRTYP[0]!='Y') {
+   if (Grid->H.GRTYP[0]!='M' && Grid->H.GRTYP[0]!='W' && Grid->H.GRTYP[1]!='W' && Grid->H.GRTYP[0]!='Y') {
    
    //   RPN_IntLock();
       // Check for south pole coverage
@@ -873,10 +873,11 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
       h.GRTYP[0]=Grid->H.GRTYP[0];
    }
    
-   Grid->GRef=GeoRef_RPNSetup(Grid->H.NI,Grid->H.NJ,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,Grid->H.FID);
 
    switch(Grid->H.GRTYP[0]) {
       case 'M':
+         Grid->GRef=GeoRef_RPNSetup(Grid->H.NI,Grid->H.NJ,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,Grid->H.FID);
+
          cs_fstinf(Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","##");
          Grid->GRef->NIdx=ni*nj*nk;
          Grid->GRef->Idx=(unsigned int*)malloc(Grid->GRef->NIdx*sizeof(unsigned int));
@@ -892,6 +893,8 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
    
       case 'X':
       case 'Y':
+         Grid->GRef=GeoRef_RPNSetup(Grid->H.NI,Grid->H.NJ,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,Grid->H.FID);
+
          Grid->GRef->AY=(float*)malloc(Grid->H.NIJ*sizeof(float));
          Grid->GRef->AX=(float*)malloc(Grid->H.NIJ*sizeof(float));
 
@@ -900,8 +903,103 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
          
          GeoRef_BuildIndex(Grid->GRef);
          break;
-                  
+
+      case 'Z':
+         {
+            int tmpi,desc,key,ig1,ig2,ig3,ni,nj,nk;
+            char grtyp[2]={'\0'},tmpc[13]={'\0'};
+
+            // Get the X descriptor
+            if( (desc=cs_fstinf(Grid->H.FID,&ni,&nj,&tmpi,-1,"",h.IG1,h.IG2,h.IG3,"",">>")) <=0 ) {
+               App_Log(ERROR,"%s: Could not find grid descriptor (>>) of Z grid\n",__func__);
+               RPN_FieldUnlock();
+               return(NULL);
+            }
+            if( cs_fstprm(desc,&ni,&nj,&nk,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi,
+                  tmpc,tmpc,tmpc,grtyp,&ig1,&ig2,&ig3,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi) ) {
+               App_Log(ERROR,"%s: Could not stat grid descriptor (>>) of Z grid\n",__func__);
+               RPN_FieldUnlock();
+               return(NULL);
+            }
+
+            // If we have a W grtyp, then we are dealing with a WKT projection
+            if( grtyp[0] == 'W' ) {
+               float tmpf[6];
+               double transform[6];
+               char *str=NULL;
+
+               Grid->H.GRTYP[1] = 'W';
+
+               // Read the transformation matrix
+               if( (key=cs_fstinf(Grid->H.FID,&ni,&nj,&nk,-1,"",ig1,ig2,ig3,"","MTRX")) <=0 ) {
+                  App_Log(ERROR,"%s: Could not find grid transformation matrix (MTRX) of Z grid\n",__func__);
+                  goto werr;
+               }
+               if( ni*nj*nk != 6 ) {
+                  App_Log(ERROR,"%s: MTRX field should have a dimension of exactly 6, but has %d*%d*%d=%d instead\n",__func__,ni,nj,nk,ni*nj*nk);
+                  goto werr;
+               }
+               if( cs_fstluk(tmpf,key,&ni,&nj,&nk) <= 0 ) {
+                  App_Log(ERROR,"%s: Could not read grid transformation matrix (MTRX) of Z grid\n",__func__);
+                  goto werr;
+               }
+               for(tmpi=0; tmpi<6; ++tmpi)
+                  transform[tmpi]=tmpf[tmpi];
+
+               // Read the projection string
+               if( (key=cs_fstinf(Grid->H.FID,&ni,&nj,&nk,-1,"",ig1,ig2,ig3,"","PROJ")) <=0 ) {
+                  App_Log(ERROR,"%s: Could not find grid projection string (PROJ) of Z grid\n",__func__);
+                  goto werr;
+               }
+               if( !(str=malloc((ni*nj*nk+1)*sizeof(*str))) ) {
+                  App_Log(ERROR,"%s: Could not allocate memory for projection string (PROJ) of Z grid\n",__func__);
+                  goto werr;
+               }
+               c_fst_data_length(1);
+               if( cs_fstluk(str,key,&ni,&nj,&nk) <= 0 ) {
+                  App_Log(ERROR,"%s: Could not read grid projection string (PROJ) of Z grid\n",__func__);
+                  goto werr;
+               }
+               str[ni*nj*nk] = '\0';
+
+               // Create the WKT georef
+               Grid->GRef=GeoRef_WKTSetup(Grid->H.NI,Grid->H.NJ,Grid->H.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,str,transform,NULL,NULL);
+
+               // Memory for the descriptors
+               if( !(Grid->GRef->AX=malloc(Grid->H.NIJ*sizeof(*Grid->GRef->AX))) ) {
+                  App_Log(ERROR,"%s: Could not allocate memory for descriptor (>>) of Z grid\n",__func__);
+                  goto werr;
+               }
+               if( !(Grid->GRef->AY=malloc(Grid->H.NIJ*sizeof(*Grid->GRef->AY))) ) {
+                  App_Log(ERROR,"%s: Could not allocate memory for descriptor (^^) of Z grid\n",__func__);
+                  goto werr;
+               }
+
+               // Read the descriptors
+               if( cs_fstluk(Grid->GRef->AX,desc,&ni,&nj,&nk) <= 0 ) {
+                  App_Log(ERROR,"%s: Could not read grid descriptor (>>) of Z grid\n",__func__);
+                  goto werr;
+               }
+               if( (desc=cs_fstlir(Grid->GRef->AY,Grid->H.FID,&ni,&nj,&nk,-1,"",h.IG1,h.IG2,h.IG3,"","^^")) <=0 ) {
+                  App_Log(ERROR,"%s: Could not find grid descriptor (^^) of Z grid\n",__func__);
+                  goto werr;
+               }
+
+               // No need to do the default steps
+               free(str);
+               break;
+werr:
+               free(str);
+               GeoRef_Free(Grid->GRef); Grid->GRef=NULL;
+               RPN_FieldUnlock();
+               return(NULL);
+            }
+            // *** NO BREAK : Fall through to default condition if our Z grid is not on a W
+         }
+
       default:
+         Grid->GRef=GeoRef_RPNSetup(Grid->H.NI,Grid->H.NJ,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,Grid->H.FID);
+
          Grid->GID=RPN_IntIdNew(Grid->H.NI,Grid->H.NJ,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,Grid->H.FID);
          Grid->Wrap=EZGrid_Wrap(Grid);
    }
@@ -1810,32 +1908,44 @@ wordint f77name(ezgrid_llgetvalue)(wordint *gdid,wordint *mode,ftnfloat *lat,ftn
 int EZGrid_LLGetValue(TGrid* restrict const Grid,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* restrict Value) {
 
    float      i,j;
-   
+
    if (!Grid) {
       App_Log(ERROR,"%s: Invalid grid\n",__func__);
       return(FALSE);
    }
-   
+
    if (K0<0 || K0>=Grid->H.NK || K1<0 || K1>=Grid->H.NK) {
       App_Log(DEBUG,"%s: Coordinates out of range (%s): K(%i,%i)\n",__func__,Grid->H.NOMVAR,K0,K1);
       return(FALSE);
    }
-   
+
    switch(Grid->H.GRTYP[0]) {
       case 'X': // This is a $#@$@#% grid (orca)
          return(EZGrid_LLGetValueX(Grid,NULL,Mode,Lat,Lon,K0,K1,Value,NULL,1.0));
          break;
-         
+
       case 'Y': // This is a point cloud
          return(EZGrid_LLGetValueY(Grid,NULL,Mode,Lat,Lon,K0,K1,Value,NULL,1.0));
          break;
-         
+
       case 'M': // This is a triangle mesh
          return(EZGrid_LLGetValueM(Grid,NULL,Mode,Lat,Lon,K0,K1,Value,NULL,1.0));
          break;
-                  
+
+      case 'Z':
+         // Handle the case of ZW grids
+         if( Grid->H.GRTYP[1] == 'W' ) {
+            double i,j;
+
+            if( !Grid->GRef->UnProject(Grid->GRef,&i,&j,Lat,Lon,0,1) ) {
+               return(FALSE);
+            }
+            return(EZGrid_IJGetValue(Grid,Mode,i,j,K0,K1,Value));
+         }
+         // ELSE, we fallthrough (no break)
+
       default: // This is a regular RPN grid
-         
+
          // RPN_IntLock();
          c_gdxyfll(Grid->GID,&i,&j,&Lat,&Lon,1);
          // RPN_IntUnlock();
@@ -2107,6 +2217,14 @@ int EZGrid_LLGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
       case 'M': // This is a triangle mesh
          return(EZGrid_LLGetValueM(GridU,GridV,Mode,Lat,Lon,K0,K1,UU,VV,Conv));
          break;
+
+      case 'Z':
+         // Handle the case of ZW grids
+         if( GridU->H.GRTYP[1] == 'W' ) {
+            App_Log(ERROR,"%s: Unimplemented for ZW grids\n",__func__);
+            return(FALSE);
+         }
+         // ELSE, we fallthrough (no break)
                   
       default: // This is a regular RPN grid
          

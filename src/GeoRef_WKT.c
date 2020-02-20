@@ -73,7 +73,7 @@ double GeoRef_WKTDistance(TGeoRef *GRef,double X0,double Y0,double X1, double Y1
    
    // Check for unit type 
    geo=0;
-   if (GRef->Grid[1]=='Z') {
+   if (GRef->Grid[0]=='Z' || GRef->Grid[1]=='Z') {
       geo=1;
    } else {
       if (GRef->Spatial) {
@@ -258,7 +258,7 @@ int GeoRef_WKTProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,in
 
 #ifdef HAVE_GDAL
    double d,dx,dy,x,y,z=0.0;
-   int    sx,sy,s,ok;
+   int    sx,sy,s,ok,gidx;
 
    d=1.0;
 
@@ -276,8 +276,11 @@ int GeoRef_WKTProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,in
       Y+=0.5;
    }
 
+   // Because some grids are defined as WZ and others as ZW, this makes sure we catch the other letter
+   gidx = GRef->Grid[0]=='W' ? 1 : 0;
+
    // In case of non-uniform grid, figure out where in the position vector we are
-   if (GRef->Grid[1]=='Z') {
+   if (GRef->Grid[gidx]=='Z') {
       if (GRef->AX && GRef->AY) {
          sx=floor(X);sx=CLAMP(sx,GRef->X0,GRef->X1);
          X=sx==X?GRef->AX[sx]:ILIN(GRef->AX[sx],GRef->AX[sx+1],X-sx);
@@ -286,7 +289,7 @@ int GeoRef_WKTProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,in
          sy=floor(Y);sy=CLAMP(sy,GRef->Y0,GRef->Y1);
          Y=sy==Y?GRef->AY[sy*s]:ILIN(GRef->AY[sy*s],GRef->AY[(sy+1)*s],Y-sy);
       }
-   } else if (GRef->Grid[1]=='X' || GRef->Grid[1]=='Y') {
+   } else if (GRef->Grid[gidx]=='X' || GRef->Grid[gidx]=='Y') {
       if (GRef->AX && GRef->AY) {
          sx=floor(X);sx=CLAMP(sx,GRef->X0,GRef->X1);
          sy=floor(Y);sy=CLAMP(sy,GRef->Y0,GRef->Y1);
@@ -372,7 +375,7 @@ int GeoRef_WKTUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
 
 #ifdef HAVE_GDAL
    double x,y,z=0.0,d=1e32,sd;
-   int    n,nd,s,dx,dy,ok,idx,idxs[8];
+   int    n,nd,s,dx,dy,ok,idx,idxs[8],gidx;
    double dists[8];
    Vect2d pts[4],pt;
    Vect3d b;
@@ -412,8 +415,11 @@ int GeoRef_WKTUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
             GDALRPCTransform(GRef->RPCTransform,TRUE,1,X,Y,&z,&ok);
          }
 
+         // Because some grids are defined as WZ and others as ZW, this makes sure we catch the other letter
+         gidx = GRef->Grid[0]=='W' ? 1 : 0;
+
          // In case of non-uniform grid, figure out where in the position vector we are 
-         if (GRef->Grid[1]=='Z') {
+         if (GRef->Grid[gidx]=='Z') {
             if (GRef->AX && GRef->AY) {
                s=GRef->X0;
                // Check if vector is increasing
@@ -453,7 +459,7 @@ int GeoRef_WKTUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
                   *Y=GRef->Y0+(*Y-GRef->AY[0])/(GRef->AY[GRef->NX]-GRef->AY[0]);
                }
             }
-         } else if (GRef->Grid[1]=='Y') {
+         } else if (GRef->Grid[gidx]=='Y') {
             // Get nearest point
             if (GeoRef_Nearest(GRef,Lon,Lat,&idx,dists,1)) {
                if (dists[0]<1.0) {
@@ -462,7 +468,7 @@ int GeoRef_WKTUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
                   return(TRUE);
                }
             }
-         } else if (GRef->Grid[1]=='X') {
+         } else if (GRef->Grid[gidx]=='X') {
             // Get nearest points
             if ((nd=GeoRef_Nearest(GRef,Lon,Lat,idxs,dists,8))) {
                
