@@ -262,12 +262,10 @@ int GeoRef_WKTProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,in
 
    d=1.0;
 
-   if (X>(GRef->X1+d) || Y>(GRef->Y1+d) || X<(GRef->X0-d) || Y<(GRef->Y0-d)) {
-      if (!Extrap) {
-         *Lon=-999.0;
-         *Lat=-999.0;
-         return(0);
-      }
+   if( !Extrap && (X>(GRef->X1+d) || Y>(GRef->Y1+d) || X<(GRef->X0-d) || Y<(GRef->Y0-d)) ) {
+      *Lon=-999.0;
+      *Lat=-999.0;
+      return(0);
    }
 
    // Grid cell are corner defined 
@@ -282,12 +280,16 @@ int GeoRef_WKTProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,in
    // In case of non-uniform grid, figure out where in the position vector we are
    if (GRef->Grid[gidx]=='Z') {
       if (GRef->AX && GRef->AY) {
-         sx=floor(X);sx=CLAMP(sx,GRef->X0,GRef->X1);
-         X=sx==X?GRef->AX[sx]:ILIN(GRef->AX[sx],GRef->AX[sx+1],X-sx);
+         // X
+         if( X < GRef->X0 )      { sx=GRef->X0; X=GRef->AX[sx]-(GRef->AX[sx]-GRef->AX[sx+1])*(X-sx); }
+         else if( X > GRef->X1 ) { sx=GRef->X1; X=GRef->AX[sx]+(GRef->AX[sx]-GRef->AX[sx-1])*(X-sx); }
+         else                    { sx=floor(X); X=sx==X?GRef->AX[sx]:ILIN(GRef->AX[sx],GRef->AX[sx+1],X-sx); }
 
+         // Y
          s=GRef->NX;
-         sy=floor(Y);sy=CLAMP(sy,GRef->Y0,GRef->Y1);
-         Y=sy==Y?GRef->AY[sy*s]:ILIN(GRef->AY[sy*s],GRef->AY[(sy+1)*s],Y-sy);
+         if( Y < GRef->Y0 )      { sy=GRef->Y0; Y=GRef->AY[sy*s]-(GRef->AY[sy*s]-GRef->AY[(sy+1)*s])*(Y-sy); }
+         else if( Y > GRef->Y1 ) { sy=GRef->Y1; Y=GRef->AY[sy*s]+(GRef->AY[sy*s]-GRef->AY[(sy-1)*s])*(Y-sy); }
+         else                    { sy=floor(Y); Y=sy==Y?GRef->AY[sy*s]:ILIN(GRef->AY[sy*s],GRef->AY[(sy+1)*s],Y-sy); }
       }
    } else if (GRef->Grid[gidx]=='X' || GRef->Grid[gidx]=='Y') {
       if (GRef->AX && GRef->AY) {
