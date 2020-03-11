@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
         { APP_FLAG,          &xml,      1,             "x", "xml"         , "Output in XML format" },
         { APP_FLAG,          &search,   1,             "g", "glob"        , "Use glob search pattern" },
         { APP_CHAR,          &encoding, 1,             "e", "encoding"    , "Encoding type (iso8859-1,"APP_COLOR_GREEN"utf8"APP_COLOR_RESET",ascii)" },
-        { APP_CHAR,          dicfile,   APP_LISTMAX-1, "d", "dictionary"  , "Input dictionary file(s) ("APP_COLOR_GREEN"$AFSISIO/datafiles/constants/ops.variable_dictionary.xml"APP_COLOR_RESET")" },
+        { APP_CHAR,          dicfile,   APP_LISTMAX-1, "d", "dictionary"  , "Input dictionary file(s) ("APP_COLOR_GREEN"$CMCCONST/opdict/ops.variable_dictionary.xml"APP_COLOR_RESET")" },
         { APP_CHAR,          rpnfile,   APP_LISTMAX-1, "f", "fstd"        , "Check RPN standard file(s) for unknown variables" },
         { APP_CHAR,          &cfgfile,  1,             "c", "cfg"         , "Check GEM configuration file for unknown variables" },
         { APP_FLAG,          &ops    ,  1,             "" , "ops"         , "Force check of operational standards when used with RPN file check" },
@@ -137,13 +137,13 @@ int main(int argc, char *argv[]) {
 
    // Check for default dicfile
    if (!dicfile[0]) {
-      // Check for AFSISIO 
-      if (!(env=getenv("AFSISIO"))) {
-         App_Log(ERROR,"Environment variable AFSISIO not defined, source the CMOI base domain.\n");
-         exit(EXIT_FAILURE);   
+      // Check for CMCCONST
+      if (!(env=getenv("CMCCONST"))) {
+         App_Log(ERROR,"Environment variable CMCCONST not defined, source the CMOI base domain.\n");
+         exit(EXIT_FAILURE);
       }
 
-      snprintf(dicdef,APP_BUFMAX, "%s%s",env,"/datafiles/constants/ops.variable_dictionary.xml");
+      snprintf(dicdef,APP_BUFMAX, "%s%s",env,"/opdict/ops.variable_dictionary.xml");
       if (!(ok=Dict_Parse(dicdef,coding))) {
          exit(EXIT_FAILURE);
       }
