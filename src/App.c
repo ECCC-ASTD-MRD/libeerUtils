@@ -854,7 +854,7 @@ void App_PrintArgs(TApp_Arg *AArgs,char *Token,int Flags) {
  *----------------------------------------------------------------------------
 */
 #define LST_ASSIGN(type,lst,val) *(type)lst=val; lst=(type)lst+1
-inline int App_GetArgs(TApp_Arg *AArg,char *Value) {
+static inline int App_GetArgs(TApp_Arg *AArg,char *Value) {
    
    char *endptr=NULL;
    errno=0;
