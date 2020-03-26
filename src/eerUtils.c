@@ -810,7 +810,7 @@ int strtok_count(char *Str,char Sep) {
  
    int n=0,s=1;
    
-   while(Str++!='\0') {
+   while(*Str++!='\0') {
       if (*Str=='\n') break;
       
       if (*Str!=Sep) {
