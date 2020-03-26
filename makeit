@@ -80,13 +80,16 @@ if [[ $CLR -eq 1 || $SRC -eq 1 || $REC -eq 1 ]]; then
 #   ln -s librmnshared_0${RMN_VERSION}.so lib/librmn.so
     cp ${RMN_PATH}/libs/${RMN_VERSION}/${ORDENV_PLAT}/lib/${EC_ARCH}/librmnsharedPTHRD_0${RMN_VERSION}.so lib
     ln -fs librmnsharedPTHRD_0${RMN_VERSION}.so lib/librmn_eer.so
-    cp ${RMN_PATH}/vgrid/${VGRID_VERSION}/${ORDENV_PLAT}/lib/${EC_ARCH}/libvgrid_${VGRID_VERSION}.a lib
+    cp ${RMN_PATH}/vgrid/${VGRID_VERSION}/${ORDENV_PLAT}/lib/${EC_ARCH}/libvgrid_${VGRID_VERSION}.a lib &&
+        cp ${RMN_PATH}/vgrid/${VGRID_VERSION}/${ORDENV_PLAT}/include/vgrid.h include/
     if [[ $? -ne 0 ]]; then
        echo "(WARNING) could not find libvgrid_${VGRID_VERSION}.a"
        unset VGRID_VERSION
     else 
        ln -fs libvgrid_${VGRID_VERSION}.a lib/libvgrid_eer.a
     fi
+elif [[ ! -e lib/libvgrid_eer.a || ! -e include/vgrid.h ]]; then
+    unset VGRID_VERSION
 fi
 
 if [[ $BLD -eq 1 ]]; then
