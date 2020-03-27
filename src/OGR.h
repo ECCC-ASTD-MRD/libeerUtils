@@ -37,7 +37,7 @@
 #include "GeoRef.h"
 
 #ifdef HAVE_GDAL
-   #include "gdal.h"
+   #include "gdal_safe.h"
    #include "ogr_api.h"
    #include "ogr_srs_api.h"
 #else

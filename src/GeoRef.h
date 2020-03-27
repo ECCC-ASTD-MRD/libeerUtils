@@ -42,7 +42,7 @@
 #include "QTree.h"
 
 #ifdef HAVE_GDAL
-#include "gdal.h"
+#include "gdal_safe.h"
 #include "gdal_alg.h"
 #include "ogr_api.h"
 #include "ogr_srs_api.h"
