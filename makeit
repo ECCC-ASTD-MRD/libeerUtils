@@ -71,7 +71,7 @@ if [[ $CLR -eq 1 || $SRC -eq 1 || $REC -eq 1 ]]; then
 fi
 
 if [[ $BLD -eq 1 ]]; then
-   export EC_CMAKE_MODULE_PATH="/users/dor/afsr/005/Projects/find_rmn_cmake/cmake/modules"
+   export EC_CMAKE_MODULE_PATH="`pwd`/modules"
    export DESTDIR=${SSM_DEV}/workspace/${SSM_NAME}
  
    #----- Build non parallel lib and bin
