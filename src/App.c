@@ -49,6 +49,7 @@
 #include "App.h"
 #include "eerUtils.h"
 #include "RPN.h"
+#include "timestamp.h"
 
 static TApp AppInstance;                         // Static App instance
 __thread TApp *App=&AppInstance;                 // Per thread App pointer

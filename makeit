@@ -2,9 +2,9 @@
 . ./VERSION
 
 NAME="eerUtils"
-DESCRIPTION="ECCC-SMC-CCMEP-CMOE Utility librairie package"
 SUMMARY="Library of common functions used by various CCMEP tools SPI, EER Models, ... (https:\/\/gitlab.science.gc.ca\/ECCC_CMOE_MODELS\/libeerutils)"
 MAINTAINER="Jean-Philippe.Gauthier@canada.ca"
+export DESCRIPTION="ECCC-SMC-CCMEP-CMOE Utility librairie package"
 export VERSION=$EER_VERSION
 export BUILDINFO=`[ -z "\${ORDENV_SETUP}" ] || git describe --always`
 
@@ -41,13 +41,17 @@ while [ $# -gt 0 ]; do
     shift
 done
 
+#----- SSM packaging stuff
+if [[ -n $COMP_ARCH ]]; then
+   SSM_COMP=-${COMP_ARCH}
+fi
+ORDENV_PLAT=${ORDENV_PLAT:-`uname -s`-`uname -m`}
+   
+SSM_VERSION=${VERSION}${SSM_COMP}
+SSM_NAME=${NAME}_${SSM_VERSION}_${ORDENV_PLAT}
+
 MAKE=make
 MAKEFILE=Makefile
-
-#----- Need gmake on AIX
-if [[ $HOSTTYPE = "AIX" ]]; then
-   MAKE=gmake
-fi
 
 #----- RMN stuff
 if [[ -z ${COMP_ARCH} ]]; then
@@ -57,67 +61,46 @@ fi
 if [[ -n ${ORDENV_VERSION} ]]; then
    if [[ `domainname -d` = "science.gc.ca" ]]; then
       echo "(INFO) Building on SCIENCE network"
-      RMN_PATH=/fs/ssm/eccc/mrd/rpn
    elif [[ `domainname -d` = "cmc.ec.gc.ca" ]]; then
       echo "(INFO) Building on ECCC network"
-      #----- Comment this line when testing external build  
-      RMN_PATH=/ssm/net/rpn
    fi
 fi
-#XC50  RMN_PATH=/fs/ssm/eccc/mrd/rpn
 
 if [[ $CLR -eq 1 || $SRC -eq 1 || $REC -eq 1 ]]; then
    $MAKE -f $MAKEFILE clear
-   mkdir -p ./lib ./include
-
-   cp ${RMN_PATH}/libs/${RMN_VERSION}/all/include/fnom.h include/fnom.h
-   cp ${RMN_PATH}/libs/${RMN_VERSION}/all/include/rpnmacros.h include/rpnmacros.h
-   cp ${RMN_PATH}/libs/${RMN_VERSION}/all/include/rpnmacros_global.h include/rpnmacros_global.h
-   cp ${RMN_PATH}/libs/${RMN_VERSION}/all/include/${EC_ARCH}/rpn_macros_arch.h include/rpn_macros_arch.h
-
-   #----- Temporary use of rmn16.3
-#   cp ../RMN/${COMP_ARCH}/${ORDENV_PLAT}/lib/librmnshared_0${RMN_VERSION}.so lib
-#   ln -s librmnshared_0${RMN_VERSION}.so lib/librmn.so
-    cp ${RMN_PATH}/libs/${RMN_VERSION}/${ORDENV_PLAT}/lib/${EC_ARCH}/librmnsharedPTHRD_0${RMN_VERSION}.so lib
-    ln -fs librmnsharedPTHRD_0${RMN_VERSION}.so lib/librmn_eer.so
-    cp ${RMN_PATH}/vgrid/${VGRID_VERSION}/${ORDENV_PLAT}/lib/${EC_ARCH}/libvgrid_${VGRID_VERSION}.a lib &&
-        cp ${RMN_PATH}/vgrid/${VGRID_VERSION}/${ORDENV_PLAT}/include/vgrid.h include/
-    if [[ $? -ne 0 ]]; then
-       echo "(WARNING) could not find libvgrid_${VGRID_VERSION}.a"
-       unset VGRID_VERSION
-    else 
-       ln -fs libvgrid_${VGRID_VERSION}.a lib/libvgrid_eer.a
-    fi
-elif [[ ! -e lib/libvgrid_eer.a || ! -e include/vgrid.h ]]; then
-    unset VGRID_VERSION
 fi
 
 if [[ $BLD -eq 1 ]]; then
+   export EC_CMAKE_MODULE_PATH="/users/dor/afsr/005/Projects/find_rmn_cmake/cmake/modules"
+   export DESTDIR=${SSM_DEV}/workspace/${SSM_NAME}
+ 
    #----- Build non parallel lib and bin
    unset OMPI
-   $MAKE -f $MAKEFILE clean
-   $MAKE -f $MAKEFILE all
+   rm -f -r build; mkdir build; cd build;
+
+   if [[ -n INTEL_LICENSE_FILE ]]; then
+      CMAKE_COMP_FLAGS="-DCMAKE_C_COMPILER=icc  -DCMAKE_CXX_COMPILER=icpc"
+   fi
+
+   cmake -DTCL_SRC_DIR=${SSM_DEV}/src/ext/tcl8.6.6 -DGDAL_INCLUDE_DIR=`gdal-config --cflags` -DGDAL_VERSION=`gdal-config --version` $CMAKE_COMP_FLAGS ../
+   $MAKE -f $MAKEFILE VERBOSE=1
+   $MAKE -f $MAKEFILE install 
 
    #----- Build OpenMP/MPI lib only
    export OMPI=-ompi
-   $MAKE -f $MAKEFILE clean
-   $MAKE -f $MAKEFILE lib
+   cmake -DTCL_SRC_DIR=${SSM_DEV}/src/ext/tcl8.6.6 -DGDAL_INCLUDE_DIR=`gdal-config --cflags` -DGDAL_VERSION=`gdal-config --version` $CMAKE_COMP_FLAGS ../
+   $MAKE -f $MAKEFILE
+   $MAKE -f $MAKEFILE install
 fi
 
 if [[ $SSM -eq 1 ]]; then
-   if [[ -n $COMP_ARCH ]]; then
-      SSM_COMP=-${COMP_ARCH}
-   fi
-   ORDENV_PLAT=${ORDENV_PLAT:-`uname -s`-`uname -m`}
-   
-   SSM_VERSION=${VERSION}${SSM_COMP}
-   SSM_NAME=${NAME}_${SSM_VERSION}_${ORDENV_PLAT}
 
    printf -- "\n----- Building ssm package : ${SSM_DEV}/workspace/${SSM_NAME} -----\n"
 
    rm -f -r  ${SSM_DEV}/workspace/${SSM_NAME} ${SSM_DEV}/package/${SSM_NAME}.ssm 
    mkdir -p ${SSM_DEV}/package/ ${SSM_DEV}/workspace/${SSM_NAME}/.ssm.d  ${SSM_DEV}/workspace/${SSM_NAME}/etc/profile.d
    cp -r bin lib include VERSION ${SSM_DEV}/workspace/${SSM_NAME}
+   ln -s Dict ${SSM_DEV}/workspace/${SSM_NAME}/o.dict
    cp .ssm.d/post-install ${SSM_DEV}/workspace/${SSM_NAME}/.ssm.d
    sed -e "s/NAME/${NAME}/" -e "s/VERSION/${SSM_VERSION}/" -e "s/PLATFORM/${ORDENV_PLAT}/" -e "s/MAINTAINER/${MAINTAINER}/" -e "s/BUILDINFO/${BUILDINFO}/" -e "s/DESCRIPTION/${DESCRIPTION}/" -e "s/SUMMARY/${SUMMARY}/" .ssm.d/control.json > ${SSM_DEV}/workspace/${SSM_NAME}/.ssm.d/control.json
    cd ${SSM_DEV}/workspace; tar -zcvf ${SSM_DEV}/package/${SSM_NAME}.ssm ${SSM_NAME}
