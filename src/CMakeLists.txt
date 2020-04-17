@@ -14,7 +14,9 @@ add_dependencies(eerUtils$ENV{OMPI} timestamp)
 
 target_link_libraries(eerUtils$ENV{OMPI} ${RMN_LIBRARIES} ${VGRID_LIBRARIES})
 target_link_libraries(eerUtils$ENV{OMPI} ${LIBXML2_LIBRARIES})
-target_link_libraries(eerUtils$ENV{OMPI} ${GDAL_LIBRARIES})
+if(GDAL_FOUND)
+   target_link_libraries(eerUtils$ENV{OMPI} ${GDAL_LIBRARIES})
+endif()
 
 install(TARGETS eerUtils$ENV{OMPI} 
    LIBRARY DESTINATION lib

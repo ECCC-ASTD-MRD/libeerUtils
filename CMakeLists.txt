@@ -24,16 +24,16 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
 add_compile_definitions(HAVE_GPC)
 
-#find_package(RMN 19.5 COMPONENTS shared threaded OPTIONAL)
-find_package(RMN 19.5 COMPONENTS shared OPTIONAL)
+#find_package(RMN $ENV{RMN_VERSION} COMPONENTS shared threaded OPTIONAL)
+find_package(RMN $ENV{RMN_VERSION} COMPONENTS beta shared OPTIONAL)
 if (RMN_FOUND) 
    add_compile_definitions(HAVE_RMN)
    include_directories(${RMN_INCLUDE_DIR})
 endif()
-#message(${RMN_INCLUDE_DIR})
+message(${RMN_INCLUDE_DIR})
 message(${RMN_LIBRARIES})
 
-find_package(VGRID 6.4.1 COMPONENTS shared OPTIONAL)
+find_package(VGRID $ENV{VGRID_VERSION} COMPONENTS shared OPTIONAL)
 if(VGRID_FOUND)
    add_compile_definitions(HAVE_VGRID)
    include_directories(${VGRID_INCLUDE_DIR})
@@ -42,7 +42,7 @@ endif()
 find_package(LibXml2 REQUIRED)
 include_directories(${LIBXML2_INCLUDE_DIR})
 
-find_package(GDAL REQUIRED)
+find_package(GDAL)
 if(GDAL_FOUND)
    add_compile_definitions(HAVE_GDAL)
    include_directories(${GDAL_INCLUDE_DIR})
@@ -59,6 +59,8 @@ endif()
 
 if(DEFINED ENV{OMPI})
    message(STATUS "OMPI build enabled")
+
+
    find_package(MPI REQUIRED)
    include_directories(${MPI_INCLUDE_PATH})
    add_compile_options(${OpenMP_C_FLAGS})
@@ -66,14 +68,6 @@ if(DEFINED ENV{OMPI})
 
    find_package(OpenMP REQUIRED) 
    add_compile_options(${OpenMP_C_FLAGS})
-
-  #----- CRAY wraps MPI by default
- #  if(def CRAYPE_VERSION
- #     CC=cc
- #  else
- #     CC= mpicc
- #  endif()
-
 endif()
 
 add_compile_options(-std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer)

@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
         { APP_NIL } };
 
    memset(vars,0x0,APP_LISTMAX*sizeof(vars[0]));
-   App_Init(APP_MASTER,APP_NAME,VERSION,APP_DESC,__TIMESTAMP__);
+   App_Init(APP_MASTER,APP_NAME,VERSION,APP_DESC,BUILD_TIMESTAMP);
 
    if (!App_ParseArgs(appargs,argc,argv,APP_NOARGSFAIL|APP_ARGSLOG)) {
       exit(EXIT_FAILURE);      

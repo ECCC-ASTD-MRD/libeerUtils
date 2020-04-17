@@ -136,7 +136,7 @@ int main(int argc, char *argv[]) {
    pool=val=fst=var=NULL;
    code=decode=ckey=0;
 
-   App_Init(APP_MASTER,APP_NAME,VERSION,APP_DESC,__TIMESTAMP__);
+   App_Init(APP_MASTER,APP_NAME,VERSION,APP_DESC,BUILD_TIMESTAMP);
 
    if (!App_ParseArgs(appargs,argc,argv,APP_NOARGSFAIL|APP_ARGSLOG)) {
       exit(EXIT_FAILURE);      

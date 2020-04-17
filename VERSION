@@ -1,3 +1,3 @@
 export EER_VERSION=3.4.1
-export RMN_VERSION=19.5
-export VGRID_VERSION=6.4.5
+export RMN_VERSION=19.6
+export VGRID_VERSION=6.5

@@ -76,7 +76,7 @@ int main(int argc, char *argv[]) {
    var=type=lang=encoding=cfgfile=origin=etiket=state=NULL;
    ip1=ip2=ip3=-1;
 
-   App_Init(APP_MASTER,APP_NAME,VERSION,APP_DESC,__TIMESTAMP__);
+   App_Init(APP_MASTER,APP_NAME,VERSION,APP_DESC,BUILD_TIMESTAMP);
 
    if (!App_ParseArgs(appargs,argc,argv,APP_ARGSLANG)) {
       exit(EXIT_FAILURE);

@@ -78,10 +78,13 @@ if [[ $BLD -eq 1 ]]; then
    unset OMPI
    rm -f -r build; mkdir build; cd build;
 
-   if [[ -n INTEL_LICENSE_FILE ]]; then
+   if [[ -n ${INTEL_LICENSE_FILE} ]]; then
       CMAKE_COMP_FLAGS="-DCMAKE_C_COMPILER=icc  -DCMAKE_CXX_COMPILER=icpc"
    fi
-
+   if [[ -n ${CRAYPE_VERSION} ]]; then
+      CMAKE_COMP_FLAGS="-DCMAKE_SYSTEM_NAME=CrayLinuxEnvironment"
+   fi
+#   CMAKE_COMP_FLAGS=""
    cmake -DTCL_SRC_DIR=${SSM_DEV}/src/ext/tcl8.6.6 -DGDAL_INCLUDE_DIR=`gdal-config --cflags` -DGDAL_VERSION=`gdal-config --version` $CMAKE_COMP_FLAGS ../
    $MAKE -f $MAKEFILE VERBOSE=1
    $MAKE -f $MAKEFILE install 
