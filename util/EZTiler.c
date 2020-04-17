@@ -37,6 +37,7 @@
 
 int TileVar(int FIdTo,int NI, int NJ,int Halo,int FIdFrom,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2) {
 
+#ifdef HAVE_RMN
    TRPNField *fld;
    int        idlst[RPNMAX],n,ni,nj,nk,nid;
 
@@ -69,11 +70,13 @@ int TileVar(int FIdTo,int NI, int NJ,int Halo,int FIdFrom,char* Var,char* TypVar
    }
 
    return(nid);
+#endif
 }
 
 
 int Tile(char *In,char *Out,int Size,int Halo,char **Vars) {
 
+#ifdef HAVE_RMN
    int  in,out,v=0;
    char *var;
    
@@ -100,6 +103,7 @@ int Tile(char *In,char *Out,int Size,int Halo,char **Vars) {
 
    cs_fstfrm(in);
    cs_fstfrm(out);
+#endif
 
    return(1);
 }

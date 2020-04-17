@@ -1413,9 +1413,10 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
 
 int Def_EZInterp(TDef *ToDef,TDef *FromDef,TGeoRef *ToRef,TGeoRef *FromRef,char *Interp,char *Extrap,char Mask,float *Index) {
    
+#ifdef HAVE_RMN
    void *pf0,*pt0,*pf1,*pt1;
    int   ok,k;
-   
+ 
    RPN_IntLock();
 
    // Set interpolation and extrapolation mode
@@ -1462,7 +1463,9 @@ int Def_EZInterp(TDef *ToDef,TDef *FromDef,TGeoRef *ToRef,TGeoRef *FromRef,char 
       }
    }
    RPN_IntUnlock();
-   
+#else
+      App_Log(ERROR,"%s: RMNLIB support not included\n",__func__);
+#endif   
    return(TRUE);
 }
          

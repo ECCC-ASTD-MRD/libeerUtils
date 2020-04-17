@@ -18,19 +18,19 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../src)
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../src)
 
 #add_dependencies(CodeInfo eerUtils)
-target_link_libraries(CodeInfo eerUtils ${RMN_LIBRARIES} ${VGRID_LIBRARIES})
+target_link_libraries(CodeInfo eerUtils -lm ${RMN_LIBRARIES} ${VGRID_LIBRARIES})
 set_target_properties(CodeInfo PROPERTIES VERSION ${PROJECT_VERSION})
 
 #add_dependencies(Dict eerUtils)
-target_link_libraries(Dict eerUtils ${RMN_LIBRARIES} ${VGRID_LIBRARIES})
+target_link_libraries(Dict eerUtils -lm ${RMN_LIBRARIES} ${VGRID_LIBRARIES})
 set_target_properties(Dict PROPERTIES VERSION ${PROJECT_VERSION})
 
 #add_dependencies(EZTiler eerUtils)
-target_link_libraries(EZTiler eerUtils ${RMN_LIBRARIES} ${VGRID_LIBRARIES})
+target_link_libraries(EZTiler eerUtils -lm ${RMN_LIBRARIES} ${VGRID_LIBRARIES})
 set_target_properties(EZTiler PROPERTIES VERSION ${PROJECT_VERSION})
 
 #add_dependencies(ReGrid eerUtils)
-target_link_libraries(ReGrid eerUtils ${RMN_LIBRARIES} ${VGRID_LIBRARIES})
+target_link_libraries(ReGrid eerUtils -lm ${RMN_LIBRARIES} ${VGRID_LIBRARIES})
 set_target_properties(ReGrid PROPERTIES VERSION ${PROJECT_VERSION})
 
 install(TARGETS CodeInfo Dict EZTiler ReGrid 

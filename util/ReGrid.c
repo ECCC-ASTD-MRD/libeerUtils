@@ -40,6 +40,7 @@
 
 int ReGrid(char *In,char *Out,char *Grid,char **Vars) {
 
+#ifdef HAVE_RMN
    TRPNField *in,*grid,*idx;
    int  fin,fout,fgrid;
    float *index=NULL;
@@ -120,6 +121,7 @@ int ReGrid(char *In,char *Out,char *Grid,char **Vars) {
    cs_fstfrm(fin);
    cs_fstfrm(fout);
    cs_fstfrm(fgrid);
+#endif
 
    return(1);
 }

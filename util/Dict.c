@@ -308,6 +308,7 @@ typedef struct {
 
 int Dict_CheckRPN(char **RPNFile,int CheckOPS) {
 
+#ifdef HAVE_RMN
    TRPNHeader headtable[DICT_MAXFLD],*head;
    TDictVar  *var;
    TList     *unknown,*known;
@@ -617,4 +618,5 @@ int Dict_CheckRPN(char **RPNFile,int CheckOPS) {
    }
 
    return(!nb_unknown && !err);
+#endif
 }

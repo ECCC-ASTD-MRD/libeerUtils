@@ -382,10 +382,11 @@ void App_Start(void) {
    #pragma omp parallel
    {
       App=&AppInstance;
-      
+#ifdef HAVE_RMN     
       // Need to define default for ezscint for each thread
       c_ezsetopt("INTERP_DEGREE","LINEAR");
       c_ezsetopt("VERBOSE","NO");
+#endif
    }
    App_ThreadPlace();
 #else

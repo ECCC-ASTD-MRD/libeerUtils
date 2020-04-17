@@ -796,6 +796,7 @@ void GEM_hgrid4(float *F_xgi_8,float *F_ygi_8,int F_Grd_ni,int F_Grd_nj,float *F
 */
 TGeoRef* GeoRef_RPNGridZE(TGeoRef *GRef,int NI,int NJ,float DX,float DY,float LatR,float LonR,int MaxCFL,float XLat1,float XLon1,float XLat2,float XLon2) {
 
+#ifdef HAVE_RMN
    int    ig1,ig2,ig3,ig4;
    char   gxtyp='E';
    int    bsc_base,bsc_ext1,extension,err;
@@ -839,6 +840,7 @@ TGeoRef* GeoRef_RPNGridZE(TGeoRef *GRef,int NI,int NJ,float DX,float DY,float La
    GRef->Value=(TGeoRef_Value*)GeoRef_RPNValue;
    GRef->Distance=GeoRef_RPNDistance;
    GRef->Height=NULL;
+ #endif
   
    return(GRef);
 }

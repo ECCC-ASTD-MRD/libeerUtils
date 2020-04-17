@@ -1,4 +1,5 @@
 # TODO We should have code to check the version
+set(VGRID_LIBRARIES "")
 
 # [[DOC]] for find_package (lists variables that are set automatically by CMake)
 # https://cmake.org/cmake/help/v3.0/command/find_package.html

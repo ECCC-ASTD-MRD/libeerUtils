@@ -56,6 +56,7 @@
  */
 int Codec(char *Pool,char *FST,char *Var,int Code) {
 
+ #ifdef HAVE_RMN
    char       buf[APP_BUFMAX*8],*c;
    int        fld[APP_BUFMAX*8],len,err,fstid,i;
    FILE      *fid=NULL;
@@ -116,6 +117,7 @@ int Codec(char *Pool,char *FST,char *Var,int Code) {
       }
    }
    cs_fstfrm(fstid);
+#endif
 
    return(1);
 }

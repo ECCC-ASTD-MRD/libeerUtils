@@ -2002,7 +2002,7 @@ int GeoRef_CellDims(TGeoRef *Ref,int Invert,float* DX,float* DY,float* DA) {
       }
 
    } else {
-            
+#ifdef HAVE_RMN            
       pnid=Ref->NId;
       pidx=0;
       
@@ -2048,6 +2048,9 @@ int GeoRef_CellDims(TGeoRef *Ref,int Invert,float* DX,float* DY,float* DA) {
       if (Ref->NbId>1 && !pnid) {
          c_ezgprm(Ref->Ids[pnid],grtyp,&Ref->NX,&Ref->NY,&ig,&ig,&ig,&ig);
       }
+#else
+      App_Log(ERROR,"%s: RMNLIB support not included\n",__func__);
+#endif
    }
    
 //   RPN_IntUnlock();
