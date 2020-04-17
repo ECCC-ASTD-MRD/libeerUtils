@@ -651,9 +651,9 @@ int gpce_split_polygons(const gpc_polygon *restrict Poly,const gpce_envelope *re
                     }
 
                     // Set all but the first ring as holes
-                    plist[e].hole = malloc(plist[e].num_contours*sizeof(*plist[e].contour));
+                    plist[e].hole = malloc(plist[e].num_contours*sizeof(*plist[e].hole));
                     plist[e].hole[0] = 0;
-                    for(c=1; c<Poly->num_contours; ++c) {
+                    for(c=1; c<plist[e].num_contours; ++c) {
                         plist[e].hole[c] = 1;
                     }
 
