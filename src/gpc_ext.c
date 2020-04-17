@@ -453,7 +453,14 @@ int gpce_polygon_contains_point(const gpc_polygon *restrict Poly,const gpce_enve
                 return 1;
             }
         }
+
+        // Free the temp memory
+        for(r=0; r<n; ++r) {
+            gpc_free_polygon(poly+r);
+            free(penv[r]);
+        }
         free(poly);
+        free(penv);
     }
 
     return in;
@@ -488,7 +495,7 @@ int gpce_polygon_contains_ring(const gpc_polygon *restrict Poly,const gpce_envel
         for(r=0; r<Poly->num_contours; ++r) {
             // If we have an interior ring (hole)
             if( Poly->hole[r] ) {
-                // If the first point is inside the hole or we intersect the hole in any way, than the ring is not fully contained in the polygon
+                // If the first point is inside the hole or we intersect the hole in any way, then the ring is not fully contained in the polygon
                 if( gpce_ring_contains_point(Poly->contour+r,PEnv?PEnv+r:NULL,Ring->vertex[0])
                         || gpce_ring_crosses_ring(Poly->contour+r,PEnv?PEnv+r:NULL,Ring,REnv) ) {
                     return 0;
@@ -515,7 +522,14 @@ int gpce_polygon_contains_ring(const gpc_polygon *restrict Poly,const gpce_envel
                 return 1;
             }
         }
+
+        // Free the temp memory
+        for(r=0; r<n; ++r) {
+            gpc_free_polygon(poly+r);
+            free(penv[r]);
+        }
         free(poly);
+        free(penv);
     }
 
     return in;
