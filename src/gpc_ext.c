@@ -348,7 +348,7 @@ int gpce_ring_contains_point(const gpc_vertex_list *restrict Ring,const gpce_env
         return 0;
 
     // Loop on the segment
-    for(i=0,j=1,in=0; j<Ring->num_vertices; i=j++) {
+    for(i=Ring->num_vertices-1,j=0,in=0; j<Ring->num_vertices; i=j++) {
         // Check if the segment intersects with an horizontal line that crosses X,Y
         // Count only intersections that occurs before we reach the X
         if( (Ring->vertex[i].y>P.y)!=(Ring->vertex[j].y>P.y)
@@ -518,6 +518,7 @@ int gpce_polygon_contains_ring(const gpc_polygon *restrict Poly,const gpce_envel
                     join.hole = &hole;
                     join.contour = Poly->contour+r;
                 }
+                ++i;
             }
         }
 
