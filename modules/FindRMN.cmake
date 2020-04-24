@@ -1,5 +1,4 @@
 # TODO We should have code to check the version
-set(RMN_LIBRARIES "")
 
 # [[DOC]] for find_package (lists variables that are set automatically by CMake)
 # https://cmake.org/cmake/help/v3.0/command/find_package.html
@@ -33,6 +32,7 @@ endif()
 
 if(NOT ${RMN_LIBRARIES} STREQUAL "RMN_LIBRARY-NOTFOUND")
     set(RMN_FOUND true)
+    message("-- Found librmn: ${RMN_LIBRARIES} \(found version \"${RMN_VERSION}\"\)")
 endif()
 
 if("rpnpy" IN_LIST RMN_FIND_COMPONENTS)

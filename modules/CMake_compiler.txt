@@ -33,13 +33,13 @@ endif()
 #----- C Compiler Rules
 
 if(CMAKE_C_COMPILER_ID MATCHES GNU)
-    set(CMAKE_C_FLAGS         "${CMAKE_C_FLAGS} -Wall")
-    set(CMAKE_C_FLAGS_DEBUG   "-O0 -g3")
+    set(CMAKE_C_FLAGS         "${CMAKE_C_FLAGS}")
+    set(CMAKE_C_FLAGS_DEBUG   "-O0 -g3 -Wall")
     set(CMAKE_C_FLAGS_RELEASE "-std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer")
 endif()
 
 if(CMAKE_C_COMPILER_ID MATCHES Intel)
-    set(CMAKE_C_FLAGS         "${CMAKE_C_FLAGS} -Wall")
-    set(CMAKE_C_FLAGS_DEBUG   "-O0 -g3")
+    set(CMAKE_C_FLAGS         "${CMAKE_C_FLAGS}")
+    set(CMAKE_C_FLAGS_DEBUG   "-O0 -g3 -Wall")
     set(CMAKE_C_FLAGS_RELEASE "-std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer")
 endif()

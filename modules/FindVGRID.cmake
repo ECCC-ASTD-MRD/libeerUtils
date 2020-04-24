@@ -1,5 +1,4 @@
 # TODO We should have code to check the version
-set(VGRID_LIBRARIES "")
 
 # [[DOC]] for find_package (lists variables that are set automatically by CMake)
 # https://cmake.org/cmake/help/v3.0/command/find_package.html
@@ -21,5 +20,6 @@ set(VGRID_VERSION ${VGRID_FIND_VERSION})
        endif()
 
     if(NOT ${VGRID_LIBRARIES} STREQUAL "VGRID_LIBRARY-NOTFOUND")
-        set(RMN_FOUND true)
+        set(VGRID_FOUND true)
+        message("-- Found libvgrid: ${VGRIDLIBRARIES} \(found version \"${VGRID_VERSION}\"\)")
     endif()
