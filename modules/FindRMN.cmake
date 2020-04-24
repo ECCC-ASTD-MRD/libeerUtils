@@ -30,6 +30,7 @@ else()
         NAMES rmn
         PATHS ENV LIBPATH NO_DEFAULT_PATH)
 endif()
+
 if(NOT ${RMN_LIBRARIES} STREQUAL "RMN_LIBRARY-NOTFOUND")
     set(RMN_FOUND true)
 endif()

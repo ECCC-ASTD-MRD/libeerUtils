@@ -5,20 +5,11 @@ list(APPEND CMAKE_MODULE_PATH $ENV{EC_CMAKE_MODULE_PATH})
 set(CMAKE_INSTALL_PREFIX "" CACHE PATH "..." FORCE)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-# Build ISO 8601 build timestamp
-FILE (WRITE ${CMAKE_BINARY_DIR}/timestamp.cmake "string(TIMESTAMP BUILD_TIMESTAMP UTC)\n")
-FILE (APPEND ${CMAKE_BINARY_DIR}/timestamp.cmake "file(WRITE timestamp.h \"#ifndef _TIMESTAMP_H\\n\")\n")
-FILE (APPEND ${CMAKE_BINARY_DIR}/timestamp.cmake "file(APPEND timestamp.h \"#define _TIMESTAMP_H\\n\\n\")\n")
-FILE (APPEND ${CMAKE_BINARY_DIR}/timestamp.cmake "file(APPEND timestamp.h \"#define BUILD_TIMESTAMP \\\"\${BUILD_TIMESTAMP}\\\"\\n\\n\")\n")
-FILE (APPEND ${CMAKE_BINARY_DIR}/timestamp.cmake "file(APPEND timestamp.h \"#endif // _TIMESTAMP_H\\n\")\n")
-ADD_CUSTOM_TARGET (
-    timestamp
-    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_BINARY_DIR}/timestamp.cmake
-    ADD_DEPENDENCIES ${CMAKE_BINARY_DIR}/timestamp.cmake)
-include_directories(${CMAKE_BINARY_DIR})
-
 message(STATUS "Generating libeerUtils package")
 message(STATUS "Build architecture ${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+
+set(CMAKE_BUILD_TYPE "Release")
+include("$ENV{EC_CMAKE_MODULE_PATH}/CMake_compiler.txt")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
@@ -63,14 +54,12 @@ if(DEFINED ENV{OMPI})
 
    find_package(MPI REQUIRED)
    include_directories(${MPI_INCLUDE_PATH})
-   add_compile_options(${OpenMP_C_FLAGS})
    add_compile_definitions(_MPI)
 
    find_package(OpenMP REQUIRED) 
    add_compile_options(${OpenMP_C_FLAGS})
 endif()
 
-add_compile_options(-std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer)
 add_compile_definitions(VERSION=\"$ENV{VERSION}-r$ENV{BUILDINFO}\" _${CMAKE_SYSTEM_NAME}_ TCL_THREADS _GNU_SOURCE)
 
 add_subdirectory(src src)

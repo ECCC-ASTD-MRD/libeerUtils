@@ -1,0 +1,45 @@
+
+#----- Build ISO 8601 build timestamp target
+# How to use:
+#   - add as a target to a build
+#   - add_dependencies(eerUtils$ENV{OMPI} timestamp)
+#   - and include the file timestamp. to have the BUILD_TIMESTAMP variable #defined
+
+FILE (WRITE ${CMAKE_BINARY_DIR}/timestamp.cmake "string(TIMESTAMP BUILD_TIMESTAMP UTC)\n")
+FILE (APPEND ${CMAKE_BINARY_DIR}/timestamp.cmake "file(WRITE timestamp.h \"#ifndef _TIMESTAMP_H\\n\")\n")
+FILE (APPEND ${CMAKE_BINARY_DIR}/timestamp.cmake "file(APPEND timestamp.h \"#define _TIMESTAMP_H\\n\\n\")\n")
+FILE (APPEND ${CMAKE_BINARY_DIR}/timestamp.cmake "file(APPEND timestamp.h \"#define BUILD_TIMESTAMP \\\"\${BUILD_TIMESTAMP}\\\"\\n\\n\")\n")
+FILE (APPEND ${CMAKE_BINARY_DIR}/timestamp.cmake "file(APPEND timestamp.h \"#endif // _TIMESTAMP_H\\n\")\n")
+ADD_CUSTOM_TARGET (
+    timestamp
+    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_BINARY_DIR}/timestamp.cmake
+    ADD_DEPENDENCIES ${CMAKE_BINARY_DIR}/timestamp.cmake)
+include_directories(${CMAKE_BINARY_DIR})
+
+#----- Fortran Compiler Rules
+
+if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
+    set(CMAKE_Fortran_FLAGS         "${CMAKE_Fortran_FLAGS} -cpp")
+    set(CMAKE_Fortran_FLAGS_DEBUG   "-g -traceback")
+    set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -ip")
+endif()
+
+if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
+    set(CMAKE_Fortran_FLAGS         "${CMAKE_Fortran_FLAGS} -Wall -Wno-unused-dummy-argument -cpp")
+    set(CMAKE_Fortran_FLAGS_DEBUG   "-O0 -g3")
+    set(CMAKE_Fortran_FLAGS_RELEASE "-Ofast -march=native")
+endif()
+
+#----- C Compiler Rules
+
+if(CMAKE_C_COMPILER_ID MATCHES GNU)
+    set(CMAKE_C_FLAGS         "${CMAKE_C_FLAGS} -Wall")
+    set(CMAKE_C_FLAGS_DEBUG   "-O0 -g3")
+    set(CMAKE_C_FLAGS_RELEASE "-std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer")
+endif()
+
+if(CMAKE_C_COMPILER_ID MATCHES Intel)
+    set(CMAKE_C_FLAGS         "${CMAKE_C_FLAGS} -Wall")
+    set(CMAKE_C_FLAGS_DEBUG   "-O0 -g3")
+    set(CMAKE_C_FLAGS_RELEASE "-std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer")
+endif()
