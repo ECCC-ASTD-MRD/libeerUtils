@@ -21,8 +21,6 @@ if (RMN_FOUND)
    add_compile_definitions(HAVE_RMN)
    include_directories(${RMN_INCLUDE_DIR})
 endif()
-#message("inc=${RMN_INCLUDE_DIR}")
-#message("lib=${RMN_LIBRARIES}")
 
 find_package(VGRID $ENV{VGRID_VERSION} COMPONENTS shared OPTIONAL)
 if(VGRID_FOUND)

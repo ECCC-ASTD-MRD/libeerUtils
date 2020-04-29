@@ -54,7 +54,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <math.h>
-#include <eerUtils.h>
+#include "eerUtils.h"
 
 /*
  * the epoch upon which these astronomical calculations are based is

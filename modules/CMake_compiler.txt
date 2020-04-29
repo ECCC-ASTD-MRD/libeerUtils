@@ -4,6 +4,8 @@
 #   - add as a target to a build
 #   - add_dependencies(eerUtils$ENV{OMPI} timestamp)
 #   - and include the file timestamp. to have the BUILD_TIMESTAMP variable #defined
+string(REPLACE " " ";" ECCC_INCLUDE_PATH $ENV{EC_INCLUDE_PATH})
+string(REPLACE " " ";" ECCC_LD_LIBRARY_PATH $ENV{EC_LD_LIBRARY_PATH})
 
 FILE (WRITE ${CMAKE_BINARY_DIR}/timestamp.cmake "string(TIMESTAMP BUILD_TIMESTAMP UTC)\n")
 FILE (APPEND ${CMAKE_BINARY_DIR}/timestamp.cmake "file(WRITE timestamp.h \"#ifndef _TIMESTAMP_H\\n\")\n")
