@@ -37,6 +37,7 @@
 
 #include "Dict.h"
 #include "RPN.h"
+#include <float.h>
 
 char *TSHORT[]      = { "Description courte ","Short Description  " };
 char *TLONG[]       = { "Description longue ","Long  Description  " };
