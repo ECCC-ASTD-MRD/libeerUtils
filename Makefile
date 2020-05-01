@@ -42,7 +42,7 @@ else
 	LINK_EXEC := $(LINK_EXEC) -lgfortran
 endif
 
-CCOPTIONS   := -std=c99 -O0 -finline-functions -funroll-loops -fomit-frame-pointer
+CCOPTIONS   := -std=c99 -O2 -finline-functions -funroll-loops -fomit-frame-pointer
 DEFINES     := -DVERSION=\"$(VERSION)-r$(BUILDINFO)\" -DBUILD_TIMESTAMP=\"$(shell date -u '+%Y-%m-%dT%H:%M:%SZ')\" -D_$(OS)_ -DTCL_THREADS -D_GNU_SOURCE ${HAVE}
 ifdef OMPI
    #----- CRAY wraps MPI by default
