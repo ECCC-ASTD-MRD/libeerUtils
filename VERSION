@@ -1,3 +1,9 @@
-export EER_VERSION=3.4.1
-export RMN_VERSION=19.6
-export VGRID_VERSION=6.5
+NAME       : libeerUtils
+VERSION    : 3.4.1
+BUILD      : Release
+DESCRIPTION: ECCC-SMC-CCMEP-CMOE Utility librairie package
+SUMMARY    : Library of common functions used by various CCMEP tools SPI, EER Models, ... (https:\/\/gitlab.science.gc.ca\/ECCC_CMOE_MODELS\/libeerutils)
+MAINTAINER : Jean-Philippe Gauthier - Jean-Philippe.Gauthier@canada.ca 
+
+RMN ~>= 19.6.0
+VGRID ~= 6.5.0

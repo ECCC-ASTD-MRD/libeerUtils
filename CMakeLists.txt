@@ -1,28 +1,30 @@
 cmake_minimum_required(VERSION 3.16)
-project(libeerUtils VERSION $ENV{VERSION} DESCRIPTION $ENV{DESCRIPTION})
-
+#----- Append EC specific module path
 list(APPEND CMAKE_MODULE_PATH $ENV{EC_CMAKE_MODULE_PATH})
+include(ec_utils)
+
+ec_parse_version()
+ec_build_include()
+project(${NAME} VERSION ${VERSION} DESCRIPTION "${DESCRIPTION}")
+
 set(CMAKE_INSTALL_PREFIX "" CACHE PATH "..." FORCE)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-message(STATUS "Generating libeerUtils package")
 message(STATUS "Build architecture ${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
 
-set(CMAKE_BUILD_TYPE "Release")
-include("$ENV{EC_CMAKE_MODULE_PATH}/CMake_compiler.txt")
+include(compiler_rules)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
 add_compile_definitions(HAVE_GPC)
 
-#find_package(RMN $ENV{RMN_VERSION} COMPONENTS shared threaded OPTIONAL)
-find_package(RMN $ENV{RMN_VERSION} COMPONENTS beta shared OPTIONAL)
+#TODO --- COMPONENTS shared threaded
+find_package(RMN ${RMN_REQ_VERSION} COMPONENTS beta shared OPTIONAL)
 if (RMN_FOUND) 
    add_compile_definitions(HAVE_RMN)
    include_directories(${RMN_INCLUDE_DIR})
 endif()
 
-find_package(VGRID $ENV{VGRID_VERSION} COMPONENTS shared OPTIONAL)
+find_package(VGRID ${VGRID_REQ_VERSION} COMPONENTS shared OPTIONAL)
 if(VGRID_FOUND)
   add_compile_definitions(HAVE_VGRID)
    include_directories(${VGRID_INCLUDE_DIR})
@@ -49,7 +51,6 @@ endif()
 if(DEFINED ENV{OMPI})
    message(STATUS "OMPI build enabled")
 
-
    find_package(MPI REQUIRED)
    include_directories(${MPI_INCLUDE_PATH})
    add_compile_definitions(_MPI)
@@ -58,7 +59,7 @@ if(DEFINED ENV{OMPI})
    add_compile_options(${OpenMP_C_FLAGS})
 endif()
 
-add_compile_definitions(VERSION=\"$ENV{VERSION}-r$ENV{BUILDINFO}\" _${CMAKE_SYSTEM_NAME}_ TCL_THREADS _GNU_SOURCE)
+add_compile_definitions(_${CMAKE_SYSTEM_NAME}_ TCL_THREADS _GNU_SOURCE)
 
 add_subdirectory(src src)
 if(NOT DEFINED ENV{OMPI})

@@ -1,12 +1,4 @@
 #!/bin/bash -e
-. ./VERSION
-
-NAME="eerUtils"
-SUMMARY="Library of common functions used by various CCMEP tools SPI, EER Models, ... (https:\/\/gitlab.science.gc.ca\/ECCC_CMOE_MODELS\/libeerutils)"
-MAINTAINER="Jean-Philippe.Gauthier@canada.ca"
-export DESCRIPTION="ECCC-SMC-CCMEP-CMOE Utility librairie package"
-export VERSION=$EER_VERSION
-export BUILDINFO=`[ -z "\${ORDENV_SETUP}" ] || git describe --always`
 
 HELP="Arguments must be:\n\n   Information parameters:
 \t-help        : This information
@@ -41,6 +33,15 @@ while [ $# -gt 0 ]; do
     shift
 done
 
+#----- Parse VERSION file
+while IFS= read -r line; do
+   if [[ `expr index "$line" ":"` -ne 0 ]]; then
+      var=$(echo ${line%%:*} | xargs)
+      val=$(echo ${line#*:} | xargs)
+      eval $var=\""$val"\"
+   fi
+done < VERSION
+
 #----- SSM packaging stuff
 if [[ -n $COMP_ARCH ]]; then
    SSM_COMP=-${COMP_ARCH}
@@ -49,6 +50,7 @@ ORDENV_PLAT=${ORDENV_PLAT:-`uname -s`-`uname -m`}
    
 SSM_VERSION=${VERSION}${SSM_COMP}
 SSM_NAME=${NAME}_${SSM_VERSION}_${ORDENV_PLAT}
+mkdir -p ${SSM_DEV}/package/ ${SSM_DEV}/workspace/
 
 MAKE=make
 MAKEFILE=Makefile
@@ -78,12 +80,6 @@ if [[ $BLD -eq 1 ]]; then
    unset OMPI
    rm -f -r build; mkdir build; cd build;
 
-   if [[ -n ${INTEL_LICENSE_FILE} ]]; then
-      CMAKE_COMP_FLAGS="-DCMAKE_C_COMPILER=icc  -DCMAKE_CXX_COMPILER=icpc -DCMAKE_Fortran_COMPILER=ifort"
-   fi
-   if [[ -n ${CRAYPE_VERSION} ]]; then
-      CMAKE_COMP_FLAGS="-DCMAKE_SYSTEM_NAME=CrayLinuxEnvironment"
-   fi
 #   CMAKE_COMP_FLAGS=""
    cmake -DTCL_SRC_DIR=${SSM_DEV}/src/ext/tcl8.6.6 -DGDAL_INCLUDE_DIR=`gdal-config --cflags` -DGDAL_VERSION=`gdal-config --version` $CMAKE_COMP_FLAGS ../
    $MAKE -f $MAKEFILE VERBOSE=1
@@ -100,12 +96,22 @@ if [[ $SSM -eq 1 ]]; then
 
    printf -- "\n----- Building ssm package : ${SSM_DEV}/workspace/${SSM_NAME} -----\n"
 
-   rm -f -r  ${SSM_DEV}/workspace/${SSM_NAME} ${SSM_DEV}/package/${SSM_NAME}.ssm 
-   mkdir -p ${SSM_DEV}/package/ ${SSM_DEV}/workspace/${SSM_NAME}/.ssm.d  ${SSM_DEV}/workspace/${SSM_NAME}/etc/profile.d
-   cp -r bin lib include VERSION ${SSM_DEV}/workspace/${SSM_NAME}
+   rm -f ${SSM_DEV}/package/${SSM_NAME}.ssm 
+   mkdir -p ${SSM_DEV}/workspace/${SSM_NAME}/.ssm.d  ${SSM_DEV}/workspace/${SSM_NAME}/etc/profile.d
    ln -s Dict ${SSM_DEV}/workspace/${SSM_NAME}/o.dict
    cp .ssm.d/post-install ${SSM_DEV}/workspace/${SSM_NAME}/.ssm.d
-   sed -e "s/NAME/${NAME}/" -e "s/VERSION/${SSM_VERSION}/" -e "s/PLATFORM/${ORDENV_PLAT}/" -e "s/MAINTAINER/${MAINTAINER}/" -e "s/BUILDINFO/${BUILDINFO}/" -e "s/DESCRIPTION/${DESCRIPTION}/" -e "s/SUMMARY/${SUMMARY}/" .ssm.d/control.json > ${SSM_DEV}/workspace/${SSM_NAME}/.ssm.d/control.json
+
+   echo "{
+   \"name\": \"${NAME}\",
+   \"version\": \"${VERSION}\",
+   \"platform\": \"${PLATFORM}\",
+   \"maintainer\": \"${MAINTAINER}\",
+   \"summary\": \"${SUMMARY}\",
+   \"description\": \"${DESCRIPTION}\",
+   \"requires\": \"\",
+   \"x-buildinfo\": \"${BUIL_DINFO}\"
+}" > ${SSM_DEV}/workspace/${SSM_NAME}/.ssm.d/control.json
+
    cd ${SSM_DEV}/workspace; tar -zcvf ${SSM_DEV}/package/${SSM_NAME}.ssm ${SSM_NAME}
 #   rm -f -r  $(SSM_DEV)/workspace/$(SSM_NAME)
 fi

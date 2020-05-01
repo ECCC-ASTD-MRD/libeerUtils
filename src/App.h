@@ -46,7 +46,7 @@
 #include <limits.h>
 #include <float.h>
 
-#include "timestamp.h"
+#include "build.h"
 
 #ifdef _OPENMP
 #   include <omp.h>
