@@ -1,16 +1,18 @@
 cmake_minimum_required(VERSION 3.16)
-#----- Append EC specific module path
-list(APPEND CMAKE_MODULE_PATH $ENV{EC_CMAKE_MODULE_PATH})
-include(ec_utils)
 
-ec_parse_version()
-ec_build_include()
+#----- Append EC specific module path
+foreach(PATH $ENV{EC_CMAKE_MODULE_PATH})
+   list(APPEND CMAKE_MODULE_PATH ${PATH})
+endforeach()
+
+include(ec_utils)   # Include EC specific cmake utils
+ec_parse_version()  # Parse VERSION file
+ec_build_info()     # Generate build include file
+
 project(${NAME} VERSION ${VERSION} DESCRIPTION "${DESCRIPTION}")
 
 set(CMAKE_INSTALL_PREFIX "" CACHE PATH "..." FORCE)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-
-message(STATUS "Build architecture ${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
 
 include(compiler_rules)
 
@@ -66,3 +68,10 @@ if(NOT DEFINED ENV{OMPI})
    add_subdirectory(util util)
    #add_dependencies(util src)
 endif()
+
+#----- Build config information script
+install(CODE "execute_process(COMMAND sed -e \"s/CMAKE_CC/\\\"${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERSION}\\\"/\" -e \"s/CMAKE_FTN/\\\"${CMAKE_Fortran_COMPILER_ID} ${CMAKE_Fortran_COMPILER_VERSION}\\\"/\" 
+   -e \"s/CMAKE_NAME/${NAME}/\" -e \"s/CMAKE_VERSION/${VERSION}${STATE}/\" 
+   -e \"s/CMAKE_RMN/${RMN_VERSION}${RMN_STATE}/\" -e \"s/CMAKE_GDAL/${GDAL_VERSION}/\" -e \"s/CMAKE_VGRID/${VGRID_VERSION}${VGRID_STATE}/\"
+   ../config OUTPUT_FILE ${NAME}-config)")
+install(PROGRAMS ${CMAKE_BINARY_DIR}/${NAME}-config DESTINATION bin)
