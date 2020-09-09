@@ -619,6 +619,21 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encodin
             strcpy(metvar->Units,"bool");
             metvar->Nature|=DICT_LOGICAL;
 
+            trotteur1=trotteur->children;
+            i=-1;
+            while (trotteur1) {
+               if( !xmlIsBlankNode(trotteur1) ) {
+                  if (!strcmp((char*)trotteur1->name,"value") ) {
+                     if( (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1)) ) {
+                        i=atoi(tmpc);
+                        xmlFree(tmpc);
+                     }
+                  } else if( (i==0||i==1) && !strcmp((char*)trotteur1->name,"meaning") ) {
+                     Dict_ParseText((char*)metvar->Meanings[i],Doc,trotteur1,Encoding,64,1);
+                  }
+               }
+               trotteur1=trotteur1->next;
+            }
          } else
 
          // Code
@@ -1169,6 +1184,12 @@ void Dict_PrintVar(TDictVar *DVar,int Format,TApp_Lang Lang) {
 
             } else if (var->Nature & DICT_LOGICAL) {
                   printf("%-s : %-s\n",TTYPE[Lang],TLOGIC[Lang]);
+                  if( var->Meanings[0][0][0]!='\0' || var->Meanings[0][1][0]!='\0' || var->Meanings[1][0][0]!='\0' || var->Meanings[1][1][0]!='\0' ) {
+                     printf("\tCode\t\t%s\n",TVAL[Lang]);
+                     printf("\t----\t\t----------------\n");
+                     printf("\t0\t\t%-s\n",var->Meanings[0][Lang]);
+                     printf("\t1\t\t%-s\n",var->Meanings[1][Lang]);
+                  }
                   break;
 
             } else if (var->Nature & DICT_CODE) {
