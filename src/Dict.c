@@ -97,6 +97,11 @@ static __thread TDictSearch DictSearch;               // Per thread search param
 static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encoding Encoding);
 static int Dict_ParseType(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encoding Encoding);
 
+char* strncpy0(char *restrict Dest,char *restrict Src,size_t Num) {
+   strncpy(Dest,Src,Num-1);
+   Dest[Num-1]='\0';
+}
+
 int Dict_Encoding(char *string,TDict_Encoding Encoding) {
 
    char tmpString[DICT_MAXLEN];
@@ -236,6 +241,36 @@ char* Dict_Version(void) {
    return(Dict.String);
 }
 
+static int Dict_ParseText(char *Dest,xmlDocPtr Doc,xmlNodePtr Node,TDict_Encoding Encoding,int Len,int NoLangDefault) {
+   xmlChar *str=NULL,*lang=NULL;
+   int code=0;
+
+   if( !xmlIsBlankNode(Node) && (str=xmlNodeListGetString(Doc,Node->children,1)) ) {
+      if( (lang=xmlGetProp(Node,"lang")) ) {
+         int i=-1;
+         if (     !strcmp((char*)lang,"fr")) { i=0; }
+         else if( !strcmp((char*)lang,"en")) { i=1; }
+         xmlFree(lang);
+
+         if( i != -1 ) {
+            i *= Len;
+            strncpy0(Dest+i,str,Len);
+            Dict_Encoding(Dest+i,Encoding);
+            code=1;
+         }
+      } else if( NoLangDefault ) {
+         strncpy0(Dest,str,Len);
+         Dict_Encoding(Dest,Encoding);
+         strncpy0(Dest+Len,Dest,Len);
+         code=1;
+      }
+
+      xmlFree(str);
+   }
+
+   return code;
+}
+
 void IPDecode(int IP,float *Level,int *Kind) {
 #ifdef HAVE_RMN
    if( IP>0 ) {
@@ -366,11 +401,18 @@ int Dict_Parse(char *Filename,TDict_Encoding Encoding) {
    }
 
    Dict.Name=NULL;
-   Dict.Date=strdup(xmlGetProp(node,"date"));
-   Dict.Version=strdup(xmlGetProp(node,"version_number"));
 
-   if (tmpc=(char*)xmlGetProp(node,"name")) {
+   tmpc=xmlGetProp(node,"date");
+   Dict.Date=strdup(tmpc);
+   xmlFree(tmpc);
+
+   tmpc=xmlGetProp(node,"version_number");
+   Dict.Version=strdup(tmpc);
+   xmlFree(tmpc);
+
+   if( (tmpc=xmlGetProp(node,"name")) ) {
       Dict.Name=strdup(tmpc);
+      xmlFree(tmpc);
       sprintf(Dict.String,"%s %s %s version %s",node->name,Dict.Name,Dict.Date,Dict.Version);
    } else {
       sprintf(Dict.String,"%s %s version %s",node->name,Dict.Date,Dict.Version);
@@ -441,7 +483,7 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encodin
 
    TDictVar  *metvar;
    xmlNodePtr trotteur,trotteur1;
-   xmlChar   *tmpc;
+   char      *tmpc;
    int        i,y,m,d;
 
    metvar=(TDictVar*)calloc(1,sizeof(TDictVar));
@@ -451,11 +493,13 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encodin
    metvar->Kind=-1;
 
    if ((tmpc=(char*)xmlGetProp(Node,"origin"))) {
-      strncpy(metvar->Origin,tmpc,32);
+      strncpy0(metvar->Origin,tmpc,32);
+      xmlFree(tmpc);
    }
 
    if ((tmpc=(char*)xmlGetProp(Node,"pack"))) {
       metvar->Pack=atoi(tmpc);
+      xmlFree(tmpc);
    }
 
    if ((tmpc=(char*)xmlGetProp(Node,"usage"))) {
@@ -470,69 +514,59 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encodin
       } else if (!strcmp(tmpc,"incomplete")) {
          metvar->Nature|=DICT_INCOMPLETE;
       }
+      xmlFree(tmpc);
    }
 
    if ((tmpc=(char*)xmlGetProp(Node,"date"))) {
       sscanf(tmpc,"%u-%u-%u",&y,&m,&d);
       metvar->Date=System_DateTime2Seconds(y*10000+m*100+d,0,TRUE);
+      xmlFree(tmpc);
    }
 
    Node=Node->children;
    while (Node) {
 
       if (!strcmp((char*)Node->name,"nomvar")) {
-         if (!xmlNodeListGetString(Doc,Node->children,1)) {
+         if( !(tmpc=xmlNodeListGetString(Doc,Node->children,1)) ) {
             App_Log(ERROR,"%s: Empty variable definition\n",__func__);
             return(0);
          }
-         strncpy(metvar->Name,xmlNodeListGetString(Doc,Node->children,1),5);
+         strncpy0(metvar->Name,tmpc,5);
+         xmlFree(tmpc);
          if (tmpc=(char*)xmlGetProp(Node,"ip1")) {
             metvar->IP1=atoi(tmpc);
             IPDecode(metvar->IP1,&metvar->Level,&metvar->Kind);
+            xmlFree(tmpc);
          }
          if (tmpc=(char*)xmlGetProp(Node,"ip2")) {
             metvar->IP2=atoi(tmpc);
+            xmlFree(tmpc);
          }
          if (tmpc=(char*)xmlGetProp(Node,"ip3")) {
             metvar->IP3=atoi(tmpc);
+            xmlFree(tmpc);
          }
          if (tmpc=(char*)xmlGetProp(Node,"etiket")) {
-            strncpy(metvar->ETIKET,tmpc,13);
+            strncpy0(metvar->ETIKET,tmpc,13);
+            xmlFree(tmpc);
          }
          if (tmpc=(char*)xmlGetProp(Node,"level")) {
             metvar->Level=atof(tmpc);
+            xmlFree(tmpc);
          }
          if (tmpc=(char*)xmlGetProp(Node,"kind")) {
             metvar->Kind=atoi(tmpc);
+            xmlFree(tmpc);
          }
       } else
 
       if (!strcmp((char*)Node->name,"description")) {
          trotteur1=Node->children;
          while (trotteur1) {
-            if (!strcmp((char*)trotteur1->name,"short") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
-               if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"en")) {
-                  strncpy(metvar->Short[1], tmpc,128);
-                  Dict_Encoding(metvar->Short[1],Encoding);
-               } else if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"fr")) {
-                  strncpy(metvar->Short[0], tmpc,128);
-                  Dict_Encoding(metvar->Short[0],Encoding);
-               }
-            } else if (!strcmp((char*)trotteur1->name,"long") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
-               if (xmlGetProp(trotteur1,"lang")) {
-                  if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"fr")) {
-                     strncpy(metvar->Long[0],tmpc,DICT_MAXLEN);
-                     Dict_Encoding(metvar->Long[0],Encoding);
-                  } else if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"en")) {
-                     strncpy(metvar->Long[1],tmpc,DICT_MAXLEN);
-                     Dict_Encoding(metvar->Long[1],Encoding);
-                  }
-               } else {
-                  strncpy(metvar->Long[0],tmpc,DICT_MAXLEN);
-                  Dict_Encoding(metvar->Long[0],Encoding);
-                  strncpy(metvar->Long[1],tmpc,DICT_MAXLEN);
-                  Dict_Encoding(metvar->Long[1],Encoding);
-               }
+            if ( !strcmp((char*)trotteur1->name,"short") ) {
+               Dict_ParseText((char*)metvar->Short,Doc,trotteur1,Encoding,256,0);
+            } else if ( !strcmp((char*)trotteur1->name,"long") ) {
+               Dict_ParseText((char*)metvar->Long,Doc,trotteur1,Encoding,DICT_MAXLEN,1);
             }
             trotteur1=trotteur1->next;
          }
@@ -547,21 +581,13 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encodin
 
             trotteur1=trotteur->children;
             while (trotteur1) {
-               if (!strcmp((char*)trotteur1->name,"units") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
-                  strncpy(metvar->Units, tmpc,32);
-                  Dict_Encoding(metvar->Units,Encoding);
-               }
+               if( !xmlIsBlankNode(trotteur1) && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1)) ) {
+                  if(      !strcmp((char*)trotteur1->name,"units")      ) { strncpy0(metvar->Units,tmpc,32); Dict_Encoding(metvar->Units,Encoding); }
+                  else if( !strcmp((char*)trotteur1->name,"magnitude")  ) { metvar->Magnitude=atof(tmpc); }
+                  else if( !strcmp((char*)trotteur1->name,"min")        ) { metvar->Min=atof(tmpc); }
+                  else if( !strcmp((char*)trotteur1->name,"max")        ) { metvar->Max=atof(tmpc); }
 
-               if (!strcmp((char*)trotteur1->name,"magnitude") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
-                  metvar->Magnitude=atof(tmpc);
-               }
-
-               if (!strcmp((char*)trotteur1->name,"min") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
-                  metvar->Min=atof(tmpc);
-               }
-
-               if (!strcmp((char*)trotteur1->name,"max") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
-                  metvar->Max=atof(tmpc);
+                  xmlFree(tmpc);
                }
 
                trotteur1=trotteur1->next;
@@ -574,25 +600,14 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encodin
 
             trotteur1=trotteur->children;
             while (trotteur1) {
-               if (!strcmp((char*)trotteur1->name,"units") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
-                  strncpy(metvar->Units,tmpc,32);
-                  Dict_Encoding(metvar->Units,Encoding);
-               }
+               if( !xmlIsBlankNode(trotteur1) && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1)) ) {
+                  if(      !strcmp((char*)trotteur1->name,"units")      ) { strncpy0(metvar->Units,tmpc,32); Dict_Encoding(metvar->Units,Encoding); }
+                  else if( !strcmp((char*)trotteur1->name,"magnitude")  ) { metvar->Magnitude=atof(tmpc); }
+                  else if( !strcmp((char*)trotteur1->name,"min")        ) { metvar->Min=atof(tmpc); }
+                  else if( !strcmp((char*)trotteur1->name,"max")        ) { metvar->Max=atof(tmpc); }
+                  else if( !strcmp((char*)trotteur1->name,"precision")  ) { metvar->Precision=atof(tmpc); }
 
-               if (!strcmp((char*)trotteur1->name,"magnitude") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
-                  metvar->Magnitude=atof(tmpc);
-               }
-
-               if (!strcmp((char*)trotteur1->name,"precision") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
-                  metvar->Precision=atof(tmpc);
-               }
-
-               if (!strcmp((char*)trotteur1->name,"min") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
-                  metvar->Min=atof(tmpc);
-               }
-
-               if (!strcmp((char*)trotteur1->name,"max") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
-                  metvar->Max=atof(tmpc);
+                  xmlFree(tmpc);
                }
 
                trotteur1=trotteur1->next;
@@ -614,24 +629,14 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encodin
             trotteur1=trotteur->children;
             i=0;
             while (trotteur1) {
-               if (!strcmp((char*)trotteur1->name,"value") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
-                  tmpc=xmlNodeListGetString(Doc,trotteur1->children,1);
-                  metvar->Codes[i++]=atoi(tmpc);
-               }
-               if (!strcmp((char*)trotteur1->name,"meaning") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
-                  if (xmlGetProp(trotteur1,"lang")) {
-                      if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"fr")) {
-                          strncpy(metvar->Meanings[i-1][0],tmpc,64);
-                          Dict_Encoding(metvar->Meanings[i-1][0],Encoding);
-                      } else if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"en")) {
-                          strncpy(metvar->Meanings[i-1][1],tmpc,64);
-                          Dict_Encoding(metvar->Meanings[i-1][1],Encoding);
-                      }
-                  } else {
-                      strncpy(metvar->Meanings[i-1][0],tmpc,64);
-                      Dict_Encoding(metvar->Meanings[i-1][0],Encoding);
-                      strncpy(metvar->Meanings[i-1][1],tmpc,64);
-                      Dict_Encoding(metvar->Meanings[i-1][1],Encoding);
+               if( !xmlIsBlankNode(trotteur1) ) {
+                  if (!strcmp((char*)trotteur1->name,"value") ) {
+                     if( (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1)) ) {
+                        metvar->Codes[i++]=atoi(tmpc);
+                        xmlFree(tmpc);
+                     }
+                  } else if (!strcmp((char*)trotteur1->name,"meaning") ) {
+                     Dict_ParseText((char*)metvar->Meanings[i-1],Doc,trotteur1,Encoding,64,1);
                   }
                }
                trotteur1=trotteur1->next;
@@ -681,7 +686,8 @@ static int Dict_ParseType(xmlDocPtr Doc, xmlNsPtr NS, xmlNodePtr Node,TDict_Enco
    type=(TDictType*)calloc(1,sizeof(TDictType));
 
    if (tmpc=(char*)xmlGetProp(Node,"origin")) {
-      strncpy(type->Origin,tmpc,32);
+      strncpy0(type->Origin,tmpc,32);
+      xmlFree(tmpc);
    }
 
    if ((tmpc=(char*)xmlGetProp(Node,"usage"))) {
@@ -696,48 +702,31 @@ static int Dict_ParseType(xmlDocPtr Doc, xmlNsPtr NS, xmlNodePtr Node,TDict_Enco
       } else if (!strcmp(tmpc,"incomplete")) {
          type->Nature|=DICT_INCOMPLETE;
       }
+      xmlFree(tmpc);
    }
 
    if ((tmpc=(char*)xmlGetProp(Node,"date"))) {
       sscanf(tmpc,"%u-%u-%u",&y,&m,&d);
       type->Date=System_DateTime2Seconds(y*10000+m*100+d,0,TRUE);
+      xmlFree(tmpc);
    }
 
    Node=Node->children;
    while (Node) {
       if (!strcmp((char*)Node->name,"nomtype")) {
-         strncpy(type->Name,xmlNodeListGetString(Doc,Node->children,1),3);
+         tmpc=xmlNodeListGetString(Doc,Node->children,1);
+         strncpy0(type->Name,tmpc,3);
+         xmlFree(tmpc);
       }
 
       // DESCRIPTION
       if (!strcmp((char*)Node->name,"description")) {
          trotteur1=Node->children;
          while (trotteur1) {
-            if (!strcmp((char*)trotteur1->name,"short") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
-               if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"en")) {
-                  strncpy(type->Short[1],tmpc,128);
-                  Dict_Encoding(type->Short[1],Encoding);
-               } else {
-                  if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"fr")) {
-                     strncpy(type->Short[0],tmpc,128);
-                     Dict_Encoding(type->Short[0],Encoding);
-                  }
-               }
-            } else if (!strcmp((char*)trotteur1->name,"long") && (tmpc=xmlNodeListGetString(Doc,trotteur1->children,1))) {
-               if (xmlGetProp(trotteur1,"lang")) {
-                  if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"fr")) {
-                     strncpy(type->Long[0],tmpc,DICT_MAXLEN);
-                     Dict_Encoding(type->Long[0],Encoding);
-                  } else if (!strcmp((char*)xmlGetProp(trotteur1,"lang"),"en")) {
-                     strncpy(type->Long[1],tmpc,DICT_MAXLEN);
-                     Dict_Encoding(type->Long[1],Encoding);
-                  }
-               } else {
-                  strncpy(type->Long[0],tmpc,DICT_MAXLEN);
-                  Dict_Encoding(type->Long[0],Encoding);
-                  strncpy(type->Long[1],tmpc,DICT_MAXLEN);
-                  Dict_Encoding(type->Long[1],Encoding);
-               }
+            if (!strcmp((char*)trotteur1->name,"short") ) {
+               Dict_ParseText((char*)type->Short,Doc,trotteur1,Encoding,128,0);
+            } else if (!strcmp((char*)trotteur1->name,"long") ) {
+               Dict_ParseText((char*)type->Long,Doc,trotteur1,Encoding,DICT_MAXLEN,1);
             }
 
             trotteur1=trotteur1->next;
