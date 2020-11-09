@@ -46,7 +46,9 @@
 #include <limits.h>
 #include <float.h>
 
-#include "build_info.h"
+#ifdef _BUILD_EERUTILS
+#   include "build_info.h"
+#endif
 
 #ifdef _OPENMP
 #   include <omp.h>

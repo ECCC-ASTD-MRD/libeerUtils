@@ -6,18 +6,17 @@ foreach(PATH $ENV{EC_CMAKE_MODULE_PATH})
 endforeach()
 
 include(ec_utils)   # Include EC specific cmake utils
-ec_parse_version()  # Parse VERSION file
+ec_parse_manifest() # Parse MANIFEST file
 ec_build_info()     # Generate build include file
 
 project(${NAME} VERSION ${VERSION} DESCRIPTION "${DESCRIPTION}")
 
 set(CMAKE_INSTALL_PREFIX "" CACHE PATH "..." FORCE)
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 include(compiler_rules)
 
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
-add_compile_definitions(HAVE_GPC)
+add_compile_definitions(_BUILD_EERUTILS HAVE_GPC)
 
 #TODO --- COMPONENTS shared threaded
 find_package(RMN ${RMN_REQ_VERSION} COMPONENTS beta shared OPTIONAL)
@@ -69,9 +68,4 @@ if(NOT DEFINED ENV{OMPI})
    #add_dependencies(util src)
 endif()
 
-#----- Build config information script
-install(CODE "execute_process(COMMAND sed -e \"s/CMAKE_CC/\\\"${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERSION}\\\"/\" -e \"s/CMAKE_FTN/\\\"${CMAKE_Fortran_COMPILER_ID} ${CMAKE_Fortran_COMPILER_VERSION}\\\"/\" 
-   -e \"s/CMAKE_NAME/${NAME}/\" -e \"s/CMAKE_VERSION/${VERSION}${STATE}/\" 
-   -e \"s/CMAKE_RMN/${RMN_VERSION}${RMN_STATE}/\" -e \"s/CMAKE_GDAL/${GDAL_VERSION}/\" -e \"s/CMAKE_VGRID/${VGRID_VERSION}${VGRID_STATE}/\"
-   ../config OUTPUT_FILE ${NAME}-config)")
-install(PROGRAMS ${CMAKE_BINARY_DIR}/${NAME}-config DESTINATION bin)
+include(ec_bin_config)

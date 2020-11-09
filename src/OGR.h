@@ -74,7 +74,7 @@ typedef struct OGR_Layer {
 
    TGeoRef         *GRef;                // GeoReference
    OGRLayerH        Layer;               // OGR internal layer object
-   OGRFeatureH     *Feature;             // List of OGR internal layer featuret
+   OGRFeatureH     *Feature;             // List of OGR internal layer feature
    OGRFeatureDefnH  Def;                 // OGR internal feature definition object
    GDALDatasetH     Data;                // OGR internal layer datasource object
    OGR_File        *File;                // Layer's file provenance
