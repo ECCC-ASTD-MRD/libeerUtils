@@ -68,7 +68,7 @@ if [[ $CLR -eq 1 || $SRC -eq 1 || $REC -eq 1 ]]; then
 fi
 
 if [[ $BLD -eq 1 ]]; then
-   export EC_CMAKE_MODULE_PATH="`pwd`/modules;$EC_CMAKE_MODULE_PATH"
+   export EC_CMAKE_MODULE_PATH="`pwd`/cmake;$EC_CMAKE_MODULE_PATH"
    export DESTDIR=${SSM_DEV}/workspace/${SSM_NAME}
    CMAKE_COMP_FLAGS="-DTCL_SRC_DIR=${SSM_DEV}/src/ext/tcl8.6.6 -DGDAL_INCLUDE_DIR=`gdal-config --cflags` -DGDAL_VERSION=`gdal-config --version`"
    rm -f -r build; mkdir build; cd build;
