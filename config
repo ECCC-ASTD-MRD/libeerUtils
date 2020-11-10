@@ -8,6 +8,7 @@ ftn=CMAKE_FTN
 cflags=CMAKE_CFLAGS
 libs=CMAKE_LIBS
 
+build=CMAKE_BUILD
 version=CMAKE_VERSION
 has_rmn=CMAKE_RMN
 has_gdal=CMAKE_GDAL
@@ -24,7 +25,8 @@ Available values for OPTION include:
   --cc           C compiler [${cc}]
   --ftn          FORTRAN compiler [${ftn}]
   --cflags       pre-processor and compiler flags [${cflags}]
-  --libs         library linking information for netcdf [${libs}]
+  --libs         library linking information [${libs}]
+  --build        Build type [${build}]
   --version      Library version [${version}]
   --has-rmn      which version of librmn is it compiled with [${has_rmn}]
   --has-gdal     which version of gdal is it compiled with [${has_gdal}]
@@ -60,7 +62,7 @@ while test $# -gt 0; do
        	echo ${ftn:-no}
        	;;
 
-    --clags)
+    --cflags)
        	echo ${cflags}
        	;;
            
@@ -79,6 +81,10 @@ while test $# -gt 0; do
     --has-vgrid)
        	echo ${has_vgrid:-no}
        	;;
+
+    --build)
+	    echo $build
+        ;;
 
     --version)
 	    echo $version

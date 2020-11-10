@@ -13,7 +13,6 @@ add_executable(CodeInfo CodeInfo.c)
 add_executable(Dict Dict.c)
 add_executable(EZTiler EZTiler.c)
 add_executable(ReGrid ReGrid.c)
-add_executable(Interpolate Interpolate.c)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../src)
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../src)
@@ -34,8 +33,5 @@ set_target_properties(EZTiler PROPERTIES VERSION ${PROJECT_VERSION})
 target_link_libraries(ReGrid eerUtils -lm ${RMN_LIBRARIES} ${VGRID_LIBRARIES})
 set_target_properties(ReGrid PROPERTIES VERSION ${PROJECT_VERSION})
 
-target_link_libraries(Interpolate eerUtils -lm ${RMN_LIBRARIES} ${VGRID_LIBRARIES})
-set_target_properties(Interpolate PROPERTIES VERSION ${PROJECT_VERSION})
-
-install(TARGETS CodeInfo Dict EZTiler ReGrid Interpolate
+install(TARGETS CodeInfo Dict EZTiler ReGrid
    RUNTIME DESTINATION bin)
