@@ -348,7 +348,7 @@ int gpce_ring_contains_point(const gpc_vertex_list *restrict Ring,const gpce_env
         return 0;
 
     // Loop on the segment
-    for(i=0,j=1,in=0; j<Ring->num_vertices; i=j++) {
+    for(i=Ring->num_vertices-1,j=0,in=0; j<Ring->num_vertices; i=j++) {
         // Check if the segment intersects with an horizontal line that crosses X,Y
         // Count only intersections that occurs before we reach the X
         if( (Ring->vertex[i].y>P.y)!=(Ring->vertex[j].y>P.y)
@@ -419,41 +419,28 @@ int gpce_ring_contains_ring(const gpc_vertex_list *restrict OutRing,const gpce_e
  *----------------------------------------------------------------------------
  */
 int gpce_polygon_contains_point(const gpc_polygon *restrict Poly,const gpce_envelope *restrict PEnv,gpc_vertex P) {
-    int r,in=0;
+    int r,in=0,np;
 
-    // Check if we have a multi-polygon
-    if( gpce_get_num_polygon(Poly)<=1 ) {
-        // Loop on the rings
-        for(r=0; r<Poly->num_contours; ++r) {
-            // If we have an interior ring (hole)
-            if( Poly->hole[r] ) {
-                // If we are in the hole, then we are outside of the polygon
-                if( gpce_ring_contains_point(Poly->contour+r,PEnv?PEnv+r:NULL,P) ) {
-                    return 0;
-                }
-            } else {
-                // Since we made sure to only have one exterior ring, we need to be inside that ring
-                if( !gpce_ring_contains_point(Poly->contour+r,PEnv?PEnv+r:NULL,P) ) {
-                    return 0;
-                }
+    // Check whether or not we have a multi-polygon
+    np = gpce_get_num_polygon(Poly);
+
+    // Loop on the rings
+    for(r=0; r<Poly->num_contours; ++r) {
+        // If we have an interior ring (hole)
+        if( Poly->hole[r] ) {
+            // If we are in the hole, then we are outside of the polygon
+            if( gpce_ring_contains_point(Poly->contour+r,PEnv?PEnv+r:NULL,P) ) {
+                return 0;
+            }
+        } else {
+            // We have an outer-ring
+            if( gpce_ring_contains_point(Poly->contour+r,PEnv?PEnv+r:NULL,P) ) {
                 in = 1;
+            } else if( np <= 1 ) {
+                // Since we made sure to only have one exterior ring, we need to be contained in that external ring if we want to have a chance to be considered in
+                return 0;
             }
         }
-    } else {
-        gpc_polygon     *poly;
-        gpce_envelope   **penv;
-        int             n;
-
-        // Split the multi polygon in individual polygons
-        n = gpce_split_polygons(Poly,PEnv,&poly,&penv);
-
-        // Loop on the polygons. If one polygon contains the ring, then it is contained
-        for(r=0; r<n; ++r) {
-            if( gpce_polygon_contains_point(poly+r,penv[r],P) ) {
-                return 1;
-            }
-        }
-        free(poly);
     }
 
     return in;
@@ -477,52 +464,83 @@ int gpce_polygon_contains_point(const gpc_polygon *restrict Poly,const gpce_enve
  *----------------------------------------------------------------------------
  */
 int gpce_polygon_contains_ring(const gpc_polygon *restrict Poly,const gpce_envelope *restrict PEnv,const gpc_vertex_list *restrict Ring,const gpce_envelope *restrict REnv) {
-    int r,in=0;
+    int r,in=0,np,partial=0;
 
     if( Ring->num_vertices <= 0 )
         return 0;
 
-    // Check if we have a multi-polygon
-    if( gpce_get_num_polygon(Poly)<=1 ) {
-        // Loop on the rings
-        for(r=0; r<Poly->num_contours; ++r) {
-            // If we have an interior ring (hole)
-            if( Poly->hole[r] ) {
-                // If the first point is inside the hole or we intersect the hole in any way, than the ring is not fully contained in the polygon
-                if( gpce_ring_contains_point(Poly->contour+r,PEnv?PEnv+r:NULL,Ring->vertex[0])
-                        || gpce_ring_crosses_ring(Poly->contour+r,PEnv?PEnv+r:NULL,Ring,REnv) ) {
-                    return 0;
-                }
-            } else {
-                // Since we made sure to only have one exterior ring, we need to be fully contained in the ring
-                if( !gpce_ring_contains_ring(Poly->contour+r,PEnv?PEnv+r:NULL,Ring,REnv) ) {
-                    return 0;
-                }
+    // Check whether or not we have a multi-polygon
+    np = gpce_get_num_polygon(Poly);
+
+    // Loop on the rings
+    for(r=0; r<Poly->num_contours; ++r) {
+        // If we have an interior ring (hole)
+        if( Poly->hole[r] ) {
+            // If the first point is inside the hole or we intersect the hole in any way, then the ring is not fully contained in the polygon
+            if( gpce_ring_contains_point(Poly->contour+r,PEnv?PEnv+r:NULL,Ring->vertex[0])
+                    || gpce_ring_crosses_ring(Poly->contour+r,PEnv?PEnv+r:NULL,Ring,REnv) ) {
+                return 0;
+            }
+        } else {
+            // We have an outer-ring
+            if( gpce_ring_contains_ring(Poly->contour+r,PEnv?PEnv+r:NULL,Ring,REnv) ) {
                 in = 1;
+            } else if( np <= 1 ) {
+                // Since we made sure to only have one exterior ring, we need to be fully contained in the external ring, otherwise we're doomed
+                return 0;
+            } else if( gpce_ring_crosses_ring(Poly->contour+r,PEnv?PEnv+r:NULL,Ring,REnv) ) {
+                // Signal that we might have a partial match (if another polygon unioned with this one contains the entire ring)
+                ++partial;
             }
         }
-    } else {
-        gpc_polygon     *poly;
-        gpce_envelope   **penv;
-        int             n;
+    }
 
-        // Split the multi polygon in individual polygons
-        n = gpce_split_polygons(Poly,PEnv,&poly,&penv);
+    // Extra step : maybe our multi-polygon is joined around that ring?
+    if( !in && partial>=2 ) {
+        gpc_polygon poly,join,tmp;
+        int i,hole=0;
 
-        // Loop on the polygons. If one polygon contains the ring, then it is contained
-        for(r=0; r<n; ++r) {
-            if( gpce_polygon_contains_ring(poly+r,penv[r],Ring,REnv) ) {
-                return 1;
+        // Create the polygon that we want to join
+        poly.hole = &hole;
+        poly.num_contours = 1;
+
+        // Join all external rings together
+        for(r=0,i=0; r<Poly->num_contours&&i<np; ++r) {
+            if( !Poly->hole[r] ) {
+                if( i ) {
+                    poly.contour = Poly->contour+r;
+                    gpc_polygon_clip(GPC_UNION,&join,&poly,&tmp);
+                    if( i>1 )
+                        gpc_free_polygon(&join);
+                    join = tmp;
+                } else {
+                    join.num_contours = 1;
+                    join.hole = &hole;
+                    join.contour = Poly->contour+r;
+                }
+                ++i;
             }
         }
-        free(poly);
+
+        // No need to continue if the number of polygons didn't change
+        if( gpce_get_num_polygon(&join) != np ) {
+            // Loop on the rings (note that it can only be external rings)
+            for(r=0; r<join.num_contours; ++r) {
+                if( gpce_ring_contains_ring(join.contour+r,NULL,Ring,REnv) ) {
+                    in = 1;
+                    break;
+                }
+            }
+        }
+
+        gpc_free_polygon(&join);
     }
 
     return in;
 }
 
 /*----------------------------------------------------------------------------
- * Nom      : <gpce_polygon_contains_ring>
+ * Nom      : <gpce_polygon_contains_polygon>
  * Creation : Juillet 2018 - E. Legault-Ouellet
  *
  * But      : Vérifie si un contour est contenu dans un polygone
@@ -651,9 +669,9 @@ int gpce_split_polygons(const gpc_polygon *restrict Poly,const gpce_envelope *re
                     }
 
                     // Set all but the first ring as holes
-                    plist[e].hole = malloc(plist[e].num_contours*sizeof(*plist[e].contour));
+                    plist[e].hole = malloc(plist[e].num_contours*sizeof(*plist[e].hole));
                     plist[e].hole[0] = 0;
-                    for(c=1; c<Poly->num_contours; ++c) {
+                    for(c=1; c<plist[e].num_contours; ++c) {
                         plist[e].hole[c] = 1;
                     }
 

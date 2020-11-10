@@ -1960,7 +1960,6 @@ int EZGrid_LLGetValueX(TGrid* restrict const GridU,TGrid* restrict const GridV,T
    TGridTile   *tu,*tv;
    double       i,j,d,th,len;
    int          k=0,ik=0;
-   int          n;
    unsigned int idx;
    
    if (!GridU || GridU->H.GRTYP[0]!='X') {
@@ -1983,6 +1982,10 @@ int EZGrid_LLGetValueX(TGrid* restrict const GridU,TGrid* restrict const GridV,T
             
       if (Mode==EZ_NEAREST) {
          idx=lrintf(j)*tu->NI+lrintf(i);
+         if (tu->Mask[k] && !tu->Mask[k][idx]) {
+            ik++;
+            continue;
+         }
                  UU[ik]=tu->Data[k][idx];
          if (tv) VV[ik]=tv->Data[k][idx];
       } else {
