@@ -35,7 +35,7 @@ endif()
 find_package(LibXml2 REQUIRED)
 include_directories(${LIBXML2_INCLUDE_DIR})
 
-find_package(GDAL)
+find_package(GDAL ${GDAL_REQ_VERSION})
 if(GDAL_FOUND)
    add_compile_definitions(HAVE_GDAL)
    include_directories(${GDAL_INCLUDE_DIR})
