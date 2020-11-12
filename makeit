@@ -69,21 +69,22 @@ fi
 if [[ $BLD -eq 1 ]]; then
    export EC_CMAKE_MODULE_PATH="`pwd`/cmake;$EC_CMAKE_MODULE_PATH"
    export DESTDIR=${SSM_DEV}/workspace/${SSM_NAME}
+   export CRAYPE_LINK_TYPE=dynamic
 
    CMAKE_COMP_FLAGS="-DTCL_SRC_DIR=${SSM_DEV}/src/ext/tcl8.6.6"
    type gdal-config >/dev/null 2>&1 && CMAKE_COMP_FLAGS="$CMAKE_COMP_FLAGS -DGDAL_ROOT=`gdal-config --prefix`" 2>/dev/null
 
    cd build
-
+   
    #----- Build non parallel lib and bin
    unset OMPI
-   cmake  -DEC_COMPILER_SUITE=intel -DCMAKE_INSTALL_PREFIX=$DESTDIR $CMAKE_COMP_FLAGS ../
+   cmake -DCMAKE_INSTALL_PREFIX=$DESTDIR $CMAKE_COMP_FLAGS ../
    $MAKE -j
    $MAKE install 
 
    #----- Build OpenMP/MPI lib only
    export OMPI=-ompi
-   cmake  -DEC_COMPILER_SUITE=intel -DCMAKE_INSTALL_PREFIX=$DESTDIR $CMAKE_COMP_FLAGS ../
+   cmake -DCMAKE_INSTALL_PREFIX=$DESTDIR $CMAKE_COMP_FLAGS ../
    $MAKE -j
    $MAKE install
 fi
