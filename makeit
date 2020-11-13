@@ -90,8 +90,6 @@ if [[ $SSM -eq 1 ]]; then
    ln -s Dict ${SSM_DEV}/workspace/${SSM_NAME}/bin/o.dict
    cp .ssm.d/post-install ${SSM_DEV}/workspace/${SSM_NAME}/.ssm.d
 
-   BUILDINFO=`[ -z "\${ORDENV_SETUP}" ] || git describe --always`
-
    echo "{
    \"name\": \"${NAME}\",
    \"version\": \"${VERSION}\",
@@ -100,7 +98,7 @@ if [[ $SSM -eq 1 ]]; then
    \"summary\": \"${SUMMARY}\",
    \"description\": \"${DESCRIPTION}\",
    \"requires\": \"\",
-   \"x-buildinfo\": \"${BUILD_INFO}\"
+   \"x-buildinfo\": \"`[ -z "\${ORDENV_SETUP}" ] || git describe --always`\"
 }" > ${SSM_DEV}/workspace/${SSM_NAME}/.ssm.d/control.json
 
    cd ${SSM_DEV}/workspace; tar --exclude=.nfs* -zcvf ${SSM_DEV}/package/${SSM_NAME}.ssm ${SSM_NAME}
