@@ -66,7 +66,6 @@ add_compile_definitions(_${CMAKE_SYSTEM_NAME}_ TCL_THREADS _GNU_SOURCE)
 add_subdirectory(src src)
 if(NOT DEFINED ENV{OMPI})
    add_subdirectory(util util)
-   #add_dependencies(util src)
 endif()
 
 include(ec_bin_config)

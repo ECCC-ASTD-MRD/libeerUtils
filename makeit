@@ -2,7 +2,6 @@
 
 HELP="Arguments must be:\n\n   Information parameters:
 \t-help        : This information
-\t-version     : Version
 
    Commands:
 \t-clear       : Clear package
@@ -26,7 +25,6 @@ while [ $# -gt 0 ]; do
         -install) INS=1;;
 
         -h|-help)    printf -- "$HELP\n"; exit 0;;
-        -v|-version) printf -- "$VERSION\n"; exit 0;;
         --)          shift; break;;
         *)           printf -- "Invalid argument $1.\n\n$HELP"; exit 1;;
     esac
@@ -53,14 +51,6 @@ SSM_NAME=${NAME}_${SSM_VERSION}_${ORDENV_PLAT}
 mkdir -p ${SSM_DEV}/package/ ${SSM_DEV}/workspace/
 
 MAKE=make
-
-if [[ -n ${ORDENV_VERSION} ]]; then
-   if [[ `domainname -d` = "science.gc.ca" ]]; then
-      echo "(INFO) Building on SCIENCE network"
-   elif [[ `domainname -d` = "cmc.ec.gc.ca" ]]; then
-      echo "(INFO) Building on ECCC network"
-   fi
-fi
 
 if [[ $CLR -eq 1 || $SRC -eq 1 || $REC -eq 1 ]]; then
    rm -f -r build;mkdir build
