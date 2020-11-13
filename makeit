@@ -53,7 +53,7 @@ mkdir -p ${SSM_DEV}/package/ ${SSM_DEV}/workspace/
 MAKE=make
 
 if [[ $CLR -eq 1 || $SRC -eq 1 || $REC -eq 1 ]]; then
-   rm -f -r build;mkdir build
+   rm -f -r build ${SSM_DEV}/workspace/${SSM_NAME}; mkdir build
 fi
 
 if [[ $BLD -eq 1 ]]; then
@@ -77,6 +77,8 @@ if [[ $BLD -eq 1 ]]; then
    cmake -DCMAKE_INSTALL_PREFIX=$DESTDIR $CMAKE_COMP_FLAGS ../
    $MAKE -j
    $MAKE install
+
+   cd ..
 fi
 
 if [[ $SSM -eq 1 ]]; then
@@ -85,21 +87,23 @@ if [[ $SSM -eq 1 ]]; then
 
    rm -f ${SSM_DEV}/package/${SSM_NAME}.ssm 
    mkdir -p ${SSM_DEV}/workspace/${SSM_NAME}/.ssm.d  ${SSM_DEV}/workspace/${SSM_NAME}/etc/profile.d
-   ln -s Dict ${SSM_DEV}/workspace/${SSM_NAME}/o.dict
+   ln -s Dict ${SSM_DEV}/workspace/${SSM_NAME}/bin/o.dict
    cp .ssm.d/post-install ${SSM_DEV}/workspace/${SSM_NAME}/.ssm.d
+
+   BUILDINFO=`[ -z "\${ORDENV_SETUP}" ] || git describe --always`
 
    echo "{
    \"name\": \"${NAME}\",
    \"version\": \"${VERSION}\",
-   \"platform\": \"${PLATFORM}\",
+   \"platform\": \"${ORDENV_PLAT}\",
    \"maintainer\": \"${MAINTAINER}\",
    \"summary\": \"${SUMMARY}\",
    \"description\": \"${DESCRIPTION}\",
    \"requires\": \"\",
-   \"x-buildinfo\": \"${BUIL_DINFO}\"
+   \"x-buildinfo\": \"${BUILD_INFO}\"
 }" > ${SSM_DEV}/workspace/${SSM_NAME}/.ssm.d/control.json
 
-   cd ${SSM_DEV}/workspace; tar -zcvf ${SSM_DEV}/package/${SSM_NAME}.ssm ${SSM_NAME}
+   cd ${SSM_DEV}/workspace; tar --exclude=.nfs* -zcvf ${SSM_DEV}/package/${SSM_NAME}.ssm ${SSM_NAME}
 #   rm -f -r  $(SSM_DEV)/workspace/$(SSM_NAME)
 fi
 
