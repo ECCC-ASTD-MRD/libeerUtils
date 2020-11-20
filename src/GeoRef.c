@@ -771,7 +771,7 @@ void GeoRef_Qualify(TGeoRef* __restrict const Ref) {
    if (Ref) {
       Ref->Type=GRID_NONE;
 
-      if (Ref->Grid[0]=='M' || Ref->Grid[0]=='Y' || Ref->Grid[0]=='X' || Ref->Grid[1]=='X' || Ref->Grid[1]=='Y' || Ref->Grid[1]=='Z') {
+      if (Ref->Grid[0]=='M' || Ref->Grid[0]=='Y' || Ref->Grid[0]=='X' || Ref->Grid[1]=='X' || Ref->Grid[0]=='O' || Ref->Grid[1]=='O' || Ref->Grid[1]=='Y' || Ref->Grid[1]=='Z') {
          Ref->Type|=GRID_SPARSE;
       } else {
          Ref->Type|=GRID_REGULAR;
@@ -781,7 +781,7 @@ void GeoRef_Qualify(TGeoRef* __restrict const Ref) {
          Ref->Type|=GRID_TILE;
       }
     
-      if (Ref->Grid[0]=='X') {
+      if (Ref->Grid[0]=='X' || Ref->Grid[0]=='O') {
          // If grid type is X (ORCA) and a pole in within the grid, mark as wrapping grid
          if (Ref->UnProject(Ref,&d[0],&d[1],89.0,0.0,0,1) || Ref->UnProject(Ref,&d[0],&d[1],-89.0,0.0,0,1)) {
             Ref->Type|=GRID_WRAP;
@@ -1164,7 +1164,7 @@ TQTree* GeoRef_BuildIndex(TGeoRef* __restrict const Ref) {
             return(NULL);
          }      
       }
-   } else  if (Ref->Grid[0]=='Y' || Ref->Grid[0]=='X' || Ref->Grid[1]=='Y' || Ref->Grid[1]=='X') {
+   } else  if (Ref->Grid[0]=='Y' || Ref->Grid[0]=='X' || Ref->Grid[0]=='O' || Ref->Grid[1]=='Y' || Ref->Grid[1]=='X' || Ref->Grid[1]=='O' ) {
 
       // Useless for less than a few thousand points
       if ((Ref->NX*Ref->NY)<500) {
@@ -1516,7 +1516,7 @@ int GeoRef_Limits(TGeoRef* __restrict const Ref,double *Lat0,double *Lon0,double
    if (!Ref) return(0);
    
    // Source grid Y
-   if (Ref->Grid[0]=='Y' || Ref->Grid[1]=='Y' || Ref->Grid[0]=='X' || Ref->Grid[1]=='X') {
+   if (Ref->Grid[0]=='Y' || Ref->Grid[1]=='Y' || Ref->Grid[0]=='X' || Ref->Grid[1]=='X' || Ref->Grid[0]=='O' || Ref->Grid[1]=='O') {
       for(x=0;x<((Ref->X1-Ref->X0)+1)*((Ref->Y1-Ref->Y0)+1);x++) {
          *Lat0=fmin(*Lat0,Ref->AY[x]); *Lon0=fmin(*Lon0,Ref->AX[x]);
          *Lat1=fmax(*Lat1,Ref->AY[x]); *Lon1=fmax(*Lon1,Ref->AX[x]);

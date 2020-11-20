@@ -268,7 +268,7 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
       }
 
       // Unstructured or not referenced
-      if (GRef->Grid[0]=='X') {
+      if (GRef->Grid[0]=='X' || GRef->Grid[0]=='O') {
          if (Def->Type<=TD_Int64 || Mode=='N' || (X==ix && Y==iy)) {
             mem+=idx;
 
@@ -496,7 +496,7 @@ int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
                   return(TRUE);
                }         
             }
-         } else if (GRef->Grid[0]=='X') {
+         } else if (GRef->Grid[0]=='X' || GRef->Grid[0]=='O') {
             // Get nearest points
             if ((nd=GeoRef_Nearest(GRef,Lon,Lat,idxs,dists,8))) {
                
@@ -630,7 +630,7 @@ TGeoRef* GeoRef_RPNSetup(int NI,int NJ,char *GRTYP,int IG1,int IG2,int IG3,int I
    // If not specified, type is X
    if (GRTYP[0]==' ') GRTYP[0]='X';
 
-   if ((NI>1 || NJ>1) && GRTYP[0]!='X' && GRTYP[0]!='P' && GRTYP[0]!='M' && GRTYP[0]!='V' && ((GRTYP[0]!='Z' && GRTYP[0]!='Y') || FID!=-1)) {
+   if ((NI>1 || NJ>1) && GRTYP[0]!='X' && GRTYP[0]!='O' && GRTYP[0]!='P' && GRTYP[0]!='M' && GRTYP[0]!='V' && ((GRTYP[0]!='Z' && GRTYP[0]!='Y') || FID!=-1)) {
       grtyp[0]=GRTYP[0];
       grtyp[1]='\0';
 
