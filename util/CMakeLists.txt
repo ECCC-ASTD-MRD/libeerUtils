@@ -14,9 +14,6 @@ add_executable(Dict Dict.c)
 add_executable(EZTiler EZTiler.c)
 add_executable(ReGrid ReGrid.c)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../src)
-link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../src)
-
 #add_dependencies(CodeInfo eerUtils)
 target_link_libraries(CodeInfo eerUtils -lm ${RMN_LIBRARIES} ${VGRID_LIBRARIES})
 set_target_properties(CodeInfo PROPERTIES VERSION ${PROJECT_VERSION})

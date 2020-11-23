@@ -74,16 +74,9 @@ if [[ $BLD -eq 1 ]]; then
    cd build
    
    #----- Build non parallel lib and bin
-   unset OMPI
    cmake -DCMAKE_INSTALL_PREFIX=$DESTDIR $CMAKE_COMP_FLAGS ../
    $MAKE -j
    $MAKE install 
-
-   #----- Build OpenMP/MPI lib only
-   export OMPI=-ompi
-   cmake -DCMAKE_INSTALL_PREFIX=$DESTDIR $CMAKE_COMP_FLAGS ../
-   $MAKE -j
-   $MAKE install
 
    cd ..
 fi
