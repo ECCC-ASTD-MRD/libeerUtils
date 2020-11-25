@@ -73,7 +73,7 @@ if [[ $BLD -eq 1 ]]; then
    mkdir -p build
    cd build
    
-   #----- Build non parallel lib and bin
+   #----- Build
    cmake -DCMAKE_INSTALL_PREFIX=$DESTDIR $CMAKE_COMP_FLAGS ../
    $MAKE -j
    $MAKE install 

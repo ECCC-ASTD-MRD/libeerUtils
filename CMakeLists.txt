@@ -16,7 +16,6 @@ set(CMAKE_INSTALL_PREFIX "" CACHE PATH "..." FORCE)
 
 include(compiler_rules)
 
-link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
 add_compile_definitions(_BUILD_EERUTILS HAVE_GPC)
 
 #TODO --- COMPONENTS shared threaded
@@ -46,14 +45,10 @@ if(DEFINED TCL_SRC_DIR)
    include_directories(${TCL_SRC_DIR}/unix ${TCL_SRC_DIR}/generic)
 endif()
 
-if(${CMAKE_SYSTEM_PROCESSOR} EQUAL x86_64)
-   add_compile_options(-fPIC -DSTDC_HEADERS)
-endif()
-
 find_package(MPI REQUIRED)
 find_package(OpenMP REQUIRED)
 
-add_compile_definitions(_${CMAKE_SYSTEM_NAME}_ TCL_THREADS _GNU_SOURCE)
+add_compile_definitions(_${CMAKE_SYSTEM_NAME}_ TCL_THREADS _GNU_SOURCE STDC_HEADERS)
 
 add_subdirectory(src src)
 add_subdirectory(util util)
