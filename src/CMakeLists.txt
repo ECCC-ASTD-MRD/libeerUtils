@@ -10,6 +10,7 @@ add_library(eerUtils-ompi STATIC ${PROJECT_INCLUDE_FILES} ${PROJECT_C_FILES})
 set_target_properties(eerUtils eerUtils-ompi PROPERTIES
    VERSION        ${PROJECT_VERSION}
    PUBLIC_HEADER  "${PROJECT_INCLUDE_FILES}"
+   COMPILE_FLAGS  "-fPIC -DSTDC_HEADERS"
 )
 
 #----- Common target dependencies

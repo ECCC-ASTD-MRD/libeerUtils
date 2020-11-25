@@ -87,7 +87,7 @@ if [[ $SSM -eq 1 ]]; then
 
    rm -f ${SSM_DEV}/package/${SSM_NAME}.ssm 
    mkdir -p ${SSM_DEV}/workspace/${SSM_NAME}/.ssm.d  ${SSM_DEV}/workspace/${SSM_NAME}/etc/profile.d
-   ln -s Dict ${SSM_DEV}/workspace/${SSM_NAME}/bin/o.dict
+   ln -fs Dict ${SSM_DEV}/workspace/${SSM_NAME}/bin/o.dict
    cp .ssm.d/post-install ${SSM_DEV}/workspace/${SSM_NAME}/.ssm.d
 
    echo "{
