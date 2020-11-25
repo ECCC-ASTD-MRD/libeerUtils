@@ -23,7 +23,7 @@ file(WRITE \"build_info.h\" \"\\
 
 #define BUILD_TIMESTAMP \\\"\${BUILD_TIMESTAMP}\\\"
 #define BUILD_INFO      \\\"\${BUILD_INFO}\\\"
-#define BUILD_ARCH      \\\"${EC_OS}/${EC_COMPILER}-${EC_COMPILER_VERSION}\\\"
+#define BUILD_ARCH      \\\"$ENV{EC_ARCH}\\\"
 #define BUILD_USER      \\\"$ENV{USER}\\\"
 
 #define VERSION         \\\"${VERSION}\\\"
