@@ -3,12 +3,6 @@ message(STATUS "Generating libeerUtils binaries")
 #add_link_options(-Wl,-rpath=${CMAKE_INSTALL_PREFIX}/lib)
 add_link_options(-lpthread)
 
-IF(DEFINED ENV{INTELCOMP_HOME})
-#CMAKE_CXX_COMPILER_ID MATCHES "Intel" )
-   add_link_options(-Wl,-rpath $ENV{INTELCOMP_HOME}/lib/intel64_lin) 
-   add_link_options(-lintlc -lifcore -lifport)
-endif()
-
 add_executable(CodeInfo CodeInfo.c)
 add_executable(Dict Dict.c)
 add_executable(EZTiler EZTiler.c)
@@ -26,6 +20,10 @@ set_target_properties(${targets} PROPERTIES
 #----- Set common link libraries
 foreach(target IN LISTS targets)
    target_link_libraries(${target} eerUtils -lm)
+   if(DEFINED ENV{INTELCOMP_HOME})
+      target_link_options(${target} PRIVATE "LINKER:-rpath,$ENV{INTELCOMP_HOME}/lib/intel64_lin")
+      target_link_libraries(${target} -lintlc -lifcore -lifport -limf -lsvml -liomp5 -lifcoremt)
+   endif()
 endforeach()
 
 install(TARGETS ${targets}
