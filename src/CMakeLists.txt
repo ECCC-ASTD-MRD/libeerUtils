@@ -32,9 +32,7 @@ endforeach()
 
 #----- Specific target dependencies
 target_compile_definitions(eerUtils-ompi PUBLIC _MPI)
-target_include_directories(eerUtils-ompi PUBLIC "${MPI_INCLUDE_PATH}")
-target_compile_options(eerUtils-ompi PUBLIC "${MPI_COMPILE_FLAGS}" "${OpenMP_C_FLAGS}")
-target_link_libraries(eerUtils-ompi PUBLIC "${MPI_LINK_FLAGS}")
+target_link_libraries(eerUtils-ompi PUBLIC MPI::MPI_C OpenMP::OpenMP_C)
 
 install(TARGETS eerUtils eerUtils-ompi
    LIBRARY        DESTINATION lib

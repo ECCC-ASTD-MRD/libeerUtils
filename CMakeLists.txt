@@ -30,8 +30,8 @@ if(DEFINED TCL_SRC_DIR)
    include_directories(${TCL_SRC_DIR}/unix ${TCL_SRC_DIR}/generic)
 endif()
 
-find_package(MPI REQUIRED)
-find_package(OpenMP REQUIRED)
+find_package(MPI REQUIRED COMPONENTS C)
+find_package(OpenMP REQUIRED COMPONENTS C)
 
 add_compile_definitions(_BUILD_EERUTILS HAVE_GPC _${CMAKE_SYSTEM_NAME}_ _GNU_SOURCE STDC_HEADERS)
 
