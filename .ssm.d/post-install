@@ -21,10 +21,16 @@ cat > ${profilePath} << EOF
 export EC_INCLUDE_PATH="${packageHome}/include \${EC_INCLUDE_PATH}"
 export EC_LD_LIBRARY_PATH="${packageHome}/lib \${EC_LD_LIBRARY_PATH}"
 export LD_LIBRARY_PATH="${packageHome}/lib:${INTELCOMP_HOME}/lib/intel64_lin:\${LD_LIBRARY_PATH}"
+
+#----- Add the <PackageName>_DIR variable for cmake builds
+export ${packageName%%_*}_DIR="$packageHome"
 EOF
 
 cat > ${loginPath} << EOF
 setenv EC_INCLUDE_PATH="${packageHome}/include \${EC_INCLUDE_PATH}" 
 setenv EC_LD_LIBRARY_PATH="${packageHome}/lib \${EC_LD_LIBRARY_PATH}" 
 setenv LD_LIBRARY_PATH="${packageHome}/lib:${INTELCOMP_HOME}/lib/intel64_lin:\${LD_LIBRARY_PATH}"
+
+#----- Add the <PackageName>_DIR variable for cmake builds
+export ${packageName%%_*}_DIR="$packageHome"
 EOF

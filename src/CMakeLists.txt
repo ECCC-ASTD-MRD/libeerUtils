@@ -34,7 +34,31 @@ endforeach()
 target_compile_definitions(eerUtils-ompi PUBLIC _MPI)
 target_link_libraries(eerUtils-ompi PUBLIC MPI::MPI_C OpenMP::OpenMP_C)
 
+#----- Install paths
+set(INCLUDE_INSTALL_DIR include)
+set(LIB_INSTALL_DIR     lib)
+set(CONFIG_INSTALL_DIR  "${LIB_INSTALL_DIR}/cmake/${PROJECT_NAME}-${PROJECT_VERSION}")
+
+#----- Install instructions
 install(TARGETS eerUtils eerUtils-ompi
-   LIBRARY        DESTINATION lib
-   ARCHIVE        DESTINATION lib
-   PUBLIC_HEADER  DESTINATION include)
+   LIBRARY        DESTINATION ${LIB_INSTALL_DIR}
+   ARCHIVE        DESTINATION ${LIB_INSTALL_DIR}
+   PUBLIC_HEADER  DESTINATION ${INCLUDE_INSTALL_DIR}
+)
+
+#----- Generate the config file for the project to be usable via cmake's find_package command
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+    "Config.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+    INSTALL_DESTINATION "${CONFIG_INSTALL_DIR}"
+    PATH_VARS           INCLUDE_INSTALL_DIR LIB_INSTALL_DIR
+)
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+    COMPATIBILITY SameMajorVersion
+)
+install(FILES   "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+                "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+    DESTINATION "${CONFIG_INSTALL_DIR}"
+)
