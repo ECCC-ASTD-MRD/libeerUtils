@@ -8,8 +8,8 @@ HELP="Arguments must be:\n\n   Information parameters:
    Commands:
 \t-clear       : Clear package
 \t-ssm         : Build SSM package
-\t-build       : Compile package"
-\t-reconf      : Reconfigure package"
+\t-build       : Compile package
+\t-reconf      : Reconfigure package
 \t-verbose     : Enable verbose on build step\n"
 
 CLR=0

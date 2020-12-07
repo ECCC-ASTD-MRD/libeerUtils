@@ -19,6 +19,7 @@ INTELCOMP_HOME=/fs/ssm/main/opt/intelcomp/intelpsxe-cluster-19.0.3.199/intelpsxe
 #INTELCOMP_HOME=/fs/ssm/main/opt/intelcomp/intelcomp-2016.1.156/intelcomp_2016.1.156_multi
 
 # Add EXT package (for various library dependencies)
+CMDS_EXT_VERSION=20200305
 case `domainname -d` in
    *science.gc.ca)
       EXT_HOME=eccc/cmd/cmds/ext/${CMDS_EXT_VERSION}
@@ -39,21 +40,8 @@ export LD_LIBRARY_PATH="${packageHome}/lib:${INTELCOMP_HOME}/lib/intel64_lin:\${
 #----- Add the <PackageName>_DIR variable for cmake builds
 export ${packageName%%_*}_DIR="$packageHome"
 
-case `domainname -d` in
-   *science.gc.ca)
-      #----- On the SCIENCE side
-      [[ ${LD_LIBRARY_PATH} =~ eccc/cmd/cmds/ext/${CMDS_EXT_VERSION} ]]  || . ssmuse-sh -d eccc/cmd/cmds/ext/${CMDS_EXT_VERSION}
-      ;;
-   *ec.gc.ca)
-      #----- On the EC side
-      [[ ${LD_LIBRARY_PATH} =~ cmds/ext/${CMDS_EXT_VERSION} ]] || . ssmuse-sh -d cmds/ext/${CMDS_EXT_VERSION}
-      ;;
-    *)
-      echo "(WARNING) Not running on GC network, external dependency package ${CMDS_EXT_VERSION} not loaded"
-      ;;
-   esac
-fi
-
+#----- Load SSM dependencies
+\[ \${LD_LIBRARY_PATH} =~ ${EXT_HOME} \] || . ssmuse-sh -d ${EXT_HOME}
 EOF
 
 cat > ${loginPath} << EOF
@@ -63,4 +51,7 @@ setenv LD_LIBRARY_PATH="${packageHome}/lib:${INTELCOMP_HOME}/lib/intel64_lin:\${
 
 #----- Add the <PackageName>_DIR variable for cmake builds
 export ${packageName%%_*}_DIR="$packageHome"
+
+#----- Load SSM dependencies
+\[ \${LD_LIBRARY_PATH} =~ ${EXT_HOME} \] || . ssmuse-sh -d ${EXT_HOME}
 EOF
