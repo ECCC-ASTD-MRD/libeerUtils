@@ -17,6 +17,20 @@ mkdir -p ${profileDirPath}
 # Added Intel compiler shared lib path ($INTELCOMP_HOME/lib/intel64_lin)
 INTELCOMP_HOME=/fs/ssm/main/opt/intelcomp/intelpsxe-cluster-19.0.3.199/intelpsxe-cluster_19.0.3.199_multi
 #INTELCOMP_HOME=/fs/ssm/main/opt/intelcomp/intelcomp-2016.1.156/intelcomp_2016.1.156_multi
+
+# Add EXT package (for various library dependencies)
+case `domainname -d` in
+   *science.gc.ca)
+      EXT_HOME=eccc/cmd/cmds/ext/${CMDS_EXT_VERSION}
+      ;;
+   *ec.gc.ca)
+      EXT_HOME=cmds/ext/${CMDS_EXT_VERSION}
+      ;;
+    *)
+      echo "(WARNING) Not running on GC network, external dependency package ${CMDS_EXT_VERSION} not loaded"
+      ;;
+   esac
+fi
 cat > ${profilePath} << EOF
 export EC_INCLUDE_PATH="${packageHome}/include \${EC_INCLUDE_PATH}"
 export EC_LD_LIBRARY_PATH="${packageHome}/lib \${EC_LD_LIBRARY_PATH}"
@@ -24,6 +38,22 @@ export LD_LIBRARY_PATH="${packageHome}/lib:${INTELCOMP_HOME}/lib/intel64_lin:\${
 
 #----- Add the <PackageName>_DIR variable for cmake builds
 export ${packageName%%_*}_DIR="$packageHome"
+
+case `domainname -d` in
+   *science.gc.ca)
+      #----- On the SCIENCE side
+      [[ ${LD_LIBRARY_PATH} =~ eccc/cmd/cmds/ext/${CMDS_EXT_VERSION} ]]  || . ssmuse-sh -d eccc/cmd/cmds/ext/${CMDS_EXT_VERSION}
+      ;;
+   *ec.gc.ca)
+      #----- On the EC side
+      [[ ${LD_LIBRARY_PATH} =~ cmds/ext/${CMDS_EXT_VERSION} ]] || . ssmuse-sh -d cmds/ext/${CMDS_EXT_VERSION}
+      ;;
+    *)
+      echo "(WARNING) Not running on GC network, external dependency package ${CMDS_EXT_VERSION} not loaded"
+      ;;
+   esac
+fi
+
 EOF
 
 cat > ${loginPath} << EOF

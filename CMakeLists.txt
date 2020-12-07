@@ -13,6 +13,10 @@ ec_build_info()     # Generate build include file
 project(${NAME} VERSION ${VERSION} DESCRIPTION "${DESCRIPTION}")
 
 set(CMAKE_INSTALL_PREFIX "" CACHE PATH "..." FORCE)
+#set(CMAKE_VERBOSE_MAKEFILE ON)
+#set(CMAKE_SKIP_BUILD_RPATH FALSE)
+#set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+#set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 include(compiler_rules)
 
