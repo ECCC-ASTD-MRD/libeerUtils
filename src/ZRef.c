@@ -42,8 +42,8 @@
 
 static float       *ZRef_Levels   = NULL;
 static unsigned int ZRef_LevelsNb = 0;
-static const char  *ZRef_Names[]  = { "MASL","SIGMA","PRESSURE","UNDEFINED","MAGL","HYBRID","THETA","ETA","GALCHEN","COUNT","HOUR","ANGLE","NIL","NIL","NIL","INT","NIL","IDX","NIL","NIL","NIL","MPRES",NULL };
-static const char  *ZRef_Units[]  = { "m","sg","mb","-","m","hy","th","sg","m","nb","hr","dg","--","--","--","i","--","x","--","--","--","mp",NULL };
+static const char  *ZRef_Names[]  = { "MASL","SIGMA","PRESSURE","UNDEFINED","MAGL","HYBRID","THETA","MBSL","GALCHEN","COUNT","HOUR","ANGLE","NIL","NIL","NIL","INT","NIL","IDX","NIL","NIL","NIL","MPRES","NIL","NIL","NIL","NIL","NIL","NIL","NIL","NIL","NIL","NIL","ETA",NULL };
+static const char  *ZRef_Units[]  = { "m","sg","mb","-","m","hy","th","m-","m","nb","hr","dg","--","--","--","i","--","x","--","--","--","mp","--","--","--","--","--","--","--","--","--","--","sg",NULL };
 
 int ZREF_IP1MODE=3;
 
@@ -743,6 +743,14 @@ int ZRef_KCube2Meter(TZRef* restrict const ZRef,float *GZ,const int NIJ,float *H
          }
          break;
 
+      case LVL_MBSL:
+         for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
+            for (ij=0;ij<NIJ;ij++) {
+               Height[idxk+ij]=-ZRef->Levels[k];
+            }
+         }
+         break;
+
       case LVL_MAGL:
          /*Add the topography to the gz to get the heigth above the sea*/
          for (k=0;k<ZRef->LevelNb;k++,idxk+=NIJ) {
@@ -951,6 +959,8 @@ double ZRef_Level2Meter(double Level,int Type) {
 
    switch(Type) {
       case LVL_MASL    : m=Level; break;
+
+      case LVL_MBSL    : m=-Level; break;
       
       case LVL_ETA     : m=ETA2METER(Level); break;
       
@@ -1136,15 +1146,16 @@ int ZRef_IPFormat(char *Buf,int IP,int Interval) {
       lvl=ZRef_IP2Level(IP,&type);
 
       switch(type) {
-         case LVL_MASL  : sprintf(Buf," %8.1f %-2s",lvl,ZRef_Units[type]); break;
-         case LVL_SIGMA : sprintf(Buf," %8.4f %-2s",lvl,ZRef_Units[type]); break;
-         case LVL_PRES  : sprintf(Buf," %8.1f %-2s",lvl,ZRef_Units[type]); break;
-         case LVL_UNDEF : sprintf(Buf," %8.1f %-2s",lvl,ZRef_Units[type]); break;
-         case LVL_MAGL  : sprintf(Buf," %8.1f %-2s",lvl,ZRef_Units[type]); break;
-         case LVL_HYBRID: sprintf(Buf," %8.6f %-2s",lvl,ZRef_Units[type]); break;
+         case LVL_SIGMA : 
          case LVL_THETA : sprintf(Buf," %8.4f %-2s",lvl,ZRef_Units[type]); break;
-         case LVL_HOUR  : sprintf(Buf," %8.1f %-2s",lvl,ZRef_Units[type]); break;
-         case LVL_MPRES : sprintf(Buf," %8.1f %-2s",lvl,ZRef_Units[type]); break;
+         case LVL_HYBRID: sprintf(Buf," %8.6f %-2s",lvl,ZRef_Units[type]); break;
+         case LVL_MASL  : 
+         case LVL_MBSL  : 
+         case LVL_MAGL  : 
+         case LVL_PRES  : 
+         case LVL_HOUR  : 
+         case LVL_MPRES :
+         case LVL_UNDEF : 
          default        : sprintf(Buf," %8.1f %-2s",lvl,ZRef_Units[type]); break;
       }    
    }

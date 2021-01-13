@@ -49,7 +49,7 @@
 #define LVL_MAGL         4  //  Meters above ground level
 #define LVL_HYBRID       5  //  Hybrid levels
 #define LVL_THETA        6  //  ?
-#define LVL_ETA          7  //  (Pt-P)/(Pt-Ps) -not in convip
+#define LVL_MBSL         7  //  Meters below sea level
 #define LVL_GALCHEN      8  //  Original Gal-Chen -not in convip (JP Defined)
 #define LVL_NBR          9  //  Nombre d'elements
 #define LVL_HOUR        10  //  Hours
@@ -57,6 +57,7 @@
 #define LVL_INT         15  //  Entiers (reserve)
 #define LVL_IDX         17  //  Index de matrice
 #define LVL_MPRES       21  //  Metres-pression
+#define LVL_ETA         32  //  (Pt-P)/(Pt-Ps) -not in convip
 
 #define MB2PA           100.0f           // Constant for converting pressure from [mb] to [Pa]
 #define PA2MB           0.01f            // Constant for converting pressure from [Pa] to [mb]
