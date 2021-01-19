@@ -176,6 +176,8 @@ typedef struct TPoint2D {
   double Y;
 } TPoint2D;
 
+typedef int (*QSort_Fn)(const void*,const void*);
+int QSort_StrPtr(const void *A,const void *B);
 int QSort_Double(const void *A,const void *B);
 int QSort_Float(const void *A,const void *B);
 int QSort_Int(const void *A,const void *B);
