@@ -603,6 +603,10 @@ int QSort_Int(const void *A, const void *B) {
    return(*(const int*)A)-(*(const int*)B);
 }
 
+int QSort_StrPtr(const void *A, const void *B) {
+   return strcmp(*(const char * const *)A,*(const char * const *)B);
+}
+
 /*----------------------------------------------------------------------------
  * Nom      : <QSort_Dec*>
  * Creation : Mars 2015 - E. Legault-Ouellet - CMC/CMOE
