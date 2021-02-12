@@ -577,6 +577,7 @@ int GeoRef_WKTSet(TGeoRef *GRef,char *String,double *Transform,double *InvTransf
    if (String && String[0]!='\0') {
       string=strdup(String);
       strtrim(string,' ');
+      App_Log(DEBUG,"%s: Projection string: %s\n",__func__,String);
    }
 
    GeoRef_Clear(GRef,0);
@@ -608,11 +609,12 @@ int GeoRef_WKTSet(TGeoRef *GRef,char *String,double *Transform,double *InvTransf
             GRef->InvTransform=NULL;
          }
       }
-   }
+   } 
 
    if (Spatial) {
       GRef->Spatial=OSRClone(Spatial);
       OSRExportToWkt(GRef->Spatial,&string);
+      App_Log(DEBUG,"%s: Projection from spatial:%p\n",__func__,string);
    } else if (string) {
       GRef->Spatial=OSRNewSpatialReference(NULL);
       if (OSRSetFromUserInput(GRef->Spatial,string)==OGRERR_FAILURE) {
@@ -639,6 +641,8 @@ int GeoRef_WKTSet(TGeoRef *GRef,char *String,double *Transform,double *InvTransf
          // Create forward/backward tranformation functions
          GRef->Function=OCTNewCoordinateTransformation(GRef->Spatial,llref);
          GRef->InvFunction=OCTNewCoordinateTransformation(llref,GRef->Spatial);
+         if (!GRef->Function || !GRef->InvFunction)
+            App_Log(ERROR,"%s: Unable to create transformation functions\n",__func__);
       }
    } else {
       App_Log(WARNING,"%s: Unable to get spatial reference\n",__func__);
@@ -659,7 +663,7 @@ int GeoRef_WKTSet(TGeoRef *GRef,char *String,double *Transform,double *InvTransf
 }
 
 /*--------------------------------------------------------------------------------------------------------------
- * Nom          : <GeoRef_RPNSetup>
+ * Nom          : <GeoRef_WKTSetup>
  * Creation     : Avril 2005 J.P. Gauthier - CMC/CMOE
  *
  * But          : Definir le referetiel de type RPN
@@ -700,6 +704,6 @@ TGeoRef *GeoRef_WKTSetup(int NI,int NJ,char *GRTYP,int IG1,int IG2,int IG3,int I
    ref->IG2=IG2;
    ref->IG3=IG3;
    ref->IG4=IG4;
-   
+
    return(ref);
 }
