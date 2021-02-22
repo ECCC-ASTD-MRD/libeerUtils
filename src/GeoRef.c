@@ -1772,11 +1772,12 @@ int GeoRef_Valid(TGeoRef* __restrict const Ref) {
    Coord co[2];
 
    if (!Ref) return(0);
-   
+
    Ref->Project(Ref,Ref->X0,Ref->Y0,&co[0].Lat,&co[0].Lon,1,1);
    Ref->Project(Ref,Ref->X1,Ref->Y1,&co[1].Lat,&co[1].Lon,1,1);
 
    if (co[0].Lat<-91 || co[0].Lat>91.0 || co[1].Lat<-91 || co[1].Lat>91.0) {
+      App_Log(DEBUG,"%s: Limits: %f %f - %f %f\n",__func__,co[0].Lat,co[0].Lon,co[1].Lat,co[1].Lon);
       return(0);
    }
    return(1);

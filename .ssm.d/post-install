@@ -19,7 +19,7 @@ INTELCOMP_HOME=/fs/ssm/main/opt/intelcomp/intelpsxe-cluster-19.0.3.199/intelpsxe
 #INTELCOMP_HOME=/fs/ssm/main/opt/intelcomp/intelcomp-2016.1.156/intelcomp_2016.1.156_multi
 
 # Add EXT package (for various library dependencies)
-CMDS_EXT_VERSION=20200305
+CMDS_EXT_VERSION=20210210
 case `domainname -d` in
    *science.gc.ca)
       EXT_HOME=eccc/cmd/cmds/ext/${CMDS_EXT_VERSION}
@@ -27,7 +27,7 @@ case `domainname -d` in
    *ec.gc.ca)
       EXT_HOME=cmds/ext/${CMDS_EXT_VERSION}
       ;;
-    *)
+   *)
       EXT_HOME=NIL
       echo "(WARNING) Not running on GC network, external dependency package ${CMDS_EXT_VERSION} not loaded"
       ;;

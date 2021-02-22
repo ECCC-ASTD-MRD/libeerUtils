@@ -73,7 +73,7 @@ static inline int OGM_ToVect3d(OGRGeometryH Geom,unsigned int No) {
    unsigned int n;
 
    n=OGR_G_GetPointCount(Geom);
-   if (OGM_GetVect3d(n,No))  {
+   if (OGM_GetVect3d(n,No)) {
       OGR_G_GetPoints(Geom,&OGM_Geom[No][0][0],sizeof(Vect3d),&OGM_Geom[No][0][1],sizeof(Vect3d),&OGM_Geom[No][0][2],sizeof(Vect3d));
       return(n);
    }
