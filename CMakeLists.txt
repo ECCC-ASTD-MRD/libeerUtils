@@ -1,5 +1,4 @@
-#cmake_minimum_required(VERSION 3.16)
-cmake_minimum_required(VERSION 3.6.0)
+cmake_minimum_required(VERSION 3.16)
 
 #----- Append EC specific module path
 foreach(PATH $ENV{EC_CMAKE_MODULE_PATH})

@@ -2,6 +2,11 @@
 
 libeerUtils contains a suite of base utility functions used by SPI and EER dispersion models and tools
 
+# Getting the source code
+```shell
+git clone --recursive git@gitlab.science.gc.ca:ECCC_CMOE_MODEL/libeerUtils 
+```
+
 # Building libeerUtils
 
 ## Dependencies
@@ -15,7 +20,7 @@ libeerUtils contains a suite of base utility functions used by SPI and EER dispe
 ```shell
 . r.load.dot rpn/vgrid/6.5.0
 ```
-External dependencies (GDAL,URP,ECCODES,LIBECBUFR,...). Within the SCIENCE network, a package containing all the dependencies cna be loaded
+External dependencies (GDAL,URP,ECCODES,LIBECBUFR,...). Within the SCIENCE network, a package containing all the dependencies can be loaded
 ```shell
 export CMD_EXT_PATH=/fs//ssm/eccc/cmd/cmds/ext/20210211; . ssmuse-sh -x $CMD_EXT_PATH
 ```
