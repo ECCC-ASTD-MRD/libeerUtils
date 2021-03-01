@@ -66,10 +66,6 @@ while test $# -gt 0; do
        	echo ${cflags}
        	;;
            
-    --libs)
-       	echo ${libs}
-       	;;
-
     --has-rmn)
        	echo ${has_rmn:-no}
        	;;
