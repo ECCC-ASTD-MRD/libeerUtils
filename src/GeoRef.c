@@ -1149,7 +1149,7 @@ TQTree* GeoRef_BuildIndex(TGeoRef* __restrict const Ref) {
       }
 
       // Loop on triangles
-      for(n=0,t=0;n<Ref->NIdx-3;n+=3,t++) {          
+      for(n=0,t=0;n<Ref->NIdx;n+=3,t++) {          
          tr[0][0]=Ref->AX[Ref->Idx[n]];     tr[0][1]=Ref->AY[Ref->Idx[n]];
          tr[1][0]=Ref->AX[Ref->Idx[n+1]];   tr[1][1]=Ref->AY[Ref->Idx[n+1]];
          tr[2][0]=Ref->AX[Ref->Idx[n+2]];   tr[2][1]=Ref->AY[Ref->Idx[n+2]];
@@ -1973,7 +1973,7 @@ int GeoRef_CellDims(TGeoRef *Ref,int Invert,float* DX,float* DY,float* DA) {
       if (DA) {
          a=(EARTHRADIUS*EARTHRADIUS)*0.5;
          tidx=Ref->Idx;
-         for(idx=0;idx<Ref->NIdx-3;idx+=3) {
+         for(idx=0;idx<Ref->NIdx;idx+=3) {
             
             dx[0]=DEG2RAD(Ref->AX[tidx[idx]]);   dy[0]=DEG2RAD(Ref->AY[tidx[idx]]);
             dx[1]=DEG2RAD(Ref->AX[tidx[idx+1]]); dy[1]=DEG2RAD(Ref->AY[tidx[idx+1]]);
