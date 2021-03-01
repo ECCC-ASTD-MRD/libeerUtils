@@ -5,9 +5,9 @@ foreach(PATH $ENV{EC_CMAKE_MODULE_PATH})
    list(APPEND CMAKE_MODULE_PATH ${PATH})
 endforeach()
 
-include(ec_utils)   # Include EC specific cmake utils
-ec_parse_manifest() # Parse MANIFEST file
-ec_build_info()     # Generate build include file
+include(ec_init)           # Include EC specific cmake utils
+include(ec_parse_manifest) # Parse MANIFEST file
+include(ec_build_info)     # Generate build include file
 
 #include(compiler_presets)
 project(${NAME} VERSION ${VERSION} DESCRIPTION "${DESCRIPTION}")
@@ -18,11 +18,13 @@ set(CMAKE_INSTALL_PREFIX "" CACHE PATH "..." FORCE)
 #set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 #set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-include(compiler_rules)
+enable_language(C)
+
+include(compiler_presets)
 
 #----- Packages that create imported targets
-find_package(RMN ${RMN_REQ_VERSION} COMPONENTS beta shared OPTIONAL)
-find_package(VGRID ${VGRID_REQ_VERSION} COMPONENTS shared OPTIONAL)
+find_package(RMN ${RMN_REQ_VERSION} COMPONENTS beta SHARED OPTIONAL)
+find_package(VGRID ${VGRID_REQ_VERSION} COMPONENTS SHARED OPTIONAL)
 find_package(LibXml2 REQUIRED)
 find_package(GDAL ${GDAL_REQ_VERSION})
 if(GDAL_FOUND)
