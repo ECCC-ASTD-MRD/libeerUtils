@@ -522,8 +522,13 @@ float Vertex_ValS(float *Data,char *Mask,int NI,int NJ,double X,double Y,char Ge
    double        cell[4],d;
    unsigned long i,j,idx[4];
 
+   if (Geo) {
+      X=CLAMP(X,0,NI-1);
+      Y=CLAMP(Y,0,NJ-1);
+   }
+
    if (!Data || X>NI-1 || Y>NJ-1 || X<0 || Y<0) {
-      return(0);
+      return(0.0);
    }
 
    i=X;X-=i;
