@@ -3,31 +3,30 @@
 # This forms the basis for the xx-config utility, which tells you
 # various things about the library installation.
 
-cc=CMAKE_CC
-ftn=CMAKE_FTN
-cflags=CMAKE_CFLAGS
-libs=CMAKE_LIBS
+cc="@CMAKE_C_COMPILER_ID@ @CMAKE_C_COMPILER_VERSION@"
+ftn="@CMAKE_Fortran_COMPILER_ID@ @CMAKE_Fortran_COMPILER_VERSION@"
+cflags="@CMAKE_C_FLAGS@"
+fflags="@CMAKE_Fortran_Flags@"
 
-build=CMAKE_BUILD
-version=CMAKE_VERSION
-has_rmn=CMAKE_RMN
-has_gdal=CMAKE_GDAL
-has_vgrid=CMAKE_VGRID
+version=@VERSION@@STATE@
+has_rmn=@RMN_VERSION@@RMN_STATE@
+has_gdal=@GDAL_VERSION@
+has_vgrid=@VGRID_VERSION@@VGRID_STATE@
 
 usage()
 {
     cat <<EOF
-Usage: libgeoref-config [OPTION]
+Usage: @NAME@-config [OPTION]
 
 Available values for OPTION include:
 
   --help         display this help message and exit
   --cc           C compiler [${cc}]
   --ftn          FORTRAN compiler [${ftn}]
-  --cflags       pre-processor and compiler flags [${cflags}]
+  --cflags       C compiler flags [${cflags}]
+  --fflags       Fortran compiler flags [${fflags}]
   --libs         library linking information [${libs}]
-  --build        Build type [${build}]
-  --version      Library version [${version}]
+  --version      library version [${version}]
   --has-rmn      which version of librmn is it compiled with [${has_rmn}]
   --has-gdal     which version of gdal is it compiled with [${has_gdal}]
   --has-vgrid    which version of vgrid is it compiled with [${has_vgrid}]
@@ -66,6 +65,14 @@ while test $# -gt 0; do
        	echo ${cflags}
        	;;
            
+    --fflags)
+       	echo ${fflags}
+       	;;
+
+    --libs)
+       	echo ${libs}
+       	;;
+
     --has-rmn)
        	echo ${has_rmn:-no}
        	;;
@@ -78,12 +85,12 @@ while test $# -gt 0; do
        	echo ${has_vgrid:-no}
        	;;
 
-    --build)
-	    echo $build
-        ;;
+    --libs)
+       	echo ${libs}
+       	;;
 
     --version)
-	    echo $version
+	    echo ${version}
 	    ;;
 
     *)
