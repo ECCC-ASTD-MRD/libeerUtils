@@ -110,7 +110,7 @@ if [[ $SSM -eq 1 ]]; then
 fi
 
 if [[ $INS -eq 1 ]]; then
-   $MAKE -f $MAKEFILE install
+   $MAKE install
 fi
 
 if [[ $SRC -eq 1 ]]; then

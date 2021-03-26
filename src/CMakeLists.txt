@@ -15,7 +15,7 @@ set_target_properties(eerUtils eerUtils-ompi PROPERTIES
 
 #----- Common target dependencies
 foreach(target IN ITEMS eerUtils eerUtils-ompi)
-   message(WARNING "Adding dep to ${target} (${CMAKE_CURRENT_SOURCE_DIR})")
+   message(STATUS "Adding dep to ${target} (${CMAKE_CURRENT_SOURCE_DIR})")
    add_dependencies(${target} build_info)
    target_include_directories(${target} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
    target_link_libraries(${target} PUBLIC LibXml2::LibXml2)
