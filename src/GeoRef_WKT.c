@@ -635,7 +635,9 @@ int GeoRef_WKTSet(TGeoRef *GRef,char *String,double *Transform,double *InvTransf
          // Create global latlon reference on perfect sphere
          llref=OSRNewSpatialReference(NULL);
          OSRSetFromUserInput(llref,"EPSG:4047");
+#if defined(GDAL_VERSION_MAJOR) && GDAL_VERSION_MAJOR >= 3
          OSRSetAxisMappingStrategy(llref,OAMS_TRADITIONAL_GIS_ORDER);
+#endif
       }
 
       if (llref) {
