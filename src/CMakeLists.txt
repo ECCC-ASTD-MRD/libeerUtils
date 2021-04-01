@@ -28,6 +28,9 @@ foreach(target IN ITEMS eerUtils eerUtils-ompi)
    if(GDAL_FOUND)
       target_link_libraries(${target} PUBLIC GDAL::GDAL)
    endif()
+   if(${CMAKE_Fortran_COMPILER} STREQUAL "gfortran")
+      target_link_libraries(${target} PUBLIC -lgfortran)
+   endif()
 endforeach()
 
 #----- Specific target dependencies
