@@ -79,7 +79,7 @@ if [[ $BLD -eq 1 ]]; then
    
    #----- Build
    cmake -DCMAKE_INSTALL_PREFIX=$DESTDIR $CMAKE_COMP_FLAGS ../ &&
-       $MAKE -j ${VER:+VERBOSE=$VER} &&
+       $MAKE -j ${VER:+1 VERBOSE=$VER} &&
        $MAKE install || exit 1
 
    cd ..
