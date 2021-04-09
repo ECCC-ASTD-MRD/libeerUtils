@@ -16,7 +16,6 @@ CLR=0
 BLD=0
 SSM=0
 REC=0
-INS=0
 unset VER
 
 #----- Get arguments
@@ -27,7 +26,6 @@ while [ $# -gt 0 ]; do
         -build)   BLD=1;;
         -src)     SRC=1;;
         -ssm)     SSM=1;;
-        -install) INS=1;;
         -verbose) VER=1;;
 
         -h|-help)    printf -- "$HELP\n"; exit 0;;
@@ -71,16 +69,16 @@ if [[ $BLD -eq 1 ]]; then
    export DESTDIR=${SSM_DEV}/workspace/${SSM_NAME}
    export CRAYPE_LINK_TYPE=dynamic
 
-   CMAKE_COMP_FLAGS="-DTCL_SRC_DIR=${SSM_DEV}/src/ext/tcl8.6.6"
+   CMAKE_COMP_FLAGS="-DVERSION=${VERSION} -DTCL_SRC_DIR=${SSM_DEV}/src/ext/tcl8.6.6"
    type gdal-config >/dev/null 2>&1 && CMAKE_COMP_FLAGS="$CMAKE_COMP_FLAGS -DGDAL_ROOT=`gdal-config --prefix`" 2>/dev/null
 
    mkdir -p build
    cd build
    
    #----- Build
-   cmake -DCMAKE_INSTALL_PREFIX=$DESTDIR $CMAKE_COMP_FLAGS ../ &&
-       $MAKE -j ${VER:+VERBOSE=$VER} &&
-       $MAKE install || exit 1
+   if [[ $REC -eq 1 ]]; then
+      cmake -DCMAKE_INSTALL_PREFIX=$DESTDIR $CMAKE_COMP_FLAGS  ../
+   fi && make -j ${VER:+VER=$VER} && make install || exit 1
 
    cd ..
 fi
@@ -107,10 +105,6 @@ if [[ $SSM -eq 1 ]]; then
 
    cd ${SSM_DEV}/workspace; tar --exclude=.nfs* -zcvf ${SSM_DEV}/package/${SSM_NAME}.ssm ${SSM_NAME}
 #   rm -f -r  $(SSM_DEV)/workspace/$(SSM_NAME)
-fi
-
-if [[ $INS -eq 1 ]]; then
-   $MAKE install
 fi
 
 if [[ $SRC -eq 1 ]]; then

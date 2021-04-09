@@ -6,11 +6,12 @@ foreach(PATH $ENV{EC_CMAKE_MODULE_PATH})
 endforeach()
 
 include(ec_init)      # Include EC specific cmake utils
-ec_parse_manifest()    # Parse MANIFEST file
-ec_build_info()        # Generate build include file
+ec_parse_manifest()   # Parse MANIFEST file
+ec_build_info()       # Generate build include file
+ec_git_version()      # Get version from git 
 
-#include(compiler_presets)
-project(${NAME} VERSION ${VERSION} DESCRIPTION "${DESCRIPTION}")
+project(${NAME} DESCRIPTION "${DESCRIPTION}")
+set(PROJECT_VERSION ${VERSION})
 
 set(CMAKE_INSTALL_PREFIX "" CACHE PATH "..." FORCE)
 #set(CMAKE_VERBOSE_MAKEFILE ON)
