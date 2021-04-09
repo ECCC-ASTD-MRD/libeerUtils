@@ -128,7 +128,7 @@
 #define FIN2D(D,I,J)                      (J>=0 && J<D->NJ && I>=0 && I<D->NI)
 #define FIN25D(D,I,J)                     (J>-0.5 && J<D->NJ+0.5 && I>-0.5 && I<D->NI+0.5)
 
-#define CLAMP(A,MIN,MAX)                  (A>MAX?MAX:(A<MIN?MIN:A))
+#define CLAMP(A,MIN,MAX)                  ((A)>(MAX)?(MAX):((A)<(MIN)?(MIN):(A)))
 #define ORDER(VAL)                        (VAL==0.0?1.0:floor(log10(ABS(VAL))))
 #define RANGE_ORDER(VAL)                  (VAL==0.0?1.0:ceil(log10(ABS(VAL))-0.25))
 #define RANGE_INCR(VAL)                   (pow(10,VAL-1))
@@ -155,6 +155,7 @@
 #define CLAMPLAT(LAT)        (LAT=LAT>90.0?90.0:(LAT<-90.0?-90.0:LAT))
 #define CLAMPLON(LON)        (LON=LON>180?LON-360:(LON<-180?LON+360:LON))
 #define CLAMPLONRAD(LON)     (LON=(LON>M_PI?(fmod(LON+M_PI,M_2PI)-M_PI):(LON<=-M_PI?(fmod(LON-M_PI,M_2PI)+M_PI):LON)))
+#define SIDELON(SIDE,L)      (((SIDE)>0 && (L)<0)?L+360.0:((SIDE)>0 && (L)<0)?(L)-360.0:(L))
 
 #define COORD_CLEAR(C)       (C.Lat=C.Lon=C.Elev=-999.0)
 

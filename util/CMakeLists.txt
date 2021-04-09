@@ -1,8 +1,5 @@
 message(STATUS "Generating libeerUtils binaries")
 
-#add_link_options(-Wl,-rpath=${CMAKE_INSTALL_PREFIX}/lib)
-add_link_options(-lpthread)
-
 add_executable(CodeInfo CodeInfo.c)
 add_executable(Dict Dict.c)
 add_executable(EZTiler EZTiler.c)
