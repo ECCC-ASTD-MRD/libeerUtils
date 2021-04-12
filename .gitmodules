@@ -1,4 +1,4 @@
 [submodule "cmake"]
 	path = cmake
 	url = https://gitlab.science.gc.ca/RPN-SI/cmake_rpn
-	branch = jp
+	branch = dev
