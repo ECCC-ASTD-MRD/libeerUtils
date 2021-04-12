@@ -19,7 +19,7 @@ INTELCOMP_HOME=/fs/ssm/main/opt/intelcomp/intelpsxe-cluster-19.0.3.199/intelpsxe
 #INTELCOMP_HOME=/fs/ssm/main/opt/intelcomp/intelcomp-2016.1.156/intelcomp_2016.1.156_multi
 
 # Add EXT package (for various library dependencies)
-CMDS_EXT_VERSION=20210210
+CMDS_EXT_VERSION=20210301
 case `domainname -d` in
    *science.gc.ca)
       EXT_HOME=eccc/cmd/cmds/ext/${CMDS_EXT_VERSION}
@@ -36,7 +36,7 @@ esac
 cat > ${profilePath} << EOF
 export EC_INCLUDE_PATH="${packageHome}/include \${EC_INCLUDE_PATH}"
 export EC_LD_LIBRARY_PATH="${packageHome}/lib \${EC_LD_LIBRARY_PATH}"
-export LD_LIBRARY_PATH="${packageHome}/lib:${INTELCOMP_HOME}/lib/intel64_lin:\${LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH="${packageHome}/lib:${INTELCOMP_HOME}/lib/intel64_lin:${INTELCOMP_HOME}/compilers_and_libraries_2019.3.199/linux/mkl/lib/intel64_lin:\${LD_LIBRARY_PATH}"
 
 #----- Add the <PackageName>_DIR variable for cmake builds
 export ${packageName%%_*}_DIR="$packageHome"
@@ -48,7 +48,7 @@ EOF
 cat > ${loginPath} << EOF
 setenv EC_INCLUDE_PATH="${packageHome}/include \${EC_INCLUDE_PATH}" 
 setenv EC_LD_LIBRARY_PATH="${packageHome}/lib \${EC_LD_LIBRARY_PATH}" 
-setenv LD_LIBRARY_PATH="${packageHome}/lib:${INTELCOMP_HOME}/lib/intel64_lin:\${LD_LIBRARY_PATH}"
+setenv LD_LIBRARY_PATH="${packageHome}/lib:${INTELCOMP_HOME}/lib/intel64_lin:${INTELCOMP_HOME}/compilers_and_libraries_2019.3.199/linux/mkl/lib/intel64_lin:\${LD_LIBRARY_PATH}"
 
 #----- Add the <PackageName>_DIR variable for cmake builds
 export ${packageName%%_*}_DIR="$packageHome"
