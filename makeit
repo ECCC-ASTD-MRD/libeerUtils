@@ -78,7 +78,7 @@ if [[ $BLD -eq 1 ]]; then
    #----- Build
    if [[ $REC -eq 1 ]]; then
       cmake -DCMAKE_INSTALL_PREFIX=$DESTDIR $CMAKE_COMP_FLAGS  ../
-   fi && make -j ${VER:+VER=$VER} && make install || exit 1
+   fi && make -j $VER ${VER:+VERBOSE=$VER} && make install || exit 1
 
    cd ..
 fi
