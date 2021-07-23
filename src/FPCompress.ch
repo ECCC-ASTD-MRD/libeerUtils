@@ -43,6 +43,7 @@
 #include <stdlib.h>
 #include "App.h"
 #include "QSM.h"
+#include "BitStuff.h"
 
 #include <unistd.h>
 #include <sys/stat.h>
@@ -52,7 +53,6 @@
 
 #define FPC_BUF_SIZE    134217728 // 128 MB
 
-#define bitsizeof(x)    (sizeof(x)*CHAR_BIT)
 #define TOPBYTE(x)      ((x)>>(bitsizeof(x)-8))
 #define FPCTOPBYTE(x)   ((x)>>(bitsizeof(TFPCType)-8))
 
@@ -66,53 +66,6 @@ typedef struct TFPCCtx {
     TFPCType        Code;
     int             FD;
 } TFPCCtx;
-
-/*----------------------------------------------------------------------------
- * Nom      : <BSR>
- * Creation : Mars 2017 - E. Legault-Ouellet - CMC/CMOE
- *
- * But      : Bit Scan Reverse : retourne la position du bit le plus
- *            significatif à 1.
- *            Ex: 00001000 retournerait 3
- *
- * Parametres :
- *  <X>     : La valeur dont on veut le MSB. La valeur doit être non-nulle!
- *
- * Retour   : la position du bit le plus significatif à 1
- *
- * Remarques : If X is 0, the result is undefined
- *
- *----------------------------------------------------------------------------
- */
-inline static int BSR(unsigned int X) {
-    int k;
-#if __x86_64__ || defined __i386__
-    __asm__("bsr %1,%0":"=r"(k):"rm"(X));
-#elif defined __INTEL_COMPILER
-    k = _bit_scan_reverse(x);
-#elif defined __GNUC__
-    k = (int)bitsizeof(x)-1-__builtin_clz(x);
-#else
-    k=0;
-    while( X>>=1 ) ++k;
-#endif
-    return k;
-}
-inline static int BSRl(unsigned long X) {
-#if __x86_64__ || defined __i386__
-    long k;
-    __asm__("bsr %1,%0":"=r"(k):"rm"(X));
-    return (int)k;
-#elif defined __INTEL_COMPILER
-    return (int)bitsizeof(x)-1-(int)_lzcnt_u64(x);
-#elif defined __GNUC__
-    return (int)bitsizeof(x)-1-__builtin_clzl(x);
-#else
-    int k=0;
-    while( X>>=1 ) ++k;
-    return k;
-#endif
-}
 
 /*----------------------------------------------------------------------------
  * Nom      : <FPC_New>
@@ -495,7 +448,7 @@ int R(FPC_Compress)(void *restrict CData,int FD,TFPCReal *restrict Data,int NI,i
         if( upred < udata ) {
             // Underprediction
             diff = udata-upred;
-            k = L(BSR)(diff);
+            k = L(bsr)(diff);
             // Zero is set to bitsizeof(*data) and k<=bitsizeof(*data)-1 ; this means that 0<=(zero+-(k+1))<=bitsizeof(*data)*2
             // (0 to 64 (inclusive) if 32 bits)
             FPC_EncodeK(ctx,zero+(k+1));
@@ -503,7 +456,7 @@ int R(FPC_Compress)(void *restrict CData,int FD,TFPCReal *restrict Data,int NI,i
         } else if( upred > udata ) {
             // Overprediction
             diff = upred-udata;
-            k = L(BSR)(diff);
+            k = L(bsr)(diff);
             // Zero is set to bitsizeof(*data) and k<=bitsizeof(*data)-1 ; this means that 0<=(zero+-(k+1))<=bitsizeof(*data)*2
             // (0 to 64 (inclusive) if 32 bits)
             FPC_EncodeK(ctx,zero-(k+1));
