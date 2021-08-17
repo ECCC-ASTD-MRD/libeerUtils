@@ -101,6 +101,7 @@ typedef enum { APP_OK=1,APP_ERR=0 } TApp_RetCode;
 typedef enum { APP_AFFINITY_NONE=0,APP_AFFINITY_COMPACT=1,APP_AFFINITY_SCATTER=2,APP_AFFINITY_SOCKET=3 } TApp_Affinity;
 
 #define APP_ASRT_OK(x) if( (x)!=APP_OK ) return(APP_ERR)
+#define APP_ASRT_OK_END(x) if( (x)!=APP_OK ) goto end
 #define APP_ASRT_OK_M(Fct, ...) \
    if( (Fct)!=APP_OK ) { \
       App_Log(ERROR, __VA_ARGS__); \
@@ -123,6 +124,11 @@ typedef enum { APP_AFFINITY_NONE=0,APP_AFFINITY_COMPACT=1,APP_AFFINITY_SCATTER=2
    if( !(Buf=(Fct)) ) { \
       App_Log(ERROR,"(%s) Could not allocate memory for field %s at line %d.\n",__func__,#Buf,__LINE__); \
       return(APP_ERR); \
+   }
+#define APP_MEM_ASRT_END(Buf,Fct) \
+   if( !(Buf=(Fct)) ) { \
+      App_Log(ERROR,"(%s) Could not allocate memory for field %s at line %d.\n",__func__,#Buf,__LINE__); \
+      goto end; \
    }
 #define APP_FREE(Ptr) if(Ptr) { free(Ptr); Ptr=NULL; }
 // MPI helpers
