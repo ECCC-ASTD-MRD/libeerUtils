@@ -114,10 +114,20 @@ typedef enum { APP_AFFINITY_NONE=0,APP_AFFINITY_COMPACT=1,APP_AFFINITY_SCATTER=2
       App_Log(ERROR, __VA_ARGS__); \
       return(APP_ERR); \
    }
+#define APP_FST_ASRT_H_END(Fct, ...) \
+   if( (Fct) < 0 ) { \
+      App_Log(ERROR, __VA_ARGS__); \
+      goto end; \
+   }
 #define APP_FST_ASRT(Fct, ...) \
    if( (Fct) != 0 ) { \
       App_Log(ERROR, __VA_ARGS__); \
       return(APP_ERR); \
+   }
+#define APP_FST_ASRT_END(Fct, ...) \
+   if( (Fct) != 0 ) { \
+      App_Log(ERROR, __VA_ARGS__); \
+      goto end; \
    }
 // Memory helpers
 #define APP_MEM_ASRT(Buf,Fct) \
