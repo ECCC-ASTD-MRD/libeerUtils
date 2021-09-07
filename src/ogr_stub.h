@@ -39,10 +39,23 @@
 #define OGRSpatialReferenceH         char*
 #define OGRLayerH                    char*
 #define OGRFeatureH                  char*
+#define OGRFieldDefnH                char*
 #define OGRFeatureDefnH              char*
 #define OGRDataSourceH               char*
 #define OGRSFDriverH                 char*
 #define GDALDatasetH                 char*
+#define OGRwkbGeometryType           char*
+
+#define GDALDriverH     char*
+#define GDALDatasetH    char*
+#define GDALColorEntry  char
+#define GDALColorInterp char
+#define GDALColorTableH char*
+#define GDALRasterBandH char*
+#define GDAL_GCP        char
+
+#define OFTString 1
+#define OFTReal 1
 
 typedef struct OGREnvelope {
     double      MinX;
