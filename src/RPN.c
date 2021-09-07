@@ -1007,4 +1007,216 @@ int RPN_LinkPattern(const char* Pattern) {
    return fid;
 }
 
+
+
+int RPN_ReadData(void *Data,TDef_Type Type,int Key) {
+   int ni,nj,nk,itmp,nbits,datyp,usebuf=0;
+   char cbuf[13];
+
+   if( !Data || Key<0 )
+      return APP_ERR;
+
+   // Get the type and dimensions of the field
+   strcpy(cbuf,"            ");
+   APP_FST_ASRT(c_fstprm(Key,&itmp,&itmp,&itmp,&ni,&nj,&nk,&nbits,&datyp,
+            &itmp,&itmp,&itmp,cbuf,cbuf,cbuf,cbuf,&itmp,&itmp,&itmp,&itmp,
+            &itmp,&itmp,&itmp,&itmp,&itmp,&itmp,&itmp),"(%s) Could not stat field\n",__func__);
+
+   // Convert datyp into a datatype
+   // Note: the RPN library deals surprisingly bad with 64bits fields, so we'll have to deal with it ourselves
+   switch( ((unsigned int)datyp) & ~128u ) {
+      case 0: // Binary
+         datyp = TD_Binary;
+         usebuf = Type!=TD_Binary && Type!=TD_Byte && Type!=TD_UByte;
+         break;
+      case 2: // Unsigned integer
+         if( nbits > 32 ) {
+            datyp = TD_UInt64;
+            usebuf = Type!=TD_Int64 && Type!=TD_UInt64;
+         } else {
+            datyp = TD_UInt32;
+            usebuf = Type!=TD_Byte && Type!=TD_Int16 && Type!=TD_Int32 && Type!=TD_UByte && Type!=TD_UInt16 && Type!=TD_UInt32;
+         }
+         break;
+      case 4: // Signed integer
+         if( nbits > 32 ) {
+            datyp = TD_Int64;
+            usebuf = Type!=TD_Int64 && Type!=TD_UInt64;
+         } else {
+            datyp = TD_Int32;
+            usebuf = Type!=TD_Byte && Type!=TD_Int16 && Type!=TD_Int32 && Type!=TD_UByte && Type!=TD_UInt16 && Type!=TD_UInt32;
+         }
+         break;
+      case 1: // Floating point
+      case 5: // IEEE floating point
+      case 6: // Floating point (special format, 16 bit, reserved for use with the compressor)
+         if( nbits > 32 ) {
+            datyp = TD_Float64;
+            usebuf = Type!=TD_Float64;
+         } else {
+            datyp = TD_Float32;
+            usebuf = Type!=TD_Float32;
+         }
+         break;
+      case 7: // Character string
+         datyp = TD_Binary;
+         usebuf = Type!=TD_Binary && Type!=TD_Byte && Type!=TD_UByte;
+         break;
+      case 3: // Character (R4A in an integer)
+      case 8: // Complexe IEEE
+      default:
+         App_Log(ERROR,"(%s) Unsupported or invalid datyp (%d)\n",__func__,datyp);
+         return APP_ERR;
+   }
+
+   // Check if the input field are floats and, if so, if we have a size mismatch
+   if( usebuf ) {
+      size_t idx,nijk=(size_t)ni*(size_t)nj*(size_t)nk;
+      void *buf=NULL;
+
+      // Allocate a temporary buffer into which we'll read the field into
+      APP_MEM_ASRT( buf,malloc(nijk*TDef_Size[datyp]) );
+
+      // Read the fields into the temporary buffer
+      c_fst_data_length(TDef_Size[datyp]);
+      if( c_fstluk(buf,Key,&ni,&nj,&nk)<0 ) {
+         App_Log(ERROR,"(%s) Could not read field\n",__func__);
+         free(buf);
+         return APP_ERR;
+      }
+
+      // Copy and convert what we've read into the desired format
+      for(idx=0; idx<nijk; ++idx) {
+         switch( datyp ) {
+            case TD_Int32:
+               {
+                  switch( Type ) {
+                     case TD_Int64:    ((int64_t*)Data)[idx]         = (int64_t)((int32_t*)buf)[idx];    break;
+                     case TD_UInt64:   ((uint64_t*)Data)[idx]        = (uint64_t)((int32_t*)buf)[idx];   break;
+                     case TD_Float32:  ((float*)Data)[idx]           = (float)((int32_t*)buf)[idx];      break;
+                     case TD_Float64:  ((double*)Data)[idx]          = (double)((int32_t*)buf)[idx];     break;
+                     default: goto converr;
+                  }
+               }
+               break;
+            case TD_UInt32:
+               {
+                  switch( Type ) {
+                     case TD_Int64:    ((int64_t*)Data)[idx]         = (int64_t)((uint32_t*)buf)[idx];   break;
+                     case TD_UInt64:   ((uint64_t*)Data)[idx]        = (uint64_t)((uint32_t*)buf)[idx];  break;
+                     case TD_Float32:  ((float*)Data)[idx]           = (float)((uint32_t*)buf)[idx];     break;
+                     case TD_Float64:  ((double*)Data)[idx]          = (double)((uint32_t*)buf)[idx];    break;
+                     default: goto converr;
+                  }
+               }
+               break;
+            case TD_Int64:
+               {
+                  switch( Type ) {
+                     case TD_Byte:     ((char*)Data)[idx]            = (char)((int64_t*)buf)[idx];          break;
+                     case TD_UByte:    ((unsigned char*)Data)[idx]   = (unsigned char)((int64_t*)buf)[idx]; break;
+                     case TD_Int16:    ((int16_t*)Data)[idx]         = (int16_t)((int64_t*)buf)[idx];       break;
+                     case TD_UInt16:   ((uint16_t*)Data)[idx]        = (uint16_t)((int64_t*)buf)[idx];      break;
+                     case TD_Int32:    ((int32_t*)Data)[idx]         = (int32_t)((int64_t*)buf)[idx];       break;
+                     case TD_UInt32:   ((uint32_t*)Data)[idx]        = (uint32_t)((int64_t*)buf)[idx];      break;
+                     case TD_Float32:  ((float*)Data)[idx]           = (float)((int64_t*)buf)[idx];         break;
+                     case TD_Float64:  ((double*)Data)[idx]          = (double)((int64_t*)buf)[idx];        break;
+                     default: goto converr;
+                  }
+               }
+               break;
+            case TD_UInt64:
+               {
+                  switch( Type ) {
+                     case TD_Byte:     ((char*)Data)[idx]            = (char)((uint64_t*)buf)[idx];            break;
+                     case TD_UByte:    ((unsigned char*)Data)[idx]   = (unsigned char)((uint64_t*)buf)[idx];   break;
+                     case TD_Int16:    ((int16_t*)Data)[idx]         = (int16_t)((uint64_t*)buf)[idx];         break;
+                     case TD_UInt16:   ((uint16_t*)Data)[idx]        = (uint16_t)((uint64_t*)buf)[idx];        break;
+                     case TD_Int32:    ((int32_t*)Data)[idx]         = (int32_t)((uint64_t*)buf)[idx];         break;
+                     case TD_UInt32:   ((uint32_t*)Data)[idx]        = (uint32_t)((uint64_t*)buf)[idx];        break;
+                     case TD_Float32:  ((float*)Data)[idx]           = (float)((uint64_t*)buf)[idx];           break;
+                     case TD_Float64:  ((double*)Data)[idx]          = (double)((uint64_t*)buf)[idx];          break;
+                     default: goto converr;
+                  }
+               }
+               break;
+            case TD_Float32:
+               {
+                  switch( Type ) {
+                     case TD_Byte:     ((char*)Data)[idx]            = (char)((float*)buf)[idx];            break;
+                     case TD_UByte:    ((unsigned char*)Data)[idx]   = (unsigned char)((float*)buf)[idx];   break;
+                     case TD_Int16:    ((int16_t*)Data)[idx]         = (int16_t)((float*)buf)[idx];         break;
+                     case TD_UInt16:   ((uint16_t*)Data)[idx]        = (uint16_t)((float*)buf)[idx];        break;
+                     case TD_Int32:    ((int32_t*)Data)[idx]         = (int32_t)((float*)buf)[idx];         break;
+                     case TD_UInt32:   ((uint32_t*)Data)[idx]        = (uint32_t)((float*)buf)[idx];        break;
+                     case TD_Int64:    ((int64_t*)Data)[idx]         = (int64_t)((float*)buf)[idx];         break;
+                     case TD_UInt64:   ((uint64_t*)Data)[idx]        = (uint64_t)((float*)buf)[idx];        break;
+                     case TD_Float64:  ((double*)Data)[idx]          = (double)((float*)buf)[idx];          break;
+                     default: goto converr;
+                  }
+               }
+               break;
+            case TD_Float64:
+               {
+                  switch( Type ) {
+                     case TD_Byte:     ((char*)Data)[idx]            = (char)((double*)buf)[idx];           break;
+                     case TD_UByte:    ((unsigned char*)Data)[idx]   = (unsigned char)((double*)buf)[idx];  break;
+                     case TD_Int16:    ((int16_t*)Data)[idx]         = (int16_t)((double*)buf)[idx];        break;
+                     case TD_UInt16:   ((uint16_t*)Data)[idx]        = (uint16_t)((double*)buf)[idx];       break;
+                     case TD_Int32:    ((int32_t*)Data)[idx]         = (int32_t)((double*)buf)[idx];        break;
+                     case TD_UInt32:   ((uint32_t*)Data)[idx]        = (uint32_t)((double*)buf)[idx];       break;
+                     case TD_Int64:    ((int64_t*)Data)[idx]         = (int64_t)((double*)buf)[idx];        break;
+                     case TD_UInt64:   ((uint64_t*)Data)[idx]        = (uint64_t)((double*)buf)[idx];       break;
+                     case TD_Float32:  ((float*)Data)[idx]           = (float)((double*)buf)[idx];          break;
+                     default: goto converr;
+                  }
+               }
+               break;
+            default: goto converr;
+         }
+      }
+
+      free(buf);
+      return APP_OK;
+converr:
+      free(buf);
+      App_Log(ERROR,"(%s) Unsupported conversion %d->%d\n",__func__,datyp,Type);
+      return APP_ERR;
+   } else {
+      c_fst_data_length(TDef_Size[Type]);
+      if( c_fstluk(Data,Key,&ni,&nj,&nk)<0 ) {
+         App_Log(ERROR,"(%s) Could not read field\n",__func__);
+         return APP_ERR;
+      }
+   }
+
+   return APP_OK;
+}
+
+int RPN_sReadData(void *Data,TDef_Type Type,int Key) {
+   int code;
+   pthread_mutex_lock(&RPNFieldMutex);
+   code = RPN_ReadData(Data,Type,Key);
+   pthread_mutex_unlock(&RPNFieldMutex);
+   return code;
+}
+
+int RPN_Read(void *Data,TDef_Type Type,int Unit,int *NI,int *NJ,int *NK,int DateO,char *Etiket,int IP1,int IP2,int IP3,char* TypVar,char *NomVar) {
+   int key;
+
+   if( (key=c_fstinf(Unit,NI,NJ,NK,DateO,Etiket,IP1,IP2,IP3,TypVar,NomVar)) <= 0 ) {
+      App_Log(ERROR,"(%s) Could not find field\n");
+      return APP_ERR;
+   }
+   return RPN_ReadData(Data,Type,key);
+}
+
+int RPN_sRead(void *Data,TDef_Type Type,int Unit,int *NI,int *NJ,int *NK,int DateO,char *Etiket,int IP1,int IP2,int IP3,char* TypVar,char *NomVar) {
+   int code;
+   pthread_mutex_lock(&RPNFieldMutex);
+   code = RPN_Read(Data,Type,Unit,NI,NJ,NK,DateO,Etiket,IP1,IP2,IP3,TypVar,NomVar);
+   pthread_mutex_unlock(&RPNFieldMutex);
+   return code;
+}
+
 #endif

@@ -218,10 +218,10 @@ static float **EZGrid_TileGetData(const TGrid* restrict const Grid,TGridTile* re
             if (key<0) {
                App_Log(WARNING,"%s: Could not find tile data (%s) at level %f (%i)\n",__func__,Grid->H.NOMVAR,Grid->ZRef->Levels[K],ip1);
             } else {
-               c_fstluk(datak,key,&ni,&nj,&nk);
+               RPN_ReadData(datak,TD_Float32,key);
             }
          } else {
-            c_fstluk(datak,key,&ni,&nj,&nk);
+            RPN_ReadData(datak,TD_Float32,key);
          }
         
          // Last gridpoint is tile load marker (nan) so it is already nan, use something else
@@ -249,7 +249,7 @@ static float **EZGrid_TileGetData(const TGrid* restrict const Grid,TGridTile* re
                if (!Tile->Mask[K]) {
                   if ((Tile->Mask[K]=(char*)malloc(ni*nj))) {
                      if ((tmpi=(int*)malloc(ni*nj*sizeof(int)))) {
-                        c_fstluk(tmpi,key,&ni,&nj,&nk);
+                        RPN_ReadData(tmpi,TD_Float32,key);
                         for(i=0;i<ni*nj;i++) {
                            Tile->Mask[K][i]=tmpi[i]!=0x0;
                         }
@@ -884,9 +884,9 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
          Grid->GRef->AY=(float*)malloc(Grid->GRef->NX*sizeof(float));
          Grid->GRef->AX=(float*)malloc(Grid->GRef->NX*sizeof(float));
 
-         cs_fstlir(Grid->GRef->AY,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","^^");
-         cs_fstlir(Grid->GRef->AX,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"",">>");
-         cs_fstlir(Grid->GRef->Idx,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","##");
+         RPN_sRead(Grid->GRef->AY,TD_Float32,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","^^");
+         RPN_sRead(Grid->GRef->AX,TD_Float32,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"",">>");
+         RPN_sRead(Grid->GRef->Idx,TD_Float32,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","##");
          
          GeoRef_BuildIndex(Grid->GRef);
          break;
@@ -898,8 +898,8 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
          Grid->GRef->AY=(float*)malloc(Grid->H.NIJ*sizeof(float));
          Grid->GRef->AX=(float*)malloc(Grid->H.NIJ*sizeof(float));
 
-         cs_fstlir(Grid->GRef->AY,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","^^");
-         cs_fstlir(Grid->GRef->AX,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"",">>");
+         RPN_sRead(Grid->GRef->AY,TD_Float32,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","^^");
+         RPN_sRead(Grid->GRef->AX,TD_Float32,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"",">>");
          
          GeoRef_BuildIndex(Grid->GRef);
          break;
@@ -924,7 +924,6 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
 
             // If we have a W grtyp, then we are dealing with a WKT projection
             if( grtyp[0] == 'W' ) {
-               float tmpf[6];
                double transform[6];
                char *str=NULL;
 
@@ -939,12 +938,10 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
                   App_Log(ERROR,"%s: MTRX field should have a dimension of exactly 6, but has %d*%d*%d=%d instead\n",__func__,ni,nj,nk,ni*nj*nk);
                   goto werr;
                }
-               if( cs_fstluk(tmpf,key,&ni,&nj,&nk) <= 0 ) {
+               if( RPN_sReadData(transform,TD_Float64,key) != APP_OK ) {
                   App_Log(ERROR,"%s: Could not read grid transformation matrix (MTRX) of Z grid\n",__func__);
                   goto werr;
                }
-               for(tmpi=0; tmpi<6; ++tmpi)
-                  transform[tmpi]=tmpf[tmpi];
 
                // Read the projection string
                if( (key=cs_fstinf(Grid->H.FID,&ni,&nj,&nk,-1,"",ig1,ig2,ig3,"","PROJ")) <=0 ) {
@@ -955,8 +952,7 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
                   App_Log(ERROR,"%s: Could not allocate memory for projection string (PROJ) of Z grid\n",__func__);
                   goto werr;
                }
-               c_fst_data_length(1);
-               if( cs_fstluk(str,key,&ni,&nj,&nk) <= 0 ) {
+               if( RPN_sReadData(str,TD_Byte,key) != APP_OK ) {
                   App_Log(ERROR,"%s: Could not read grid projection string (PROJ) of Z grid\n",__func__);
                   goto werr;
                }
@@ -976,11 +972,11 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
                }
 
                // Read the descriptors
-               if( cs_fstluk(Grid->GRef->AX,desc,&ni,&nj,&nk) <= 0 ) {
+               if( RPN_sReadData(Grid->GRef->AX,TD_Float32,desc) != APP_OK ) {
                   App_Log(ERROR,"%s: Could not read grid descriptor (>>) of Z grid\n",__func__);
                   goto werr;
                }
-               if( (desc=cs_fstlir(Grid->GRef->AY,Grid->H.FID,&ni,&nj,&nk,-1,"",h.IG1,h.IG2,h.IG3,"","^^")) <=0 ) {
+               if( RPN_sRead(Grid->GRef->AY,TD_Float32,Grid->H.FID,&ni,&nj,&nk,-1,"",h.IG1,h.IG2,h.IG3,"","^^") != APP_OK ) {
                   App_Log(ERROR,"%s: Could not find grid descriptor (^^) of Z grid\n",__func__);
                   goto werr;
                }
