@@ -400,7 +400,7 @@ void App_Start(void) {
 
       App_Log(MUST,"-------------------------------------------------------------------------------------\n");
       App_Log(MUST,"Application    : %s %s (%s)\n",App->Name,App->Version,App->TimeStamp);
-      App_Log(MUST,"Lib eerUtils   : %s [%s] (%s)\n",VERSION,BUILD_INFO,BUILD_TIMESTAMP);
+      App_Log(MUST,"Lib eerUtils   : %s\n",PROJECT_VERSION_STRING);
 
 #ifdef HAVE_RMN
       // Extract RMNLIB version

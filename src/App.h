@@ -47,7 +47,7 @@
 #include <float.h>
 
 #ifdef _BUILD_EERUTILS
-#   include "build_info.h"
+#   include "eerUtils_build_info.h"
 #endif
 
 #ifdef _OPENMP
