@@ -10,18 +10,12 @@ ec_parse_manifest()        # Parse MANIFEST file
 project(${NAME} DESCRIPTION "${DESCRIPTION}")
 set(PROJECT_VERSION ${VERSION})
 
-ec_build_info()              # Generate build include file
-ec_install_prefix(${NAME} ${VERSION} ec_prefix) # Define install prefix  
-set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${ec_prefix})
+ec_build_info()            # Generate build include file
+ec_install_prefix()        # Define install prefix  
 
 enable_language(C)
 
 include(ec_compiler_presets)
-
-#----- Specific tests
-if(DEFINED ENV{CRAYPE_VERSION})
-   set(ENV{CRAYPE_LINK_TYPE} dynamic)
-endif()
 
 #TODO define elsewhere
 set(TCL_SRC_DIR "$ENV{SSM_DEV}/SPI-External/tcl${TCL_REQ_VERSION}")
@@ -48,6 +42,7 @@ if(GDAL_FOUND)
 endif()
 
 if(DEFINED TCL_SRC_DIR)
+   message(STATUS "Found TCL source: ${TCL_SRC_DIR}")
    add_compile_definitions(HAVE_TCL TCL_THREADS)
    include_directories(${TCL_SRC_DIR}/unix ${TCL_SRC_DIR}/generic)
 endif()
@@ -73,6 +68,6 @@ set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
 set(CPACK_OUTPUT_FILE_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/package")
 set(CPACK_PACKAGE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-set(CPACK_PACKAGE_FILE_NAME "${ec_prefix}")
-set(CPACK_SOURCE_PACKAGE_FILE_NAME "${NAME}")
+set(CPACK_PACKAGE_FILE_NAME "${CMAKE_INSTALL_PREFIX}")
+set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}")
 include(CPack)

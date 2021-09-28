@@ -13,7 +13,6 @@ version=@VERSION@@STATE@
 has_rmn=@RMN_VERSION@@RMN_STATE@
 has_gdal=@GDAL_VERSION@
 has_vgrid=@VGRID_VERSION@@VGRID_STATE@
-has_tcl=@TCL_VERSION@@TCL_STATE@
 
 usage()
 {
@@ -33,7 +32,6 @@ Available values for OPTION include:
   --has-rmn      which version of librmn is it compiled with [${has_rmn}]
   --has-gdal     which version of gdal is it compiled with [${has_gdal}]
   --has-vgrid    which version of vgrid is it compiled with [${has_vgrid}]
-  --has-tcl      which version of tcl is it compiled with [${has_tcl}]
 
 EOF
 }
@@ -91,10 +89,6 @@ while test $# -gt 0; do
 
     --has-vgrid)
        	echo ${has_vgrid:-no}
-       	;;
-
-    --has-tcl)
-       	echo ${has_tcl:-no}
        	;;
 
     --version)
