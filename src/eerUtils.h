@@ -182,9 +182,12 @@ int QSort_StrPtr(const void *A,const void *B);
 int QSort_Double(const void *A,const void *B);
 int QSort_Float(const void *A,const void *B);
 int QSort_Int(const void *A,const void *B);
+int QSort_Time(const void *A,const void *B);
+int QSort_DecStrPtr(const void *A,const void *B);
 int QSort_DecDouble(const void *A,const void *B);
 int QSort_DecFloat(const void *A,const void *B);
 int QSort_DecInt(const void *A,const void *B);
+int QSort_DecTime(const void *A,const void *B);
 
 void Unique(void *Arr,int* restrict Size,size_t NBytes);
 
