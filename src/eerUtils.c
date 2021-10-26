@@ -384,7 +384,7 @@ void System_StampEncode(int *Stamp,int YYYY,int MM,int DD,int H,int M,int S) {
  *
  *----------------------------------------------------------------------------
 */
-int System_Seconds2Stamp(long Sec) {
+int System_Seconds2Stamp(time_t Sec) {
 
    int         stamp=0,date,time,op=3;
    struct tm  *tsec;
@@ -420,7 +420,7 @@ int System_Seconds2Stamp(long Sec) {
  *
  *----------------------------------------------------------------------------
 */
-long System_Stamp2Seconds(int Stamp) {
+time_t System_Stamp2Seconds(int Stamp) {
 
    int           yyyy,mm,dd,hh,nn,ss;
    struct tm     tdate;
