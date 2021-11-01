@@ -38,14 +38,13 @@
  */
 #include "FPFC.h"
 #include "App.h"
+#include "BitStuff.h"
 
 #include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
 #include <limits.h>
-
-#define bitsizeof(x)    ((int)sizeof(x)*CHAR_BIT)
 
 const TBufByte LOW_BYTE = 0x0f;
 const TBufByte HIGH_BYTE = 0xf0;
@@ -63,46 +62,6 @@ typedef struct TFPFCBuf {
     TBufByte    Byte;   // Half byte temp storage
     TBufByte    Half;   // Flag indicating if there is a half byte in the storage
 } TFPFCBuf;
-
-/*----------------------------------------------------------------------------
- * Nom      : <LZCNT>
- * Creation : Octobre 2017 - E. Legault-Ouellet - CMC/CMOE
- *
- * But      : Leading Zero Count : Retourne le nombre de bits significatifs à
- *            0 avant le premier bit à 1.
- *            Ex: 00001000 retournerait 4
- *
- * Parametres :
- *  <X>     : La valeur dont on veut le LZC. La valeur doit être non-nulle!
- *
- * Retour   : Le nombre de 0 significatifs
- *
- * Remarques : If X is 0, the result is undefined
- *
- *----------------------------------------------------------------------------
- */
-inline static int LZCNT(uint32_t X) {
-#if defined __INTEL_COMPILER
-    return (int)_lzcnt_u32(X);
-#elif defined __GNUC__
-    return (int)__builtin_clz(X);
-#else
-    int k=1;
-    while( X>>=1 ) ++k;
-    return bitsizeof(X)-k;
-#endif
-}
-inline static int LZCNTl(uint64_t X) {
-#if defined __INTEL_COMPILER
-    return (int)_lzcnt_u64(X);
-#elif defined __GNUC__
-    return (int)__builtin_clzl(X);
-#else
-    int k=1;
-    while( X>>=1 ) ++k;
-    return bitsizeof(X)-k;
-#endif
-}
 
 /*----------------------------------------------------------------------------
  * Nom      : <FPC_BufWriteByte>
@@ -392,7 +351,7 @@ int FPFC_Compressl(double *restrict Data,size_t N,FPFC_IO_PARAM,size_t *CSize) {
         // Get the leading zeros count we'll encode
         // We encode the LZC using 4 bits and work at half-byte granularity.
         // Ergo, we can't encode more than 60 bits and have to round down to the lowest multiple of 4
-        lzc = pred ? LZCNTl(pred)>>2 : 0xf;
+        lzc = pred ? lzcntl(pred)>>2 : 0xf;
 
         // Write the LZC and the remaining 64-4*LZC bits
         FPFC_BufWriteHalfByte(&buf,(TBufByte)lzc);
@@ -571,7 +530,7 @@ int FPFC_Compress(float *restrict Data,size_t N,FPFC_IO_PARAM,size_t *CSize) {
         // We encode the LZC using 4 bits and work at half-byte granularity.
         // Ergo, for floats, we can encode the full 32 bits, but still have to round down to the lowest multiple of 4
         if( pred ) {
-            lzc = LZCNT(pred)>>2;
+            lzc = lzcnt(pred)>>2;
             FPFC_BufWriteHalfByte(&buf,(TBufByte)lzc);
             FPFC_BufWriteHalfBytes(&buf,pred,(unsigned int)sizeof(pred)*2u-lzc);
         } else {

@@ -101,6 +101,7 @@ typedef enum { APP_OK=1,APP_ERR=0 } TApp_RetCode;
 typedef enum { APP_AFFINITY_NONE=0,APP_AFFINITY_COMPACT=1,APP_AFFINITY_SCATTER=2,APP_AFFINITY_SOCKET=3 } TApp_Affinity;
 
 #define APP_ASRT_OK(x) if( (x)!=APP_OK ) return(APP_ERR)
+#define APP_ASRT_OK_END(x) if( (x)!=APP_OK ) goto end
 #define APP_ASRT_OK_M(Fct, ...) \
    if( (Fct)!=APP_OK ) { \
       App_Log(ERROR, __VA_ARGS__); \
@@ -113,16 +114,31 @@ typedef enum { APP_AFFINITY_NONE=0,APP_AFFINITY_COMPACT=1,APP_AFFINITY_SCATTER=2
       App_Log(ERROR, __VA_ARGS__); \
       return(APP_ERR); \
    }
+#define APP_FST_ASRT_H_END(Fct, ...) \
+   if( (Fct) < 0 ) { \
+      App_Log(ERROR, __VA_ARGS__); \
+      goto end; \
+   }
 #define APP_FST_ASRT(Fct, ...) \
    if( (Fct) != 0 ) { \
       App_Log(ERROR, __VA_ARGS__); \
       return(APP_ERR); \
+   }
+#define APP_FST_ASRT_END(Fct, ...) \
+   if( (Fct) != 0 ) { \
+      App_Log(ERROR, __VA_ARGS__); \
+      goto end; \
    }
 // Memory helpers
 #define APP_MEM_ASRT(Buf,Fct) \
    if( !(Buf=(Fct)) ) { \
       App_Log(ERROR,"(%s) Could not allocate memory for field %s at line %d.\n",__func__,#Buf,__LINE__); \
       return(APP_ERR); \
+   }
+#define APP_MEM_ASRT_END(Buf,Fct) \
+   if( !(Buf=(Fct)) ) { \
+      App_Log(ERROR,"(%s) Could not allocate memory for field %s at line %d.\n",__func__,#Buf,__LINE__); \
+      goto end; \
    }
 #define APP_FREE(Ptr) if(Ptr) { free(Ptr); Ptr=NULL; }
 // MPI helpers
@@ -134,12 +150,20 @@ typedef enum { APP_AFFINITY_NONE=0,APP_AFFINITY_COMPACT=1,APP_AFFINITY_SCATTER=2
       return(APP_ERR); \
    } \
 }
+#define APP_MPI_ASRT_END(Fct) { \
+   int err = (Fct); \
+   if( err!=MPI_SUCCESS ) { \
+      App_Log(ERROR,"(%s) MPI call %s at line %d failed with code %d for MPI node %d\n",__func__,#Fct,__LINE__,err,App->RankMPI); \
+      goto end; \
+   } \
+}
 #define APP_MPI_CHK(Fct) { \
    int err = (Fct); \
    if( err!=MPI_SUCCESS ) { \
       App_Log(ERROR,"(%s) MPI call %s at line %d failed with code %d for MPI node %d\n",__func__,#Fct,__LINE__,err,App->RankMPI); \
    } \
 }
+#define APP_MPI_IN_PLACE(Fld) (App->RankMPI?(Fld):MPI_IN_PLACE)
 #endif //_MPI
 
 // Argument definitions

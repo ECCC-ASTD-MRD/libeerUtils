@@ -384,7 +384,7 @@ void System_StampEncode(int *Stamp,int YYYY,int MM,int DD,int H,int M,int S) {
  *
  *----------------------------------------------------------------------------
 */
-int System_Seconds2Stamp(long Sec) {
+int System_Seconds2Stamp(time_t Sec) {
 
    int         stamp=0,date,time,op=3;
    struct tm  *tsec;
@@ -420,7 +420,7 @@ int System_Seconds2Stamp(long Sec) {
  *
  *----------------------------------------------------------------------------
 */
-long System_Stamp2Seconds(int Stamp) {
+time_t System_Stamp2Seconds(int Stamp) {
 
    int           yyyy,mm,dd,hh,nn,ss;
    struct tm     tdate;
@@ -607,6 +607,16 @@ int QSort_StrPtr(const void *A, const void *B) {
    return strcmp(*(const char * const *)A,*(const char * const *)B);
 }
 
+int QSort_Time(const void *A,const void *B){
+   if (*(const time_t*)A<*(const time_t*)B) {
+      return(-1);
+   } else if (*(const time_t*)A>*(const time_t*)B) {
+      return(1);
+   } else {
+      return(0);
+   }
+}
+
 /*----------------------------------------------------------------------------
  * Nom      : <QSort_Dec*>
  * Creation : Mars 2015 - E. Legault-Ouellet - CMC/CMOE
@@ -626,28 +636,24 @@ int QSort_StrPtr(const void *A, const void *B) {
  *
  *----------------------------------------------------------------------------
 */
-int QSort_DecDouble(const void *A,const void *B){
-   if (*(const double*)B<*(const double*)A) {
-      return(-1);
-   } else if (*(const double*)B>*(const double*)A) {
-      return(1);
-   } else {
-      return(0);
-   }
+int QSort_DecDouble(const void *A,const void *B) {
+   return QSort_Double(B,A);
 }
 
 int QSort_DecFloat(const void *A,const void *B){
-   if (*(const float*)B<*(const float*)A) {
-      return(-1);
-   } else if (*(const float*)B>*(const float*)A) {
-      return(1);
-   } else {
-      return(0);
-   }
+   return QSort_Float(B,A);
 }
 
 int QSort_DecInt(const void *A, const void *B) {
-   return(*(const int*)B)-(*(const int*)A);
+   return QSort_Int(B,A);
+}
+
+int QSort_DecStrPtr(const void *A, const void *B) {
+   return QSort_StrPtr(B,A);
+}
+
+int QSort_DecTime(const void *A,const void *B){
+   return QSort_Time(B,A);
 }
 
 /*----------------------------------------------------------------------------
