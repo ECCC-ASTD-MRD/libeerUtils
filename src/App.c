@@ -143,7 +143,10 @@ TApp *App_Init(int Type,char *Name,char *Version,char *Desc,char* Stamp) {
    } else {
       App->Language=APP_EN;
    }
- 
+
+   // Force extern variable timezone definition
+   tzset();
+
    return(App);
 }
 
