@@ -17,9 +17,6 @@ enable_language(C)
 
 include(ec_compiler_presets)
 
-#TODO define elsewhere
-set(TCL_SRC_DIR "$ENV{SSM_DEV}/SPI-External/tcl${TCL_REQ_VERSION}")
-
 #----- Look for non system default gdal
 execute_process(
       COMMAND gdal-config --prefix
