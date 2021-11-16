@@ -55,7 +55,7 @@ Source the right file depending on the architecture you need from the env direct
 ```shell
 mkdir build
 cd build
-cmake ../
+cmake -DCMAKE_INSTALL_PREFIX=$SSM_DEV/workspace -DTCL_SRC_DIR=${SSM_DEV}/SPI-External/tcl ../
 make -j 4
 make test
 make install
