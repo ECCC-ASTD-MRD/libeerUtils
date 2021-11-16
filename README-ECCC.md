@@ -11,6 +11,9 @@ You will need cmake with a version at least 3.12
 . ssmuse-sh -x /fs/ssm/main/opt/cmake-3.21.1
 ```
 
+## Depdencies
+* Mandatory external dependencies are available through the [SPI-Externals](https://gitlab.science.gc.ca/ECCC_CMOE_APPS/SPI-External). This can extracted in ans SSM_DEV directory, built and provided to the build through the TCL_SRC_DIR variable. See below for Build process
+
 ## Optional dependencies
 * codetools and compilers
 ```shell
