@@ -600,7 +600,7 @@ int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
  * Nom          : <GeoRef_RPNSetup>
  * Creation     : Avril 2005 J.P. Gauthier - CMC/CMOE
  *
- * But          : Definir le referetiel de type RPN
+ * But          : Definir le referentiel de type RPN
  *
  * Parametres   :
  *    <NI>      : Dimension en X

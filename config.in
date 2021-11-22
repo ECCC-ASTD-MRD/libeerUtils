@@ -4,11 +4,14 @@
 # various things about the library installation.
 
 cc="@CMAKE_C_COMPILER_ID@ @CMAKE_C_COMPILER_VERSION@"
-ftn="@CMAKE_Fortran_COMPILER_ID@ @CMAKE_Fortran_COMPILER_VERSION@"
+fc="@CMAKE_Fortran_COMPILER_ID@ @CMAKE_Fortran_COMPILER_VERSION@"
 cflags="@CMAKE_C_FLAGS@"
-fflags="@CMAKE_Fortran_Flags@"
+fflags="@CMAKE_Fortran_FLAGS@"
+defs="@EC_CMAKE_DEFINITIONS@"
 
-version=@VERSION@@STATE@
+version=@PROJECT_VERSION@
+env=@EC_CI_ENV@
+
 has_rmn=@RMN_VERSION@@RMN_STATE@
 has_gdal=@GDAL_VERSION@
 has_vgrid=@VGRID_VERSION@@VGRID_STATE@
@@ -22,11 +25,13 @@ Available values for OPTION include:
 
   --help         display this help message and exit
   --cc           C compiler [${cc}]
-  --ftn          FORTRAN compiler [${ftn}]
+  --fc           FORTRAN compiler [${fc}]
   --cflags       C compiler flags [${cflags}]
   --fflags       Fortran compiler flags [${fflags}]
+  --defs         Preprocessor definitions [${defs}]
   --libs         library linking information [${libs}]
   --version      library version [${version}]
+  --env          environment version used [${env}]
   --has-rmn      which version of librmn is it compiled with [${has_rmn}]
   --has-gdal     which version of gdal is it compiled with [${has_gdal}]
   --has-vgrid    which version of vgrid is it compiled with [${has_vgrid}]
@@ -57,8 +62,8 @@ while test $# -gt 0; do
        	echo ${cc:-no}
        	;;
 
-    --ftn)
-       	echo ${ftn:-no}
+    --fc)
+       	echo ${fc:-no}
        	;;
 
     --cflags)
@@ -67,6 +72,10 @@ while test $# -gt 0; do
            
     --fflags)
        	echo ${fflags}
+       	;;
+
+    --defs)
+       	echo ${defs}
        	;;
 
     --libs)
@@ -85,13 +94,13 @@ while test $# -gt 0; do
        	echo ${has_vgrid:-no}
        	;;
 
-    --libs)
-       	echo ${libs}
-       	;;
-
     --version)
 	    echo ${version}
 	    ;;
+
+    --env)
+       echo ${env}
+       ;;
 
     *)
         echo "unknown option: $1"

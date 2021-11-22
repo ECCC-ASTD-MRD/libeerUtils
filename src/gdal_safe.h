@@ -1,4 +1,5 @@
 
+#ifdef HAVE_GDAL
 #ifdef __GNUC__
 
 //----- Push conflicting macros found in <gdal/cpl_config.h (included at some point by gdal.h)
@@ -25,3 +26,4 @@
 #include "gdal.h"
 
 #endif // __GNUC__
+#endif

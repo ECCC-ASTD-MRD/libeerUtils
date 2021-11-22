@@ -15,21 +15,19 @@ rm -f ${profilePath} ${loginPath}
 mkdir -p ${profileDirPath}
 
 # Added Intel compiler shared lib path ($INTELCOMP_HOME/lib/intel64_lin)
-INTELCOMP_HOME=/fs/ssm/main/opt/intelcomp/intelpsxe-cluster-19.0.3.199/intelpsxe-cluster_19.0.3.199_multi
-#INTELCOMP_HOME=/fs/ssm/main/opt/intelcomp/intelcomp-2016.1.156/intelcomp_2016.1.156_multi
+INTELCOMP_HOME=${INTELCOMP_HOME:=@ENV_INTELCOMP_HOME@}
 
 # Add EXT package (for various library dependencies)
-CMDS_EXT_VERSION=20210301
 case `domainname -d` in
    *science.gc.ca)
-      EXT_HOME=eccc/cmd/cmds/ext/${CMDS_EXT_VERSION}
+      EXT_HOME=eccc/cmd/cmds/ext/@ENV_CMDS_EXT_VERSION@
       ;;
    *ec.gc.ca)
-      EXT_HOME=cmds/ext/${CMDS_EXT_VERSION}
+      EXT_HOME=cmds/ext/@ENV_CMDS_EXT_VERSION@
       ;;
    *)
       EXT_HOME=NIL
-      echo "(WARNING) Not running on GC network, external dependency package ${CMDS_EXT_VERSION} not loaded"
+      echo "(WARNING) Not running on GC network, external dependency package @ENV_CMDS_EXT_VERSION@ not loaded"
       ;;
 esac
 
@@ -51,7 +49,7 @@ setenv EC_LD_LIBRARY_PATH="${packageHome}/lib \${EC_LD_LIBRARY_PATH}"
 setenv LD_LIBRARY_PATH="${packageHome}/lib:${INTELCOMP_HOME}/lib/intel64_lin:${INTELCOMP_HOME}/compilers_and_libraries_2019.3.199/linux/mkl/lib/intel64_lin:\${LD_LIBRARY_PATH}"
 
 #----- Add the <PackageName>_DIR variable for cmake builds
-export ${packageName%%_*}_DIR="$packageHome"
+setenv ${packageName%%_*}_DIR="$packageHome"
 
 #----- Load SSM dependencies
 [[ \${LD_LIBRARY_PATH} =~ ${EXT_HOME} ]] || . ssmuse-sh -d ${EXT_HOME}

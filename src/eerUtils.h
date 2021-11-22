@@ -182,9 +182,12 @@ int QSort_StrPtr(const void *A,const void *B);
 int QSort_Double(const void *A,const void *B);
 int QSort_Float(const void *A,const void *B);
 int QSort_Int(const void *A,const void *B);
+int QSort_Time(const void *A,const void *B);
+int QSort_DecStrPtr(const void *A,const void *B);
 int QSort_DecDouble(const void *A,const void *B);
 int QSort_DecFloat(const void *A,const void *B);
 int QSort_DecInt(const void *A,const void *B);
+int QSort_DecTime(const void *A,const void *B);
 
 void Unique(void *Arr,int* restrict Size,size_t NBytes);
 
@@ -212,9 +215,9 @@ time_t System_DateTime2Seconds(int YYYYMMDD,int HHMMSS,int GMT);
 double System_Date2Julian(int Year,int Month,int Day);
 time_t System_Seconds2DateTime(time_t Sec,int *YYYYMMDD,int *HHMMSS,int GMT);
 int    System_Julian2Stamp(int Year,int Day,int Time);
-long   System_Stamp2Seconds(int Stamp);
+time_t System_Stamp2Seconds(int Stamp);
 char*  System_StampFormat(int Stamp,char *Buf,char *Format);
-int    System_Seconds2Stamp(long Sec);
+int    System_Seconds2Stamp(time_t Sec);
 void   System_StampDecode(int Stamp,int *YYYY,int *MM,int *DD,int *H,int *M,int *S);
 void   System_StampEncode(int *Stamp,int YYYY,int MM,int DD,int H,int M,int S);
 double System_TimeValSubtract(struct timeval *Result,struct timeval *T0,struct timeval *T1);

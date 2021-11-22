@@ -47,7 +47,7 @@
 #include <float.h>
 
 #ifdef _BUILD_EERUTILS
-#   include "build_info.h"
+#   include "eerUtils_build_info.h"
 #endif
 
 #ifdef _OPENMP
@@ -163,6 +163,7 @@ typedef enum { APP_AFFINITY_NONE=0,APP_AFFINITY_COMPACT=1,APP_AFFINITY_SCATTER=2
       App_Log(ERROR,"(%s) MPI call %s at line %d failed with code %d for MPI node %d\n",__func__,#Fct,__LINE__,err,App->RankMPI); \
    } \
 }
+#define APP_MPI_IN_PLACE(Fld) (App->RankMPI?(Fld):MPI_IN_PLACE)
 #endif //_MPI
 
 // Argument definitions
