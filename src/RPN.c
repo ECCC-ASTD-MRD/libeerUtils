@@ -42,7 +42,7 @@
 static int **LNK_FID = NULL;
 static int LNK_NB = 0;
 
-static const char *RPN_Desc[]={ ">>  ","^^  ","^>  ","!!  ","##  ","HY  ","PROJ","MTRX",NULL };
+static const char *RPN_Desc[]={ ">>","^^","^>","!!","##","HY","PROJ","MTRX",NULL };
 
 static char FGFDTLock[1000];
 
