@@ -600,7 +600,7 @@ int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
  * Nom          : <GeoRef_RPNSetup>
  * Creation     : Avril 2005 J.P. Gauthier - CMC/CMOE
  *
- * But          : Definir le referetiel de type RPN
+ * But          : Definir le referentiel de type RPN
  *
  * Parametres   :
  *    <NI>      : Dimension en X
@@ -630,7 +630,7 @@ TGeoRef* GeoRef_RPNSetup(int NI,int NJ,char *GRTYP,int IG1,int IG2,int IG3,int I
    // If not specified, type is X
    if (GRTYP[0]==' ') GRTYP[0]='X';
 
-   if ((NI>1 || NJ>1) && GRTYP[0]!='X' && GRTYP[0]!='O' && GRTYP[0]!='P' && GRTYP[0]!='M' && GRTYP[0]!='V' && ((GRTYP[0]!='Z' && GRTYP[0]!='Y') || FID!=-1)) {
+   if ((NI>1 || NJ>1) && GRTYP[0]!='X' && GRTYP[0]!='O' && GRTYP[0]!='P' && GRTYP[0]!='M' && GRTYP[0]!='R' && GRTYP[0]!='V' && ((GRTYP[0]!='Z' && GRTYP[0]!='Y') || FID!=-1)) {
       grtyp[0]=GRTYP[0];
       grtyp[1]='\0';
 

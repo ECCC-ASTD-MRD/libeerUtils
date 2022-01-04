@@ -281,6 +281,8 @@ TGeoRef* GeoRef_RDRSetup(double Lat,double Lon,double Height,int R,double ResR,d
    ref->R=R;
    ref->ResR=ResR;
    ref->ResA=ResA;
+   ref->CTH=cos(0.0);
+   ref->STH=sin(0.0);
 
    GeoRef_Size(ref,0,0,360/ResA,R-1,0);
 

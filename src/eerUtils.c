@@ -173,7 +173,7 @@ time_t System_DateTime2Seconds(int YYYYMMDD,int HHMMSS,int GMT) {
 
    struct tm date;
 
-   extern time_t timezone;
+   extern long timezone;
 
    date.tm_sec=fmod(HHMMSS,100);       /*seconds apres la minute [0,61]*/
    HHMMSS/=100;
@@ -425,7 +425,7 @@ time_t System_Stamp2Seconds(int Stamp) {
    int           yyyy,mm,dd,hh,nn,ss;
    struct tm     tdate;
 
-   extern time_t timezone;
+   extern long timezone;
 
    if (!Stamp) {
       return(0);
@@ -469,7 +469,7 @@ char* System_StampFormat(int Stamp,char *Buf,char *Format) {
    int           yyyy,mm,dd,hh,nn,ss;
    struct tm     tdate;
 
-   extern time_t timezone;
+   extern long timezone;
 
    buf=Buf?Buf:SYSTEM_STRING;
 
