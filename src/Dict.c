@@ -629,7 +629,7 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encodin
                         xmlFree(tmpc);
                      }
                   } else if( (i==0||i==1) && !strcmp((char*)trotteur1->name,"meaning") ) {
-                     Dict_ParseText((char*)metvar->Meanings[i],Doc,trotteur1,Encoding,64,1);
+                     Dict_ParseText((char*)metvar->Meanings[i],Doc,trotteur1,Encoding,DICT_LEN_MEANING,1);
                   }
                }
                trotteur1=trotteur1->next;
@@ -651,7 +651,7 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encodin
                         xmlFree(tmpc);
                      }
                   } else if (!strcmp((char*)trotteur1->name,"meaning") ) {
-                     Dict_ParseText((char*)metvar->Meanings[i-1],Doc,trotteur1,Encoding,64,1);
+                     Dict_ParseText((char*)metvar->Meanings[i-1],Doc,trotteur1,Encoding,DICT_LEN_MEANING,1);
                   }
                }
                trotteur1=trotteur1->next;
