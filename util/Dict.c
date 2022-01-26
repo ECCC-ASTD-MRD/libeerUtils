@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
       type=strdup("");
       search=DICT_GLOB;
    } else {
-      if ((var==(void*)APP_FLAG) || (var && strncmp(var,"all",3)==0) || !(var&&(ip1>=0||ip3>=0||state||origin))) {
+      if ((var==(void*)APP_FLAG) || (var && strncmp(var,"all",3)==0) || !var&&(ip1>=0||ip3>=0||state||origin)) {
          var=strdup("");
          search=DICT_GLOB;
       }
