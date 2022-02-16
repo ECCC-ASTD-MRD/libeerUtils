@@ -1025,9 +1025,13 @@ int RPN_ReadData(void *Data,TDef_Type Type,int Key) {
    // Convert datyp into a datatype
    // Note: the RPN library deals surprisingly bad with 64bits fields, so we'll have to deal with it ourselves
    switch( ((unsigned int)datyp) & ~128u ) {
-      case 0: // Binary
-         datyp = TD_Binary;
-         usebuf = Type!=TD_Binary && Type!=TD_Byte && Type!=TD_UByte;
+      case 0: // Binary, transparent
+         datyp = Type;
+         usebuf = 0;
+         if( nbits != TDef_Size[Type]*8 ) {
+            App_Log(ERROR,"(%s) The binary/transparent datyp with nbits=%d is not compatible with the requested type %d that has an nbits of %d\n",__func__,nbits,Type,TDef_Size[Type]);
+            return APP_ERR;
+         }
          break;
       case 2: // Unsigned integer
          if( nbits > 32 ) {
@@ -1059,7 +1063,7 @@ int RPN_ReadData(void *Data,TDef_Type Type,int Key) {
          }
          break;
       case 7: // Character string
-         datyp = TD_Binary;
+         datyp = TD_Byte;
          usebuf = Type!=TD_Binary && Type!=TD_Byte && Type!=TD_UByte;
          break;
       case 3: // Character (R4A in an integer)
