@@ -17,8 +17,8 @@ set_target_properties(${targets} PROPERTIES
 #----- Set common link libraries
 foreach(target IN LISTS targets)
    target_link_libraries(${target} eerUtils -lm)
-   if(DEFINED ENV{INTELCOMP_HOME})
-      target_link_options(${target} PRIVATE "LINKER:-rpath,$ENV{INTELCOMP_HOME}/lib/intel64_lin")
+   if(COMPILER_SUITE MATCHES intel)
+#      target_link_options(${target} PRIVATE "LINKER:-rpath,$ENV{INTELCOMP_HOME}/lib/intel64_lin")
       target_link_libraries(${target} -lintlc -lifcore -lifport -limf -lsvml -liomp5 -lifcoremt)
    endif()
 endforeach()
