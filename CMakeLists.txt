@@ -53,7 +53,7 @@ add_subdirectory(src src)
 add_subdirectory(util util)
 
 set(ENV_CMDS_EXT_VERSION $ENV{CMDS_EXT_VERSION})
-set(ENV_INTELCOMP_HOME $ENV{INTEL_COMP_HOME})
+set(ENV_INTELCOMP_HOME $ENV{CMPLR_ROOT})
 
 # Packaging
 ec_install_prefix(${NAME} ${PROJECT_VERSION} PACKAGE_PREFIX)  # Define package prefix  

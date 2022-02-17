@@ -14,7 +14,7 @@ loginPath=${profileDirPath}/${packageName}.csh
 rm -f ${profilePath} ${loginPath}
 mkdir -p ${profileDirPath}
 
-# Added Intel compiler shared lib path ($INTELCOMP_HOME/lib/intel64_lin)
+# Added Intel compiler shared lib path ($INTELCOMP_HOME/linux/compiler/lib/intel64_lin)
 INTELCOMP_HOME=${INTELCOMP_HOME:=@ENV_INTELCOMP_HOME@}
 
 # Add EXT package (for various library dependencies)
@@ -34,7 +34,7 @@ esac
 cat > ${profilePath} << EOF
 export EC_INCLUDE_PATH="${packageHome}/include \${EC_INCLUDE_PATH}"
 export EC_LD_LIBRARY_PATH="${packageHome}/lib \${EC_LD_LIBRARY_PATH}"
-export LD_LIBRARY_PATH="${packageHome}/lib:${INTELCOMP_HOME}/lib/intel64_lin:${INTELCOMP_HOME}/compilers_and_libraries_2019.3.199/linux/mkl/lib/intel64_lin:\${LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH="${packageHome}/lib:${INTELCOMP_HOME}/linux/compiler/lib/intel64_lin:\${LD_LIBRARY_PATH}"
 
 #----- Add the <PackageName>_DIR variable for cmake builds
 export ${packageName%%_*}_DIR="$packageHome"
@@ -46,7 +46,7 @@ EOF
 cat > ${loginPath} << EOF
 setenv EC_INCLUDE_PATH="${packageHome}/include \${EC_INCLUDE_PATH}" 
 setenv EC_LD_LIBRARY_PATH="${packageHome}/lib \${EC_LD_LIBRARY_PATH}" 
-setenv LD_LIBRARY_PATH="${packageHome}/lib:${INTELCOMP_HOME}/lib/intel64_lin:${INTELCOMP_HOME}/compilers_and_libraries_2019.3.199/linux/mkl/lib/intel64_lin:\${LD_LIBRARY_PATH}"
+setenv LD_LIBRARY_PATH="${packageHome}/lib:${INTELCOMP_HOME}/linux/compiler/lib/intel64_lin/:\${LD_LIBRARY_PATH}"
 
 #----- Add the <PackageName>_DIR variable for cmake builds
 setenv ${packageName%%_*}_DIR="$packageHome"
