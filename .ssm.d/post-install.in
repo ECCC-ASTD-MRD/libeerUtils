@@ -26,7 +26,7 @@ case `domainname -d` in
       EXT_HOME=cmds/ext/@ENV_CMDS_EXT_VERSION@
       ;;
    *)
-      EXT_HOME=NIL
+      EXT_HOME=""
       echo "(WARNING) Not running on GC network, external dependency package @ENV_CMDS_EXT_VERSION@ not loaded"
       ;;
 esac
@@ -40,7 +40,7 @@ export LD_LIBRARY_PATH="${packageHome}/lib:${INTELCOMP_HOME}/lib/intel64_lin:${I
 export ${packageName%%_*}_DIR="$packageHome"
 
 #----- Load SSM dependencies
-[[ \${LD_LIBRARY_PATH} =~ ${EXT_HOME} ]] || . ssmuse-sh -d ${EXT_HOME}
+[[ \${LD_LIBRARY_PATH} =~ "${EXT_HOME}" ]] || . ssmuse-sh -d ${EXT_HOME}
 EOF
 
 cat > ${loginPath} << EOF
