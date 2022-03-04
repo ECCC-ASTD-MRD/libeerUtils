@@ -29,8 +29,8 @@ execute_process(
    )
 
 #----- Packages that create imported targets
-find_package(RMN ${RMN_REQ_VERSION} COMPONENTS SHARED OPTIONAL)
-find_package(VGRID ${VGRID_REQ_VERSION} COMPONENTS SHARED OPTIONAL)
+find_package(rmn ${RMN_REQ_VERSION} COMPONENTS shared)
+find_package(vgrid ${VGRID_REQ_VERSION} COMPONENTS shared)
 find_package(LibXml2 REQUIRED)
 
 find_package(GDAL ${GDAL_REQ_VERSION})
