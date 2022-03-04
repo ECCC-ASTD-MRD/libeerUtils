@@ -3,18 +3,28 @@ message(STATUS "Generating libeerUtils librairie")
 file(GLOB PROJECT_INCLUDE_FILES *.h)
 file(GLOB PROJECT_C_FILES *.c)
 
-add_library(eerUtils STATIC ${PROJECT_INCLUDE_FILES} ${PROJECT_C_FILES})
-add_library(eerUtils-ompi STATIC ${PROJECT_INCLUDE_FILES} ${PROJECT_C_FILES})
+#----- Install paths
+set(INCLUDE_INSTALL_DIR include)
+set(LIB_INSTALL_DIR     lib)
+set(CONFIG_INSTALL_DIR  "${LIB_INSTALL_DIR}/cmake/${PROJECT_NAME}-${PROJECT_VERSION}")
 
-#----- Common target properties
-set_target_properties(eerUtils eerUtils-ompi PROPERTIES
-   VERSION                    ${PROJECT_VERSION}
-   PUBLIC_HEADER              "${PROJECT_INCLUDE_FILES}"
-   POSITION_INDEPENDENT_CODE  ON
-)
+if(MPI_FOUND)
+   set(targets eerUtils eerUtils-ompi)
+else()
+   set(targets eerUtils)
+endif()
 
 #----- Common target dependencies
-foreach(target IN ITEMS eerUtils eerUtils-ompi)
+foreach(target IN ITEMS ${targets})
+   add_library(${target} STATIC ${PROJECT_INCLUDE_FILES} ${PROJECT_C_FILES})
+
+   #----- Common target properties
+   set_target_properties(${target} PROPERTIES
+      VERSION                    ${PROJECT_VERSION}
+      PUBLIC_HEADER              "${PROJECT_INCLUDE_FILES}"
+      POSITION_INDEPENDENT_CODE  ON
+   )   
+
    message(STATUS "Adding dep to ${target} (${CMAKE_CURRENT_SOURCE_DIR})")
    add_dependencies(${target} ${PROJECT_NAME}_build_info)
    target_include_directories(${target} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
@@ -34,16 +44,13 @@ foreach(target IN ITEMS eerUtils eerUtils-ompi)
 endforeach()
 
 #----- Specific target dependencies
-target_compile_definitions(eerUtils-ompi PUBLIC _MPI)
-target_link_libraries(eerUtils-ompi PUBLIC MPI::MPI_C OpenMP::OpenMP_C)
-
-#----- Install paths
-set(INCLUDE_INSTALL_DIR include)
-set(LIB_INSTALL_DIR     lib)
-set(CONFIG_INSTALL_DIR  "${LIB_INSTALL_DIR}/cmake/${PROJECT_NAME}-${PROJECT_VERSION}")
+if(MPI_FOUND)
+   target_compile_definitions(eerUtils-ompi PUBLIC _MPI)
+   target_link_libraries(eerUtils-ompi PUBLIC MPI::MPI_C OpenMP::OpenMP_C)
+endif()
 
 #----- Install instructions
-install(TARGETS eerUtils eerUtils-ompi
+install(TARGETS ${targets}
    LIBRARY        DESTINATION ${LIB_INSTALL_DIR}
    ARCHIVE        DESTINATION ${LIB_INSTALL_DIR}
    PUBLIC_HEADER  DESTINATION ${INCLUDE_INSTALL_DIR}
