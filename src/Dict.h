@@ -57,6 +57,8 @@
 
 #define DICT_MAXLEN   1024
 
+#define DICT_LEN_MEANING 128
+
 typedef enum { DICT_ASCII=0,DICT_UTF8=1,DICT_ISO8859_1=2 } TDict_Encoding;
 
 typedef struct {
@@ -70,7 +72,7 @@ typedef struct {
    int    Nature;                                    // Mask for state and nature of variable
    int    Pack;                                      // Optimum packing number of bits
    int    Codes[64];                                 // List of codes for coded variable
-   char   Meanings[64][2][64];                       // List of associated meanings
+   char   Meanings[64][2][DICT_LEN_MEANING];         // List of associated meanings
    int    NCodes;                                    // Number of codes
    int    IP1,IP2,IP3;                               // Specific IP values
    float  Level;                                     // Level (decoded IP1)

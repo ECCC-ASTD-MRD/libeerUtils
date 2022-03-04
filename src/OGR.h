@@ -36,14 +36,6 @@
 
 #include "GeoRef.h"
 
-#ifdef HAVE_GDAL
-   #include "gdal_safe.h"
-   #include "ogr_api.h"
-   #include "ogr_srs_api.h"
-#else
-   #include "ogr_stub.h"
-#endif
-
 #define OGR_G_EnvelopeIntersect(ENV0,ENV1) (!(ENV0.MaxX<ENV1.MinX || ENV0.MinX>ENV1.MaxX || ENV0.MaxY<ENV1.MinY || ENV0.MinY>ENV1.MaxY))
 #define OGR_PointInside(V,V0,V1)           (((V0[1]<=V[1] && V[1]<V1[1]) || (V1[1]<=V[1] && V[1]<V0[1])) && (V[0]<((V1[0]-V0[0])*(V[1]-V0[1])/(V1[1]-V0[1])+V0[0])))
 

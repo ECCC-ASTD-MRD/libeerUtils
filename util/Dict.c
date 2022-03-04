@@ -89,11 +89,11 @@ int main(int argc, char *argv[]) {
       type=strdup("");
       search=DICT_GLOB;
    } else {
-      if (var==(void*)APP_FLAG || (var && strncmp(var,"all",3)==0) || !var&&(ip1>=0||ip3>=0||state||origin)) {
+      if ((var==(void*)APP_FLAG) || (var && strncmp(var,"all",3)==0) || !var&&(ip1>=0||ip3>=0||state||origin)) {
          var=strdup("");
          search=DICT_GLOB;
       }
-      if (type==(void*)APP_FLAG || (type && strncmp(type,"all",3)==0)) {
+      if ((type==(void*)APP_FLAG) || (type && strncmp(type,"all",3)==0)) {
          type=strdup("");
          search=DICT_GLOB;
       }
@@ -312,7 +312,7 @@ int Dict_CheckRPN(char **RPNFile,int CheckOPS) {
    TRPNHeader headtable[DICT_MAXFLD],*head;
    TDictVar  *var;
    TList     *unknown,*known;
-   int        fid,key,ni,nj,nk,n,nb_unknown=0,nb_known=0,nidx,idxs[DICT_MAXREF],dateo=0;
+   int        fid,ni,nj,nk,n,nb_unknown=0,nb_known=0,nidx,idxs[DICT_MAXREF],dateo=0;
    double     nhour;
    char       nvar[5],*etiket;
 
@@ -489,7 +489,7 @@ int Dict_CheckRPN(char **RPNFile,int CheckOPS) {
                nhtic=nhtac=nhtoc=nhtuc=0;
                nh++;
                for(z=0;z<headnb;z++) {
-                  if (href[h].IP1=headtable[z].IP1 && href[h].IP2==headtable[z].IP2 && href[h].IP3==headtable[z].IP3) {
+                  if ((href[h].IP1==headtable[z].IP1) && (href[h].IP2==headtable[z].IP2) && (href[h].IP3==headtable[z].IP3)) {
                      if (!strcmp(">>  ",headtable[z].NOMVAR)) nhtic=1;
                      if (!strcmp("^^  ",headtable[z].NOMVAR)) nhtac=1;
                      if (!strcmp("!!  ",headtable[z].NOMVAR)) nhtoc=1;

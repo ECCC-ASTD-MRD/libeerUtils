@@ -31,6 +31,8 @@
 #ifndef _RPN_h
 #define _RPN_h
 
+#include "Def.h"
+
 #define RPNMAX 2048
 
 struct TGeoRef;
@@ -104,6 +106,10 @@ int RPN_GenerateIG(int *IG1,int *IG2,int *IG3);
 int RPN_LinkFiles(char **Files,int N);
 int RPN_UnLinkFiles(int FID);
 int RPN_LinkPattern(const char* Pattern);
+int RPN_ReadData(void *Data,TDef_Type Type,int Key);
+int RPN_sReadData(void *Data,TDef_Type Type,int Key);
+int RPN_Read(void *Data,TDef_Type Type,int Unit,int *NI,int *NJ,int *NK,int DateO,char *Etiket,int IP1,int IP2,int IP3,char* TypVar,char *NomVar);
+int RPN_sRead(void *Data,TDef_Type Type,int Unit,int *NI,int *NJ,int *NK,int DateO,char *Etiket,int IP1,int IP2,int IP3,char* TypVar,char *NomVar);
 
 #ifdef HAVE_RMN
 #include "rpnmacros.h"

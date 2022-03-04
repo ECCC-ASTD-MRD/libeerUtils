@@ -35,14 +35,40 @@
 #define _ogr_stub_h
 
 #define OGRGeometryH                 char
+#define OGRwkbGeometryType           char
 #define OGRCoordinateTransformationH char*
 #define OGRSpatialReferenceH         char*
 #define OGRLayerH                    char*
 #define OGRFeatureH                  char*
+#define OGRFieldDefnH                char*
 #define OGRFeatureDefnH              char*
 #define OGRDataSourceH               char*
 #define OGRSFDriverH                 char*
 #define GDALDatasetH                 char*
+#define OGRFieldDefnH                char*
+#define wkbPolygon                   0
+#define wkbLinearRing                0
+#define wkbPoint                     0
+#define ODrCCreateDataSource         char*
+
+#define GCI_YCbCr_YBand              0
+#define GCI_CyanBand                 0
+#define GCI_HueBand                  0
+#define GCI_RedBand                  0
+#define OGRERR_NONE                  0
+
+#define GDALDriverH                  char*
+#define GDALColorInterp              char
+#define GDALColorEntry               char
+#define GDALRasterBandH              char*
+#define GDALRPCInfo                  char
+#define GA_Update                    0
+#define GA_ReadOnly                  0
+#define GDAL_GCP                     char
+#define GDT_Unknown                  0
+#define GDAL_OF_VECTOR               0
+#define GDAL_OF_UPDATE               0
+#define GDAL_OF_READONLY             0
 
 typedef struct OGREnvelope {
     double      MinX;

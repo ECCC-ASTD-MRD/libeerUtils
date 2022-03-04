@@ -57,7 +57,7 @@
 int Codec(char *Pool,char *FST,char *Var,int Code) {
 
  #ifdef HAVE_RMN
-   char       buf[APP_BUFMAX*8],*c;
+   char       buf[APP_BUFMAX*8];
    int        fld[APP_BUFMAX*8],len,err,fstid,i;
    FILE      *fid=NULL;
    TRPNHeader h;
@@ -69,30 +69,31 @@ int Codec(char *Pool,char *FST,char *Var,int Code) {
       }
 
       // Get the pool line
-      c=fgets(buf,APP_BUFMAX*8,fid);
+      if (fgets(buf,APP_BUFMAX*8,fid)) {
 
-      // Get rid of trailing spaces
-      strtrim(buf,' ');
-      len=strlen(buf);
+         // Get rid of trailing spaces
+         strtrim(buf,' ');
+         len=strlen(buf);
 
-      // Get rid of trailing \n
-      if (buf[len-1]=='\n') len--;
-      
-      App_Log(INFO,"Encoding %i character\n",len);
-      for(i=0;i<len;i++) {
-         fld[i]=buf[i];
-      }
-      
-      if ((fstid=cs_fstouv(FST,"STD+RND+R/W"))<0) {
-         App_Log(ERROR,"Problems opening output file %s\n",FST);
-         return(0);
-      }
-      App_Log(INFO,"Encoding into %s\n",FST);
+         // Get rid of trailing \n
+         if (buf[len-1]=='\n') len--;
+         
+         App_Log(INFO,"Encoding %i character\n",len);
+         for(i=0;i<len;i++) {
+            fld[i]=buf[i];
+         }
+         
+         if ((fstid=cs_fstouv(FST,"STD+RND+R/W"))<0) {
+            App_Log(ERROR,"Problems opening output file %s\n",FST);
+            return(0);
+         }
+         App_Log(INFO,"Encoding into %s\n",FST);
 
-      err=cs_fstecr(fld,-8,fstid,0,0,0,len,1,1,0,0,0,"X",Var,"DESCRIPTION","X",0,0,0,0,2,TRUE);
-      if (err<0) {
-         App_Log(ERROR,"Could not write encoded pool record\n");
-         return(0);
+         err=cs_fstecr(fld,-8,fstid,0,0,0,len,1,1,0,0,0,"X",Var,"DESCRIPTION","X",0,0,0,0,2,TRUE);
+         if (err<0) {
+            App_Log(ERROR,"Could not write encoded pool record\n");
+            return(0);
+         }
       }
    } else {
       if ((fstid=cs_fstouv(FST,"STD+RND+R/O"))<0) {
