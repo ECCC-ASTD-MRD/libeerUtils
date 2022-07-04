@@ -886,7 +886,7 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
 
          RPN_sRead(Grid->GRef->AY,TD_Float32,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","^^");
          RPN_sRead(Grid->GRef->AX,TD_Float32,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"",">>");
-         RPN_sRead(Grid->GRef->Idx,TD_Float32,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","##");
+         RPN_sRead(Grid->GRef->Idx,TD_UInt32,Grid->H.FID,&ni,&nj,&nk,-1,"",Grid->IP1,Grid->IP2,Grid->IP3,"","##");
          
          GeoRef_BuildIndex(Grid->GRef);
          break;
