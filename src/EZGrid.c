@@ -458,7 +458,7 @@ static TGrid* EZGrid_CacheFind(const TGrid *Grid,int Master) {
                   pthread_mutex_unlock(&CacheMutex);
                   return(GridCache[n]);
                }
-            } else if (Grid->H.GRTYP[0]=='Z' || Grid->H.GRTYP[0]=='M' || Grid->H.GRTYP[0]=='Y'|| Grid->H.GRTYP[0]=='X') {
+            } else if (Grid->H.GRTYP[0]=='Z' || Grid->H.GRTYP[0]=='M' || Grid->H.GRTYP[0]=='Y' || Grid->H.GRTYP[0]=='O' || Grid->H.GRTYP[0]=='X') {
                if (GridCache[n]->IP1==Grid->H.IG1 && GridCache[n]->IP2==Grid->H.IG2 && GridCache[n]->IP3==Grid->H.IG3) {
                   pthread_mutex_unlock(&CacheMutex);
                   return(GridCache[n]);
@@ -893,6 +893,7 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
    
       case 'X':
       case 'Y':
+      case 'O':
          Grid->GRef=GeoRef_RPNSetup(Grid->H.NI,Grid->H.NJ,h.GRTYP,h.IG1,h.IG2,h.IG3,h.IG4,Grid->H.FID);
 
          Grid->GRef->AY=(float*)malloc(Grid->H.NIJ*sizeof(float));
@@ -1917,7 +1918,8 @@ int EZGrid_LLGetValue(TGrid* restrict const Grid,TGridInterpMode Mode,float Lat,
 
    switch(Grid->H.GRTYP[0]) {
       case 'X': // This is a $#@$@#% grid (orca)
-         return(EZGrid_LLGetValueX(Grid,NULL,Mode,Lat,Lon,K0,K1,Value,NULL,1.0));
+      case 'O':
+         return(EZGrid_LLGetValueO(Grid,NULL,Mode,Lat,Lon,K0,K1,Value,NULL,1.0));
          break;
 
       case 'Y': // This is a point cloud
@@ -1951,14 +1953,14 @@ int EZGrid_LLGetValue(TGrid* restrict const Grid,TGridInterpMode Mode,float Lat,
    return(FALSE);
 }
 
-int EZGrid_LLGetValueX(TGrid* restrict const GridU,TGrid* restrict const GridV,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* restrict UU,float* restrict VV,float Conv) {
+int EZGrid_LLGetValueO(TGrid* restrict const GridU,TGrid* restrict const GridV,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* restrict UU,float* restrict VV,float Conv) {
 
    TGridTile   *tu,*tv;
    double       i,j,d,th,len;
    int          k=0,ik=0;
    unsigned int idx;
    
-   if (!GridU || GridU->H.GRTYP[0]!='X') {
+   if (!GridU || (GridU->H.GRTYP[0]!='O' && GridU->H.GRTYP[0]!='X')) {
       App_Log(ERROR,"%s: Invalid grid\n",__func__);
       return(FALSE);
    }
@@ -1978,7 +1980,7 @@ int EZGrid_LLGetValueX(TGrid* restrict const GridU,TGrid* restrict const GridV,T
             
       if (Mode==EZ_NEAREST) {
          idx=lrintf(j)*tu->NI+lrintf(i);
-         if (tu->Mask[k] && !tu->Mask[k][idx]) {
+         if (tu->Mask && tu->Mask[k] && !tu->Mask[k][idx]) {
             ik++;
             continue;
          }
@@ -2206,7 +2208,8 @@ int EZGrid_LLGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
    
    switch(GridU->H.GRTYP[0]) {
       case 'X': // This is a $#@$@#% grid (orca)
-         return(EZGrid_LLGetValueX(GridU,GridV,Mode,Lat,Lon,K0,K1,UU,VV,Conv));
+      case 'O':
+         return(EZGrid_LLGetValueO(GridU,GridV,Mode,Lat,Lon,K0,K1,UU,VV,Conv));
          break;
          
       case 'Y': // This is a point cloud
