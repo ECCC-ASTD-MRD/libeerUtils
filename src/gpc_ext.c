@@ -95,8 +95,6 @@ int gpce_line_intersects_line(gpc_vertex A0,gpc_vertex A1,gpc_vertex B0,gpc_vert
             case 0:
                 // A and B are both lines, check if A0 lies on line B
                 if( dx*bdy + dy*bdx == 0.0 ) {
-                    if( adx != 0.0 ) {
-                    }
                     if( FA ) *FA = ady!=0.0 ? fmin(dy,B1.y-A0.y)/ady : fmin(-dx,B1.x-A0.x)/adx;
                     if( FB ) *FB = bdx!=0.0 ? fmin(dx,A1.x-B0.x)/bdx : fmin(-dy,A1.y-B0.y)/bdy;
                     return 2;
@@ -130,6 +128,62 @@ int gpce_line_intersects_line(gpc_vertex A0,gpc_vertex A1,gpc_vertex B0,gpc_vert
     }
 
     return 0;
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <gpce_segment_intersects_segment>
+ * Creation : Août 2022 - E. Legault-Ouellet
+ *
+ * But      : Trouver s'il y a intersection entre deux segment
+ *
+ * Parametres :
+ *  <A0>    : Premier point du segment A
+ *  <A1>    : Deuxième point du segment A
+ *  <B0>    : Premier point du segment B
+ *  <B1>    : Deuxième point du segment B
+ *  <FA>    : [OUT|Opt] Facteur de l'intersection à partir du point A0 sur la ligne A0-A1
+ *  <FB>    : [OUT|Opt] Facteur de l'intersection à partir du point B0 sur la ligne B0-B1
+ *
+ * Retour: 0 si aucune intersection, la même valeur que gpce_line_intersects_line sinon
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+ */
+int gpce_segment_intersects_segment(gpc_vertex A0,gpc_vertex A1,gpc_vertex B0,gpc_vertex B1,double *restrict FA,double *restrict FB) {
+   int code;
+   double fa,fb;
+
+   if( !GPCE_SEG_DISJOINT(A0,A1,B0,B1) && (code=gpce_line_intersects_line(A0,A1,B0,B1,&fa,&fb)) && 0.0<=fa && fa<=1.0 && 0.0<=fb && fb<=1.0 ) {
+      if( FA ) *FA = fa;
+      if( FB ) *FB = fb;
+      return code;
+   }
+
+   return 0;
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <gpce_get_num_polygon>
+ * Creation : Août 2022 - E. Legault-Ouellet
+ *
+ * But      : Retourne le nombre de point total d'un polygone
+ *
+ * Parametres :
+ *  <Poly>  : Le polygone
+ *
+ * Retour: Le nombre de point total du polygone
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+ */
+int gpce_get_num_vertices(const gpc_polygon *restrict Poly) {
+    int r,n;
+
+    for(r=0,n=0; r<Poly->num_contours; ++r) {
+       n += Poly->contour[r].num_vertices;
+    }
+
+    return n;
 }
 
 /*----------------------------------------------------------------------------
@@ -215,6 +269,45 @@ double gpce_get_area(const gpc_polygon *restrict Poly) {
 }
 
 /*----------------------------------------------------------------------------
+ * Nom      : <gpce_copy_polygon>
+ * Creation : Juillet 2018 - E. Legault-Ouellet
+ *
+ * But      : Copie un polygone
+ *
+ * Parametres :
+ *  <Dest>  : Le polygone de destination
+ *  <Srcy>  : Le polygone source
+ *
+ * Retour:
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+ */
+static void gpce_copy_ring(gpc_vertex_list *restrict Dest,const gpc_vertex_list *restrict Src) {
+    Dest->vertex = malloc(Src->num_vertices*sizeof(*Dest->vertex));
+    memcpy(Dest->vertex,Src->vertex,Src->num_vertices*sizeof(*Dest->vertex));
+
+    Dest->num_vertices = Src->num_vertices;
+}
+void gpce_copy_polygon(gpc_polygon *restrict Dest,const gpc_polygon *restrict Src) {
+    int r;
+
+    // Copy contours
+    Dest->contour = malloc(Src->num_contours*sizeof(*Dest->contour));
+    for(r=0; r<Src->num_contours; ++r) {
+        gpce_copy_ring(Dest->contour+r,Src->contour+r);
+    }
+
+    // Copy hole flags
+    Dest->hole = malloc(Src->num_contours*sizeof(*Dest->hole));
+    memcpy(Dest->hole,Src->hole,Src->num_contours*sizeof(*Dest->hole));
+
+    // Copy the rest
+    Dest->num_contours = Src->num_contours;
+}
+
+
+/*----------------------------------------------------------------------------
  * Nom      : <gpce_ring_crosses_ring>
  * Creation : Juillet 2018 - E. Legault-Ouellet
  *
@@ -233,7 +326,6 @@ double gpce_get_area(const gpc_polygon *restrict Poly) {
  *----------------------------------------------------------------------------
  */
 int gpce_ring_crosses_ring(const gpc_vertex_list *restrict RingA,const gpce_envelope *restrict EnvA,const gpc_vertex_list *restrict RingB,const gpce_envelope *restrict EnvB) {
-    double fa,fb;
     int a0,a1,b0,b1;
 
     // Make sure we have points
@@ -249,7 +341,7 @@ int gpce_ring_crosses_ring(const gpc_vertex_list *restrict RingA,const gpce_enve
     // Check if there is an intersection between each segments
     for(a0=RingA->num_vertices-1,a1=0; a1<RingA->num_vertices; a0=a1++) {
         for(b0=RingB->num_vertices-1,b1=0; b1<RingB->num_vertices; b0=b1++) {
-            if( gpce_line_intersects_line(RingA->vertex[a0],RingA->vertex[a1],RingB->vertex[b0],RingB->vertex[b1],&fa,&fb) && 0.0<=fa && fa<=1.0 && 0.0<=fb && fb<=1.0 ) {
+           if( gpce_segment_intersects_segment(RingA->vertex[a0],RingA->vertex[a1],RingB->vertex[b0],RingB->vertex[b1],NULL,NULL) ) {
                 return 1;
             }
         }
@@ -378,6 +470,8 @@ int gpce_ring_contains_point(const gpc_vertex_list *restrict Ring,const gpce_env
  *----------------------------------------------------------------------------
  */
 int gpce_ring_contains_ring(const gpc_vertex_list *restrict OutRing,const gpce_envelope *restrict OEnv,const gpc_vertex_list *restrict InRing,const gpce_envelope *restrict IEnv) {
+   int i;
+
     // Make sure we have points
     if( OutRing->num_vertices<=0 || InRing->num_vertices<=0 ) {
         return 0;
@@ -388,15 +482,11 @@ int gpce_ring_contains_ring(const gpc_vertex_list *restrict OutRing,const gpce_e
         return 0;
     }
 
-    // Check if the first point is inside the ring
-    if( !gpce_ring_contains_point(OutRing,OEnv,InRing->vertex[0]) ) {
-        return 0;
-    }
-
-    // Check if there is an intersection between each segments
-    if( gpce_ring_crosses_ring(OutRing,OEnv,InRing,IEnv) ) {
-        // An intersection means at least some part is outside
-        return 0;
+    // Make sure no point is outside the ring
+    for(i=0; i<InRing->num_vertices; ++i) {
+       if( !gpce_ring_contains_point(OutRing,OEnv,InRing->vertex[i]) ) {
+          return 0;
+       }
     }
 
     return 1;
@@ -589,30 +679,7 @@ int gpce_polygon_contains_polygon(const gpc_polygon *restrict OPoly,const gpce_e
  * Remarques :
  *----------------------------------------------------------------------------
  */
-
-static void gpce_copy_ring(gpc_vertex_list *restrict Dest,const gpc_vertex_list *restrict Src) {
-    Dest->vertex = malloc(Src->num_vertices*sizeof(*Dest->vertex));
-    memcpy(Dest->vertex,Src->vertex,Src->num_vertices*sizeof(*Dest->vertex));
-
-    Dest->num_vertices = Src->num_vertices;
-}
-static void gpce_copy_polygon(gpc_polygon *restrict Dest,const gpc_polygon *restrict Src) {
-    int r;
-
-    // Copy contours
-    Dest->contour = malloc(Src->num_contours*sizeof(*Dest->contour));
-    for(r=0; r<Src->num_contours; ++r) {
-        gpce_copy_ring(Dest->contour+r,Src->contour+r);
-    }
-
-    // Copy hole flags
-    Dest->hole = malloc(Src->num_contours*sizeof(*Dest->hole));
-    memcpy(Dest->hole,Src->hole,Src->num_contours*sizeof(*Dest->hole));
-
-    // Copy the rest
-    Dest->num_contours = Src->num_contours;
-}
-int gpce_split_polygons(const gpc_polygon *restrict Poly,const gpce_envelope *restrict PEnv,gpc_polygon **PList,gpce_envelope ***EList) {
+int gpce_explode_multi_polygon(const gpc_polygon *restrict Poly,const gpce_envelope *restrict PEnv,gpc_polygon **PList,gpce_envelope ***EList) {
     const gpce_envelope *restrict penv;
     gpc_polygon         *plist=NULL;
     gpce_envelope       **elist=NULL;
@@ -629,15 +696,17 @@ int gpce_split_polygons(const gpc_polygon *restrict Poly,const gpce_envelope *re
                     *elist = malloc(Poly->num_contours*sizeof(**elist));
                     memcpy(*elist,PEnv,Poly->num_contours*sizeof(**elist));
                 } else {
-                    *elist = gpce_get_envelope(Poly);
+                    *elist = gpce_get_envelopes(Poly);
                 }
             }
         } else {
+            int idxe[n];
+
             // Make sure we have an envelope because that has the potential to greatly speedup the process
-            penv = PEnv?PEnv:gpce_get_envelope(Poly);
+            penv = PEnv?PEnv:gpce_get_envelopes(Poly);
 
             // Loop on the exterior rings
-            for(r=0,e=0; r<Poly->num_contours; ++r) {
+            for(r=0,e=0; e<n; ++r) {
                 if( !Poly->hole[r] ) {
                     // Allocate as much memory as possibly needed
                     plist[e].contour = calloc(Poly->num_contours-n+1,sizeof(*plist[e].contour));
@@ -652,31 +721,43 @@ int gpce_split_polygons(const gpc_polygon *restrict Poly,const gpce_envelope *re
                         elist[e][0] = penv[r];
                     }
 
-                    // Find all interior rings contained in this exterior ring and copy them
-                    for(c=0; c<Poly->num_contours; ++c) {
-                        if( Poly->hole[c] && gpce_ring_contains_ring(Poly->contour+r,penv+r,Poly->contour+c,penv) ) {
-                            if( elist ) {
-                                elist[e][plist[e].num_contours] = penv[r];
-                            }
-                            gpce_copy_ring(plist[e].contour+plist[e].num_contours++,Poly->contour+c);
-                        }
-                    }
-
-                    // Resize the memory to the right size
-                    plist[e].contour = realloc(plist[e].contour,plist[e].num_contours*sizeof(*plist[e].contour));
-                    if( elist ) {
-                        elist[e] = realloc(elist[e],plist[e].num_contours*sizeof(*elist[e]));
-                    }
-
-                    // Set all but the first ring as holes
-                    plist[e].hole = malloc(plist[e].num_contours*sizeof(*plist[e].hole));
-                    plist[e].hole[0] = 0;
-                    for(c=1; c<plist[e].num_contours; ++c) {
-                        plist[e].hole[c] = 1;
-                    }
-
+                    idxe[e] = r;
                     ++e;
                 }
+            }
+
+            // Loop on the interior ring and attach them to the right polygon
+            for(r=0; r<Poly->num_contours; ++r) {
+                if( Poly->hole[r] ) {
+                   for(e=0; e<n; ++e) {
+                      if( gpce_ring_contains_ring(Poly->contour+idxe[e],penv+idxe[e],Poly->contour+r,penv+r) ) {
+                         if( elist ) {
+                            elist[e][plist[e].num_contours] = penv[idxe[e]];
+                         }
+                         gpce_copy_ring(plist[e].contour+plist[e].num_contours++,Poly->contour+r);
+                         break;
+                      }
+                   }
+                   if( e >= n ) {
+                      fprintf(stderr,"%s: found a hole without parent (%d)\n",__func__,r);
+                   }
+                }
+            }
+
+            // Finalize the polygons
+            for(e=0; e<n; ++e) {
+               // Resize the memory to the right size
+               plist[e].contour = realloc(plist[e].contour,plist[e].num_contours*sizeof(*plist[e].contour));
+               if( elist ) {
+                  elist[e] = realloc(elist[e],plist[e].num_contours*sizeof(*elist[e]));
+               }
+
+               // Allocate the hole array and set all but the first ring as holes
+               plist[e].hole = malloc(plist[e].num_contours*sizeof(*plist[e].hole));
+               plist[e].hole[0] = 0;
+               for(c=1; c<plist[e].num_contours; ++c) {
+                  plist[e].hole[c] = 1;
+               }
             }
 
             // Free the envelope if it was not already provided
@@ -698,7 +779,7 @@ int gpce_split_polygons(const gpc_polygon *restrict Poly,const gpce_envelope *re
 }
 
 /*----------------------------------------------------------------------------
- * Nom      : <gpce_get_envelope>
+ * Nom      : <gpce_get_ring_envelope>
  * Creation : Juillet 2018 - E. Legault-Ouellet
  *
  * But      : Retourne une enveloppe pour le contour donné
@@ -712,10 +793,10 @@ int gpce_split_polygons(const gpc_polygon *restrict Poly,const gpce_envelope *re
  * Remarques :
  *----------------------------------------------------------------------------
  */
-static void gpce_get_ring_envelope(const gpc_vertex_list *restrict Ring,gpce_envelope *restrict PEnv) {
+void gpce_get_ring_envelope(const gpc_vertex_list *restrict Ring,gpce_envelope *restrict PEnv) {
     int i;
 
-    *PEnv = GPCE_MK_ENVELOPE(DBL_MAX,DBL_MAX,DBL_MIN,DBL_MIN);
+    *PEnv = GPCE_MK_ENVELOPE(DBL_MAX,DBL_MAX,-DBL_MAX,-DBL_MAX);
 
     for(i=0; i<Ring->num_vertices; ++i) {
         PEnv->min.x = fmin(PEnv->min.x,Ring->vertex[i].x);
@@ -729,6 +810,37 @@ static void gpce_get_ring_envelope(const gpc_vertex_list *restrict Ring,gpce_env
  * Nom      : <gpce_get_envelope>
  * Creation : Juillet 2018 - E. Legault-Ouellet
  *
+ * But      : Retourne l'enveloppe extérieure du polygone
+ *
+ * Parametres :
+ *  <Poly>  : Le polygone dont on veut l'enveloppe
+ *
+ * Retour: Les enveloppes ou NULL si erreur.
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+ */
+void gpce_get_envelope(const gpc_polygon *restrict Poly,gpce_envelope *restrict PEnv) {
+   int r,i;
+
+    *PEnv = GPCE_MK_ENVELOPE(DBL_MAX,DBL_MAX,-DBL_MAX,-DBL_MAX);
+
+    for(r=0; r<Poly->num_contours; ++r) {
+       if( !Poly->hole[r] ) {
+          for(i=0; i<Poly->contour[r].num_vertices; ++i) {
+             PEnv->min.x = fmin(PEnv->min.x,Poly->contour[r].vertex[i].x);
+             PEnv->min.y = fmin(PEnv->min.y,Poly->contour[r].vertex[i].y);
+             PEnv->max.x = fmax(PEnv->max.x,Poly->contour[r].vertex[i].x);
+             PEnv->max.y = fmax(PEnv->max.y,Poly->contour[r].vertex[i].y);
+          }
+       }
+    }
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <gpce_get_envelopes>
+ * Creation : Juillet 2018 - E. Legault-Ouellet
+ *
  * But      : Retourne une enveloppe pour chaque contour d'un polygone
  *
  * Parametres :
@@ -739,7 +851,7 @@ static void gpce_get_ring_envelope(const gpc_vertex_list *restrict Ring,gpce_env
  * Remarques :
  *----------------------------------------------------------------------------
  */
-gpce_envelope* gpce_get_envelope(const gpc_polygon *restrict Poly) {
+gpce_envelope* gpce_get_envelopes(const gpc_polygon *restrict Poly) {
     int r;
     gpce_envelope *penv = NULL;
 
@@ -777,14 +889,14 @@ int gpce_envelope_intersects_line(const gpce_envelope *restrict PEnv,gpc_vertex 
     gpc_vertex tl=GPC_MK_VERTEX(PEnv->min.x,PEnv->max.y),br=GPC_MK_VERTEX(PEnv->max.x,PEnv->min.y);
 
     if( Dir ) {
-        return gpce_line_intersects_line(L0,L1,PEnv->min,br,&f,&s) && 0.0<=s && s<=1.0 && f>=0.0
+        return (gpce_line_intersects_line(L0,L1,PEnv->min,br,&f,&s) && 0.0<=s && s<=1.0 && f>=0.0
             || gpce_line_intersects_line(L0,L1,PEnv->min,tl,&f,&s) && 0.0<=s && s<=1.0 && f>=0.0
             || gpce_line_intersects_line(L0,L1,br,PEnv->max,&f,&s) && 0.0<=s && s<=1.0 && f>=0.0
-            || gpce_line_intersects_line(L0,L1,tl,PEnv->max,&f,&s) && 0.0<=s && s<=1.0 && f>=0.0;
+            || gpce_line_intersects_line(L0,L1,tl,PEnv->max,&f,&s) && 0.0<=s && s<=1.0 && f>=0.0);
     } else {
-        return gpce_line_intersects_line(L0,L1,PEnv->min,br,NULL,&s) && 0.0<=s && s<=1.0
+        return (gpce_line_intersects_line(L0,L1,PEnv->min,br,NULL,&s) && 0.0<=s && s<=1.0
             || gpce_line_intersects_line(L0,L1,PEnv->min,tl,NULL,&s) && 0.0<=s && s<=1.0
             || gpce_line_intersects_line(L0,L1,br,PEnv->max,NULL,&s) && 0.0<=s && s<=1.0
-            || gpce_line_intersects_line(L0,L1,tl,PEnv->max,NULL,&s) && 0.0<=s && s<=1.0;
+            || gpce_line_intersects_line(L0,L1,tl,PEnv->max,NULL,&s) && 0.0<=s && s<=1.0);
     }
 }
