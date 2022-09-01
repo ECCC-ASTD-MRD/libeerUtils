@@ -679,6 +679,20 @@ int gpce_polygon_contains_polygon(const gpc_polygon *restrict OPoly,const gpce_e
  * Remarques :
  *----------------------------------------------------------------------------
  */
+struct IdxE {
+   int idx;
+   gpc_vertex_list *ring;
+   gpce_envelope *env;
+};
+int QSort_IdxE(const void *A,const void *B) {
+   const struct IdxE *a=A,*b=B;
+   double asqA=(a->env->max.x-a->env->min.x)*(a->env->max.y-a->env->min.y);
+   double asqB=(b->env->max.x-b->env->min.x)*(b->env->max.y-b->env->min.y);
+   if( asqA < asqB )       return -1;
+   else if( asqA > asqB )  return 1;
+   else                    return 0;
+   //return (asqA>asqB)-(asqA<asqB);
+}
 int gpce_explode_multi_polygon(const gpc_polygon *restrict Poly,const gpce_envelope *restrict PEnv,gpc_polygon **PList,gpce_envelope ***EList) {
     const gpce_envelope *restrict penv;
     gpc_polygon         *plist=NULL;
@@ -700,7 +714,7 @@ int gpce_explode_multi_polygon(const gpc_polygon *restrict Poly,const gpce_envel
                 }
             }
         } else {
-            int idxe[n];
+            struct IdxE idxe[n];
 
             // Make sure we have an envelope because that has the potential to greatly speedup the process
             penv = PEnv?PEnv:gpce_get_envelopes(Poly);
@@ -721,20 +735,27 @@ int gpce_explode_multi_polygon(const gpc_polygon *restrict Poly,const gpce_envel
                         elist[e][0] = penv[r];
                     }
 
-                    idxe[e] = r;
+                    idxe[e] = (struct IdxE){e,Poly->contour+r,(gpce_envelope*)penv+r};
                     ++e;
                 }
             }
 
+            // Internaly sort the outside polygons from the smallest to the biggest (in term of envelope)
+            // This is done so that if a polygon has a hole that contains another polygon, the rings are added correctly
+            // otherwise a ring that fits on the interior polygon could be added to the exterior one
+            qsort(idxe,n,sizeof(*idxe),QSort_IdxE);
+
             // Loop on the interior ring and attach them to the right polygon
             for(r=0; r<Poly->num_contours; ++r) {
-                if( Poly->hole[r] ) {
+                if( Poly->hole[r] && Poly->contour[r].num_vertices ) {
                    for(e=0; e<n; ++e) {
-                      if( gpce_ring_contains_ring(Poly->contour+idxe[e],penv+idxe[e],Poly->contour+r,penv+r) ) {
+                      // Since we expect our polygons to already be well behaved, a hole having a point inside an exterior ring
+                      // means it belongs to that ring (which is the right ring because the polygons are sorted on envelope size)
+                      if( gpce_ring_contains_point(idxe[e].ring,idxe[e].env,Poly->contour[r].vertex[0]) ) {
                          if( elist ) {
-                            elist[e][plist[e].num_contours] = penv[idxe[e]];
+                            elist[idxe[e].idx][plist[idxe[e].idx].num_contours] = penv[r];
                          }
-                         gpce_copy_ring(plist[e].contour+plist[e].num_contours++,Poly->contour+r);
+                         gpce_copy_ring(plist[idxe[e].idx].contour+plist[idxe[e].idx].num_contours++,Poly->contour+r);
                          break;
                       }
                    }
