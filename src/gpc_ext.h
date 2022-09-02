@@ -48,7 +48,7 @@ int gpce_polygon_contains_point(const gpc_polygon *restrict Poly,const gpce_enve
 int gpce_polygon_contains_ring(const gpc_polygon *restrict Poly,const gpce_envelope *restrict PEnv,const gpc_vertex_list *restrict Ring,const gpce_envelope *restrict REnv);
 int gpce_polygon_contains_polygon(const gpc_polygon *restrict OPoly,const gpce_envelope *restrict OEnv,const gpc_polygon *restrict IPoly,const gpce_envelope *restrict IEnv);
 int gpce_explode_multi_polygon(const gpc_polygon *restrict Poly,const gpce_envelope *restrict PEnv,gpc_polygon **PList,gpce_envelope ***EList);
-int gpce_poly_split_tile(gpc_polygon *restrict Poly,const int MaxPoints,gpc_polygon **restrict Split,unsigned int *restrict NbSplit,unsigned int *restrict Size);
+int gpce_poly_split_tile(const gpc_polygon *restrict Poly,const int MaxPoints,gpc_polygon **restrict Split,unsigned int *restrict NbSplit,unsigned int *restrict Size);
 
 // Envelope related
 void gpce_get_ring_envelope(const gpc_vertex_list *restrict Ring,gpce_envelope *restrict PEnv);

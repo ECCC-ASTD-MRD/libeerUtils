@@ -833,7 +833,7 @@ int gpce_explode_multi_polygon(const gpc_polygon *restrict Poly,const gpce_envel
       SPLIT_ABORT; \
    } \
 }
-int gpce_poly_split_tile(gpc_polygon *restrict Poly,const int MaxPoints,gpc_polygon **restrict Split,unsigned int *restrict NbSplit,unsigned int *restrict Size) {
+int gpce_poly_split_tile(const gpc_polygon *restrict Poly,const int MaxPoints,gpc_polygon **restrict Split,unsigned int *restrict NbSplit,unsigned int *restrict Size) {
    unsigned int   size=0,toplvl=0;
 
    // A NULL size indicates that we are the top level fct
