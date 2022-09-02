@@ -800,6 +800,146 @@ int gpce_explode_multi_polygon(const gpc_polygon *restrict Poly,const gpce_envel
 }
 
 /*----------------------------------------------------------------------------
+ * Name     : <gpce_poly_split_tile>
+ * Creation : August 2022 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * Purpose  : Recursive function to split (multi)polygons into smaller polygons
+ *
+ * Args :
+ *   <Poly>    : The (multi)polygon to split
+ *   <MaxPoints: The maximum number of vertices a polygon can have (it is split otherwise)
+ *   <Split>   : [OUT] List of generated polygons
+ *   <NbSplit> : [OUT] Number of polygon generated
+ *   <Size>    : [Internal, call with NULL] Size of the memory vector used to
+ *               store the splitted polygons
+ *
+ * Return: The number of generated polygons (0 if error)
+ *
+ * Remarks :
+ *----------------------------------------------------------------------------
+ */
+#define SPLIT_ABORT { \
+      if( *Split ) free(*Split); \
+      *Split = NULL; \
+      *NbSplit = 0; \
+      return 0; \
+}
+#define SPLIT_REALLOC(Size) { \
+   void *tmpptr; \
+   if( (tmpptr=realloc(*Split,(Size)*sizeof(**Split))) ) { \
+      *Split = tmpptr; \
+   } else { \
+      fprintf(stderr,"%s: Could not allocate memory\n",__func__); \
+      SPLIT_ABORT; \
+   } \
+}
+int gpce_poly_split_tile(gpc_polygon *restrict Poly,const int MaxPoints,gpc_polygon **restrict Split,unsigned int *restrict NbSplit,unsigned int *restrict Size) {
+   unsigned int   size=0,toplvl=0;
+
+   // A NULL size indicates that we are the top level fct
+   if( !Size ) {
+      Size = &size;
+      toplvl = 1;
+      *Split = NULL;
+      *NbSplit = 0;
+   }
+
+   // Check if we have a multi polygon
+   if( gpce_get_num_polygon(Poly) > 1 ) {
+      gpc_polygon    *polys;
+      unsigned int   i,n;
+
+      // Split the multi-polygon into single polygons
+      n = gpce_explode_multi_polygon(Poly,NULL,&polys,NULL);
+
+      // Process those polygons individually
+      for(i=0; i<n; ++i) {
+         if( !gpce_poly_split_tile(&polys[i],MaxPoints,Split,NbSplit,Size) ) {
+            // In case of error, free everything and return
+            for(; i<n; ++i)
+               gpc_free_polygon(&polys[i]);
+            free(polys);
+            SPLIT_ABORT;
+         }
+         gpc_free_polygon(&polys[i]);
+      }
+
+      free(polys);
+   } else if( gpce_get_num_vertices(Poly) >= MaxPoints ) { // Check if we need to split the polygon again
+      gpc_polygon    clip0,clip1,res;
+      gpce_envelope  penv;
+
+      // Get the exterior envelope of the polygon
+      gpce_get_envelope(Poly,&penv);
+
+      // Check whether we should split the polygon vertically (X) or horizontally (Y)
+      if( penv.max.x-penv.min.x >= penv.max.y-penv.min.y ) {
+         // Bigger extent in X, split vertically
+         double x = (penv.min.x+penv.max.x)/2.0;
+         clip0 = GPCE_MK_RECT2(penv.min.x,penv.min.y,x,penv.max.y);
+         clip1 = GPCE_MK_RECT2(x,penv.min.y,penv.max.x,penv.max.y);
+      } else {
+         // Bigger extent in Y, split horizontally
+         double y = (penv.min.y+penv.max.y)/2.0;
+         clip0 = GPCE_MK_RECT2(penv.min.x,penv.min.y,penv.max.x,y);
+         clip1 = GPCE_MK_RECT2(penv.min.x,y,penv.max.x,penv.max.y);
+      }
+
+      // Clip and process the first half
+      gpc_polygon_clip(GPC_INT,Poly,&clip0,&res);
+      if( !gpce_poly_split_tile(&res,MaxPoints,Split,NbSplit,Size) ) {
+         gpc_free_polygon(&res);
+         SPLIT_ABORT;
+      }
+      gpc_free_polygon(&res);
+
+      // Clip and process the second half
+      gpc_polygon_clip(GPC_INT,Poly,&clip1,&res);
+      if( !gpce_poly_split_tile(&res,MaxPoints,Split,NbSplit,Size) ) {
+         gpc_free_polygon(&res);
+         SPLIT_ABORT;
+      }
+      gpc_free_polygon(&res);
+   } else {
+      // Make sure we have enough place for the new polygon
+      if( *Size <= *NbSplit ) {
+         *Size += 1024;
+         SPLIT_REALLOC(*Size);
+      }
+
+      // Add the polygon to the index
+      gpce_copy_polygon(*Split+*NbSplit,Poly);
+
+      // Make sure the outer ring is the first ring int the list
+      // Note: we are sure to have a polygon and not a multi-polygon, so there can only be one exterior ring
+      if( Poly->hole[0] ) {
+         gpc_vertex_list swp;
+         int r;
+
+         for(r=1; r<Poly->num_contours; ++r) {
+            if( !Poly->hole[r] ) {
+               swp = (*Split)[*NbSplit].contour[0];
+               (*Split)[*NbSplit].contour[0] = (*Split)[*NbSplit].contour[r];
+               (*Split)[*NbSplit].contour[r] = swp;
+               break;
+            }
+         }
+      }
+
+      ++(*NbSplit);
+   }
+
+   // Shrink the array down to the right size
+   if( toplvl ) {
+      if( size != *NbSplit )
+         SPLIT_REALLOC(*NbSplit);
+      return *NbSplit;
+   }
+
+   return 1;
+}
+
+/*----------------------------------------------------------------------------
  * Nom      : <gpce_get_ring_envelope>
  * Creation : Juillet 2018 - E. Legault-Ouellet
  *
