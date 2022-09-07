@@ -598,7 +598,7 @@ int RPN_FieldTile(int FID,TDef *Def,TRPNHeader *Head,TGeoRef *GRef,TZRef *ZRef,i
       if (!NI || !NJ || (Def->NI<NI && Def->NJ<NJ)) {
          c_fst_data_length(TDef_Size[Def->Type]);
          key=c_fstecr(data,NULL,NPack,FID,Head->DATEO,Head->DEET,Head->NPAS,Def->NI,Def->NJ,1,ip1,Head->IP2,Head->IP3,Head->TYPVAR,
-            Head->NOMVAR,Head->ETIKET,(GRef?(GRef->Grid[1]!='\0'?&GRef->Grid[1]:GRef->Grid):"X"),Head->IG1,Head->IG2,Head->IG3,Head->IG4,DATYP,Rewrite);
+            Head->NOMVAR,Head->ETIKET,(GRef?GRef->Grid:"X"),Head->IG1,Head->IG2,Head->IG3,Head->IG4,DATYP,Rewrite);
       } else {
 
          // Build and save the tiles, we adjust the tile size if it is too big
