@@ -18,18 +18,7 @@ mkdir -p ${profileDirPath}
 INTELCOMP_HOME=${INTELCOMP_HOME:=@ENV_INTELCOMP_HOME@}
 
 # Add EXT package (for various library dependencies)
-case `domainname -d` in
-   *science.gc.ca)
-      EXT_HOME=eccc/cmd/cmds/ext/@ENV_CMDS_EXT_VERSION@
-      ;;
-   *ec.gc.ca)
-      EXT_HOME=cmds/ext/@ENV_CMDS_EXT_VERSION@
-      ;;
-   *)
-      EXT_HOME=""
-      echo "(WARNING) Not running on GC network, external dependency package @ENV_CMDS_EXT_VERSION@ not loaded"
-      ;;
-esac
+EXT_HOME=${EXT_HOME:=/fs/ssm/eccc/cmd/cmds/ext/@ENV_CMDS_EXT_VERSION@}
 
 cat > ${profilePath} << EOF
 export EC_INCLUDE_PATH="${packageHome}/include \${EC_INCLUDE_PATH}"
