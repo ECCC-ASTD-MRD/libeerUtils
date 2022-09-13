@@ -26,4 +26,5 @@ endforeach()
 install(TARGETS ${targets}
    RUNTIME DESTINATION bin)
 
-ec_install_symlink(./Dict ${CMAKE_INSTALL_PREFIX}/bin/o.dict)
+ec_install_symlink(./Dict ${CMAKE_CURRENT_BINARY_DIR}/o.dict)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/o.dict TYPE BIN)
