@@ -810,6 +810,8 @@ int gpce_explode_multi_polygon(const gpc_polygon *restrict Poly,const gpce_envel
  *   <MaxPoints: The maximum number of vertices a polygon can have (it is split otherwise)
  *   <Split>   : [OUT] List of generated polygons
  *   <NbSplit> : [OUT] Number of polygon generated
+ *   <PolyIdx> : [OUT/OPT] Optional index indicating which polygon each splitted polygon
+ *               came from (only useful if the initial polygon is a multi-polygon)
  *   <Size>    : [Internal, call with NULL] Size of the memory vector used to
  *               store the splitted polygons
  *
@@ -818,23 +820,17 @@ int gpce_explode_multi_polygon(const gpc_polygon *restrict Poly,const gpce_envel
  * Remarks :
  *----------------------------------------------------------------------------
  */
-#define SPLIT_ABORT { \
-      if( *Split ) free(*Split); \
-      *Split = NULL; \
-      *NbSplit = 0; \
-      return 0; \
-}
-#define SPLIT_REALLOC(Size) { \
+#define REALLOC(Ptr,Size) { \
    void *tmpptr; \
-   if( (tmpptr=realloc(*Split,(Size)*sizeof(**Split))) ) { \
-      *Split = tmpptr; \
+   if( (tmpptr=realloc((Ptr),(Size)*sizeof(*(Ptr)))) ) { \
+      (Ptr) = tmpptr; \
    } else { \
       fprintf(stderr,"%s: Could not allocate memory\n",__func__); \
-      SPLIT_ABORT; \
+      goto err; \
    } \
 }
-int gpce_poly_split_tile(const gpc_polygon *restrict Poly,const int MaxPoints,gpc_polygon **restrict Split,unsigned int *restrict NbSplit,unsigned int *restrict Size) {
-   unsigned int   size=0,toplvl=0;
+int gpce_poly_split_tile(const gpc_polygon *restrict Poly,const int MaxPoints,gpc_polygon **restrict Split,unsigned int *restrict NbSplit,unsigned int **restrict PolyIdx,unsigned int *restrict Size) {
+   unsigned int   size=0,toplvl=0,pidx=0;
 
    // A NULL size indicates that we are the top level fct
    if( !Size ) {
@@ -854,14 +850,21 @@ int gpce_poly_split_tile(const gpc_polygon *restrict Poly,const int MaxPoints,gp
 
       // Process those polygons individually
       for(i=0; i<n; ++i) {
-         if( !gpce_poly_split_tile(&polys[i],MaxPoints,Split,NbSplit,Size) ) {
+         if( !gpce_poly_split_tile(&polys[i],MaxPoints,Split,NbSplit,PolyIdx,Size) ) {
             // In case of error, free everything and return
             for(; i<n; ++i)
                gpc_free_polygon(&polys[i]);
             free(polys);
-            SPLIT_ABORT;
+            goto err;
          }
          gpc_free_polygon(&polys[i]);
+
+         // Set the sub-polygon index
+         if( PolyIdx && toplvl ) {
+            while( pidx < *NbSplit ) {
+               (*PolyIdx)[pidx++] = i;
+            }
+         }
       }
 
       free(polys);
@@ -887,27 +890,30 @@ int gpce_poly_split_tile(const gpc_polygon *restrict Poly,const int MaxPoints,gp
 
       // Clip and process the first half
       gpc_polygon_clip(GPC_INT,Poly,&clip0,&res);
-      if( !gpce_poly_split_tile(&res,MaxPoints,Split,NbSplit,Size) ) {
+      if( !gpce_poly_split_tile(&res,MaxPoints,Split,NbSplit,PolyIdx,Size) ) {
          gpc_free_polygon(&res);
-         SPLIT_ABORT;
+         goto err;
       }
       gpc_free_polygon(&res);
 
       // Clip and process the second half
       gpc_polygon_clip(GPC_INT,Poly,&clip1,&res);
-      if( !gpce_poly_split_tile(&res,MaxPoints,Split,NbSplit,Size) ) {
+      if( !gpce_poly_split_tile(&res,MaxPoints,Split,NbSplit,PolyIdx,Size) ) {
          gpc_free_polygon(&res);
-         SPLIT_ABORT;
+         goto err;
       }
       gpc_free_polygon(&res);
    } else {
       // Make sure we have enough place for the new polygon
       if( *Size <= *NbSplit ) {
          *Size += 1024;
-         SPLIT_REALLOC(*Size);
+         REALLOC(*Split,*Size);
+
+         if( PolyIdx )
+            REALLOC(*PolyIdx,*Size);
       }
 
-      // Add the polygon to the index
+      // Add the polygon to the list
       gpce_copy_polygon(*Split+*NbSplit,Poly);
 
       // Make sure the outer ring is the first ring int the list
@@ -931,12 +937,27 @@ int gpce_poly_split_tile(const gpc_polygon *restrict Poly,const int MaxPoints,gp
 
    // Shrink the array down to the right size
    if( toplvl ) {
-      if( size != *NbSplit )
-         SPLIT_REALLOC(*NbSplit);
+      if( size != *NbSplit ) {
+         REALLOC(*Split,*NbSplit);
+
+         if( PolyIdx )
+            REALLOC(*PolyIdx,*NbSplit);
+      }
+
+      // Set the polygon index to 0 (will only execute if we didn't have a multi-polygon initially, which mean we need to set everything to 0)
+      if( PolyIdx && pidx<*NbSplit ) {
+         memset(*PolyIdx+pidx,0,*NbSplit-pidx);
+      }
       return *NbSplit;
    }
 
    return 1;
+
+err:
+   if( *Split ) free(*Split);
+   *Split = NULL;
+   *NbSplit = 0;
+   return 0;
 }
 
 /*----------------------------------------------------------------------------
