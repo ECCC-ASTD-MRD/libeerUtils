@@ -279,6 +279,9 @@ void IPDecode(int IP,float *Level,int *Kind) {
 
       // Convert to real level/value
       f77name(convip_plus)(&IP,Level,Kind,&mode,&fmt,&flag);
+   } else {
+      *Level = -1.0f;
+      *Kind = -1;
    }
 #else
    App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
@@ -1123,7 +1126,8 @@ void Dict_PrintVar(TDictVar *DVar,int Format,TApp_Lang Lang) {
          case DICT_LONG:
             printf("--------------------------------------------------------------------------------\n");
             printf("Nomvar              : %-s", var->Name);
-            if (var->IP1>=0)           printf(" IP1(old=%i; new=%i; level=%g,kind=%i)",IPEncode(var->Level,var->Kind,0),IPEncode(var->Level,var->Kind,1),var->Level,var->Kind);
+            if (var->IP1==0)           printf(" IP1(%i)",var->IP1);
+            if (var->IP1>0)            printf(" IP1(old=%i; new=%i; level=%g,kind=%i)",IPEncode(var->Level,var->Kind,0),IPEncode(var->Level,var->Kind,1),var->Level,var->Kind);
             if (var->IP2>=0)           printf(" IP2(%i)",var->IP2);
             if (var->IP3>=0)           printf(" IP3(%i)",var->IP3);
             if (var->ETIKET[0]!='\0')  printf(" ETIKET(%s)",var->ETIKET);
