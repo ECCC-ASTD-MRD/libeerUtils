@@ -60,18 +60,18 @@
 // This checks for wraps around longitude and flips over poles
 #define EZGrid_WrapFlip(GRID,X,Y) {\
    if (GRID->Wrap) { \
-      if (Y>GRID->H.NJ-1) { \
-         Y=GRID->H.NJ-(Y-GRID->H.NJ+2); \
-         X=X<(GRID->H.NI>>1)?X+(GRID->H.NI>>1):X-(GRID->H.NI>>1); \
-      } else if (Y<0) { \
-         Y=-Y; \
-         X=X<(GRID->H.NI>>1)?X+(GRID->H.NI>>1):X-(GRID->H.NI>>1); \
+      if( Y > GRID->H.NJ-1 ) { \
+         Y = GRID->H.NJ-(Y-GRID->H.NJ+2); \
+         X = X<(GRID->H.NI>>1) ? X+(GRID->H.NI>>1) : X-(GRID->H.NI>>1); \
+      } else if( Y < 0.0f ) { \
+         Y = -Y; \
+         X = X<(GRID->H.NI>>1) ? X+(GRID->H.NI>>1) : X-(GRID->H.NI>>1); \
       } \
-      if (X>GRID->H.NI-1) { \
-         X-=(GRID->H.NI-GRID->Wrap+1); \
-      } else if (X<0) { \
-         X+=(GRID->H.NI-GRID->Wrap+1); \
-         if (X==GRID->H.NI) X-=1e-4; \
+      if( X >= (GRID->H.NI-GRID->Wrap+1) ) { \
+         X -= (GRID->H.NI-GRID->Wrap+1); \
+      } else if( X<0.0f ) { \
+         X += (GRID->H.NI-GRID->Wrap+1); \
+         if( X == GRID->H.NI ) X-=1e-4; \
       } \
    } \
 }
