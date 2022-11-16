@@ -49,7 +49,7 @@
 
 #define EZGrid_IsSame(GRID0,GRID1)     (GRID0 && GRID1 && GRID0->GID==GRID1->GID)
 #define EZGrid_IsLoaded(TILE,Z)        (TILE->Data && TILE->Data[Z] && !ISNAN(TILE->Data[Z][TILE->HNIJ-1]))
-#define EZGrid_IsInside(GRID,X,Y)      (GRID->H.GRTYP[0]=='M' || GRID->H.GRTYP[0]=='Y' || (X>=0 && Y>=0 && (GRID->Wrap || (X<GRID->H.NI-1 && Y<GRID->H.NJ-1))))
+#define EZGrid_IsInside(GRID,X,Y)      (GRID->H.GRTYP[0]=='M' || GRID->H.GRTYP[0]=='Y' || Y>=0 && Y<=GRID->H.NJ-1 && (GRID->Wrap || X>=0 && X<=GRID->H.NI-1))
 #define EZGrid_IsMesh(GRID)            (GRID->H.GRTYP[0]=='M')
 #define EZGrid_IsRegular(GRID)         (GRID->H.GRTYP[0]!='M' && GRID->H.GRTYP[0]!='Y' && GRID->H.GRTYP[0]!='O' && GRID->H.GRTYP[0]!='X')
 #define EZGrid_Is3D(GRID)              (GRID->H.NK>1?GRID->H.NK:0)
