@@ -32,7 +32,6 @@
 #define _RPN_h
 
 #include "Def.h"
-#include "rmn.h"
 
 #define RPNMAX 2048
 
@@ -113,6 +112,7 @@ int RPN_Read(void *Data,TDef_Type Type,int Unit,int *NI,int *NJ,int *NK,int Date
 int RPN_sRead(void *Data,TDef_Type Type,int Unit,int *NI,int *NJ,int *NK,int DateO,char *Etiket,int IP1,int IP2,int IP3,char* TypVar,char *NomVar);
 
 #ifdef HAVE_RMN
+#include "rmn.h"
 #include "rmn/rpnmacros.h"
 
 // EER threadsafe fstd functions
