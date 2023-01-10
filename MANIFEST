@@ -11,5 +11,5 @@ URL        : https://gitlab.science.gc.ca/ECCC_CMOE_MODELS/libeerutils
 #    ~           : Optional
 
 rmn   ~>= 20.0.0
-vgrid  ~= 6.8.0
+vgrid  ~= 6.9.0
 GDAL  ~>= 2.1.0
