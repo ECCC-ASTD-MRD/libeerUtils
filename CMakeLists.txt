@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.20)
 
 #----- Append EC specific module path
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake_rpn)
@@ -46,7 +46,6 @@ endif()
 
 find_package(MPI COMPONENTS C)
 find_package(OpenMP COMPONENTS C)
-add_compile_definitions(HAVE_MPI)
 
 add_compile_definitions(_BUILD_EERUTILS HAVE_GPC _${CMAKE_SYSTEM_NAME}_ _GNU_SOURCE STDC_HEADERS)
 

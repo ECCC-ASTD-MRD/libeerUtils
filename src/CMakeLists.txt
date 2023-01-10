@@ -45,7 +45,7 @@ endforeach()
 
 #----- Specific target dependencies
 if(MPI_FOUND)
-   target_compile_definitions(eerUtils-ompi PUBLIC _MPI)
+   target_compile_definitions(eerUtils-ompi PUBLIC HAVE_MPI)
    target_link_libraries(eerUtils-ompi PUBLIC MPI::MPI_C OpenMP::OpenMP_C)
 endif()
 
