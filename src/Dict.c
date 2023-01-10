@@ -278,10 +278,10 @@ void IPDecode(int IP,float *Level,int *Kind) {
       char fmt;
 
       // Convert to real level/value
-      f77name(convip_plus)(&IP,Level,Kind,&mode,&fmt,&flag);
+      f77name(convip_plus)(&IP,Level,Kind,&mode,&fmt,&flag,1);
    }
 #else
-   App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
+   App_Log(APP_ERROR,"%s: Need RMNLIB\n",__func__);
 #endif
 }
 
@@ -293,9 +293,9 @@ int IPEncode(float Level,int Kind,int New) {
    char fmt;
 
    // Encode to IP
-   f77name(convip_plus)(&ip,&Level,&Kind,&mode,&fmt,&flag);
+   f77name(convip_plus)(&ip,&Level,&Kind,&mode,&fmt,&flag,1);
 #else
-   App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
+   App_Log(APP_ERROR,"%s: Need RMNLIB\n",__func__);
 #endif
 
    return ip;
@@ -342,7 +342,7 @@ void Dict_SetSearch(int SearchMode,int SearchState,char *SearchOrigin,int Search
       DictSearch.AltIP1 = IPEncode(level,type,DictSearch.IP1<=32767);
    }
 #else
-   App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
+   App_Log(APP_ERROR,"%s: Need RMNLIB\n",__func__);
 #endif
 }
 
@@ -389,13 +389,13 @@ int Dict_Parse(char *Filename,TDict_Encoding Encoding) {
 
    // Build the XML tree from the file
    if (!(doc=xmlParseFile(Filename))) {
-      App_Log(ERROR,"%s: Invalid dictionary file: %s\n",__func__,Filename);
+      App_Log(APP_ERROR,"%s: Invalid dictionary file: %s\n",__func__,Filename);
       return(0);
    }
 
    // Check the document is of the right kind
    if (!(node = xmlDocGetRootElement(doc))) {
-      App_Log(ERROR,"%s: Empty document\n",__func__);
+      App_Log(APP_ERROR,"%s: Empty document\n",__func__);
       xmlFreeDoc(doc);
       return(0);
    }
@@ -424,7 +424,7 @@ int Dict_Parse(char *Filename,TDict_Encoding Encoding) {
 //    strcat(dtdfile,"/datafiles/constants/dict-2.0.dtd");
 //
 //    if (!(dtd=xmlParseDTD(NULL,dtdfile))) {
-//       App_Log(ERROR,"%s: Could not parse DTD %s\n",__func__,dtdfile);
+//       App_Log(APP_ERROR,"%s: Could not parse DTD %s\n",__func__,dtdfile);
 //       return (1);
 //    }
 //
@@ -434,7 +434,7 @@ int Dict_Parse(char *Filename,TDict_Encoding Encoding) {
 //    ctxt.warning  = (xmlValidityWarningFunc) fprintf; // register warning function
 //
 //    if (!xmlValidateDtd(&ctxt,doc,dtd)) {
-//       App_Log(ERROR,"%s: DTD validation error\n",__func__);
+//       App_Log(APP_ERROR,"%s: DTD validation error\n",__func__);
 //       return (0);
 //    }
 
@@ -528,7 +528,7 @@ static int Dict_ParseVar(xmlDocPtr Doc,xmlNsPtr NS,xmlNodePtr Node,TDict_Encodin
 
       if (!strcmp((char*)Node->name,"nomvar")) {
          if( !(tmpc=xmlNodeListGetString(Doc,Node->children,1)) ) {
-            App_Log(ERROR,"%s: Empty variable definition\n",__func__);
+            App_Log(APP_ERROR,"%s: Empty variable definition\n",__func__);
             return(0);
          }
          strncpy0(metvar->Name,tmpc,5);
@@ -1498,7 +1498,7 @@ TDictVar* Dict_ApplyModifier(TDictVar *Var,char *Modifier) {
                } else if  (c[0]=='L' && c[1]=='E') {                  // Less or equal
                   c+=2; (*l++)='<'; (*l++)='=';
                } else {
-                  App_Log(ERROR,"%s: Invalid modifier: %s\n",__func__,Modifier);
+                  App_Log(APP_ERROR,"%s: Invalid modifier: %s\n",__func__,Modifier);
                   return(NULL);
                }
                (*l++)=' ';

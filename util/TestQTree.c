@@ -50,7 +50,7 @@ int QTree_TestBasic(void) {
    TQTreeIterator *it;
    int            depth;
    
-   App_Log(INFO,"Tree build test:\n");
+   App_Log(APP_INFO,"Tree build test:\n");
    tree=QTree_New(-100,-100,100,100,NULL);
    
    depth=QTREE_INFINITE;
@@ -65,7 +65,7 @@ int QTree_TestBasic(void) {
    QTree_Add(tree,22,22,depth,"toto2");
    
    // Parse the tree
-   App_Log(INFO,"Tree printout test:\n");
+   App_Log(APP_INFO,"Tree printout test:\n");
    QTree_Parse(tree,NULL,0);
    QTree_Parse(tree,process,0);
 
@@ -77,7 +77,7 @@ int QTree_TestBasic(void) {
    }
    
    // Iterate over each leaf
-   App_Log(INFO,"Tree iterator test:\n");
+   App_Log(APP_INFO,"Tree iterator test:\n");
    it=QTree_IteratorNew();
    
    node=QTree_Iterate(tree,it);
@@ -109,7 +109,7 @@ TQTree* EZGrid_Build(TGeoRef *Ref) {
       
    // Create the tree on the data limits
    if (!(tree=QTree_New(lat0,lon0,lat1,lon1,NULL))) {
-      App_Log(ERROR,"%s: failed to create QTree index\n",__func__);
+      App_Log(APP_ERROR,"%s: failed to create QTree index\n",__func__);
       return(NULL);
    }
 
@@ -124,7 +124,7 @@ TQTree* EZGrid_Build(TGeoRef *Ref) {
       // Put it in the quadtree, in any child nodes intersected
       res=8;
       if (!QTree_AddTriangle(tree,tr,res,&Ref->Idx[nt])) {
-         App_Log(ERROR,"%s: failed to add node\n",__func__);
+         App_Log(APP_ERROR,"%s: failed to add node\n",__func__);
          return(NULL);
       }      
    }
@@ -179,12 +179,12 @@ int QTree_TestTIN(void) {
    float value;
    
    if ((fin=cs_fstouv(TINFILE,"STD+RND+R/O"))<0) {
-      App_Log(ERROR,"Problems opening input file %s\n",TINFILE);
+      App_Log(APP_ERROR,"Problems opening input file %s\n",TINFILE);
       return(0);
    }
 
    if (!(in=RPN_FieldRead(fin,-1,"",-1,-1,-1,"","UUW"))) {
-      App_Log(ERROR,"Problems reading tin field\n");
+      App_Log(APP_ERROR,"Problems reading tin field\n");
       return(0);    
    }
    
@@ -204,35 +204,35 @@ int QTree_TestTIN(void) {
 //   QTree_Parse(tree,NULL,0);
 
    
-   App_Log(INFO,"Testing Cornwall domain:\n");
+   App_Log(APP_INFO,"Testing Cornwall domain:\n");
    LLGetValue(tree,&ref,(float*)in->Def->Data[0],45.0084972,-74.7374668,&value);
-   App_Log(INFO,"   Tree TIN value test: %.4f == 1.8570\n",value);
+   App_Log(APP_INFO,"   Tree TIN value test: %.4f == 1.8570\n",value);
 
    LLGetValue(tree,&ref,(float*)in->Def->Data[0],45.0081266,-74.7395578,&value);
-   App_Log(INFO,"   Tree TIN value test: %.4f == 0.0198\n",value);
+   App_Log(APP_INFO,"   Tree TIN value test: %.4f == 0.0198\n",value);
 
    if (!LLGetValue(tree,&ref,(float*)in->Def->Data[0],45.0081325,-74.7396231,&value)) {
-      App_Log(INFO,"   Tree TIN value test outside: OK\n");
+      App_Log(APP_INFO,"   Tree TIN value test outside: OK\n");
    }
 
    
    
    
-   App_Log(INFO,"Testing Hudson bay domain:\n");
+   App_Log(APP_INFO,"Testing Hudson bay domain:\n");
    LLGetValue(tree,&ref,(float*)in->Def->Data[0],59.58349,-82.84078,&value);
-   App_Log(INFO,"   Tree TIN value test: %.2f == 229.66\n",value);
+   App_Log(APP_INFO,"   Tree TIN value test: %.2f == 229.66\n",value);
  
    LLGetValue(tree,&ref,(float*)in->Def->Data[0],61.00896,-66.35393,&value);
-   App_Log(INFO,"   Tree TIN value test: %.2f == 802.84\n",value);
+   App_Log(APP_INFO,"   Tree TIN value test: %.2f == 802.84\n",value);
 
    LLGetValue(tree,&ref,(float*)in->Def->Data[0],62.70096,-78.11559,&value);
-   App_Log(INFO,"   Tree TIN value test: %.2f == 425.89\n",value);
+   App_Log(APP_INFO,"   Tree TIN value test: %.2f == 425.89\n",value);
    
    if (!LLGetValue(tree,&ref,(float*)in->Def->Data[0],62.43475,-77.47023,&value)) {
-      App_Log(INFO,"   Tree TIN value test outside: OK\n");
+      App_Log(APP_INFO,"   Tree TIN value test outside: OK\n");
    }
    if (!LLGetValue(tree,&ref,(float*)in->Def->Data[0],62.66643,-74.15499,&value)) {
-      App_Log(INFO,"   Tree TIN value test outside: OK\n");
+      App_Log(APP_INFO,"   Tree TIN value test outside: OK\n");
    }
 }
 
@@ -252,11 +252,11 @@ int QTree_TestCloud(void) {
    struct timeval time0,time1;
    time_t  t;
    
-   App_Log(INFO,"Testing point cloud with %i samples:\n",QSAMPLE);
+   App_Log(APP_INFO,"Testing point cloud with %i samples:\n",QSAMPLE);
    
    // Create the array on the data limits
    if (!(tree=(TQTree*)calloc((QRES+1)*(QRES+1),sizeof(TQTree)))) {
-      App_Log(ERROR,"%s: failed to create QTree index\n",__func__);
+      App_Log(APP_ERROR,"%s: failed to create QTree index\n",__func__);
       return(0);
    }
    
@@ -264,7 +264,7 @@ int QTree_TestCloud(void) {
    res=QRES;
    res=1000;
 //   res=QSAMPLE/100.0;
-   App_Log(INFO,"Index dimension is %i\n",res);
+   App_Log(APP_INFO,"Index dimension is %i\n",res);
 
    // Add random data
    dy=QDIM/res;
@@ -286,7 +286,7 @@ int QTree_TestCloud(void) {
    }
    gettimeofday(&time1,NULL);
    System_TimeValSubtract(&time0,&time1,&time0);
-   App_Log(INFO,"   Creation time: %.6f\n",time0.tv_sec+((double)time0.tv_usec)*1e-6);
+   App_Log(APP_INFO,"   Creation time: %.6f\n",time0.tv_sec+((double)time0.tv_usec)*1e-6);
   
    // Search loop
    gettimeofday(&time0,NULL);
@@ -304,7 +304,7 @@ int QTree_TestCloud(void) {
    }
    gettimeofday(&time1,NULL);
    System_TimeValSubtract(&time0,&time1,&time0);
-   App_Log(INFO,"   Loop mode: %.10f s, closest is (%f,%f)\n",time0.tv_sec+((double)time0.tv_usec)*1e-6,pts[axy][0],pts[axy][1]);
+   App_Log(APP_INFO,"   Loop mode: %.10f s, closest is (%f,%f)\n",time0.tv_sec+((double)time0.tv_usec)*1e-6,pts[axy][0],pts[axy][1]);
    
    // Search Circling
    gettimeofday(&time0,NULL);
@@ -344,7 +344,7 @@ int QTree_TestCloud(void) {
    
    gettimeofday(&time1,NULL);
    System_TimeValSubtract(&time0,&time1,&time0);
-   App_Log(INFO,"   Circ mode: %.10f s, closest is (%f,%f)\n",time0.tv_sec+((double)time0.tv_usec)*1e-6,pts[axy][0],pts[axy][1]);
+   App_Log(APP_INFO,"   Circ mode: %.10f s, closest is (%f,%f)\n",time0.tv_sec+((double)time0.tv_usec)*1e-6,pts[axy][0],pts[axy][1]);
 }
 
 int main(int argc, char *argv[]) {

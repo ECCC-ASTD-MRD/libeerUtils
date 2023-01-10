@@ -83,7 +83,7 @@ TZRef* ZRef_New(void) {
    TZRef *zref=NULL;
 
    if (!(zref=(TZRef*)calloc(1,sizeof(TZRef)))) {
-      App_Log(ERROR,"%s: Unable to allocate memory\n",__func__);
+      App_Log(APP_ERROR,"%s: Unable to allocate memory\n",__func__);
    }
    
    zref->VGD=NULL;
@@ -135,7 +135,7 @@ TZRef* ZRef_Define(int Type,int NbLevels,float *Levels) {
       }
       
       if (!zref->Levels) {
-         App_Log(ERROR,"%s: Unable to allocate memory\n",__func__);
+         App_Log(APP_ERROR,"%s: Unable to allocate memory\n",__func__);
       } else if (Levels) {
          memcpy(zref->Levels,Levels,zref->LevelNb*sizeof(float));
       }
@@ -335,7 +335,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
 
 #ifdef HAVE_VGRID
          if (Cvgd_new_read((vgrid_descriptor**)&ZRef->VGD,Unit,-1,-1,-1,-1)==VGD_ERROR) {
-            App_Log(ERROR,"%s: Unable to initialize vgrid descriptor.\n",__func__);
+            App_Log(APP_ERROR,"%s: Unable to initialize vgrid descriptor.\n",__func__);
             return(0);
          }
 #endif                  
@@ -365,14 +365,14 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
                   }
                }
                if (j==h.NJ) {
-                  App_Log(WARNING,"%s: Could not find level definition for %i.\n",__func__,ip);
+                  App_Log(APP_WARNING,"%s: Could not find level definition for %i.\n",__func__,ip);
                }
             }
          } else {
-            App_Log(WARNING,"%s: Could not read !! field (c_fstluk).\n",__func__);
+            App_Log(APP_WARNING,"%s: Could not read !! field (c_fstluk).\n",__func__);
          }
       } else {
-         App_Log(WARNING,"%s: Could not get info on !! field (c_fstprm).\n",__func__);
+         App_Log(APP_WARNING,"%s: Could not get info on !! field (c_fstprm).\n",__func__);
       }
    } else {
 
@@ -388,7 +388,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
             ZRef->PRef=h.IG1;
 //            ZRef->Type=LVL_HYBRID;
          } else {
-            App_Log(WARNING,"%s: Could not get info on HY field (c_fstprm).\n",__func__);
+            App_Log(APP_WARNING,"%s: Could not get info on HY field (c_fstprm).\n",__func__);
          }
          // It might be ETA
          if (ZRef->Type==LVL_SIGMA) {
@@ -405,13 +405,13 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
             if (key>=0) {
                ZRef->Type=LVL_ETA;
                if (!(pt=(float*)malloc(h.NI*h.NJ*h.NK*sizeof(float)))) {
-                  App_Log(WARNING,"%s: Could not allocate memory for top pressure, using default PTOP=10.0.\n",__func__);
+                  App_Log(APP_WARNING,"%s: Could not allocate memory for top pressure, using default PTOP=10.0.\n",__func__);
                } else {
                   cd=c_fstluk(pt,key,&h.NI,&h.NJ,&h.NK);
                   if (cd>=0) {
                      ZRef->PTop=pt[0];
                   } else {
-                     App_Log(WARNING,"%s: Could not read PT field (c_fstluk), using default PTOP=10.0.\n",__func__);
+                     App_Log(APP_WARNING,"%s: Could not read PT field (c_fstluk), using default PTOP=10.0.\n",__func__);
                   }
                }
             }
@@ -427,7 +427,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
    if (buf) free(buf);
    if (pt)  free(pt);
 #else
-   App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
+   App_Log(APP_ERROR,"%s: Need RMNLIB\n",__func__);
 #endif
 
    return(key>=0);
@@ -562,7 +562,7 @@ int ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Order) {
    ZRef->Style=H->IP1>32768?NEW:OLD;
    if (ZRef->PCube)  free(ZRef->PCube);  ZRef->PCube=NULL;
 #else
-   App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
+   App_Log(APP_ERROR,"%s: Need RMNLIB\n",__func__);
 #endif
 
    return(ZRef->LevelNb);
@@ -617,7 +617,7 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
    float pref,ptop,*p0;
 
    if (!P0 && ZRef->Type!=LVL_PRES) {
-      App_Log(ERROR,"%s: Surface pressure is required\n",__func__);
+      App_Log(APP_ERROR,"%s: Surface pressure is required\n",__func__);
       return(0);
    }
 
@@ -676,11 +676,11 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
             
 #ifdef HAVE_VGRID
             if (Cvgd_levels((vgrid_descriptor*)ZRef->VGD,NIJ,1,ZRef->LevelNb,ips,Pres,p0,0)) {
-               App_Log(ERROR,"%s: Problems in Cvgd_levels\n",__func__);
+               App_Log(APP_ERROR,"%s: Problems in Cvgd_levels\n",__func__);
                return(0);
             }
 #else
-            App_Log(ERROR,"%s: Library not built with VGRID\n",__func__);
+            App_Log(APP_ERROR,"%s: Library not built with VGRID\n",__func__);
 #endif
             for (ij=0;ij<NIJ*ZRef->LevelNb;ij++) Pres[ij]*=PA2MB;
             free(ips);
@@ -690,7 +690,7 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
          break;
          
       default:
-         App_Log(ERROR,"%s: Invalid level type (%i)\n",__func__,ZRef->Type);
+         App_Log(APP_ERROR,"%s: Invalid level type (%i)\n",__func__,ZRef->Type);
          return(0);
    }
    
@@ -776,7 +776,7 @@ int ZRef_KCube2Meter(TZRef* restrict const ZRef,float *GZ,const int NIJ,float *H
          break;
 
       default:
-         App_Log(ERROR,"%s: Invalid level type (%i)\n",__func__,ZRef->Type);
+         App_Log(APP_ERROR,"%s: Invalid level type (%i)\n",__func__,ZRef->Type);
          return(0);
    }
    return(1);
@@ -830,18 +830,18 @@ double ZRef_Level2Pressure(TZRef* restrict const ZRef,double P0,double Level) {
             p0=P0*MB2PA;
 #ifdef HAVE_VGRID
             if (Cvgd_levels_8((vgrid_descriptor*)ZRef->VGD,1,1,1,&ip,&pres,&p0,0)) {
-               App_Log(ERROR,"%s: Problems in Cvgd_levels_8\n",__func__);
+               App_Log(APP_ERROR,"%s: Problems in Cvgd_levels_8\n",__func__);
                return(0);
             }
 #else
-            App_Log(ERROR,"%s: Library not built with VGRID\n",__func__);
+            App_Log(APP_ERROR,"%s: Library not built with VGRID\n",__func__);
 #endif
             pres*=PA2MB;
          }
          break;
 
       default:
-         App_Log(ERROR,"%s: Invalid level type (%i)\n",__func__,ZRef->Type);
+         App_Log(APP_ERROR,"%s: Invalid level type (%i)\n",__func__,ZRef->Type);
          return(0);
    }
    
@@ -926,7 +926,7 @@ double ZRef_Pressure2Level(TZRef* restrict const ZRef,double P0,double Pressure)
          break;
 
       default:
-         App_Log(ERROR,"%s: Invalid level type (%i)\n",__func__,ZRef->Type);
+         App_Log(APP_ERROR,"%s: Invalid level type (%i)\n",__func__,ZRef->Type);
    }
    return(level);
 }
@@ -1022,9 +1022,9 @@ double ZRef_IP2Meter(int IP) {
 
 #ifdef HAVE_RMN
    // Convertir en niveau reel
-   f77name(convip_plus)(&IP,&level,&kind,&mode,&format,&flag);
+   f77name(convip_plus)(&IP,&level,&kind,&mode,&format,&flag,1);
 #else
-   App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
+   App_Log(APP_ERROR,"%s: Need RMNLIB\n",__func__);
 #endif
 
    return(ZRef_Level2Meter(level,kind));
@@ -1055,9 +1055,9 @@ double ZRef_IP2Level(int IP,int *Type) {
 
 #ifdef HAVE_RMN
    // Convertir en niveau reel
-   f77name(convip_plus)(&IP,&level,Type,&mode,&format,&flag);
+   f77name(convip_plus)(&IP,&level,Type,&mode,&format,&flag,1);
 #else
-   App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
+   App_Log(APP_ERROR,"%s: Need RMNLIB\n",__func__);
 #endif
 
    return(level);
@@ -1109,9 +1109,9 @@ int ZRef_Level2IP(float Level,int Type,TZRef_IP1Mode Mode) {
       }
 
 #ifdef HAVE_RMN
-      f77name(convip_plus)(&ip,&Level,&Type,&mode,&format,&flag);
+      f77name(convip_plus)(&ip,&Level,&Type,&mode,&format,&flag,1);
 #else
-   App_Log(ERROR,"%s: Need RMNLIB\n",__func__);
+   App_Log(APP_ERROR,"%s: Need RMNLIB\n",__func__);
 #endif
 
       return(ip);

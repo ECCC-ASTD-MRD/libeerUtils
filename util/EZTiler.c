@@ -31,6 +31,7 @@
 
 #include "App.h"
 #include "EZGrid.h"
+#include "eerUtils_build_info.h"
 
 #define APP_NAME "EZTiler"
 #define APP_DESC "SMC/CMC/EERS RPN fstd field tiler."
@@ -45,7 +46,7 @@ int TileVar(int FIdTo,int NI, int NJ,int Halo,int FIdFrom,char* Var,char* TypVar
    cs_fstinl(FIdFrom,&ni,&nj,&nk,DateV,Etiket,IP1,IP2,-1,TypVar,Var,idlst,&nid,RPNMAX);
 
    if (nid<=0) {
-      App_Log(ERROR,"TileVar: Specified fields do not exist");
+      App_Log(APP_ERROR,"TileVar: Specified fields do not exist");
       return(FALSE);
    }
 
@@ -53,7 +54,7 @@ int TileVar(int FIdTo,int NI, int NJ,int Halo,int FIdFrom,char* Var,char* TypVar
    for(n=0;n<nid;n++) {
       
       if (!(fld=RPN_FieldReadIndex(FIdFrom,idlst[n],NULL))) {
-         App_Log(ERROR,"TileVar: Problem loading field %i",idlst[n]);
+         App_Log(APP_ERROR,"TileVar: Problem loading field %i",idlst[n]);
          return(FALSE);
       }
        
@@ -62,7 +63,7 @@ int TileVar(int FIdTo,int NI, int NJ,int Halo,int FIdFrom,char* Var,char* TypVar
          RPN_CopyDesc(FIdTo,&fld->Head);
 
       if (!RPN_FieldTile(FIdTo,fld->Def,&fld->Head,fld->GRef,fld->ZRef,0,NI,NJ,Halo,fld->Head.DATYP,-fld->Head.NBITS,FALSE,FALSE)) {
-         App_Log(ERROR,"TileVar: Unable to tile field %i",idlst[n]);         
+         App_Log(APP_ERROR,"TileVar: Unable to tile field %i",idlst[n]);         
          return(FALSE);
       }
       
@@ -80,23 +81,23 @@ int Tile(char *In,char *Out,int Size,int Halo,char **Vars) {
    int  in,out,v=0;
    char *var;
    
-   App_Log(INFO,"Tiling file %s to %s\n",In,Out);
+   App_Log(APP_INFO,"Tiling file %s to %s\n",In,Out);
    if ((in=cs_fstouv(In,"STD+RND+R/O"))<0) {
-      App_Log(ERROR,"Problems opening input file %s\n",In);
+      App_Log(APP_ERROR,"Problems opening input file %s\n",In);
       return(0);
    }
 
    if ((out=cs_fstouv(Out,"STD+RND+R/W"))<0) {
-      App_Log(ERROR,"Problems opening output file %s\n",Out);
+      App_Log(APP_ERROR,"Problems opening output file %s\n",Out);
       return(0);
    }
 
    if (!Vars[0]) {
-      App_Log(DEBUG,"Tiling everything\n");
+      App_Log(APP_DEBUG,"Tiling everything\n");
       TileVar(out,Size,Size,Halo,in,"","","",-1,-1,-1);
    } else {
       while((var=Vars[v++])) {
-         App_Log(DEBUG,"Tiling var %s\n",var);
+         App_Log(APP_DEBUG,"Tiling var %s\n",var);
          TileVar(out,Size,Size,Halo,in,var,"","",-1,-1,-1);
       }
    }
@@ -130,15 +131,15 @@ int main(int argc, char *argv[]) {
    
    /*Error checking*/
    if (in==NULL) {
-      App_Log(ERROR,"No input standard file specified\n");
+      App_Log(APP_ERROR,"No input standard file specified\n");
       exit(EXIT_FAILURE);
    }
    if (out==NULL) {
-      App_Log(ERROR,"No output standard file specified\n");
+      App_Log(APP_ERROR,"No output standard file specified\n");
       exit(EXIT_FAILURE);
    }
    if (!size) {
-      App_Log(ERROR,"No tile size specified\n");
+      App_Log(APP_ERROR,"No tile size specified\n");
       exit(EXIT_FAILURE);
    }
 

@@ -38,6 +38,7 @@
 #include "RPN.h"
 #include "Dict.h"
 #include "ZRef.h"
+#include "eerUtils_build_info.h"
 
 #define APP_NAME    "Dict"
 #define APP_DESC    "CMC/RPN dictionary variable information."
@@ -106,7 +107,7 @@ int main(int argc, char *argv[]) {
       } else if (!strncasecmp(state,"incomplete",3)) { st=DICT_INCOMPLETE;
       } else if (!strncasecmp(state,"deprecated",3)) { st=DICT_DEPRECATED;
       } else {
-         App_Log(ERROR,"Invalid state (%s), must be current, future, incomplete, obsolete or deprecated\n",state);
+         App_Log(APP_ERROR,"Invalid state (%s), must be current, future, incomplete, obsolete or deprecated\n",state);
          exit(EXIT_FAILURE);
       }
    }
@@ -125,7 +126,7 @@ int main(int argc, char *argv[]) {
       } else if (!strcmp(encoding,"ascii")) {
          coding=DICT_ASCII;
       } else {
-         App_Log(ERROR,"Invalid encoding (%s), must me iso8859-1, utf8 or ascii\n",encoding);
+         App_Log(APP_ERROR,"Invalid encoding (%s), must me iso8859-1, utf8 or ascii\n",encoding);
          exit(EXIT_FAILURE);
       }
    }
@@ -139,7 +140,7 @@ int main(int argc, char *argv[]) {
    if (!dicfile[0]) {
       // Check for CMCCONST
       if (!(env=getenv("CMCCONST"))) {
-         App_Log(ERROR,"Environment variable CMCCONST not defined, source the CMOI base domain.\n");
+         App_Log(APP_ERROR,"Environment variable CMCCONST not defined, source the CMOI base domain.\n");
          exit(EXIT_FAILURE);
       }
 
@@ -204,7 +205,7 @@ int Dict_CheckCFG(char *CFGFile){
    int       nb_unknown=0,nb_known=0,cont=0;
 
    if (!(fp=fopen(CFGFile,"r"))) {
-      App_Log(ERROR,"Unable to open config file: %s\n",CFGFile);
+      App_Log(APP_ERROR,"Unable to open config file: %s\n",CFGFile);
       return(0);
    }
 
@@ -228,7 +229,7 @@ int Dict_CheckCFG(char *CFGFile){
          valuesave=NULL;
          while((value=strtok_r(values,", \n",&valuesave))) {
 
-            App_Log(DEBUG,"Found variable: %s\n",value);
+            App_Log(APP_DEBUG,"Found variable: %s\n",value);
 
             // Si la variable n'existe pas
             if (!(var=Dict_GetVar(value))) {
@@ -272,9 +273,9 @@ int Dict_CheckCFG(char *CFGFile){
    }
 
    if (nb_unknown) {
-      App_Log(ERROR,"Found %i unknown variables\n",nb_unknown);
+      App_Log(APP_ERROR,"Found %i unknown variables\n",nb_unknown);
    } else {
-      App_Log(INFO,"No unknown variables found\n");
+      App_Log(APP_INFO,"No unknown variables found\n");
    }
 
    return(nb_unknown==0);
@@ -327,16 +328,16 @@ int Dict_CheckRPN(char **RPNFile,int CheckOPS) {
    n=0;
 
    while(RPNFile[n]) {
-      App_Log(INFO,"Checking RPN file: %s\n",RPNFile[n]);
+      App_Log(APP_INFO,"Checking RPN file: %s\n",RPNFile[n]);
 
       // Check file size (max 8Gb)
       stat(RPNFile[n],&st);
       if (st.st_size>((off_t)DICT_MAXSIZE)) {
-         App_Log(ERROR,"File is greater the 8Gb limit: %s\n",RPNFile[n]);
+         App_Log(APP_ERROR,"File is greater the 8Gb limit: %s\n",RPNFile[n]);
       }
 
       if  ((fid=cs_fstouv(RPNFile[n],"STD+RND+R/O"))<0) {
-         App_Log(ERROR,"Unable to open RPN file: %s\n",RPNFile[n]);
+         App_Log(APP_ERROR,"Unable to open RPN file: %s\n",RPNFile[n]);
          return(0);
       }
 
@@ -398,13 +399,13 @@ int Dict_CheckRPN(char **RPNFile,int CheckOPS) {
 
                // Check same DATEO
                if (dateo!=head->DATEO) {
-                  App_Log(ERROR,"Found different DATEO (%8i): NOMVAR=%4s TYPVAR=%4s IP1=%8i IP2=%8i IP3=%8i DATEO=%8i\n",dateo,head->NOMVAR,head->TYPVAR,head->IP1,head->IP2,head->IP3,head->DATEO);
+                  App_Log(APP_ERROR,"Found different DATEO (%8i): NOMVAR=%4s TYPVAR=%4s IP1=%8i IP2=%8i IP3=%8i DATEO=%8i\n",dateo,head->NOMVAR,head->TYPVAR,head->IP1,head->IP2,head->IP3,head->DATEO);
                   err++;
                }
 
                // Check for compression
                if ((head->DATYP==2 || head->DATYP==4 || head->DATYP==5)) {
-                  App_Log(ERROR,"Record %i (%s) is not compressed\n",head->KEY,head->NOMVAR);
+                  App_Log(APP_ERROR,"Record %i (%s) is not compressed\n",head->KEY,head->NOMVAR);
                   err++;
                }
 
@@ -414,7 +415,7 @@ int Dict_CheckRPN(char **RPNFile,int CheckOPS) {
                      && head->DATEV==headtable[h].DATEV && head->IP1==headtable[h].IP1 && head->IP2==headtable[h].IP2 && head->IP3==headtable[h].IP3
                      && head->GRTYP[0]==headtable[h].GRTYP[0] && head->IG1==headtable[h].IG1 && head->IG2==headtable[h].IG2 && head->IG3==headtable[h].IG3 && head->IG4==headtable[h].IG4) {
 
-                     App_Log(ERROR,"Field is duplicated: NOMVAR=%4s TYPVAR=%4s IP1=%8i IP2=%8i IP3=%8i DATEV=%8i\n",head->NOMVAR,head->TYPVAR,head->IP1,head->IP2,head->IP3,head->DATEV);
+                     App_Log(APP_ERROR,"Field is duplicated: NOMVAR=%4s TYPVAR=%4s IP1=%8i IP2=%8i IP3=%8i DATEV=%8i\n",head->NOMVAR,head->TYPVAR,head->IP1,head->IP2,head->IP3,head->DATEV);
                      err++;
                      break;
                   }
@@ -430,7 +431,7 @@ int Dict_CheckRPN(char **RPNFile,int CheckOPS) {
 
                // This is a new HRef
                if (h>=DICT_MAXREF-1) {
-                  App_Log(ERROR,"Maximum horizontal grid definitions attained: DICT_MAXREF\n");
+                  App_Log(APP_ERROR,"Maximum horizontal grid definitions attained: DICT_MAXREF\n");
                   err++;
                } else if (h==hrefnb) {
                   href[h].IP1=head->IG1;
@@ -450,7 +451,7 @@ int Dict_CheckRPN(char **RPNFile,int CheckOPS) {
 
                // This is a new ZRef
                if (z>=DICT_MAXREF-1) {
-                  App_Log(ERROR,"Maximum vertical grid definitions attained: DICT_MAXREF\n");
+                  App_Log(APP_ERROR,"Maximum vertical grid definitions attained: DICT_MAXREF\n");
                   err++;
                } else if (z==zrefnb) {
                   zref[z]=ztyp;
@@ -499,11 +500,11 @@ int Dict_CheckRPN(char **RPNFile,int CheckOPS) {
                      if (nhtic || nhtac || nhtoc || nhtuc) {
 
                         if (strcmp(etiket,headtable[z].ETIKET)) {
-                           App_Log(ERROR,"Descriptor %s ETIKET is different from fields (\"%s\"!=\"%s\")\n",headtable[z].NOMVAR,etiket,headtable[h].ETIKET);
+                           App_Log(APP_ERROR,"Descriptor %s ETIKET is different from fields (\"%s\"!=\"%s\")\n",headtable[z].NOMVAR,etiket,headtable[h].ETIKET);
                            err++;
                         }
 //                        if (dateo!=headtable[z].DATEO) {
-//                           App_Log(ERROR,"Descriptor %s DATEO is different from fields (%i!=%i)\n",headtable[z].NOMVAR,dateo,headtable[h].DATEO);
+//                           App_Log(APP_ERROR,"Descriptor %s DATEO is different from fields (%i!=%i)\n",headtable[z].NOMVAR,dateo,headtable[h].DATEO);
 //                           err++;
 //                        }
                      }
@@ -512,11 +513,11 @@ int Dict_CheckRPN(char **RPNFile,int CheckOPS) {
 
                // Check for necessary ^^,>>
                if (!nhtic) {
-                  App_Log(ERROR,"Missing >> for grid GRTYP=%c IP1=%-8i IP2=%-8i IP3=%-8i\n",href[h].GRTYP,href[h].IP1,href[h].IP2,href[h].IP3);
+                  App_Log(APP_ERROR,"Missing >> for grid GRTYP=%c IP1=%-8i IP2=%-8i IP3=%-8i\n",href[h].GRTYP,href[h].IP1,href[h].IP2,href[h].IP3);
                   err++;
                }
                if (!nhtac) {
-                  App_Log(ERROR,"Missing ^^ for grid GRTYP=%c IP1=%-8i IP2=%-8i IP3=%-8i\n",href[h].GRTYP,href[h].IP1,href[h].IP2,href[h].IP3);
+                  App_Log(APP_ERROR,"Missing ^^ for grid GRTYP=%c IP1=%-8i IP2=%-8i IP3=%-8i\n",href[h].GRTYP,href[h].IP1,href[h].IP2,href[h].IP3);
                   err++;
                }
             }
@@ -524,19 +525,19 @@ int Dict_CheckRPN(char **RPNFile,int CheckOPS) {
 
          // Check for too many grid descriptor
          if (tic>nh) {
-            App_Log(ERROR,"Found too many horizontal grid descriptor ^^\n");
+            App_Log(APP_ERROR,"Found too many horizontal grid descriptor ^^\n");
             err++;
          }
          if (tac>nh) {
-            App_Log(ERROR,"Found too many horizontal grid descriptor >>\n");
+            App_Log(APP_ERROR,"Found too many horizontal grid descriptor >>\n");
             err++;
          }
          if (tuc>nh) {
-            App_Log(ERROR,"Found too many horizontal grid descriptor ^>\n");
+            App_Log(APP_ERROR,"Found too many horizontal grid descriptor ^>\n");
             err++;
          }
          if (toc>1) {
-            App_Log(ERROR,"Found too many horizontal grid descriptor !!\n");
+            App_Log(APP_ERROR,"Found too many horizontal grid descriptor !!\n");
             err++;
          }
 
@@ -545,11 +546,11 @@ int Dict_CheckRPN(char **RPNFile,int CheckOPS) {
             if (!zver) {
                // Check vertical coordinate with legacy version
                if (ztyp==LVL_SIGMA && (!p0 || !pt)) {
-                  App_Log(ERROR,"Missing P0 or PT for ETA level definition\n");
+                  App_Log(APP_ERROR,"Missing P0 or PT for ETA level definition\n");
                   err++;
                }
                if (ztyp==LVL_HYBRID && (!p0 || !hy)) {
-                  App_Log(ERROR,"Missing P0 or HY hor HYBRID level definition\n");
+                  App_Log(APP_ERROR,"Missing P0 or HY hor HYBRID level definition\n");
                   err++;
                }
             }
@@ -558,14 +559,14 @@ int Dict_CheckRPN(char **RPNFile,int CheckOPS) {
          if (zver) {
             // Check vertical coordinate with vcode definition
             switch(zver) {
-               case 1001: if (!p0) { App_Log(ERROR,"Missing P0 for SIGMA level definition\n"); err++; }; break;
+               case 1001: if (!p0) { App_Log(APP_ERROR,"Missing P0 for SIGMA level definition\n"); err++; }; break;
                case 1002:
-               case 1003: if (!p0 || !pt) { App_Log(ERROR,"Missing P0 or PT for ETA level definition\n"); err++; }; break;
+               case 1003: if (!p0 || !pt) { App_Log(APP_ERROR,"Missing P0 or PT for ETA level definition\n"); err++; }; break;
                case 2001: break;
-               case 5001: if (!p0 || !hy) { App_Log(ERROR,"Missing P0 or HY for HYBRID level definition\n"); err++; }; break;
+               case 5001: if (!p0 || !hy) { App_Log(APP_ERROR,"Missing P0 or HY for HYBRID level definition\n"); err++; }; break;
                case 5002:
                case 5003:
-               case 5005: if (!p0) { App_Log(ERROR,"Missing P0 for HYBRID level definition\n"); err++; }; break;
+               case 5005: if (!p0) { App_Log(APP_ERROR,"Missing P0 for HYBRID level definition\n"); err++; }; break;
             }
          }
       }
@@ -612,9 +613,9 @@ int Dict_CheckRPN(char **RPNFile,int CheckOPS) {
    }
 
    if (nb_unknown) {
-      App_Log(ERROR,"Found %i unknown variables\n",nb_unknown);
+      App_Log(APP_ERROR,"Found %i unknown variables\n",nb_unknown);
    } else {
-      App_Log(INFO,"No unknown variables found\n");
+      App_Log(APP_INFO,"No unknown variables found\n");
    }
 
    return(!nb_unknown && !err);

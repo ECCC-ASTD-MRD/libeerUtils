@@ -32,6 +32,7 @@
 #include "App.h"
 #include "eerUtils.h"
 #include "RPN.h"
+#include "eerUtils_build_info.h"
 
 #define APP_NAME "CodeInfo"
 #define APP_DESC "SMC/CMC/EERS Coder/Decoder of pool information into/from RPN fields."
@@ -64,7 +65,7 @@ int Codec(char *Pool,char *FST,char *Var,int Code) {
 
    if (Code) {
       if (!(fid=fopen(Pool,"r"))) {
-         App_Log(ERROR,"Unable to open information file (%s)\n",Pool);
+         App_Log(APP_ERROR,"Unable to open information file (%s)\n",Pool);
          return(0);
       }
 
@@ -78,31 +79,31 @@ int Codec(char *Pool,char *FST,char *Var,int Code) {
          // Get rid of trailing \n
          if (buf[len-1]=='\n') len--;
          
-         App_Log(INFO,"Encoding %i character\n",len);
+         App_Log(APP_INFO,"Encoding %i character\n",len);
          for(i=0;i<len;i++) {
             fld[i]=buf[i];
          }
          
          if ((fstid=cs_fstouv(FST,"STD+RND+R/W"))<0) {
-            App_Log(ERROR,"Problems opening output file %s\n",FST);
+            App_Log(APP_ERROR,"Problems opening output file %s\n",FST);
             return(0);
          }
-         App_Log(INFO,"Encoding into %s\n",FST);
+         App_Log(APP_INFO,"Encoding into %s\n",FST);
 
          err=cs_fstecr(fld,-8,fstid,0,0,0,len,1,1,0,0,0,"X",Var,"DESCRIPTION","X",0,0,0,0,2,TRUE);
          if (err<0) {
-            App_Log(ERROR,"Could not write encoded pool record\n");
+            App_Log(APP_ERROR,"Could not write encoded pool record\n");
             return(0);
          }
       }
    } else {
       if ((fstid=cs_fstouv(FST,"STD+RND+R/O"))<0) {
-         App_Log(ERROR,"Problems opening output file %s\n",FST);
+         App_Log(APP_ERROR,"Problems opening output file %s\n",FST);
          return(0);
       }
       err=cs_fstlir(fld,fstid,&h.NI,&h.NJ,&h.NK,-1,"",-1,-1,-1,"",Var);
       if (err<0) {
-         App_Log(ERROR,"Could not find encoded pool record\n");
+         App_Log(APP_ERROR,"Could not find encoded pool record\n");
          return(0);
       }
 
@@ -149,7 +150,7 @@ int main(int argc, char *argv[]) {
    ckey=code?1:0;
    
    if (fst==NULL) {
-      App_Log(ERROR,"No standard file specified\n");
+      App_Log(APP_ERROR,"No standard file specified\n");
       exit(EXIT_FAILURE);
    }
    if (var==NULL) {

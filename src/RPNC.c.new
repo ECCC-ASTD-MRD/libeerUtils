@@ -35,7 +35,7 @@
 
 #ifdef HAVE_RPNC
 
-#define RPNC_ERR(e) { App_Log(ERROR,"%s: %s\n",__func__,nc_strerror(e)); return FALSE; }
+#define RPNC_ERR(e) { App_Log(APP_ERROR,"%s: %s\n",__func__,nc_strerror(e)); return FALSE; }
 
 #define TIME      "time"
 #define SINCE     "seconds since 1970-1-1 0:0:0"
@@ -225,7 +225,7 @@ TRPNC_File* RPNC_Open(char *Filename,char *Mode) {
    int err;
    
    if (!(file=(TRPNC_File*)malloc(sizeof(TRPNC_File)))) {
-      App_Log(ERROR,"%s: Unable to allocate file object\n",__func__); 
+      App_Log(APP_ERROR,"%s: Unable to allocate file object\n",__func__); 
       return(NULL);
    }
       
@@ -249,7 +249,7 @@ int RPNC_Close(TRPNC_File *File) {
    int err;
    
    if (!File) {
-      App_Log(ERROR,"%s: Invalid file\n",__func__); 
+      App_Log(APP_ERROR,"%s: Invalid file\n",__func__); 
       return(FALSE);
    }
    
@@ -317,7 +317,7 @@ int RPNC_List(TRPNC_File *File) {
    if ((err=nc_inq_nvars(File->NC_Id,&nvar)))                RPNC_ERR(err);
 
    // Get the list of variables
-   if (!(var_ids=(int*)calloc(nvar,sizeof(int)))) { App_Log(ERROR,"%s: Unable to allocate variable array\n",__func__);      return(FALSE); }
+   if (!(var_ids=(int*)calloc(nvar,sizeof(int)))) { App_Log(APP_ERROR,"%s: Unable to allocate variable array\n",__func__);      return(FALSE); }
    if ((err=nc_inq_varids(File->NC_Id,&nvar,var_ids))) RPNC_ERR(err);
    
    for(n=0;n<nvar;n++) {
@@ -374,7 +374,7 @@ int RPNC_Find(TRPNC_File *File,char *VarName,int DateV,float Level) {
    if ((err=nc_get_att_text(File->NC_Id,var_id,"coordinates",buf))) RPNC_ERR(err);
    
    // First it time
-   if (!(str=strtok_r(buf," ",&save)))  { App_Log(ERROR,"%s: Invalid coordinate table, no time reference found\n",__func__);      return(FALSE); }
+   if (!(str=strtok_r(buf," ",&save)))  { App_Log(APP_ERROR,"%s: Invalid coordinate table, no time reference found\n",__func__);      return(FALSE); }
       
    if (DateV>-1) {
       if ((err=nc_inq_varid(File->NC_Id,str,&tref_id))) RPNC_ERR(err);
@@ -385,7 +385,7 @@ int RPNC_Find(TRPNC_File *File,char *VarName,int DateV,float Level) {
    }
    
    // second is vertical
-   if (!(str=strtok_r(NULL," ",&save)))  { App_Log(ERROR,"%s: Invalid coordinate table, no vertical reference found\n",__func__);      return(FALSE); }
+   if (!(str=strtok_r(NULL," ",&save)))  { App_Log(APP_ERROR,"%s: Invalid coordinate table, no vertical reference found\n",__func__);      return(FALSE); }
    
    if (Level>-1) {
       if ((err=nc_inq_varid(File->NC_Id,str,&zref_id))) RPNC_ERR(err);
@@ -466,13 +466,13 @@ int RPNC_Write(TRPNC_File *File,TGeoRef *GRef,TZRef *ZRef,TTimeRef *TRef,char *D
    char buf[NC_MAX_NAME+1];
    
    // Error checking
-   if (!GRef) { App_Log(ERROR,"%s: Invalid geo reference\n",__func__);      return(FALSE); }
-   if (!ZRef) { App_Log(ERROR,"%s: Invalid vertical reference\n",__func__); return(FALSE); }
-   if (!TRef) { App_Log(ERROR,"%s: Invalid time reference\n",__func__);     return(FALSE); }
-   if (!Data) { App_Log(ERROR,"%s: Invalid data reference\n",__func__);     return(FALSE); }
+   if (!GRef) { App_Log(APP_ERROR,"%s: Invalid geo reference\n",__func__);      return(FALSE); }
+   if (!ZRef) { App_Log(APP_ERROR,"%s: Invalid vertical reference\n",__func__); return(FALSE); }
+   if (!TRef) { App_Log(APP_ERROR,"%s: Invalid time reference\n",__func__);     return(FALSE); }
+   if (!Data) { App_Log(APP_ERROR,"%s: Invalid data reference\n",__func__);     return(FALSE); }
       
-   if (T<0)                           { App_Log(ERROR,"%s: Invalid time step\n",__func__); return(FALSE); }
-   if (K<RPNC_ALL || K>ZRef->LevelNb) { App_Log(ERROR,"%s: Invalid level\n",__func__);     return(FALSE); }
+   if (T<0)                           { App_Log(APP_ERROR,"%s: Invalid time step\n",__func__); return(FALSE); }
+   if (K<RPNC_ALL || K>ZRef->LevelNb) { App_Log(APP_ERROR,"%s: Invalid level\n",__func__);     return(FALSE); }
 
    // Define the dimids array used to pass the dimensions of the netCDF variables.
    dimids[0] = TRef->NC_NTDimId;

@@ -186,7 +186,7 @@ static float **EZGrid_TileGetData(const TGrid* restrict const Grid,TGridTile* re
       // Allocate Tile data if not already done
       if (!Tile->Data) {
          if (!(data=(float**)calloc(Grid->H.NK,sizeof(float*)))) {
-            App_Log(ERROR,"%s: Unable to allocate memory for tile data levels (%s)\n",__func__,Grid->H.NOMVAR);
+            App_Log(APP_ERROR,"%s: Unable to allocate memory for tile data levels (%s)\n",__func__,Grid->H.NOMVAR);
             pthread_mutex_unlock(&Tile->Mutex);
             return(NULL);
          }
@@ -196,7 +196,7 @@ static float **EZGrid_TileGetData(const TGrid* restrict const Grid,TGridTile* re
       
       if (!data[K]) {
          if (!(datak=(float*)calloc(Tile->HNIJ,sizeof(float)))) {
-            App_Log(ERROR,"%s: Unable to allocate memory for tile data slices (%s)\n",__func__,Grid->H.NOMVAR);
+            App_Log(APP_ERROR,"%s: Unable to allocate memory for tile data slices (%s)\n",__func__,Grid->H.NOMVAR);
             pthread_mutex_unlock(&Tile->Mutex);
             return(NULL);
          }
@@ -208,15 +208,15 @@ static float **EZGrid_TileGetData(const TGrid* restrict const Grid,TGridTile* re
          RPN_FieldLock();
          mode=2;
          type=Grid->ZRef->Type==LVL_ETA?LVL_SIGMA:Grid->ZRef->Type;
-         f77name(convip_plus)(&ip1,&Grid->ZRef->Levels[K],&type,&mode,&format,&flag);
+         f77name(convip_plus)(&ip1,&Grid->ZRef->Levels[K],&type,&mode,&format,&flag,1);
          key=c_fstinf(Grid->H.FID,&ni,&nj,&nk,Grid->H.DATEV,Grid->H.ETIKET,ip1,Grid->H.IP2,Tile->NO,Grid->H.TYPVAR,Grid->H.NOMVAR);
 //         c_fst_data_length((Grid->H.DATYP==1 || Grid->H.DATYP==5)?Grid->H.NBITS>32?8:4)?(Grid->H.NBITS>8?(Grid->H.NBITS>16?(Grid->H.NBITS>32?8:4):2):1));
          if (key<0) {
             mode=3;
-            f77name(convip_plus)(&ip1,&Grid->ZRef->Levels[K],&type,&mode,&format,&flag);
+            f77name(convip_plus)(&ip1,&Grid->ZRef->Levels[K],&type,&mode,&format,&flag,1);
             key=c_fstinf(Grid->H.FID,&ni,&nj,&nk,Grid->H.DATEV,Grid->H.ETIKET,ip1,Grid->H.IP2,Tile->NO,Grid->H.TYPVAR,Grid->H.NOMVAR);
             if (key<0) {
-               App_Log(WARNING,"%s: Could not find tile data (%s) at level %f (%i)\n",__func__,Grid->H.NOMVAR,Grid->ZRef->Levels[K],ip1);
+               App_Log(APP_WARNING,"%s: Could not find tile data (%s) at level %f (%i)\n",__func__,Grid->H.NOMVAR,Grid->ZRef->Levels[K],ip1);
             } else {
                RPN_ReadData(datak,TD_Float32,key);
             }
@@ -239,7 +239,7 @@ static float **EZGrid_TileGetData(const TGrid* restrict const Grid,TGridTile* re
                // Allocate Tile data if not already done
                if (!Tile->Mask) {
                   if (!(Tile->Mask=(char**)calloc(Grid->H.NK,sizeof(char*)))) {
-                     App_Log(ERROR,"%s: Unable to allocate memory for tile mask levels (%s)\n",__func__,Grid->H.NOMVAR);
+                     App_Log(APP_ERROR,"%s: Unable to allocate memory for tile mask levels (%s)\n",__func__,Grid->H.NOMVAR);
                      RPN_FieldUnlock();
                      pthread_mutex_unlock(&Tile->Mutex);
                      return(NULL);
@@ -257,14 +257,14 @@ static float **EZGrid_TileGetData(const TGrid* restrict const Grid,TGridTile* re
                      } else {
                         free(Tile->Mask[K]);
                         Tile->Mask[K]=NULL;
-                        App_Log(WARNING,"%s: Unable to allocate memory to read mask\n",__func__);
+                        App_Log(APP_WARNING,"%s: Unable to allocate memory to read mask\n",__func__);
                      }
                   } else {
-                     App_Log(WARNING,"%s: Unable to allocate memory for mask\n",__func__);
+                     App_Log(APP_WARNING,"%s: Unable to allocate memory for mask\n",__func__);
                   }
                }          
             } else {
-               App_Log(WARNING,"%s: Unable to find associated field mask (%s)\n",__func__,Grid->H.NOMVAR);
+               App_Log(APP_WARNING,"%s: Unable to find associated field mask (%s)\n",__func__,Grid->H.NOMVAR);
             }
          }
          
@@ -325,7 +325,7 @@ float* EZGrid_TileBurn(TGrid* restrict const Grid,TGridTile* restrict const Tile
    }
 
    if (!Tile || !Tile->Data) {
-      App_Log(ERROR,"%s: Invalid tile (%s)\n",__func__,Grid->H.NOMVAR);
+      App_Log(APP_ERROR,"%s: Invalid tile (%s)\n",__func__,Grid->H.NOMVAR);
       pthread_mutex_unlock(&Grid->Mutex);
       return(NULL);
    }
@@ -334,7 +334,7 @@ float* EZGrid_TileBurn(TGrid* restrict const Grid,TGridTile* restrict const Tile
    if (!Data) {
       if (!Grid->Data) {
          if (!(Grid->Data=(float*)malloc(Grid->H.NIJ*sizeof(float)))) {
-            App_Log(ERROR,"%s: Unable to allocate memory for grid data (%s)\n",__func__,Grid->H.NOMVAR);
+            App_Log(APP_ERROR,"%s: Unable to allocate memory for grid data (%s)\n",__func__,Grid->H.NOMVAR);
             pthread_mutex_unlock(&Grid->Mutex);
             return(NULL);
          }
@@ -342,7 +342,7 @@ float* EZGrid_TileBurn(TGrid* restrict const Grid,TGridTile* restrict const Tile
       Data=Grid->Data;
       if (!Grid->Mask && Tile->Mask && Tile->Mask[K]) {
          if (!(Grid->Mask=(char*)malloc(Grid->H.NIJ*sizeof(char)))) {
-            App_Log(ERROR,"%s: Unable to allocate memory for grid mask (%s)\n",__func__,Grid->H.NOMVAR);
+            App_Log(APP_ERROR,"%s: Unable to allocate memory for grid mask (%s)\n",__func__,Grid->H.NOMVAR);
             pthread_mutex_unlock(&Grid->Mutex);
             return(NULL);
          }
@@ -729,7 +729,7 @@ int EZGrid_UnTile(int FIdTo,int FIdFrom,char* Var,char* TypVar,char* Etiket,int 
    cs_fstinl(FIdFrom,&ni,&nj,&nk,DateV,Etiket,IP1,IP2,1,TypVar,Var,idlst,&nid,RPNMAX);
 
    if (nid<=0) {
-      App_Log(ERROR,"%s: Specified fields do not exist\n",__func__);
+      App_Log(APP_ERROR,"%s: Specified fields do not exist\n",__func__);
       return(FALSE);
    }
 
@@ -775,7 +775,7 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
       key=cs_fstinf(Grid->H.FID,&Grid->H.NI,&h.NJ,&h.NK,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"",">>");
       key=cs_fstinf(Grid->H.FID,&h.NI,&Grid->H.NJ,&h.NK,-1,"",Grid->H.IG1,Grid->H.IG2,-1,"","^^");
       if (key<0) {
-         App_Log(WARNING,"%s: Could not find master grid descriptor (>>,^^)\n",__func__);
+         App_Log(APP_WARNING,"%s: Could not find master grid descriptor (>>,^^)\n",__func__);
          RPN_FieldUnlock();
          return(NULL);
       }
@@ -806,7 +806,7 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
             h.GRTYP,&h.IG1,&h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,
             &h.UBC,&h.EX1,&h.EX2,&h.EX3);
       if (key<0) {
-         App_Log(ERROR,"%s: Missing subgrid number %i\n",__func__,n);
+         App_Log(APP_ERROR,"%s: Missing subgrid number %i\n",__func__,n);
          RPN_FieldUnlock();
          return(NULL);
       }
@@ -912,13 +912,13 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
 
             // Get the X descriptor
             if( (desc=cs_fstinf(Grid->H.FID,&ni,&nj,&tmpi,-1,"",h.IG1,h.IG2,h.IG3,"",">>")) <=0 ) {
-               App_Log(ERROR,"%s: Could not find grid descriptor (>>) of Z grid\n",__func__);
+               App_Log(APP_ERROR,"%s: Could not find grid descriptor (>>) of Z grid\n",__func__);
                RPN_FieldUnlock();
                return(NULL);
             }
             if( cs_fstprm(desc,&ni,&nj,&nk,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi,
                   tmpc,tmpc,tmpc,grtyp,&ig1,&ig2,&ig3,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi) ) {
-               App_Log(ERROR,"%s: Could not stat grid descriptor (>>) of Z grid\n",__func__);
+               App_Log(APP_ERROR,"%s: Could not stat grid descriptor (>>) of Z grid\n",__func__);
                RPN_FieldUnlock();
                return(NULL);
             }
@@ -932,29 +932,29 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
 
                // Read the transformation matrix
                if( (key=cs_fstinf(Grid->H.FID,&ni,&nj,&nk,-1,"",ig1,ig2,ig3,"","MTRX")) <=0 ) {
-                  App_Log(ERROR,"%s: Could not find grid transformation matrix (MTRX) of Z grid\n",__func__);
+                  App_Log(APP_ERROR,"%s: Could not find grid transformation matrix (MTRX) of Z grid\n",__func__);
                   goto werr;
                }
                if( ni*nj*nk != 6 ) {
-                  App_Log(ERROR,"%s: MTRX field should have a dimension of exactly 6, but has %d*%d*%d=%d instead\n",__func__,ni,nj,nk,ni*nj*nk);
+                  App_Log(APP_ERROR,"%s: MTRX field should have a dimension of exactly 6, but has %d*%d*%d=%d instead\n",__func__,ni,nj,nk,ni*nj*nk);
                   goto werr;
                }
                if( RPN_sReadData(transform,TD_Float64,key) != APP_OK ) {
-                  App_Log(ERROR,"%s: Could not read grid transformation matrix (MTRX) of Z grid\n",__func__);
+                  App_Log(APP_ERROR,"%s: Could not read grid transformation matrix (MTRX) of Z grid\n",__func__);
                   goto werr;
                }
 
                // Read the projection string
                if( (key=cs_fstinf(Grid->H.FID,&ni,&nj,&nk,-1,"",ig1,ig2,ig3,"","PROJ")) <=0 ) {
-                  App_Log(ERROR,"%s: Could not find grid projection string (PROJ) of Z grid\n",__func__);
+                  App_Log(APP_ERROR,"%s: Could not find grid projection string (PROJ) of Z grid\n",__func__);
                   goto werr;
                }
                if( !(str=malloc((ni*nj*nk+1)*sizeof(*str))) ) {
-                  App_Log(ERROR,"%s: Could not allocate memory for projection string (PROJ) of Z grid\n",__func__);
+                  App_Log(APP_ERROR,"%s: Could not allocate memory for projection string (PROJ) of Z grid\n",__func__);
                   goto werr;
                }
                if( RPN_sReadData(str,TD_Byte,key) != APP_OK ) {
-                  App_Log(ERROR,"%s: Could not read grid projection string (PROJ) of Z grid\n",__func__);
+                  App_Log(APP_ERROR,"%s: Could not read grid projection string (PROJ) of Z grid\n",__func__);
                   goto werr;
                }
                str[ni*nj*nk] = '\0';
@@ -964,21 +964,21 @@ TGrid* EZGrid_Get(TGrid* restrict const Grid) {
 
                // Memory for the descriptors
                if( !(Grid->GRef->AX=malloc(Grid->H.NIJ*sizeof(*Grid->GRef->AX))) ) {
-                  App_Log(ERROR,"%s: Could not allocate memory for descriptor (>>) of Z grid\n",__func__);
+                  App_Log(APP_ERROR,"%s: Could not allocate memory for descriptor (>>) of Z grid\n",__func__);
                   goto werr;
                }
                if( !(Grid->GRef->AY=malloc(Grid->H.NIJ*sizeof(*Grid->GRef->AY))) ) {
-                  App_Log(ERROR,"%s: Could not allocate memory for descriptor (^^) of Z grid\n",__func__);
+                  App_Log(APP_ERROR,"%s: Could not allocate memory for descriptor (^^) of Z grid\n",__func__);
                   goto werr;
                }
 
                // Read the descriptors
                if( RPN_sReadData(Grid->GRef->AX,TD_Float32,desc) != APP_OK ) {
-                  App_Log(ERROR,"%s: Could not read grid descriptor (>>) of Z grid\n",__func__);
+                  App_Log(APP_ERROR,"%s: Could not read grid descriptor (>>) of Z grid\n",__func__);
                   goto werr;
                }
                if( RPN_sRead(Grid->GRef->AY,TD_Float32,Grid->H.FID,&ni,&nj,&nk,-1,"",h.IG1,h.IG2,h.IG3,"","^^") != APP_OK ) {
-                  App_Log(ERROR,"%s: Could not find grid descriptor (^^) of Z grid\n",__func__);
+                  App_Log(APP_ERROR,"%s: Could not find grid descriptor (^^) of Z grid\n",__func__);
                   goto werr;
                }
 
@@ -1087,7 +1087,7 @@ TZRef* EZGrid_GetZRef(const TGrid* restrict const Grid) {
    TZRef *zref;
 
    if (!Grid) {
-      App_Log(ERROR,"%s: Invalid grid\n",__func__);
+      App_Log(APP_ERROR,"%s: Invalid grid\n",__func__);
       return(FALSE);
    }
 
@@ -1234,7 +1234,7 @@ TGrid *EZGrid_Copy(TGrid *Master,int Level) {
  *----------------------------------------------------------------------------
 */
 
-wordint f77name(ezgrid_free)(wordint *gdid) {
+int32_t f77name(ezgrid_free)(int32_t *gdid) {
    EZGrid_Free(GridCache[*gdid]);
    return(TRUE);
 }
@@ -1356,7 +1356,7 @@ void EZGrid_Clear(TGrid* restrict const Grid) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-wordint f77name(ezgrid_read)(wordint *fid,char *var,char *typvar,char *etiket,wordint *datev,wordint *ip1,wordint *ip2,wordint *incr) {
+int32_t f77name(ezgrid_read)(int32_t *fid,char *var,char *typvar,char *etiket,int32_t *datev,int32_t *ip1,int32_t *ip2,int32_t *incr) {
    char cvar[5],ctypvar[3],cetiket[13];
 
    strcpy(cvar,"    ");
@@ -1418,7 +1418,7 @@ TGrid *EZGrid_Read(int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1
  * Remarques :
  *----------------------------------------------------------------------------
 */
-wordint f77name(ezgrid_readidx)(wordint *fid,wordint *key,wordint *incr) {
+int32_t f77name(ezgrid_readidx)(int32_t *fid,int32_t *key,int32_t *incr) {
    TGrid *fld = EZGrid_ReadIdx(*fid,*key,*incr);
    return(fld->Master ? EZGrid_CacheIdx(fld) : EZGrid_CacheAdd(fld));
 }
@@ -1489,7 +1489,7 @@ TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr) {
       }
    } else {
       if (!EZGrid_Get(new)) {
-         App_Log(ERROR,"%s: Could not create master grid (%s)\n",__func__,new->H.NOMVAR);
+         App_Log(APP_ERROR,"%s: Could not create master grid (%s)\n",__func__,new->H.NOMVAR);
          free(new);
          return(NULL);
       } else {
@@ -1522,7 +1522,7 @@ TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-wordint f77name(ezgrid_load)(wordint *gdid,wordint *i0,wordint *j0,wordint *k0,wordint *i1,wordint *j1,wordint *k1) {
+int32_t f77name(ezgrid_load)(int32_t *gdid,int32_t *i0,int32_t *j0,int32_t *k0,int32_t *i1,int32_t *j1,int32_t *k1) {
    return(EZGrid_Load(GridCache[*gdid],*i0,*j0,*k0,*i1,*j1,*k1));
 }
 int EZGrid_Load(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1,int J1,int K1) {
@@ -1531,14 +1531,14 @@ int EZGrid_Load(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1,int
    int        i,j,k;
 
    if (!Grid) {
-      App_Log(ERROR,"%s: Invalid grid\n",__func__);
+      App_Log(APP_ERROR,"%s: Invalid grid\n",__func__);
       return(FALSE);
    }
 
    /*Check inclusion in master grid limits*/
    if (I0<0 || J0<0 || K0<0 || I0>=Grid->H.NI || J0>=Grid->H.NJ || K0>=Grid->H.NK ||
        I1<0 || J1<0 || K1<0 || I1>=Grid->H.NI || J1>=Grid->H.NJ || K1>=Grid->H.NK) {
-      App_Log(DEBUG,"%s: Coordinates out of range (%s): I(%i,%i) J(%i,%i) K(%i,%i)\n",__func__,Grid->H.NOMVAR,I0,I1,J0,J1,K0,K1);
+      App_Log(APP_DEBUG,"%s: Coordinates out of range (%s): I(%i,%i) J(%i,%i) K(%i,%i)\n",__func__,Grid->H.NOMVAR,I0,I1,J0,J1,K0,K1);
       return(FALSE);
    }
 
@@ -1548,7 +1548,7 @@ int EZGrid_Load(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1,int
          for(i=I0;i<=I1;i++) {
             /*Figure out the right tile*/
             if (!(tile=EZGrid_TileGet(Grid,i,j))) {
-               App_Log(WARNING,"%s: Tile not found (%s) I(%i) J(%i)\n",__func__,Grid->H.NOMVAR,i,j);
+               App_Log(APP_WARNING,"%s: Tile not found (%s) I(%i) J(%i)\n",__func__,Grid->H.NOMVAR,i,j);
                return(FALSE);
             }
 
@@ -1562,7 +1562,7 @@ int EZGrid_Load(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1,int
    return(TRUE);
 }
 
-wordint f77name(ezgrid_loadall)(wordint *gdid) {
+int32_t f77name(ezgrid_loadall)(int32_t *gdid) {
    return(EZGrid_LoadAll(GridCache[*gdid]));
 }
 int EZGrid_LoadAll(const TGrid* restrict const Grid) {
@@ -1577,7 +1577,7 @@ int EZGrid_LoadAll(const TGrid* restrict const Grid) {
 
             /*Check for tile data*/
             if (!EZGrid_TileGetData(Grid,&Grid->Tiles[idx],k)) {
-               App_Log(ERROR,"%s: Unable to get tile data (%s) at level %i\n",__func__,Grid->H.NOMVAR,k);
+               App_Log(APP_ERROR,"%s: Unable to get tile data (%s) at level %i\n",__func__,Grid->H.NOMVAR,k);
                return(FALSE);
             }
             idx++;
@@ -1604,7 +1604,7 @@ int EZGrid_LoadAll(const TGrid* restrict const Grid) {
  * Remarques :
  *----------------------------------------------------------------------------
 */
-wordint f77name(ezgrid_interptime)(wordint *gdid0,wordint *gdid1,wordint *date) {
+int32_t f77name(ezgrid_interptime)(int32_t *gdid0,int32_t *gdid1,int32_t *date) {
    return(EZGrid_CacheAdd(EZGrid_InterpTime(NULL,GridCache[*gdid0],GridCache[*gdid1],*date)));
 }
 
@@ -1623,7 +1623,7 @@ TGrid *EZGrid_InterpTime(TGrid* restrict Grid,const TGrid* restrict Grid0,const 
    return(EZGrid_InterpFactor(Grid,Grid0,Grid1,1.0-dt,dt));
 }
 
-wordint f77name(ezgrid_factor)(wordint *gdid,ftnfloat *f) {
+int32_t f77name(ezgrid_factor)(int32_t *gdid,float *f) {
    EZGrid_Factor(GridCache[*gdid],*f);
    return(TRUE);
 }
@@ -1633,7 +1633,7 @@ void EZGrid_Factor(TGrid* restrict Grid,const float Factor) {
    Grid->Factor=Factor;
 }
 
-wordint f77name(ezgrid_interpfactor)(wordint *gdid0,wordint *gdid1,ftnfloat *f0,ftnfloat *f1) {
+int32_t f77name(ezgrid_interpfactor)(int32_t *gdid0,int32_t *gdid1,float *f0,float *f1) {
    return(EZGrid_CacheAdd(EZGrid_InterpFactor(NULL,GridCache[*gdid0],GridCache[*gdid1],*f0,*f1)));
 }
 
@@ -1690,7 +1690,7 @@ TGrid *EZGrid_InterpFactor(TGrid* restrict Grid,const TGrid* restrict Grid0,cons
  * Remarques :
  *----------------------------------------------------------------------------
 */
-wordint f77name(ezgrid_interp)(wordint *to,wordint *from) {
+int32_t f77name(ezgrid_interp)(int32_t *to,int32_t *from) {
    return(EZGrid_Interp(GridCache[*to],GridCache[*from]));
 }
 
@@ -1700,21 +1700,21 @@ int EZGrid_Interp(TGrid* restrict const To, TGrid* restrict const From) {
    float *from,*to;
 
    if (!From) {
-      App_Log(ERROR,"%s: Invalid input grid (%s)\n",__func__,From->H.NOMVAR);
+      App_Log(APP_ERROR,"%s: Invalid input grid (%s)\n",__func__,From->H.NOMVAR);
       return(FALSE);
    }
 
    if (!To) {
-      App_Log(ERROR,"%s: Invalid output grid (%s)\n",__func__,To->H.NOMVAR);
+      App_Log(APP_ERROR,"%s: Invalid output grid (%s)\n",__func__,To->H.NOMVAR);
       return(FALSE);
    }
 
    if (!(from=EZGrid_TileBurnAll(From,0,NULL))) {
-      App_Log(ERROR,"%s: Problems with input grid\n",__func__);
+      App_Log(APP_ERROR,"%s: Problems with input grid\n",__func__);
       return(FALSE);
    }
    if (!(to=EZGrid_TileBurnAll(To,0,NULL))) {
-      App_Log(ERROR,"%s: Problems with output grid\n",__func__);
+      App_Log(APP_ERROR,"%s: Problems with output grid\n",__func__);
       return(FALSE);
    }
 
@@ -1723,7 +1723,7 @@ int EZGrid_Interp(TGrid* restrict const To, TGrid* restrict const From) {
    ok=c_ezsint(to,from);
    RPN_IntUnlock();
    if (ok<0)  {
-      App_Log(ERROR,"%s: Unable to do interpolation (c_ezscint (%i))\n",__func__,ok);
+      App_Log(APP_ERROR,"%s: Unable to do interpolation (c_ezscint (%i))\n",__func__,ok);
       return(FALSE);
    }
 
@@ -1746,7 +1746,7 @@ int EZGrid_Interp(TGrid* restrict const To, TGrid* restrict const From) {
  *
  *----------------------------------------------------------------------------
 */
-wordint f77name(ezgrid_getlevelnb)(wordint *gdid) {
+int32_t f77name(ezgrid_getlevelnb)(int32_t *gdid) {
    return(EZGrid_GetLevelNb(GridCache[*gdid]));
 }
 int EZGrid_GetLevelNb(const TGrid* restrict const Grid) {
@@ -1769,7 +1769,7 @@ int EZGrid_GetLevelNb(const TGrid* restrict const Grid) {
  *
  *----------------------------------------------------------------------------
 */
-wordint f77name(ezgrid_getleveltype)(wordint *gdid) {
+int32_t f77name(ezgrid_getleveltype)(int32_t *gdid) {
    return(EZGrid_GetLevelType(GridCache[*gdid]));
 }
 int EZGrid_GetLevelType(const TGrid* restrict const Grid) {
@@ -1794,13 +1794,13 @@ int EZGrid_GetLevelType(const TGrid* restrict const Grid) {
  *
  *----------------------------------------------------------------------------
 */
-wordint f77name(ezgrid_getlevels)(wordint *gdid,ftnfloat *levels,wordint *type) {
+int32_t f77name(ezgrid_getlevels)(int32_t *gdid,float *levels,int32_t *type) {
    return(EZGrid_GetLevels(GridCache[*gdid],levels,type));
 }
 int EZGrid_GetLevels(const TGrid* restrict const Grid,float* restrict Levels,int* restrict Type) {
 
    if (!Grid) {
-      App_Log(ERROR,"%s: Invalid grid\n",__func__);
+      App_Log(APP_ERROR,"%s: Invalid grid\n",__func__);
       return(FALSE);
    }
 
@@ -1828,13 +1828,13 @@ int EZGrid_GetLevels(const TGrid* restrict const Grid,float* restrict Levels,int
  *
  *----------------------------------------------------------------------------
 */
-ftnfloat f77name(ezgrid_getlevel)(wordint *gdid,ftnfloat *pressure,ftnfloat *p0) {
+float f77name(ezgrid_getlevel)(int32_t *gdid,float *pressure,float *p0) {
    return(EZGrid_GetLevel(GridCache[*gdid],*pressure,*p0));
 }
 float EZGrid_GetLevel(const TGrid* restrict const Grid,float Pressure,float P0) {
 
    if (!Grid) {
-      App_Log(ERROR,"%s: Invalid grid\n",__func__);
+      App_Log(APP_ERROR,"%s: Invalid grid\n",__func__);
       return(-1.0);
    }
 
@@ -1858,13 +1858,13 @@ float EZGrid_GetLevel(const TGrid* restrict const Grid,float Pressure,float P0) 
  *
  *----------------------------------------------------------------------------
 */
-ftnfloat f77name(ezgrid_getpressure)(wordint *gdid,ftnfloat *level,ftnfloat *p0) {
+float f77name(ezgrid_getpressure)(int32_t *gdid,float *level,float *p0) {
    return(EZGrid_GetPressure(GridCache[*gdid],*level,*p0));
 }
 float EZGrid_GetPressure(const TGrid* restrict const Grid,float Level,float P0) {
 
    if (!Grid) {
-      App_Log(ERROR,"%s: Invalid grid\n",__func__);
+      App_Log(APP_ERROR,"%s: Invalid grid\n",__func__);
       return(-1.0);
 
    }
@@ -1898,7 +1898,7 @@ float EZGrid_GetPressure(const TGrid* restrict const Grid,float Level,float P0) 
  *   - Gere les grille Y (Cloud point) et M (Triangle meshes)
  *----------------------------------------------------------------------------
 */
-wordint f77name(ezgrid_llgetvalue)(wordint *gdid,wordint *mode,ftnfloat *lat,ftnfloat *lon,wordint *k0,wordint *k1,ftnfloat *val) {
+int32_t f77name(ezgrid_llgetvalue)(int32_t *gdid,int32_t *mode,float *lat,float *lon,int32_t *k0,int32_t *k1,float *val) {
    return(EZGrid_LLGetValue(GridCache[*gdid],*mode,*lat,*lon,*k0-1,*k1-1,val));
 }
 
@@ -1907,12 +1907,12 @@ int EZGrid_LLGetValue(TGrid* restrict const Grid,TGridInterpMode Mode,float Lat,
    float      i,j;
 
    if (!Grid) {
-      App_Log(ERROR,"%s: Invalid grid\n",__func__);
+      App_Log(APP_ERROR,"%s: Invalid grid\n",__func__);
       return(FALSE);
    }
 
    if (K0<0 || K0>=Grid->H.NK || K1<0 || K1>=Grid->H.NK) {
-      App_Log(DEBUG,"%s: Coordinates out of range (%s): K(%i,%i)\n",__func__,Grid->H.NOMVAR,K0,K1);
+      App_Log(APP_DEBUG,"%s: Coordinates out of range (%s): K(%i,%i)\n",__func__,Grid->H.NOMVAR,K0,K1);
       return(FALSE);
    }
 
@@ -1961,7 +1961,7 @@ int EZGrid_LLGetValueO(TGrid* restrict const GridU,TGrid* restrict const GridV,T
    unsigned int idx;
    
    if (!GridU || (GridU->H.GRTYP[0]!='O' && GridU->H.GRTYP[0]!='X')) {
-      App_Log(ERROR,"%s: Invalid grid\n",__func__);
+      App_Log(APP_ERROR,"%s: Invalid grid\n",__func__);
       return(FALSE);
    }
    
@@ -2016,7 +2016,7 @@ int EZGrid_LLGetValueY(TGrid* restrict const GridU,TGrid* restrict const GridV,T
    int        k,ik=0,n,nb=-1,idxs[EZGRID_YLINEARCOUNT];
    
    if (!GridU || GridU->H.GRTYP[0]!='Y') {
-      App_Log(ERROR,"%s: Invalid grid\n",__func__);
+      App_Log(APP_ERROR,"%s: Invalid grid\n",__func__);
       return(FALSE);
    }
    
@@ -2097,7 +2097,7 @@ int EZGrid_LLGetValueM(TGrid* restrict const GridU,TGrid* restrict const GridV,T
    intptr_t    idx;
    
    if (!GridU || GridU->H.GRTYP[0]!='M') {
-      App_Log(ERROR,"%s: Invalid grid\n",__func__);
+      App_Log(APP_ERROR,"%s: Invalid grid\n",__func__);
       return(FALSE);
    }
    
@@ -2189,7 +2189,7 @@ int EZGrid_LLGetValueM(TGrid* restrict const GridU,TGrid* restrict const GridV,T
  *   - Cette fonction permet de recuperer un profile
  *----------------------------------------------------------------------------
 */
-wordint f77name(ezgrid_llgetuvvalue)(wordint *gdidu,wordint *gdidv,wordint *mode,ftnfloat *lat,ftnfloat *lon,wordint *k0,wordint *k1,ftnfloat *uu,ftnfloat *vv,ftnfloat *conv) {
+int32_t f77name(ezgrid_llgetuvvalue)(int32_t *gdidu,int32_t *gdidv,int32_t *mode,float *lat,float *lon,int32_t *k0,int32_t *k1,float *uu,float *vv,float *conv) {
    return(EZGrid_LLGetUVValue(GridCache[*gdidu],GridCache[*gdidv],*mode,*lat,*lon,*k0-1,*k1-1,uu,vv,*conv));
 }
 int EZGrid_LLGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* restrict UU,float* restrict VV,float Conv) {
@@ -2197,12 +2197,12 @@ int EZGrid_LLGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
    float i,j;
 
    if (!GridU || !GridV) {
-      App_Log(ERROR,"%s: Invalid grid\n",__func__);
+      App_Log(APP_ERROR,"%s: Invalid grid\n",__func__);
       return(FALSE);
    }
 
    if (K0<0 || K0>=GridU->H.NK || K1<0 || K1>=GridU->H.NK) {
-      App_Log(DEBUG,"%s: Coordinates out of range (%s): K(%i,%i)\n",__func__,GridU->H.NOMVAR,K0,K1);
+      App_Log(APP_DEBUG,"%s: Coordinates out of range (%s): K(%i,%i)\n",__func__,GridU->H.NOMVAR,K0,K1);
       return(FALSE);
    }
    
@@ -2223,7 +2223,7 @@ int EZGrid_LLGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
       case 'Z':
          // Handle the case of ZW grids
          if( GridU->H.GRTYP[1] == 'W' ) {
-            App_Log(ERROR,"%s: Unimplemented for ZW grids\n",__func__);
+            App_Log(APP_ERROR,"%s: Unimplemented for ZW grids\n",__func__);
             return(FALSE);
          }
          // ELSE, we fallthrough (no break)
@@ -2265,7 +2265,7 @@ int EZGrid_LLGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
  *----------------------------------------------------------------------------
 */
 
-wordint f77name(ezgrid_ijgetvalue)(wordint *gdid,wordint *mode,ftnfloat *i,ftnfloat *j,wordint *k0,wordint *k1,ftnfloat *val) {
+int32_t f77name(ezgrid_ijgetvalue)(int32_t *gdid,int32_t *mode,float *i,float *j,int32_t *k0,int32_t *k1,float *val) {
    return(EZGrid_IJGetValue(GridCache[*gdid],*mode,*i-1,*j-1,*k0-1,*k1-1,val));
 }
 
@@ -2276,13 +2276,13 @@ int EZGrid_IJGetValue(TGrid* restrict const Grid,TGridInterpMode Mode,float I,fl
    float      dx,dy,dxy,d[4];
 
    if (!Grid || Grid->GID<0) {
-      App_Log(ERROR,"%s: Invalid grid\n",__func__);
+      App_Log(APP_ERROR,"%s: Invalid grid\n",__func__);
       return(FALSE);
    }
 
    // Check inclusion in master grid limits
    if (I<0 || J<0 || K0<0 || K1<0 || J>=Grid->H.NJ-0.5 || K0>=Grid->H.NK || K1>=Grid->H.NK) {
-      App_Log(DEBUG,"%s: Coordinates out of range (%s): I(%f) J(%f) K(%i,%i)\n",__func__,Grid->H.NOMVAR,I,J,K0,K1);
+      App_Log(APP_DEBUG,"%s: Coordinates out of range (%s): I(%f) J(%f) K(%i,%i)\n",__func__,Grid->H.NOMVAR,I,J,K0,K1);
       return(FALSE);
    }
 
@@ -2297,13 +2297,13 @@ int EZGrid_IJGetValue(TGrid* restrict const Grid,TGridInterpMode Mode,float I,fl
       if (Grid->Wrap) {
          wrap=1;
       } else {
-         App_Log(DEBUG,"%s: Coordinates out of range (%s): I(%f) J(%f) K(%i,%i)\n",__func__,Grid->H.NOMVAR,I,J,K0,K1);
+         App_Log(APP_DEBUG,"%s: Coordinates out of range (%s): I(%f) J(%f) K(%i,%i)\n",__func__,Grid->H.NOMVAR,I,J,K0,K1);
          return(FALSE);
       }
    }      
    
    if (!(t=EZGrid_TileGet(Grid,I,J))) {
-      App_Log(ERROR,"%s: Tile not found (%s) I(%.f) J(%f)\n",__func__,Grid->H.NOMVAR,I,J);
+      App_Log(APP_ERROR,"%s: Tile not found (%s) I(%.f) J(%f)\n",__func__,Grid->H.NOMVAR,I,J);
       return(FALSE);
    }
 
@@ -2323,7 +2323,7 @@ int EZGrid_IJGetValue(TGrid* restrict const Grid,TGridInterpMode Mode,float I,fl
    // Get the wrapping tile
    if (wrap) {
       if (!(tw=EZGrid_TileGet(Grid,0,J))) {
-         App_Log(ERROR,"%s: Wrapped tile not found (%s) I(%.f) J(%f)\n",__func__,Grid->H.NOMVAR,I,J);
+         App_Log(APP_ERROR,"%s: Wrapped tile not found (%s) I(%.f) J(%f)\n",__func__,Grid->H.NOMVAR,I,J);
          return(FALSE);
       }
       // If we wrap, index of first point within wrapped tile
@@ -2392,7 +2392,7 @@ int EZGrid_IJGetValue(TGrid* restrict const Grid,TGridInterpMode Mode,float I,fl
  *   - Cette fonction permet de recuperer un profile
  *----------------------------------------------------------------------------
 */
-wordint f77name(ezgrid_ijgetuvvalue)(wordint *gdidu,wordint *gdidv,wordint *mode,ftnfloat *i,ftnfloat *j,wordint *k0,wordint *k1,ftnfloat *uu,ftnfloat *vv,ftnfloat *conv) {
+int32_t f77name(ezgrid_ijgetuvvalue)(int32_t *gdidu,int32_t *gdidv,int32_t *mode,float *i,float *j,int32_t *k0,int32_t *k1,float *uu,float *vv,float *conv) {
    return(EZGrid_IJGetUVValue(GridCache[*gdidu],GridCache[*gdidv],*mode,*i-1,*j-1,*k0-1,*k1-1,uu,vv,*conv));
 }
 int EZGrid_IJGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,TGridInterpMode Mode,float I,float J,int K0,int K1,float* restrict UU,float* restrict VV,float Conv) {
@@ -2402,13 +2402,13 @@ int EZGrid_IJGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
    int        ik=0,k;
 
    if (!GridU || !GridV || GridU->GID<0 || GridV->GID<0) {
-      App_Log(ERROR,"%s: Invalid grid\n",__func__);
+      App_Log(APP_ERROR,"%s: Invalid grid\n",__func__);
       return(FALSE);
    }
 
    // Check inclusion in master grid limits
    if (I<0 || J<0 || K0<0 || K1<0 || I>GridU->H.NI-0.5 || J>GridU->H.NJ-0.5 || K0>=GridU->H.NK || K1>=GridU->H.NK) {
-      App_Log(DEBUG,"%s: Coordinates out of range (%s,%s): I(%f) J(%f) K(%i,%i)\n",__func__,GridU->H.NOMVAR,GridV->H.NOMVAR,I,J,K0,K1);
+      App_Log(APP_DEBUG,"%s: Coordinates out of range (%s,%s): I(%f) J(%f) K(%i,%i)\n",__func__,GridU->H.NOMVAR,GridV->H.NOMVAR,I,J,K0,K1);
       return(FALSE);
    }
 
@@ -2418,11 +2418,11 @@ int EZGrid_IJGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
    }
 
    if (!(tu=EZGrid_TileGet(GridU,I,J))) {
-      App_Log(ERROR,"%s: Tile not found (%s) I(%f) J(%f)\n",__func__,GridU->H.NOMVAR,I,J);
+      App_Log(APP_ERROR,"%s: Tile not found (%s) I(%f) J(%f)\n",__func__,GridU->H.NOMVAR,I,J);
       return(FALSE);
    }
    if (!(tv=EZGrid_TileGet(GridV,I,J))) {
-      App_Log(ERROR,"%s: Tile not found (%s) I(%f) J(%f)\n",__func__,GridV->H.NOMVAR,I,J);
+      App_Log(APP_ERROR,"%s: Tile not found (%s) I(%f) J(%f)\n",__func__,GridV->H.NOMVAR,I,J);
       return(FALSE);
    }
 
@@ -2474,7 +2474,7 @@ int EZGrid_IJGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
  *   - On effectue aucune interpolation
  *----------------------------------------------------------------------------
 */
-wordint f77name(ezgrid_getvalue)(wordint *gdid,wordint *i,wordint *j,wordint *k0,wordint *k1,ftnfloat *val) {
+int32_t f77name(ezgrid_getvalue)(int32_t *gdid,int32_t *i,int32_t *j,int32_t *k0,int32_t *k1,float *val) {
    return(EZGrid_GetValue(GridCache[*gdid],*i-1,*j-1,*k0-1,*k1-1,val));
 }
 int EZGrid_GetValue(const TGrid* restrict const Grid,int I,int J,int K0,int K1,float* restrict Value) {
@@ -2483,18 +2483,18 @@ int EZGrid_GetValue(const TGrid* restrict const Grid,int I,int J,int K0,int K1,f
    int        k,ik=0;
 
    if (!Grid) {
-      App_Log(ERROR,"%s: Invalid grid\n",__func__);
+      App_Log(APP_ERROR,"%s: Invalid grid\n",__func__);
       return(FALSE);
    }
 
    // Check inclusion in master grid limits
    if (I<0 || J<0 || K0<0 || K1<0 || I>=Grid->H.NI-0.5 || J>=Grid->H.NJ-0.5 || K0>=Grid->H.NK || K1>=Grid->H.NK) {
-      App_Log(DEBUG,"%s: Coordinates out of range (%s) I(%i) J(%i) K(%i,%i)\n",__func__,Grid->H.NOMVAR,I,J,K0,K1);
+      App_Log(APP_DEBUG,"%s: Coordinates out of range (%s) I(%i) J(%i) K(%i,%i)\n",__func__,Grid->H.NOMVAR,I,J,K0,K1);
       return(FALSE);
    }
 
    if (!(t=EZGrid_TileGet(Grid,I,J))) {
-      App_Log(ERROR,"%s: Tile not found (%s) I(%i) J(%i)\n",__func__,Grid->H.NOMVAR,I,J);
+      App_Log(APP_ERROR,"%s: Tile not found (%s) I(%i) J(%i)\n",__func__,Grid->H.NOMVAR,I,J);
       return(FALSE);
    }
 
@@ -2532,7 +2532,7 @@ int EZGrid_GetValue(const TGrid* restrict const Grid,int I,int J,int K0,int K1,f
  *   - On effectue aucune interpolation
  *----------------------------------------------------------------------------
 */
-wordint f77name(ezgrid_getvalues)(wordint *gdid,wordint *nb,ftnfloat *i,ftnfloat *j,ftnfloat *k,ftnfloat *val) {
+int32_t f77name(ezgrid_getvalues)(int32_t *gdid,int32_t *nb,float *i,float *j,float *k,float *val) {
    return(EZGrid_GetValues(GridCache[*gdid],-(*nb),i,j,k,val));
 }
 int EZGrid_GetValues(const TGrid* restrict const Grid,int Nb,float* restrict const I,float* restrict const J,float* restrict const K,float* restrict Value) {
@@ -2541,7 +2541,7 @@ int EZGrid_GetValues(const TGrid* restrict const Grid,int Nb,float* restrict con
    int        n,i,j,k;
 
    if (!Grid) {
-      App_Log(ERROR,"%s: Invalid grid\n",__func__);
+      App_Log(APP_ERROR,"%s: Invalid grid\n",__func__);
       return(FALSE);
    }
 
@@ -2559,12 +2559,12 @@ int EZGrid_GetValues(const TGrid* restrict const Grid,int Nb,float* restrict con
 
       // Check inclusion in master grid limits
       if (i<0 || j<0 || k<0 || i>=Grid->H.NI || j>=Grid->H.NJ || k>=Grid->H.NK) {
-         App_Log(DEBUG,"%s: Coordinates out of range (%s): I(%i) J(%i) K(%i)\n",__func__,Grid->H.NOMVAR,i,j,k);
+         App_Log(APP_DEBUG,"%s: Coordinates out of range (%s): I(%i) J(%i) K(%i)\n",__func__,Grid->H.NOMVAR,i,j,k);
          return(FALSE);
       }
 
       if (!(t=EZGrid_TileGet(Grid,i,j))) {
-         App_Log(ERROR,"%s: Tile not found (%s) I(%i) J(%i)\n",__func__,Grid->H.NOMVAR,i,j);
+         App_Log(APP_ERROR,"%s: Tile not found (%s) I(%i) J(%i)\n",__func__,Grid->H.NOMVAR,i,j);
          return(FALSE);
       }
       if (!EZGrid_IsLoaded(t,k))
@@ -2595,7 +2595,7 @@ int EZGrid_GetValues(const TGrid* restrict const Grid,int Nb,float* restrict con
  *   - On effectue aucune interpolation
  *----------------------------------------------------------------------------
 */
-int f77name(ezgrid_getarray)(wordint *gdid,wordint *k,ftnfloat *vals) {
+int f77name(ezgrid_getarray)(int32_t *gdid,int32_t *k,float *vals) {
    return(EZGrid_GetArray(GridCache[*gdid],*k-1,vals));
 }
 int EZGrid_GetArray(TGrid* restrict const Grid,int K,float* restrict Value) {
@@ -2603,13 +2603,13 @@ int EZGrid_GetArray(TGrid* restrict const Grid,int K,float* restrict Value) {
    float *data;
 
    if (!Grid) {
-      App_Log(ERROR,"%s: Invalid grid\n",__func__);
+      App_Log(APP_ERROR,"%s: Invalid grid\n",__func__);
       return(FALSE);
    }
 
    // Check inclusion in master grid limits
    if (K<0 || K>=Grid->H.NK) {
-      App_Log(DEBUG,"%s: Coordinates out of range (%s): K(%i)\n",__func__,Grid->H.NOMVAR,K);
+      App_Log(APP_DEBUG,"%s: Coordinates out of range (%s): K(%i)\n",__func__,Grid->H.NOMVAR,K);
       return(FALSE);
    }
    data=EZGrid_TileBurnAll(Grid,K,NULL);
@@ -2621,13 +2621,13 @@ int EZGrid_GetArray(TGrid* restrict const Grid,int K,float* restrict Value) {
 float* EZGrid_GetArrayPtr(TGrid* restrict const Grid,int K) {
 
    if (!Grid) {
-      App_Log(ERROR,"%s: Invalid grid\n",__func__);
+      App_Log(APP_ERROR,"%s: Invalid grid\n",__func__);
       return(FALSE);
    }
 
    // Check inclusion in master grid limits
    if (K<0 || K>=Grid->H.NK) {
-      App_Log(DEBUG,"%s: Coordinates out of range (%s): K(%i)\n",__func__,Grid->H.NOMVAR,K);
+      App_Log(APP_DEBUG,"%s: Coordinates out of range (%s): K(%i)\n",__func__,Grid->H.NOMVAR,K);
       return(FALSE);
    }
    return(EZGrid_TileBurnAll(Grid,K,NULL));
@@ -2657,7 +2657,7 @@ float* EZGrid_GetArrayPtr(TGrid* restrict const Grid,int K) {
  *   - On effectue aucune interpolation
  *----------------------------------------------------------------------------
 */
-wordint f77name(ezgrid_getrange)(wordint *gdid,wordint *i0,wordint *j0,wordint *k0,wordint *i1,wordint *j1,wordint *k1,ftnfloat *val) {
+int32_t f77name(ezgrid_getrange)(int32_t *gdid,int32_t *i0,int32_t *j0,int32_t *k0,int32_t *i1,int32_t *j1,int32_t *k1,float *val) {
    return(EZGrid_GetRange(GridCache[*gdid],*i0-1,*j0-1,*k0-1,*i1-1,*j1-1,*k1-1,val));
 }
 int EZGrid_GetRange(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1,int J1,int K1,float* restrict Value) {
@@ -2667,14 +2667,14 @@ int EZGrid_GetRange(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1
    int        i,j,k;
 
    if (!Grid) {
-      App_Log(ERROR,"%s: Invalid grid\n",__func__);
+      App_Log(APP_ERROR,"%s: Invalid grid\n",__func__);
       return(FALSE);
    }
 
    // Check inclusion in master grid limits
    if (I0<0 || J0<0 || K0<0 || I0>Grid->H.NI-1 || J0>Grid->H.NJ-1 || K0>=Grid->H.NK ||
        I1<0 || J1<0 || K1<0 || I1>Grid->H.NI-1 || J1>Grid->H.NJ-1 || K1>=Grid->H.NK) {
-      App_Log(DEBUG,"%s: Coordinates out of range (%s): I(%i,%i) J(%i,%i) K(%i,%i)\n",__func__,Grid->H.NOMVAR,I0,I1,J0,J1,K0,K1);
+      App_Log(APP_DEBUG,"%s: Coordinates out of range (%s): I(%i,%i) J(%i,%i) K(%i,%i)\n",__func__,Grid->H.NOMVAR,I0,I1,J0,J1,K0,K1);
       return(FALSE);
    }
 
@@ -2683,7 +2683,7 @@ int EZGrid_GetRange(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1
       for(j=J0;j<=J1;j++) {
          for(i=I0;i<=I1;i++) {
             if (!(t=EZGrid_TileGet(Grid,i,j))) {
-               App_Log(ERROR,"%s: Tile not found (%s) I(%i) J(%i)\n",__func__,Grid->H.NOMVAR,i,j);
+               App_Log(APP_ERROR,"%s: Tile not found (%s) I(%i) J(%i)\n",__func__,Grid->H.NOMVAR,i,j);
                return(FALSE);
             }
             if (!EZGrid_IsLoaded(t,k))
@@ -2717,7 +2717,7 @@ int EZGrid_GetRange(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1
  *    - Si un des tableau est NULL, il ne sera pas remplie
  *----------------------------------------------------------------------------
 */
-int f77name(ezgrid_getdims)(wordint *gdid,wordint *k,ftnfloat *dx,ftnfloat *dy,ftnfloat *da) {
+int f77name(ezgrid_getdims)(int32_t *gdid,int32_t *k,float *dx,float *dy,float *da) {
    return(EZGrid_GetDims(GridCache[*gdid],*k-1,dx,dy,da));
 }
 

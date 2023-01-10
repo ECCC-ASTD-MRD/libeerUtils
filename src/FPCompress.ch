@@ -148,7 +148,7 @@ static void FPC_PutByte(TFPCCtx *restrict Ctx) {
     // Flush the buffer
     if( Ctx->FD!=-1 && Ctx->BufCnt>=FPC_BUF_SIZE ) {
         if( write(Ctx->FD,Ctx->CData,Ctx->BufCnt) != Ctx->BufCnt ) {
-            App_Log(ERROR,"Problem while writing the data : field will be corrupted\n");
+            App_Log(APP_ERROR,"Problem while writing the data : field will be corrupted\n");
         }
         Ctx->BufCnt = 0;
     }
@@ -180,7 +180,7 @@ static void FPC_FlushBytes(TFPCCtx *restrict Ctx) {
     // Flush the buffer
     if( Ctx->FD!=-1 && Ctx->BufCnt ) {
         if( write(Ctx->FD,Ctx->CData,Ctx->BufCnt) != Ctx->BufCnt ) {
-            App_Log(ERROR,"Problem while writing the data : field will be corrupted\n");
+            App_Log(APP_ERROR,"Problem while writing the data : field will be corrupted\n");
         }
         Ctx->BufCnt = 0;
     }
@@ -345,24 +345,24 @@ int R(FPC_Compress)(void *restrict CData,int FD,TFPCReal *restrict Data,int NI,i
 
     // Make sure dimensions are valid
     if( NI<1 || NJ<1 || NK<1 ) {
-        App_Log(ERROR,"Dimensions must be greater or equal to 1\n");
+        App_Log(APP_ERROR,"Dimensions must be greater or equal to 1\n");
         return APP_ERR;
     }
 
     // Make sure we have a chance to compress stuff
     //if( n < 16 ) {
-    //    App_Log(ERROR,"Compression of a field of less than 16 values is a waste of time\n");
+    //    App_Log(APP_ERROR,"Compression of a field of less than 16 values is a waste of time\n");
     //    return APP_ERR;
     //}
 
     // If a file was given, use a write buffer instead
     if( FD!=-1 && !(CData=malloc(FPC_BUF_SIZE)) ) {
-        App_Log(ERROR,"Could not allocate memory for write buffer\n");
+        App_Log(APP_ERROR,"Could not allocate memory for write buffer\n");
         return APP_ERR;
     }
 
     if( !(ctx=FPC_New(CData,FD)) ) {
-        App_Log(ERROR,"Could not allocate memory for context\n");
+        App_Log(APP_ERROR,"Could not allocate memory for context\n");
         if( FD!=-1 )
             free(CData);
         return APP_ERR;
@@ -405,7 +405,7 @@ int R(FPC_Compress)(void *restrict CData,int FD,TFPCReal *restrict Data,int NI,i
             // impossible
             break;
     }
-    App_Log(DEBUG,"Compressing %zu values, flag=%d ndims=%u d1=%zu d2=%zu bufs=%zu\n",n,flag,ndims,d1,d2,bufs);
+    App_Log(APP_DEBUG,"Compressing %zu values, flag=%d ndims=%u d1=%zu d2=%zu bufs=%zu\n",n,flag,ndims,d1,d2,bufs);
 
     // Allocate the buffer memory
     APP_MEM_ASRT( buf,calloc(bufs,sizeof(*buf)) );
@@ -472,13 +472,13 @@ int R(FPC_Compress)(void *restrict CData,int FD,TFPCReal *restrict Data,int NI,i
        n *= sizeof(*Data);
        if( ctx->Cnt <= n ) {
            *CSize = ctx->Cnt;
-           App_Log(DEBUG,"Initial data size : %zu bytes. New data size : %zu bytes. Compression factor : %.2f\n",n,ctx->Cnt,(double)(n)/(double)ctx->Cnt);
+           App_Log(APP_DEBUG,"Initial data size : %zu bytes. New data size : %zu bytes. Compression factor : %.2f\n",n,ctx->Cnt,(double)(n)/(double)ctx->Cnt);
        } else {
-           App_Log(WARNING,"Compression was aborted because the size of the compressed data would have been over the inital size.\n");
+           App_Log(APP_WARNING,"Compression was aborted because the size of the compressed data would have been over the inital size.\n");
            code = APP_ERR;
        }
     } else {
-       App_Log(WARNING,"Compression was aborted because we were going to be over the resulting buffer size, which means the compression wasn't working very well on this dataset anyway.\n");
+       App_Log(APP_WARNING,"Compression was aborted because we were going to be over the resulting buffer size, which means the compression wasn't working very well on this dataset anyway.\n");
        code = APP_ERR;
     }
 
@@ -689,7 +689,7 @@ int R(FPC_Inflate)(void *restrict CData,int FD,TFPCReal *restrict Data,int NI,in
 
     // Make sure dimensions are valid
     if( NI<1 || NJ<1 || NK<1 ) {
-        App_Log(ERROR,"Dimensions must be greater or equal to 1\n");
+        App_Log(APP_ERROR,"Dimensions must be greater or equal to 1\n");
         return APP_ERR;
     }
 
@@ -699,7 +699,7 @@ int R(FPC_Inflate)(void *restrict CData,int FD,TFPCReal *restrict Data,int NI,in
 
         // Get where we are in the file
         if( (off=lseek(FD,0,SEEK_CUR)) == -1 ) {
-            App_Log(ERROR,"Could not tell position in the file : %s\n",strerror(errno));
+            App_Log(APP_ERROR,"Could not tell position in the file : %s\n",strerror(errno));
             return APP_ERR;
         }
         // Get a page-floored offset
@@ -708,13 +708,13 @@ int R(FPC_Inflate)(void *restrict CData,int FD,TFPCReal *restrict Data,int NI,in
         mxtra = off-poff;
         // Map that part of the file
         if( (CData=mmap(NULL,mxtra+n*sizeof(*Data),PROT_READ,MAP_SHARED,FD,poff)) == MAP_FAILED ) {
-            App_Log(ERROR,"Could not map file to decompress data : %s\n",strerror(errno));
+            App_Log(APP_ERROR,"Could not map file to decompress data : %s\n",strerror(errno));
             return APP_ERR;
         }
     }
 
     if( !(ctx=FPC_New((char*)CData+mxtra,-1)) ) {
-        App_Log(ERROR,"Could not allocate memory for context\n");
+        App_Log(APP_ERROR,"Could not allocate memory for context\n");
         return APP_ERR;
     }
 
@@ -755,7 +755,7 @@ int R(FPC_Inflate)(void *restrict CData,int FD,TFPCReal *restrict Data,int NI,in
             // impossible
             break;
     }
-    App_Log(DEBUG,"Inflating %zu values, flag=%d ndims=%u d1=%zu d2=%zu bufs=%zu\n",n,flag,ndims,d1,d2,bufs);
+    App_Log(APP_DEBUG,"Inflating %zu values, flag=%d ndims=%u d1=%zu d2=%zu bufs=%zu\n",n,flag,ndims,d1,d2,bufs);
 
     // Allocate the buffer memory
     APP_MEM_ASRT( buf,calloc(bufs,sizeof(*buf)) );
@@ -813,7 +813,7 @@ int R(FPC_Inflate)(void *restrict CData,int FD,TFPCReal *restrict Data,int NI,in
         udata = udata&hbit ? udata&~hbit : ~udata;
         Data[i] = *(TFPCReal*)&udata;
     }
-    App_Log(DEBUG,"Inflated size : %zu bytes. Read : %zu bytes\n",n*sizeof(*Data),ctx->Cnt);
+    App_Log(APP_DEBUG,"Inflated size : %zu bytes. Read : %zu bytes\n",n*sizeof(*Data),ctx->Cnt);
 
     if( FD != -1 ) {
         munmap(CData,mxtra+n*sizeof(*Data));

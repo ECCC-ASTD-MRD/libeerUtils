@@ -363,9 +363,9 @@ int FPFC_Compressl(double *restrict Data,size_t N,FPFC_IO_PARAM,size_t *CSize) {
     free(htbl);
     FPFC_BufFlush(&buf);
 
-    App_Log(DEBUG,"Compression ratio : %.4f\n",(double)buf.NB/nb);
+    App_Log(APP_DEBUG,"Compression ratio : %.4f\n",(double)buf.NB/nb);
     if( buf.NB >= nb ) {
-        App_Log(WARNING,"Compressed data is larger than original (compressed=%ld ori=%ld)\n",buf.NB,nb);
+        App_Log(APP_WARNING,"Compressed data is larger than original (compressed=%ld ori=%ld)\n",buf.NB,nb);
         return APP_ERR;
     }
 
@@ -543,9 +543,9 @@ int FPFC_Compress(float *restrict Data,size_t N,FPFC_IO_PARAM,size_t *CSize) {
     free(htbl);
     FPFC_BufFlush(&buf);
 
-    App_Log(DEBUG,"Compression ratio : %.4f\n",(double)buf.NB/nb);
+    App_Log(APP_DEBUG,"Compression ratio : %.4f\n",(double)buf.NB/nb);
     if( buf.NB >= nb ) {
-        App_Log(WARNING,"Compressed data is larger than original (compressed=%ld ori=%ld)\n",buf.NB,nb);
+        App_Log(APP_WARNING,"Compressed data is larger than original (compressed=%ld ori=%ld)\n",buf.NB,nb);
         return APP_ERR;
     }
 

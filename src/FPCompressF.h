@@ -41,6 +41,7 @@
 
 #include <stdio.h>
 #include <inttypes.h>
+#include <string.h>
 
 int FPC_InflateF(void *restrict CData,int FD,float *restrict Data,int NI,int NJ,int NK);
 int FPC_CompressF(void *restrict CData,int FD,float *restrict Data,int NI,int NJ,int NK,size_t *restrict CSize);

@@ -33,6 +33,7 @@
 #include "Def.h"
 #include "GeoRef.h"
 #include "RPN.h"
+#include "eerUtils_build_info.h"
 
 #define APP_NAME "ReGrid"
 #define APP_DESC "SMC/CMC/EERS RPN fstd re-gridding tool."
@@ -46,27 +47,27 @@ int ReGrid(char *In,char *Out,char *Grid,char **Vars) {
    float *index=NULL;
    
   if ((fin=cs_fstouv(In,"STD+RND+R/O"))<0) {
-      App_Log(ERROR,"Problems opening input file %s\n",In);
+      App_Log(APP_ERROR,"Problems opening input file %s\n",In);
       return(0);
    }
 
    if ((fout=cs_fstouv(Out,"STD+RND+R/W"))<0) {
-      App_Log(ERROR,"Problems opening output file %s\n",Out);
+      App_Log(APP_ERROR,"Problems opening output file %s\n",Out);
       return(0);
    }
 
    if ((fgrid=cs_fstouv(Grid,"STD+RND+R/O"))<0) {
-      App_Log(ERROR,"Problems opening grid file %s\n",Grid);
+      App_Log(APP_ERROR,"Problems opening grid file %s\n",Grid);
       return(0);
    }
 
    if (!(grid=RPN_FieldRead(fgrid,-1,"",-1,-1,-1,"","P0"))) {
-      App_Log(ERROR,"Problems reading grid field\n");
+      App_Log(APP_ERROR,"Problems reading grid field\n");
       return(0);    
    }
 
    if (!(in=RPN_FieldRead(fin,-1,"",-1,-1,-1,"",Vars[0]))) {
-      App_Log(ERROR,"Problems reading input field\n");
+      App_Log(APP_ERROR,"Problems reading input field\n");
       return(0);  
    }
  
@@ -88,7 +89,7 @@ int ReGrid(char *In,char *Out,char *Grid,char **Vars) {
    grid->Def->NoData=0.0;
  
    while(in->Head.KEY>0) {
-      App_Log(INFO,"Processing %s %i\n",Vars[0],in->Head.KEY);
+      App_Log(APP_INFO,"Processing %s %i\n",Vars[0],in->Head.KEY);
 
       // Reset result grid
       Def_Clear(grid->Def);
@@ -111,7 +112,7 @@ int ReGrid(char *In,char *Out,char *Grid,char **Vars) {
    
    // Write index
    if (index[0]!=DEF_INDEX_EMPTY) {
-      App_Log(DEBUG,"Saving index containing %i items\n",idx->Head.NI);
+      App_Log(APP_DEBUG,"Saving index containing %i items\n",idx->Head.NI);
       
       if (!RPN_FieldWrite(fout,idx)) {
          return(0);
@@ -148,15 +149,15 @@ int main(int argc, char *argv[]) {
    
    /*Error checking*/
    if (!in) {
-      App_Log(ERROR,"No input standard file specified\n");
+      App_Log(APP_ERROR,"No input standard file specified\n");
       exit(EXIT_FAILURE);
    }
    if (!out) {
-      App_Log(ERROR,"No output standard file specified\n");
+      App_Log(APP_ERROR,"No output standard file specified\n");
       exit(EXIT_FAILURE);
    }
    if (!grid) {
-      App_Log(ERROR,"No grid standard file specified\n");
+      App_Log(APP_ERROR,"No grid standard file specified\n");
       exit(EXIT_FAILURE);
    }
 

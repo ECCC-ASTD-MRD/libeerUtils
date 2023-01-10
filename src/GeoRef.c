@@ -229,7 +229,7 @@ int _GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef
       d=dd?2:1;
       sz=4;
 #else
-      App_Log(ERROR,"%s: RMNLIB support not included\n",__func__);
+      App_Log(APP_ERROR,"%s: RMNLIB support not included\n",__func__);
 #endif
    }
 
@@ -358,7 +358,7 @@ int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
       d=dd?2:1;
       sz=4;
 #else
-      App_Log(ERROR,"%s: RMNLIB support not included\n",__func__);
+      App_Log(APP_ERROR,"%s: RMNLIB support not included\n",__func__);
 #endif
    }
 
@@ -451,7 +451,7 @@ int GeoScan_Get(TGeoScan *Scan,TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
          }
       }
 #else
-      App_Log(ERROR,"%s: RMNLIB support not included\n",__func__);
+      App_Log(APP_ERROR,"%s: RMNLIB support not included\n",__func__);
 #endif
    }
    return(d);
@@ -1138,13 +1138,13 @@ TQTree* GeoRef_BuildIndex(TGeoRef* __restrict const Ref) {
       // Allocate barycentric weight array if needed
       if (!Ref->Wght) {
          if (!(Ref->Wght=(double*)calloc(Ref->NIdx/3,sizeof(double)))) {
-            App_Log(WARNING,"%s: Failed to allocate baricentric weight array\n",__func__);
+            App_Log(APP_WARNING,"%s: Failed to allocate baricentric weight array\n",__func__);
          }
       }
       
       // Create the tree on the data limits
       if (!(Ref->QTree=QTree_New(lon0,lat0,lon1,lat1,NULL))) {
-         App_Log(ERROR,"%s: Failed to create QTree index\n",__func__);
+         App_Log(APP_ERROR,"%s: Failed to create QTree index\n",__func__);
          return(NULL);
       }
 
@@ -1160,7 +1160,7 @@ TQTree* GeoRef_BuildIndex(TGeoRef* __restrict const Ref) {
  
          // Put it in the quadtree, in any child nodes intersected and set false pointer increment (+1)
          if (!QTree_AddTriangle(Ref->QTree,tr,GRID_MQTREEDEPTH,(void*)(n+1))) {
-            App_Log(ERROR,"%s: Failed to add node\n",__func__);
+            App_Log(APP_ERROR,"%s: Failed to add node\n",__func__);
             return(NULL);
          }      
       }
@@ -1176,7 +1176,7 @@ TQTree* GeoRef_BuildIndex(TGeoRef* __restrict const Ref) {
       dx=(lon1-lon0)/GRID_YQTREESIZE;
 
       if (!(Ref->QTree=(TQTree*)calloc((GRID_YQTREESIZE+1)*(GRID_YQTREESIZE+1),sizeof(TQTree)))) {
-         App_Log(ERROR,"%s: Failed to create QTree index\n",__func__);
+         App_Log(APP_ERROR,"%s: Failed to create QTree index\n",__func__);
          return(NULL);
       }
 
@@ -1777,7 +1777,7 @@ int GeoRef_Valid(TGeoRef* __restrict const Ref) {
    Ref->Project(Ref,Ref->X1,Ref->Y1,&co[1].Lat,&co[1].Lon,1,1);
 
    if (co[0].Lat<-91 || co[0].Lat>91.0 || co[1].Lat<-91 || co[1].Lat>91.0) {
-      App_Log(DEBUG,"%s: Limits: %f %f - %f %f\n",__func__,co[0].Lat,co[0].Lon,co[1].Lat,co[1].Lon);
+      App_Log(APP_DEBUG,"%s: Limits: %f %f - %f %f\n",__func__,co[0].Lat,co[0].Lon,co[1].Lat,co[1].Lon);
       return(0);
    }
    return(1);
@@ -1962,12 +1962,12 @@ int GeoRef_CellDims(TGeoRef *Ref,int Invert,float* DX,float* DY,float* DA) {
 
 //   RPN_IntLock();
    if (!Ref || Ref->Grid[0]=='X' || Ref->Grid[0]=='Y') {
-      App_Log(WARNING,"%s: DX, DY and DA cannot be calculated on an X or Y grid\n",__func__);        
+      App_Log(APP_WARNING,"%s: DX, DY and DA cannot be calculated on an X or Y grid\n",__func__);        
       return(FALSE);
    } else if (Ref->Grid[0]=='M') {
       
       if (DX || DY) {
-         App_Log(WARNING,"%s: DX and DY cannot be calculated on an M grid\n",__func__);        
+         App_Log(APP_WARNING,"%s: DX and DY cannot be calculated on an M grid\n",__func__);        
       }
       
       if (DA) {
@@ -2050,7 +2050,7 @@ int GeoRef_CellDims(TGeoRef *Ref,int Invert,float* DX,float* DY,float* DA) {
          c_ezgprm(Ref->Ids[pnid],grtyp,&Ref->NX,&Ref->NY,&ig,&ig,&ig,&ig);
       }
 #else
-      App_Log(ERROR,"%s: RMNLIB support not included\n",__func__);
+      App_Log(APP_ERROR,"%s: RMNLIB support not included\n",__func__);
 #endif
    }
    
