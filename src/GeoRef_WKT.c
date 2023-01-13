@@ -123,7 +123,7 @@ double GeoRef_WKTDistance(TGeoRef *GRef,double X0,double Y0,double X1, double Y1
  *   <Length>    : Module interpolee
  *   <ThetaXY>   : Direction interpolee
  *
- * Retour       : Inside (1 si a l'interieur du domaine).
+ * Retour        : Memory index of nearest point + 1, 0 if oustide or masked
  *
  * Remarques   :
  *
@@ -132,7 +132,7 @@ double GeoRef_WKTDistance(TGeoRef *GRef,double X0,double Y0,double X1, double Y1
 int GeoRef_WKTValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,double Z,double *Length,double *ThetaXY){
 
    double       x,y,d,ddir=0.0;
-   int          valid=0,mem,ix,iy;
+   int          mem,ix,iy;
    unsigned int idx;
 
   *Length=Def->NoData;
@@ -154,7 +154,7 @@ int GeoRef_WKTValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
 
       // Check for mask
       if (Def->Mask && !Def->Mask[idx]) {
-         return(valid);
+         return(FALSE);
       }
       
       // Reproject vector orientation by adding grid projection's north difference
@@ -162,8 +162,8 @@ int GeoRef_WKTValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
          ddir=GeoRef_GeoDir(GRef,X,Y);
       }
 
+      mem+=idx;
       if (Def->Type<=9 || Mode=='N' || (X==ix && Y==iy)) {
-         mem+=idx;
          Def_GetMod(Def,mem,*Length);
 
          // Pour un champs vectoriel
@@ -181,10 +181,12 @@ int GeoRef_WKTValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
             *ThetaXY=180+RAD2DEG(atan2(x,y)-ddir);
          }
       }
-      valid=DEFVALID(Def,*Length);
+      if (DEFVALID(Def,*Length)) {
+         return(mem+1);
+      }
    }
    
-   return(valid);
+   return(FALSE);
 }
 
 static inline int GeoRef_WKTRotate(TRotationTransform *T,double *Lat,double *Lon) {

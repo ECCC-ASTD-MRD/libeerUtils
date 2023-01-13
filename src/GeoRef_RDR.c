@@ -112,7 +112,7 @@ double GeoRef_RDRDistance(TGeoRef *GRef,double X0,double Y0,double X1, double Y1
  *   <Length>    : Module interpolee
  *   <ThetaXY>   : Direction interpolee
  *
- * Retour       : Inside (1 si a l'interieur du domaine).
+ * Retour        : Memory index of nearest point + 1, 0 if oustide or masked
  *
  * Remarques   :
  *
@@ -127,18 +127,19 @@ int GeoRef_RDRValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double Azimuth,doubl
    /*Si on est a l'interieur de la grille ou que l'extrapolation est activee*/
    if (C<Def->NC && Bin<=GRef->R) {
 
-      mem=Def->NI*Def->NJ*(int)Sweep;
+      mem=Def->NIJ*(int)Sweep;
 
       ix=ROUND(Azimuth);
       iy=ROUND(Bin);
 
+      mem+=iy*Def->NI+ix;
+
       if (Def->Type<=9 || Mode=='N' || (Azimuth==ix && Bin==iy)) {
-         mem+=iy*Def->NI+ix;
          Def_Get(Def,C,mem,*Length);
       } else {
          *Length=VertexVal(Def,C,Azimuth,Bin,Sweep);
       }
-      valid=1;
+      valid=mem+1;
    }
    return(valid);
 }

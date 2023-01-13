@@ -151,7 +151,7 @@ double GeoRef_RPNDistance(TGeoRef *GRef,double X0,double Y0,double X1, double Y1
  *   <Length>    : Module interpolee
  *   <ThetaXY>   : Direction interpolee
  *
- * Retour       : Inside (1 si a l'interieur du domaine).
+ * Retour        : Memory index of nearest point + 1, 0 if oustide or masked
  *
  * Remarques   :
  *
@@ -166,24 +166,33 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
    int          mem,ix,iy,n;
    unsigned int idx;
 
-   *Length=Def->NoData;
+   *Length=Def->NoData;    // Default return value
+   mem=Def->NIJ*(int)Z;    // Index memoire du niveau desire
 
 #ifdef HAVE_RMN
-   // In case of triangle meshe
+   // In case of triangle meshe (Assumed it is never 3D)
    if (GRef->Grid[0]=='M') {
       if (C<Def->NC && X>=0 && Y>=0) {
          b[0]=X-(int)X;
          b[1]=Y-(int)Y;
          b[2]=1.0-b[0]-b[1];
-         ix=(int)X;
+         idx=(int)X;
+         n=Bary_Nearest(b);
+         mem+=GRef->Idx[idx+n];
+
+         if(idx>=GRef->NIdx)
+            return(FALSE);
+
+         if (Def->Mask && !Def->Mask[mem]) {
+            return(FALSE);
+         }   
 
          if (Mode=='N') {
-            n=(b[0]>b[1]?(b[0]>b[2]?0:2):(b[1]>b[2]?1:2));
-            Def_Get(Def,C,GRef->Idx[ix+n],x);
+            Def_Get(Def,C,GRef->Idx[idx+n],x);
          } else {
-            Def_Get(Def,C,GRef->Idx[ix],v[0]);
-            Def_Get(Def,C,GRef->Idx[ix+1],v[1]);
-            Def_Get(Def,C,GRef->Idx[ix+2],v[2]);
+            Def_Get(Def,C,GRef->Idx[idx],v[0]);
+            Def_Get(Def,C,GRef->Idx[idx+1],v[1]);
+            Def_Get(Def,C,GRef->Idx[idx+2],v[2]);
 
             x=Bary_InterpV(b,v);
          }
@@ -191,19 +200,18 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
          
          if (Def->Data[1] && !C) {
             if (Mode=='N') {
-               n=(b[0]>b[1]?(b[0]>b[2]?0:2):(b[1]>b[2]?1:2));
-               Def_Get(Def,1,GRef->Idx[ix+n],y);
+               Def_Get(Def,1,GRef->Idx[idx+n],y);
             } else {
-               Def_Get(Def,1,GRef->Idx[ix],v[0]);
-               Def_Get(Def,1,GRef->Idx[ix+1],v[1]);
-               Def_Get(Def,1,GRef->Idx[ix+2],v[2]);
+               Def_Get(Def,1,GRef->Idx[idx],v[0]);
+               Def_Get(Def,1,GRef->Idx[idx+1],v[1]);
+               Def_Get(Def,1,GRef->Idx[idx+2],v[2]);
 
                y=Bary_InterpV(b,v);
             }
             *Length=hypot(x,y);
             *ThetaXY=180+RAD2DEG(atan2(x,y));
          }
-         return(TRUE);
+         return(mem+1);
       } else {
          return(FALSE);
       }
@@ -211,9 +219,6 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
 
    // Si on est a l'interieur de la grille ou que l'extrapolation est activee
    if (C<Def->NC && X>=(GRef->X0-0.5) && Y>=(GRef->Y0-0.5) && Z>=0 && X<(GRef->X1+0.5) && Y<(GRef->Y1+0.5) && Z<=Def->NK-1) {
-
-      // Index memoire du niveau desire
-      mem=Def->NIJ*(int)Z;
 
       ix=lrint(X);
       iy=lrint(Y);
@@ -235,7 +240,7 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
          } else {
             *Length=x;   
          }
-         return(TRUE);
+         return(mem+1);
       } 
 
       // Check for nodata in linear interpolation 
@@ -264,13 +269,14 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
          } else {
             *Length=VertexVal(Def,-1,X,Y,0.0);
          }
-         return(TRUE);
+         return(idx+1);
       }
 
       // Unstructured or not referenced
       if (GRef->Grid[0]=='X' || GRef->Grid[0]=='O') {
+         mem+=idx;
+
          if (Def->Type<=TD_Int64 || Mode=='N' || (X==ix && Y==iy)) {
-            mem+=idx;
 
            // Pour un champs vectoriel
             if (Def->Data[1] && !C) {
@@ -292,7 +298,7 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
                *Length=VertexVal(Def,-1,X,Y,Z);               
             }
          }
-         return(TRUE);
+         return(mem+1);
       }
    
       // RPN grid
@@ -316,6 +322,7 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
                *Length=valf;
             if (ThetaXY)
                *ThetaXY=valdf;
+            mem+=idx;
          } else {            
             if (Mode=='N') {
                mem+=idx;
@@ -331,7 +338,7 @@ int GeoRef_RPNValue(TGeoRef *GRef,TDef *Def,char Mode,int C,double X,double Y,do
                *ThetaXY=0.0;
          }
       }
-      return(TRUE);
+      return(mem+1);
    }
 #endif
    return(FALSE);
@@ -375,8 +382,8 @@ int GeoRef_RPNProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,in
    }
 
    if (GRef->Type&GRID_SPARSE) {
-      if (GRef->AX && GRef->AY) {
-         if (GRef->Grid[0]=='Y') {
+       if (GRef->AX && GRef->AY) {
+         if (GRef->Grid[0]=='Y' || GRef->Grid[0]=='M') {
             idx=Y*(GRef->X1-GRef->X0)+X;
             Y=GRef->AY[idx];
             X=GRef->AX[idx];
@@ -392,18 +399,18 @@ int GeoRef_RPNProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,in
       }
    }
    
-   if (!GRef->Ids || GRef->Type&GRID_SPARSE) {
+   if (!GRef->Ids) {
       *Lat=Y;
       *Lon=X;
       return(1);
+   } else {
+      i=X+1.0;
+      j=Y+1.0;
+//   RPN_IntLock();
+      c_gdllfxy(GRef->Ids[(GRef->NId==0&&GRef->Grid[0]=='U'?1:GRef->NId)],&lat,&lon,&i,&j,1);
+//   RPN_IntUnlock();
    }
 
-   i=X+1.0;
-   j=Y+1.0;
-
-//   RPN_IntLock();
-   c_gdllfxy(GRef->Ids[(GRef->NId==0&&GRef->Grid[0]=='U'?1:GRef->NId)],&lat,&lon,&i,&j,1);
-//   RPN_IntUnlock();
 #endif
    
    *Lat=lat;
@@ -455,7 +462,6 @@ int GeoRef_RPNUnProject(TGeoRef *GRef,double *X,double *Y,double Lat,double Lon,
    if (GRef->Type&GRID_SPARSE) {      
       if (GRef->AX && GRef->AY) {
          if (GRef->Grid[0]=='M') {
- 
             if (GRef->QTree) {
                // If there's an index use it
                if ((node=QTree_Find(GRef->QTree,Lon,Lat)) && node->NbData) {

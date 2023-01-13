@@ -1472,26 +1472,18 @@ int Def_EZInterp(TDef *ToDef,TDef *FromDef,TGeoRef *ToRef,TGeoRef *FromRef,char 
 int Def_JPInterp(TDef *ToDef,TDef *FromDef,TGeoRef *ToRef,TGeoRef *FromRef,char *Interp,char *Extrap,char Mask,float *Index) {
    
    double     val,dir,lat,lon,di,dj,dval;
-   int        ok=-1,idx,i,j,k,gotidx;
+   int        ok=-1,idx,i,j,k,gotidx,ix;
    float     *ip=NULL;
-   double     I0, J0;
-   double     I1, J1;
    
    idx=0;
-   I1 = FromRef->X1 + 0.5;
-   J1 = FromRef->Y1 + 0.5;
-   I0 = FromRef->X0 - 0.5;
-   J0 = FromRef->Y0 - 0.5;
-
-//   fprintf( stderr, "i0 = %f  i1 = %f  j0 = %f, j1 = %f\n", I0, I1, J0, J1 );
 
    for(k=0;k<ToDef->NK;k++) {
       ip=Index;
       gotidx=(Index && Index[0]!=DEF_INDEX_EMPTY);
 
 #pragma omp parallel for default(none) \
-      private( j,i,idx,lat,lon,di,dj,dir,val,dval,ip,ok ) \
-      shared( k,I0,I1,J0,J1,ToRef,ToDef,FromRef,FromDef,gotidx,Index,Interp,Extrap,Mask ) \
+      private(j,i,idx,lat,lon,di,dj,dir,val,dval,ip,ix,ok) \
+      shared(k,ToRef,ToDef,FromRef,FromDef,gotidx,Index,Interp,Extrap,Mask) \
       schedule(static)
       for(j=0;j<ToDef->NJ;j++) {
          idx=j*ToDef->NI;
@@ -1516,7 +1508,7 @@ int Def_JPInterp(TDef *ToDef,TDef *FromDef,TGeoRef *ToRef,TGeoRef *FromRef,char 
                   *(ip++)=dj;
                }
             }
-            if (di>=I0 && di<=I1 && dj>=J0 && dj<=J1 && FromRef->Value(FromRef,FromDef,Interp[0],0,di,dj,k,&val,&dir)) {
+            if ((ix=FromRef->Value(FromRef,FromDef,Interp[0],0,di,dj,k,&val,&dir))) {
                if (ToDef->Data[1]) {
                   // Have to reproject vector
                   dir=DEG2RAD(dir)+GeoRef_GeoDir(ToRef,i,j);
@@ -1527,12 +1519,19 @@ int Def_JPInterp(TDef *ToDef,TDef *FromDef,TGeoRef *ToRef,TGeoRef *FromRef,char 
                } else {
                   Def_Set(ToDef,0,idx,val);
                } 
+               if (ToDef->Mask && FromDef->Mask) {
+                  ToDef->Mask[idx]=FromDef->Mask[k*FromDef->NIJ+ix-1];
+               }
             } else if (Extrap[0]=='V') {
                Def_Set(ToDef,0,idx,ToDef->NoData);
                if (ToDef->Data[1]) {
                   Def_Set(ToDef,1,idx,ToDef->NoData); 
                }
-            } 
+            } else {
+               if (ToDef->Mask) {
+                  ToDef->Mask[idx]=0;
+               }
+            }
          }
       }
       
