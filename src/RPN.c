@@ -307,7 +307,7 @@ TRPNField* RPN_FieldNew(int NI,int NJ,int NK,int NC,TDef_Type Type) {
 
    fld=(TRPNField*)calloc(1,sizeof(TRPNField));
    if (!(fld->Def=Def_New(NI,NJ,NK,NC,Type))) {
-      App_Log(APP_ERROR,"%s: Could not allocate memory\n",__func__);
+      Lib_Log(APP_LIBEER,APP_ERROR,"%s: Could not allocate memory\n",__func__);
       return(NULL);
    }
 
@@ -348,7 +348,7 @@ TRPNField* RPN_FieldReadIndex(int FileId,int Index,TRPNField *Fld) {
          &h.UBC,&h.EX1,&h.EX2,&h.EX3);
 
    if (ok<0) {
-      App_Log(APP_ERROR,"%s: Could not get field information (c_fstprm failed)\n",__func__);
+      Lib_Log(APP_LIBEER,APP_ERROR,"%s: Could not get field information (c_fstprm failed)\n",__func__);
       return(NULL);
    }
 
@@ -372,7 +372,7 @@ TRPNField* RPN_FieldReadIndex(int FileId,int Index,TRPNField *Fld) {
    } else {
       fld=(TRPNField*)calloc(1,sizeof(TRPNField));
       if (!(fld->Def=Def_New(h.NI,h.NJ,h.NK,1,TD_Float32))) {
-         App_Log(APP_ERROR,"%s: Could not allocate memory for fld\n",__func__);
+         Lib_Log(APP_LIBEER,APP_ERROR,"%s: Could not allocate memory for fld\n",__func__);
          return(NULL);
       }
    }
@@ -380,7 +380,7 @@ TRPNField* RPN_FieldReadIndex(int FileId,int Index,TRPNField *Fld) {
    // Recuperer les donnees du champs
    c_fst_data_length(TDef_Size[fld->Def->Type]);
    if ((ok=cs_fstlukt(fld->Def->Data[0],h.FID,h.KEY,h.GRTYP,&h.NI,&h.NJ,&h.NK))<0) {
-      App_Log(APP_ERROR,"%s: Could not read field data (c_fstluk failed)\n",__func__);
+      Lib_Log(APP_LIBEER,APP_ERROR,"%s: Could not read field data (c_fstluk failed)\n",__func__);
       return(NULL);
    }
 
@@ -414,7 +414,7 @@ TRPNField* RPN_FieldRead(int FileId,int DateV,char *Eticket,int IP1,int IP2,int 
    h.KEY=cs_fstinf(FileId,&h.NI,&h.NJ,&h.NK,DateV,Eticket,IP1,IP2,IP3,TypVar,NomVar);
 
    if (h.KEY<0) {
-      App_Log(APP_ERROR,"%s: Specified field does not exist (c_fstinf failed)\n",__func__);
+      Lib_Log(APP_LIBEER,APP_ERROR,"%s: Specified field does not exist (c_fstinf failed)\n",__func__);
       return(NULL);
    }
 
@@ -436,7 +436,7 @@ int RPN_FieldWrite(int FileId,TRPNField *Field) {
       Field->Head.NOMVAR,Field->Head.ETIKET,Field->Head.GRTYP,Field->Head.IG1,Field->Head.IG2,Field->Head.IG3,Field->Head.IG4,Field->Head.DATYP,FALSE);
 
    if (ok<0) {
-      App_Log(APP_ERROR,"%s: Could not write field data (c_fstecr failed)\n",__func__);
+      Lib_Log(APP_LIBEER,APP_ERROR,"%s: Could not write field data (c_fstecr failed)\n",__func__);
       return(0);
    }
    return(1);
@@ -673,7 +673,7 @@ int RPN_GetAllFields(int FID,int DateV,char *Etiket,int Ip1,int Ip2,int Ip3,char
     do {
         APP_MEM_ASRT(arr,realloc(arr,(n*=2)*sizeof(*arr)));
         if( (err=cs_fstinl(FID,&ni,&nj,&nk,DateV,Etiket,Ip1,Ip2,Ip3,Typvar,Nomvar,arr,&s,n)) && err!=-4762 ) {
-            App_Log(APP_ERROR,"(%s) Couldn't get list of fields (cs_fstinl) code=%d\n",__func__,s,n,err);
+            Lib_Log(APP_LIBEER,APP_ERROR,"(%s) Couldn't get list of fields (cs_fstinl) code=%d\n",__func__,s,n,err);
             APP_FREE(arr);
             return(APP_ERR);
         }
@@ -724,7 +724,7 @@ int RPN_GetAllDates(int *Flds,int NbFlds,int Uniq,int **DateV,int *NbDateV) {
         err=cs_fstprm(Flds[i],&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&h.NK,&h.NBITS,&h.DATYP,&h.IP1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,
                 h.GRTYP,&h.IG1,&h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,&h.UBC,&h.EX1,&h.EX2,&h.EX3);
         if( err ) {
-            App_Log(APP_ERROR,"(RPN_GetAllDates) Couldn't get info on field (cs_fstprm)\n");
+            Lib_Log(APP_LIBEER,APP_ERROR,"(RPN_GetAllDates) Couldn't get info on field (cs_fstprm)\n");
             APP_FREE(dates);
             return(APP_ERR);
         }
@@ -732,7 +732,7 @@ int RPN_GetAllDates(int *Flds,int NbFlds,int Uniq,int **DateV,int *NbDateV) {
         deltat = h.DEET*h.NPAS/3600.0;
         f77name(incdatr)(&dates[i],&h.DATEO,&deltat);
         if( dates[i] == 101010101 ) {
-            App_Log(APP_ERROR,"(RPN_GetAllDates) Couldn't get DateV for dateo(%d),deet(%d),npas(%d),deltat(%f) (incdatr)\n",h.DATEO,h.DEET,h.NPAS,deltat);
+            Lib_Log(APP_LIBEER,APP_ERROR,"(RPN_GetAllDates) Couldn't get DateV for dateo(%d),deet(%d),npas(%d),deltat(%f) (incdatr)\n",h.DATEO,h.DEET,h.NPAS,deltat);
             APP_FREE(dates);
             return(APP_ERR);
         }
@@ -787,7 +787,7 @@ int RPN_GetAllIps(int *Flds,int NbFlds,int IpN,int Uniq,int **Ips,int *NbIp) {
         err=cs_fstprm(Flds[i],&h.DATEO,&h.DEET,&h.NPAS,&h.NI,&h.NJ,&h.NK,&h.NBITS,&h.DATYP,&h.IP1,&h.IP2,&h.IP3,h.TYPVAR,h.NOMVAR,h.ETIKET,
                 h.GRTYP,&h.IG1,&h.IG2,&h.IG3,&h.IG4,&h.SWA,&h.LNG,&h.DLTF,&h.UBC,&h.EX1,&h.EX2,&h.EX3);
         if( err ) {
-            App_Log(APP_ERROR,"(RPN_GetAllIps) Couldn't get info on field (cs_fstprm)\n");
+            Lib_Log(APP_LIBEER,APP_ERROR,"(RPN_GetAllIps) Couldn't get info on field (cs_fstprm)\n");
             APP_FREE(ips);
             return(APP_ERR);
         }
@@ -797,7 +797,7 @@ int RPN_GetAllIps(int *Flds,int NbFlds,int IpN,int Uniq,int **Ips,int *NbIp) {
             case 2: ips[i]=h.IP2; break;
             case 3: ips[i]=h.IP3; break;
             default:
-                App_Log(APP_ERROR,"(RPN_GetAllIps) [%d] is not a valid IP number. Valid numbers are 1,2 and 3.\n",IpN);
+                Lib_Log(APP_LIBEER,APP_ERROR,"(RPN_GetAllIps) [%d] is not a valid IP number. Valid numbers are 1,2 and 3.\n",IpN);
                 free(ips);
                 return(APP_ERR);
         }
@@ -883,7 +883,7 @@ int RPN_LinkFiles(char **Files,int N) {
         // Open all the files
         for(i=0; Files[i]; ++i) {
             if( (lst[i+1]=cs_fstouv(Files[i],"STD+RND+R/O")) < 0 ) {
-                App_Log(APP_ERROR,"(%s) Problem opening input file \"%s\"\n",__func__,Files[i]);
+                Lib_Log(APP_LIBEER,APP_ERROR,"(%s) Problem opening input file \"%s\"\n",__func__,Files[i]);
                 free(lst);
                 return -1;
             }
@@ -891,14 +891,14 @@ int RPN_LinkFiles(char **Files,int N) {
 
         // Link all files
         if( f77name(fstlnk)(lst+1,lst) != 0 ) {
-            App_Log(APP_ERROR,"(%s) Could not link the %d input files together\n",__func__,N);
+            Lib_Log(APP_LIBEER,APP_ERROR,"(%s) Could not link the %d input files together\n",__func__,N);
             free(lst);
             return -1;
         }
 
         // Add the list of FIDs to the global list
         if( !(ptr=realloc(LNK_FID,(LNK_NB+1)*sizeof(*LNK_FID))) ) {
-            App_Log(APP_ERROR,"(%s) Could not allocate memory for the global FIDs array\n",__func__);
+            Lib_Log(APP_LIBEER,APP_ERROR,"(%s) Could not allocate memory for the global FIDs array\n",__func__);
             free(lst);
             return -1;
         }
@@ -912,7 +912,7 @@ int RPN_LinkFiles(char **Files,int N) {
 
         // Only one file, no need to link anything
         if( (h=cs_fstouv(Files[0],"STD+RND+R/O")) < 0 ) {
-            App_Log(APP_ERROR,"(%s) Problem opening input file %s\n",__func__,Files[0]);
+            Lib_Log(APP_LIBEER,APP_ERROR,"(%s) Problem opening input file %s\n",__func__,Files[0]);
         }
 
         return h;
@@ -1028,7 +1028,7 @@ int RPN_ReadData(void *Data,TDef_Type Type,int Key) {
          datyp = Type;
          usebuf = 0;
          if( nbits != TDef_Size[Type]*8 ) {
-            App_Log(APP_ERROR,"(%s) The binary/transparent datyp with nbits=%d is not compatible with the requested type %d that has an nbits of %d\n",__func__,nbits,Type,TDef_Size[Type]);
+            Lib_Log(APP_LIBEER,APP_ERROR,"(%s) The binary/transparent datyp with nbits=%d is not compatible with the requested type %d that has an nbits of %d\n",__func__,nbits,Type,TDef_Size[Type]);
             return APP_ERR;
          }
          break;
@@ -1068,7 +1068,7 @@ int RPN_ReadData(void *Data,TDef_Type Type,int Key) {
       case 3: // Character (R4A in an integer)
       case 8: // Complexe IEEE
       default:
-         App_Log(APP_ERROR,"(%s) Unsupported or invalid datyp (%d)\n",__func__,datyp);
+         Lib_Log(APP_LIBEER,APP_ERROR,"(%s) Unsupported or invalid datyp (%d)\n",__func__,datyp);
          return APP_ERR;
    }
 
@@ -1083,7 +1083,7 @@ int RPN_ReadData(void *Data,TDef_Type Type,int Key) {
       // Read the fields into the temporary buffer
       c_fst_data_length(TDef_Size[datyp]);
       if( c_fstluk(buf,Key,&ni,&nj,&nk)<0 ) {
-         App_Log(APP_ERROR,"(%s) Could not read field\n",__func__);
+         Lib_Log(APP_LIBEER,APP_ERROR,"(%s) Could not read field\n",__func__);
          free(buf);
          return APP_ERR;
       }
@@ -1183,12 +1183,12 @@ int RPN_ReadData(void *Data,TDef_Type Type,int Key) {
       return APP_OK;
 converr:
       free(buf);
-      App_Log(APP_ERROR,"(%s) Unsupported conversion %d->%d\n",__func__,datyp,Type);
+      Lib_Log(APP_LIBEER,APP_ERROR,"(%s) Unsupported conversion %d->%d\n",__func__,datyp,Type);
       return APP_ERR;
    } else {
       c_fst_data_length(TDef_Size[Type]);
       if( c_fstluk(Data,Key,&ni,&nj,&nk)<0 ) {
-         App_Log(APP_ERROR,"(%s) Could not read field\n",__func__);
+         Lib_Log(APP_LIBEER,APP_ERROR,"(%s) Could not read field\n",__func__);
          return APP_ERR;
       }
    }
@@ -1208,7 +1208,7 @@ int RPN_Read(void *Data,TDef_Type Type,int Unit,int *NI,int *NJ,int *NK,int Date
    int key;
 
    if( (key=c_fstinf(Unit,NI,NJ,NK,DateO,Etiket,IP1,IP2,IP3,TypVar,NomVar)) <= 0 ) {
-      App_Log(APP_ERROR,"(%s) Could not find field\n");
+      Lib_Log(APP_LIBEER,APP_ERROR,"(%s) Could not find field\n");
       return APP_ERR;
    }
    return RPN_ReadData(Data,Type,key);

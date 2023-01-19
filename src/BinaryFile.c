@@ -205,7 +205,7 @@ static TBFFiles* BinaryFile_OpenFiles(const char **FileNames,int N,TBFFlag Mode)
 
    // If memory was not allocated, abort
    if( !files ) {
-      App_Log(APP_ERROR,"BinaryFile: Could not allocate needed memory\n");
+      Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Could not allocate needed memory\n");
       goto error;
    }
 
@@ -215,7 +215,7 @@ static TBFFiles* BinaryFile_OpenFiles(const char **FileNames,int N,TBFFlag Mode)
 
    // Make sure we have at least one of READ or WRITE
    if( !(Mode&(BF_READ|BF_WRITE)) ) {
-      App_Log(APP_ERROR,"BinaryFile: Either read or write mode must be selected when opening files");
+      Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Either read or write mode must be selected when opening files");
       goto error;
    }
 
@@ -241,25 +241,25 @@ static TBFFiles* BinaryFile_OpenFiles(const char **FileNames,int N,TBFFlag Mode)
 
       // Open the file
       if( (file->FD=open(FileNames[i],mode,00666)) < 0 ) {
-         App_Log(APP_ERROR,"BinaryFile: Problem opening file %s in mode %s%s%s\n",FileNames[i],Mode&BF_READ?"r":"",Mode&BF_WRITE?"w":"",Mode&BF_CLEAR?"*":"");
+         Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Problem opening file %s in mode %s%s%s\n",FileNames[i],Mode&BF_READ?"r":"",Mode&BF_WRITE?"w":"",Mode&BF_CLEAR?"*":"");
          goto error;
       }
 
       // Stat the file
       if( fstat(file->FD,&statbuf) ) {
-         App_Log(APP_ERROR,"BinaryFile: Could not stat file %s : %s\n",FileNames[i],strerror(errno));
+         Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Could not stat file %s : %s\n",FileNames[i],strerror(errno));
          goto error;
       }
 
       // Make sure that, if the file is not empty, it has at least enough data for a valid header
       if( statbuf.st_size && statbuf.st_size<sizeof(file->Header) ) {
-         App_Log(APP_ERROR,"BinaryFile: File is not empty but isn't big enough for a BF header %s. (Size=%zd bytes, header is %zd bytes)\n",FileNames[i],(size_t)statbuf.st_size,sizeof(file->Header));
+         Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: File is not empty but isn't big enough for a BF header %s. (Size=%zd bytes, header is %zd bytes)\n",FileNames[i],(size_t)statbuf.st_size,sizeof(file->Header));
          goto error;
       }
 
       // If the file is empty, the write flag needs to be there
       if( !statbuf.st_size && !(Mode&BF_WRITE) ) {
-         App_Log(APP_ERROR,"BinaryFile: File %s is empty, there is nothing to read.\n",FileNames[i]);
+         Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: File %s is empty, there is nothing to read.\n",FileNames[i]);
          goto error;
       }
 
@@ -268,13 +268,13 @@ static TBFFiles* BinaryFile_OpenFiles(const char **FileNames,int N,TBFFlag Mode)
          if( Mode&BF_WRITE ) {
             // We'll need to write to the file later on, just use read to read the file header
             if( read(file->FD,&file->Header,sizeof(file->Header))!=sizeof(file->Header) ) {
-               App_Log(APP_ERROR,"BinaryFile: Problem reading header for file %s\n",FileNames[i]);
+               Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Problem reading header for file %s\n",FileNames[i]);
                goto error;
             }
          } else {
             // Map the file (or just the file header if in write-only mode)
             if( (file->Addr=mmap(NULL,statbuf.st_size,mmode,MAP_SHARED,file->FD,0)) == MAP_FAILED ) {
-               App_Log(APP_ERROR,"BinaryFile: Could not map file %s\n",FileNames[i]);
+               Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Could not map file %s\n",FileNames[i]);
                goto error;
             }
 
@@ -284,13 +284,13 @@ static TBFFiles* BinaryFile_OpenFiles(const char **FileNames,int N,TBFFlag Mode)
 
          // Make sure we have a valid BinaryFile
          if( file->Header.Magic != BF_MAGIC ) {
-            App_Log(APP_ERROR,"BinaryFile: File %s is not of BinaryFile type\n",FileNames[i]);
+            Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: File %s is not of BinaryFile type\n",FileNames[i]);
             goto error;
          }
 
          // Make sure the filesystem agrees with our header on the size
          if( file->Header.Size != statbuf.st_size ) {
-            App_Log(APP_ERROR,"BinaryFile: The filesystem says the file is %zd bytes != %zd bytes per the BF file header for file %s\n",(size_t)statbuf.st_size,file->Header.Size,FileNames[i]);
+            Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: The filesystem says the file is %zd bytes != %zd bytes per the BF file header for file %s\n",(size_t)statbuf.st_size,file->Header.Size,FileNames[i]);
             // This is to allow the unmap to unmap the right amount
             file->Header.Size = statbuf.st_size;
             goto error;
@@ -298,7 +298,7 @@ static TBFFiles* BinaryFile_OpenFiles(const char **FileNames,int N,TBFFlag Mode)
 
          // Make sure we will have the right binary offsets
          if( file->Header.FSize!=sizeof(TBFFileHeader) || file->Header.HSize!=sizeof(TBFFldHeader) ) {
-            App_Log(APP_ERROR,"BinaryFile: This library is incompatible with this BinaryFile (%s) FileHeader is %d bytes (library: %d) and the FldHeader is %u bytes (library: %d).\n",
+            Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: This library is incompatible with this BinaryFile (%s) FileHeader is %d bytes (library: %d) and the FldHeader is %u bytes (library: %d).\n",
                   FileNames[i],file->Header.FSize,sizeof(TBFFileHeader),file->Header.HSize,sizeof(TBFFldHeader));
             goto error;
          }
@@ -307,13 +307,13 @@ static TBFFiles* BinaryFile_OpenFiles(const char **FileNames,int N,TBFFlag Mode)
          if( Mode&BF_WRITE ) {
             // Seek to the index
             if( lseek(file->FD,file->Header.IOffset,SEEK_SET) == -1 ) {
-               App_Log(APP_ERROR,"BinaryFile: Could not seek to index in file %s : %s\n",FileNames[i],strerror(errno));
+               Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Could not seek to index in file %s : %s\n",FileNames[i],strerror(errno));
                goto error;
             }
 
             // Read the index size without moving the position in the file
             if( pread(file->FD,&file->Index.N,sizeof(file->Index.N),file->Header.IOffset)!=sizeof(file->Index.N) ) {
-               App_Log(APP_ERROR,"BinaryFile: Problem reading index size for file %s : %s\n",FileNames[i],strerror(errno));
+               Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Problem reading index size for file %s : %s\n",FileNames[i],strerror(errno));
                goto error;
             }
          } else {
@@ -322,7 +322,7 @@ static TBFFiles* BinaryFile_OpenFiles(const char **FileNames,int N,TBFFlag Mode)
 
          // Allocate the memory for the index
          if( !(file->Index.Headers=malloc(file->Index.N*sizeof(*file->Index.Headers))) ) {
-            App_Log(APP_ERROR,"BinaryFile: Could not allocate memory for index\n");
+            Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Could not allocate memory for index\n");
             goto error;
          }
 
@@ -330,7 +330,7 @@ static TBFFiles* BinaryFile_OpenFiles(const char **FileNames,int N,TBFFlag Mode)
          if( Mode&BF_WRITE ) {
             // iUse pread to prevent moving the position of the cursor in the file
             if( pread(file->FD,file->Index.Headers,sizeof(*file->Index.Headers)*file->Index.N,file->Header.IOffset+sizeof(file->Index.N))!=sizeof(*file->Index.Headers)*file->Index.N ) {
-               App_Log(APP_ERROR,"BinaryFile: Problem reading index for file %s : %s\n",FileNames[i],strerror(errno));
+               Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Problem reading index for file %s : %s\n",FileNames[i],strerror(errno));
                goto error;
             }
          } else {
@@ -339,7 +339,7 @@ static TBFFiles* BinaryFile_OpenFiles(const char **FileNames,int N,TBFFlag Mode)
       } else {
          // Write an invalid header as a place holder
          if( write(file->FD,&file->Header,sizeof(file->Header))!=sizeof(file->Header) ) {
-            App_Log(APP_ERROR,"BinaryFile: Problem writing header for file %s : %s\n",FileNames[i],strerror(errno));
+            Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Problem writing header for file %s : %s\n",FileNames[i],strerror(errno));
             goto error;
          }
 
@@ -460,7 +460,7 @@ int BinaryFile_Close(TBFFiles *Files) {
          // Write the index size
          bytes = sizeof(file->Index.N);
          if( write(file->FD,&file->Index.N,bytes) != bytes ) {
-            App_Log(APP_ERROR,"BinaryFile: Problem writing file index. The file will be corrupt\n");
+            Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Problem writing file index. The file will be corrupt\n");
             code = APP_ERR;
             continue;
          }
@@ -468,7 +468,7 @@ int BinaryFile_Close(TBFFiles *Files) {
          // Write the index
          bytes = sizeof(*file->Index.Headers)*file->Index.N;
          if( write(file->FD,file->Index.Headers,bytes) != bytes ) {
-            App_Log(APP_ERROR,"BinaryFile: Problem writing file index. The file will be corrupt\n");
+            Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Problem writing file index. The file will be corrupt\n");
             code = APP_ERR;
             continue;
          }
@@ -479,7 +479,7 @@ int BinaryFile_Close(TBFFiles *Files) {
          // Write the file header
          bytes = sizeof(file->Header);
          if( pwrite(file->FD,&file->Header,bytes,0) != bytes ) {
-            App_Log(APP_ERROR,"BinaryFile: Problem writing file header. The file will be corrupt\n");
+            Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Problem writing file header. The file will be corrupt\n");
             code = APP_ERR;
             goto skip;
          }
@@ -489,7 +489,7 @@ skip:
       // Unmap the file
       if( file->Addr != MAP_FAILED ) {
          if( munmap(file->Addr,file->Header.Size) ) {
-            App_Log(APP_ERROR,"BinaryFile: Problem unmapping file. The file might be corrupt\n");
+            Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Problem unmapping file. The file might be corrupt\n");
             code = APP_ERR;
          }
       }
@@ -497,7 +497,7 @@ skip:
 
       // Close the file descriptor
       if( close(file->FD) ) {
-         App_Log(APP_ERROR,"BinaryFile: Problem closing file. The file might be corrupt\n");
+         Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Problem closing file. The file might be corrupt\n");
          code = APP_ERR;
       }
       file->FD = -1;
@@ -682,7 +682,7 @@ int BinaryFile_Write(void *Data,TBFType DataType,TBFFiles *File,int DateO,int De
 
    // Make sure the file is open for writing
    if( !file || !(file->Flags&BF_WRITE) ) {
-      App_Log(APP_ERROR,"BinaryFile: Invalid file given or file is not opened for writing\n");
+      Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Invalid file given or file is not opened for writing\n");
       return APP_ERR;
    }
 
@@ -701,9 +701,9 @@ int BinaryFile_Write(void *Data,TBFType DataType,TBFFiles *File,int DateO,int De
             DataType = BF_FLOAT32;
          }
          if( write(file->FD,DataType==BF_FLOAT32?Data:buf,size) != size ) {
-            App_Log(APP_ERROR,"BinaryFile: Could not write the field : %s\n",strerror(errno));
+            Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Could not write the field : %s\n",strerror(errno));
             if( lseek(file->FD,file->Header.IOffset,SEEK_SET) == -1 ) {
-               App_Log(APP_ERROR,"BinaryFile: Could not seek to previous file position : %s\n",strerror(errno));
+               Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Could not seek to previous file position : %s\n",strerror(errno));
             }
             free(buf);
             return APP_ERR;
@@ -717,9 +717,9 @@ int BinaryFile_Write(void *Data,TBFType DataType,TBFFiles *File,int DateO,int De
             DataType = BF_FLOAT64;
          }
          if( write(file->FD,DataType==BF_FLOAT64?Data:buf,size) != size ) {
-            App_Log(APP_ERROR,"BinaryFile: Could not write the field : %s\n",strerror(errno));
+            Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Could not write the field : %s\n",strerror(errno));
             if( lseek(file->FD,file->Header.IOffset,SEEK_SET) == -1 ) {
-               App_Log(APP_ERROR,"BinaryFile: Could not seek to previous file position : %s\n",strerror(errno));
+               Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Could not seek to previous file position : %s\n",strerror(errno));
             }
             free(buf);
             return APP_ERR;
@@ -728,9 +728,9 @@ int BinaryFile_Write(void *Data,TBFType DataType,TBFFiles *File,int DateO,int De
          break;
       default:
          if( write(file->FD,Data,size) != size ) {
-            App_Log(APP_ERROR,"BinaryFile: Could not write the field : %s\n",strerror(errno));
+            Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Could not write the field : %s\n",strerror(errno));
             if( lseek(file->FD,file->Header.IOffset,SEEK_SET) == -1 ) {
-               App_Log(APP_ERROR,"BinaryFile: Could not seek to previous file position : %s\n",strerror(errno));
+               Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Could not seek to previous file position : %s\n",strerror(errno));
             }
             return APP_ERR;
          }
@@ -741,7 +741,7 @@ int BinaryFile_Write(void *Data,TBFType DataType,TBFFiles *File,int DateO,int De
    ++file->Index.N;
    if( !(buf=realloc(file->Index.Headers,file->Index.N*sizeof(*file->Index.Headers))) ) {
       --file->Index.N;
-      App_Log(APP_ERROR,"BinaryFile: Could not allocate memory for index, field will be ignored.\n");
+      Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Could not allocate memory for index, field will be ignored.\n");
       return APP_ERR;
    }
    file->Index.Headers = buf;
@@ -823,7 +823,7 @@ int BinaryFile_WriteFSTD(void *Data,int NPak,TBFFiles *File,int DateO,int Deet,i
     
    // Check the data type
    if( (type=BinaryFile_Type(DaTyp,-1)) == BF_NOTYPE ) {
-      App_Log(APP_ERROR,"BinaryFile: Could not write field : %d is an unsupported data type (DATYP).\n",DaTyp);
+      Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Could not write field : %d is an unsupported data type (DATYP).\n",DaTyp);
       return APP_ERR;
    }
 
@@ -864,7 +864,7 @@ static int GetDateV(int DateO,int Deet,int Npas) {
    f77name(incdatr)(&datev,&DateO,&nhour);
    return datev!=101010101 ? datev : 0;
 #else
-   App_Log(APP_ERROR,"%s: Need RMNLIB\n",__func__);
+   Lib_Log(APP_LIBEER,APP_ERROR,"%s: Need RMNLIB\n",__func__);
    return 0;
 #endif
 }
@@ -964,12 +964,12 @@ TBFKey BinaryFile_ReadIndex(void *Buf,TBFKey Key,TBFFiles *File) {
       if( h->DATYP==BF_CFLOAT32 || h->DATYP==BF_CFLOAT64 ) {
          // Allocate a temporary buffer
          if( !(addr=malloc(h->NBYTES)) ) {
-            App_Log(APP_ERROR,"BinaryFile: Could not allocate memory for temporary buffer\n");
+            Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Could not allocate memory for temporary buffer\n");
             return -1;
          }
          // Read the compressed bytes
          if( pread(file->FD,addr,h->NBYTES,h->KEY) != h->NBYTES ) {
-            App_Log(APP_ERROR,"BinaryFile: Could not read compressed field\n");
+            Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Could not read compressed field\n");
             free(addr);
             return -1;
          }
@@ -982,7 +982,7 @@ TBFKey BinaryFile_ReadIndex(void *Buf,TBFKey Key,TBFFiles *File) {
          free(addr);
       } else {
          if( pread(file->FD,Buf,h->NBYTES,h->KEY) != h->NBYTES ) {
-            App_Log(APP_ERROR,"BinaryFile: Could not read field\n");
+            Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Could not read field\n");
             return -1;
          }
       }
@@ -1127,7 +1127,7 @@ TBFKey BinaryFile_ReadIndexInto(void *Buf,TBFKey Key,TBFFiles *File,TBFType Dest
    // Allocate a temporary buffer to read the data into
    size_t n = h->NI*h->NJ*h->NK;
    if( !(tbuf=malloc(BFTypeSize[DestType]*n)) ) {
-      App_Log(APP_ERROR,"BinaryFile: Could not allocate memory for temporary buffer\n");
+      Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Could not allocate memory for temporary buffer\n");
       return -1;
    }
 
@@ -1139,7 +1139,7 @@ TBFKey BinaryFile_ReadIndexInto(void *Buf,TBFKey Key,TBFFiles *File,TBFType Dest
 
    // Convert the data
    if( BinaryFile_Convert(DestType,Buf,h->DATYP,tbuf,n)!=APP_OK ) {
-      App_Log(APP_ERROR,"BinaryFile: Could not convert from type %d to type %d\n",h->DATYP,DestType);
+      Lib_Log(APP_LIBEER,APP_ERROR,"BinaryFile: Could not convert from type %d to type %d\n",h->DATYP,DestType);
       free(tbuf);
       return -1;
    }

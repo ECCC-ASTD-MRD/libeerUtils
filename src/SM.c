@@ -128,19 +128,19 @@ void* SM_Alloc(size_t Size) {
 
          // Open the pseudo-file backed shared memory
          if( (fd=shm_open(fn,O_RDWR|O_CREAT|O_EXCL,00600)) == -1 ) {
-            App_Log(APP_ERROR,"An error occured while opening the pseudo-file backed shared memory\n");
+            Lib_Log(APP_LIBEER,APP_ERROR,"An error occured while opening the pseudo-file backed shared memory\n");
             status = 1;
          }
 
          // Set its size (Note: this is equivalent to calloc since the memory is zeroed out)
          if( !status && ftruncate(fd,Size) ) {
-            App_Log(APP_ERROR,"An error occured while executing ftruncate for size %zd\n",Size);
+            Lib_Log(APP_LIBEER,APP_ERROR,"An error occured while executing ftruncate for size %zd\n",Size);
             status = 1;
          }
 
          // Map the file
          if( !status && (addr=mmap(NULL,Size,PROT_READ|PROT_WRITE,MAP_SHARED,fd,0)) == MAP_FAILED ) {
-            App_Log(APP_ERROR,"An error occured while mapping the pseudo-file backed shared memory\n");
+            Lib_Log(APP_LIBEER,APP_ERROR,"An error occured while mapping the pseudo-file backed shared memory\n");
             status = 1;
             addr = NULL;
          }
@@ -156,26 +156,26 @@ void* SM_Alloc(size_t Size) {
 
          // Send the filename
          if( MPI_Bcast(fn,SM_FILENAME,MPI_BYTE,0,App->NodeComm) != MPI_SUCCESS ) {
-            App_Log(APP_ERROR,"Could not Bcast the filename of the pseudo-file backed shared memory\n");
+            Lib_Log(APP_LIBEER,APP_ERROR,"Could not Bcast the filename of the pseudo-file backed shared memory\n");
             status = 1;
          }
       } else {
          // Receive the filename
          if( MPI_Bcast(fn,SM_FILENAME,MPI_BYTE,0,App->NodeComm) != MPI_SUCCESS ) {
-            App_Log(APP_ERROR,"Could not receive the filename of the pseudo-file backed shared memory\n");
+            Lib_Log(APP_LIBEER,APP_ERROR,"Could not receive the filename of the pseudo-file backed shared memory\n");
             status = 1;
          }
 
          if( !status && fn[0] ) {
             // Open the pseudo-file backed shared memory
             if( (fd=shm_open(fn,O_RDONLY,0)) == -1 ) {
-               App_Log(APP_ERROR,"An error occured while opening the pseudo-file backed shared memory\n");
+               Lib_Log(APP_LIBEER,APP_ERROR,"An error occured while opening the pseudo-file backed shared memory\n");
                status = 1;
             }
 
             // Map the file
             if( (addr=mmap(NULL,Size,PROT_READ,MAP_SHARED,fd,0)) == MAP_FAILED ) {
-               App_Log(APP_ERROR,"An error occured while mapping the pseudo-file backed shared memory\n");
+               Lib_Log(APP_LIBEER,APP_ERROR,"An error occured while mapping the pseudo-file backed shared memory\n");
                status = 1;
                addr = NULL;
             }
@@ -184,7 +184,7 @@ void* SM_Alloc(size_t Size) {
 
       // Gather the status code of all processes
       if( MPI_Allreduce(MPI_IN_PLACE,&status,1,MPI_INT,MPI_SUM,App->NodeComm) != MPI_SUCCESS ) {
-         App_Log(APP_ERROR,"Could not reduce the status of all nodes in the shared mem circle\n");
+         Lib_Log(APP_LIBEER,APP_ERROR,"Could not reduce the status of all nodes in the shared mem circle\n");
          status = 1;
       }
 

@@ -58,11 +58,11 @@ Vect3d* OGM_GetVect3d(unsigned int Size,unsigned int No) {
       OGM_Ptr=(Vect3d**)realloc(OGM_Ptr,OGM_GeomNb*sizeof(Vect3d*));
 
       if (!OGM_Geom[0] || !OGM_Geom[1] || !OGM_Ptr) {
-         App_Log(APP_ERROR,"%s: Could not allocate GPC buffers\n",__func__);
+         Lib_Log(APP_LIBEER,APP_ERROR,"%s: Could not allocate GPC buffers\n",__func__);
          return(NULL);
       }
 #ifdef DEBUG
-         App_Log(APP_DEBUG,"%s: Increasing size to %i\n",__func__,OGM_GeomNb);
+         Lib_Log(APP_LIBEER,APP_DEBUG,"%s: Increasing size to %i\n",__func__,OGM_GeomNb);
 #endif
    }
    return(No==2?(Vect3d*)OGM_Ptr:OGM_Geom[No]);
@@ -263,10 +263,10 @@ void OGM_GPCFromOGR(gpc_polygon *Poly,OGRGeometryH *Geom) {
          Poly->num_contours+=nc;
       }
    } else {
-      App_Log(APP_ERROR,"%s: Unsupported geometry type\n",__func__);
+      Lib_Log(APP_LIBEER,APP_ERROR,"%s: Unsupported geometry type\n",__func__);
    }
 #else
-   App_Log(APP_ERROR,"%s: Library not built with GPC\n",__func__);
+   Lib_Log(APP_LIBEER,APP_ERROR,"%s: Library not built with GPC\n",__func__);
 #endif
 }
 
@@ -339,7 +339,7 @@ void OGM_GPCToOGR(gpc_polygon *Poly,OGRGeometryH *Geom) {
                   }
                }
                if (!in) {
-                  App_Log(APP_ERROR,"%s: Found a hole without parent\n",__func__);
+                  Lib_Log(APP_LIBEER,APP_ERROR,"%s: Found a hole without parent\n",__func__);
                }
             } else {
                OGR_G_AddGeometryDirectly(poly,ring);
@@ -349,7 +349,7 @@ void OGM_GPCToOGR(gpc_polygon *Poly,OGRGeometryH *Geom) {
    }
    *Geom=multi?multi:poly;
 #else
-      App_Log(APP_ERROR,"%s: Library not built with GPC\n",__func__);
+      Lib_Log(APP_LIBEER,APP_ERROR,"%s: Library not built with GPC\n",__func__);
 #endif
 }
 
@@ -360,7 +360,7 @@ void OGM_GPCNew(gpc_polygon *Poly) {
    Poly->hole=NULL;
    Poly->contour=NULL;
 #else
-   App_Log(APP_ERROR,"%s: Library not built with GPC\n",__func__);
+   Lib_Log(APP_LIBEER,APP_ERROR,"%s: Library not built with GPC\n",__func__);
 #endif
 }
 
@@ -386,7 +386,7 @@ OGRGeometryH OGM_GPCOnOGR(gpc_op Op,OGRGeometryH Geom0,OGRGeometryH Geom1) {
 
    return(geom);
 #else
-   App_Log(APP_ERROR,"%s: Library not built with GPC\n",__func__);
+   Lib_Log(APP_LIBEER,APP_ERROR,"%s: Library not built with GPC\n",__func__);
 #endif
 }
 
@@ -429,7 +429,7 @@ OGRGeometryH OGM_GPCOnOGRLayer(gpc_op Op,OGR_Layer *Layer) {
 
    return(geom);
 #else
-   App_Log(APP_ERROR,"%s: Library not built with GPC\n",__func__);
+   Lib_Log(APP_LIBEER,APP_ERROR,"%s: Library not built with GPC\n",__func__);
 #endif
 }
 
@@ -469,7 +469,7 @@ OGRGeometryH OGM_GPCOnOGRGeometry(gpc_op Op,OGRGeometryH *Geom) {
 
    return(geom);
 #else
-   App_Log(APP_ERROR,"%s: Library not built with GPC\n",__func__);
+   Lib_Log(APP_LIBEER,APP_ERROR,"%s: Library not built with GPC\n",__func__);
 #endif
 }
 
@@ -1321,7 +1321,7 @@ int OGM_Simplify(double Tolerance,OGRGeometryH Geom) {
    if ((n=OGM_ToVect3d(Geom,OGM_ARRAY0))>2) {
       mk=(int*)calloc(n,sizeof(int));
       if (!mk) {
-         App_Log(APP_ERROR,"%s: Unable to allocate buffers\n",__func__);
+         Lib_Log(APP_LIBEER,APP_ERROR,"%s: Unable to allocate buffers\n",__func__);
          return(0);
       }
 
