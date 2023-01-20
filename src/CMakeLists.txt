@@ -19,7 +19,6 @@ set_target_properties(${target} PROPERTIES
    POSITION_INDEPENDENT_CODE  ON
 )   
 
-message(STATUS "Adding dep to ${target} (${CMAKE_CURRENT_SOURCE_DIR})")
 add_dependencies(${target} ${PROJECT_NAME}_build_info)
 target_include_directories(${target} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(${target} PUBLIC LibXml2::LibXml2)
