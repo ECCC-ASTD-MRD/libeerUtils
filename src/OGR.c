@@ -1428,4 +1428,120 @@ int OGM_Clean(OGRGeometryH Geom) {
    
    return(r);
 }
+
+static OGRGeometryH OGM_MkClipPoly(double X0,double Y0,double X1,double Y1) {
+   OGRGeometryH ring,clip;
+
+   // Create the ring
+   if( !(ring=OGR_G_CreateGeometry(wkbLinearRing)) ) {
+      return NULL;
+   }
+   OGR_G_SetPointCount(ring,5);
+
+   // Fill the ring
+   OGR_G_SetPoint_2D(ring,0,X0,Y0);
+   OGR_G_SetPoint_2D(ring,1,X1,Y0);
+   OGR_G_SetPoint_2D(ring,2,X1,Y1);
+   OGR_G_SetPoint_2D(ring,3,X0,Y1);
+   OGR_G_SetPoint_2D(ring,4,X0,Y0);
+
+   // Make the clipping polygon
+   if( !(clip=OGR_G_CreateGeometry(wkbPolygon)) ) {
+      OGR_G_DestroyGeometry(ring);
+      return NULL;
+   }
+   OGR_G_AddGeometryDirectly(clip,ring);
+
+   return clip;
+}
+OGRGeometryH OGM_PolySplitTile(OGRGeometryH Poly,const unsigned int MaxPoints,OGRGeometryH Res) {
+   unsigned int i,n,np,toplvl=0;
+
+   // A NULL result indicates that we are the top level fct
+   if( !Res ) {
+      toplvl = 1;
+      Res = OGR_G_CreateGeometry(wkbMultiPolygon);
+   }
+
+   switch( OGR_G_GetGeometryType(Poly) ) {
+      case wkbMultiPolygon:
+         // Recurse over sub-polygons
+         for(i=0,n=OGR_G_GetGeometryCount(Poly); i<n; ++i) {
+            if( !OGM_PolySplitTile(OGR_G_GetGeometryRef(Poly,i),MaxPoints,Res) ) {
+               goto err;
+            }
+         }
+         break;
+      case wkbPolygon:
+         // Count the number of points
+         np = 0;
+         for(i=0,n=OGR_G_GetGeometryCount(Poly); i<n; ++i) {
+            np += OGR_G_GetPointCount(OGR_G_GetGeometryRef(Poly,i));
+         }
+
+         // Check if we need to split the polygon again
+         if( np > MaxPoints ) {
+            OGREnvelope penv;
+            OGRGeometryH clipped,clip0,clip1;
+
+            // Get the exterior envelope of the polygon
+            OGR_G_GetEnvelope(Poly,&penv);
+
+            // Check whether we should split the polygon vertically (X) or horizontally (Y)
+            if( penv.MaxX-penv.MinX >= penv.MaxY-penv.MinY ) {
+               // Bigger extent in X, split vertically
+               double x = (penv.MinX+penv.MaxX)/2.0;
+               clip0 = OGM_MkClipPoly(penv.MinX,penv.MinY,x,penv.MaxY);
+               clip1 = OGM_MkClipPoly(x,penv.MinY,penv.MaxX,penv.MaxY);
+            } else {
+               // Bigger extent in Y, split horizontally
+               double y = (penv.MinY+penv.MaxY)/2.0;
+               clip0 = OGM_MkClipPoly(penv.MinX,penv.MinY,penv.MaxX,y);
+               clip1 = OGM_MkClipPoly(penv.MinX,y,penv.MaxX,penv.MaxY);
+            }
+
+            // Clip and process the first half
+            clipped = OGR_G_Intersection(Poly,clip0);
+            if( !OGM_PolySplitTile(clipped,MaxPoints,Res) ) {
+               OGR_G_DestroyGeometry(clip0);
+               OGR_G_DestroyGeometry(clip1);
+               OGR_G_DestroyGeometry(clipped);
+               goto err;
+            }
+            OGR_G_DestroyGeometry(clip0);
+            OGR_G_DestroyGeometry(clipped);
+
+            // Clip and process the second half
+            clipped = OGR_G_Intersection(Poly,clip1);
+            if( !OGM_PolySplitTile(clipped,MaxPoints,Res) ) {
+               OGR_G_DestroyGeometry(clip1);
+               OGR_G_DestroyGeometry(clipped);
+               goto err;
+            }
+            OGR_G_DestroyGeometry(clip1);
+            OGR_G_DestroyGeometry(clipped);
+         } else {
+            // Add the polygon to our resulting multi-polygon
+            OGR_G_AddGeometry(Res,Poly);
+         }
+         break;
+      default:
+         // This should never happen with proper polygons
+         goto err;
+   }
+
+   // If there is only one polygon in our resulting multi-polygon, we can downgrade to simple polygon
+   if( toplvl && OGR_G_GetGeometryCount(Res)==1 ) {
+      OGRGeometryH tmpg = OGR_G_GetGeometryRef(Res,0);
+      OGR_G_RemoveGeometry(Res,0,0);
+      OGR_G_DestroyGeometry(Res);
+      Res = tmpg;
+   }
+
+   return Res;
+err:
+   if( toplvl )
+      OGR_G_DestroyGeometry(Res);
+   return NULL;
+}
 #endif

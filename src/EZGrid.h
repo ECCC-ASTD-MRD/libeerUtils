@@ -49,7 +49,7 @@
 
 #define EZGrid_IsSame(GRID0,GRID1)     (GRID0 && GRID1 && GRID0->GID==GRID1->GID)
 #define EZGrid_IsLoaded(TILE,Z)        (TILE->Data && TILE->Data[Z] && !ISNAN(TILE->Data[Z][TILE->HNIJ-1]))
-#define EZGrid_IsInside(GRID,X,Y)      (GRID->H.GRTYP[0]=='M' || GRID->H.GRTYP[0]=='Y' || (X>=0 && Y>=0 && (GRID->Wrap || (X<GRID->H.NI-1 && Y<GRID->H.NJ-1))))
+#define EZGrid_IsInside(GRID,X,Y)      (GRID->H.GRTYP[0]=='M' || GRID->H.GRTYP[0]=='Y' || Y>=0 && Y<=GRID->H.NJ-1 && (GRID->Wrap || X>=0 && X<=GRID->H.NI-1))
 #define EZGrid_IsMesh(GRID)            (GRID->H.GRTYP[0]=='M')
 #define EZGrid_IsRegular(GRID)         (GRID->H.GRTYP[0]!='M' && GRID->H.GRTYP[0]!='Y' && GRID->H.GRTYP[0]!='O' && GRID->H.GRTYP[0]!='X')
 #define EZGrid_Is3D(GRID)              (GRID->H.NK>1?GRID->H.NK:0)
@@ -60,18 +60,18 @@
 // This checks for wraps around longitude and flips over poles
 #define EZGrid_WrapFlip(GRID,X,Y) {\
    if (GRID->Wrap) { \
-      if (Y>GRID->H.NJ-1) { \
-         Y=GRID->H.NJ-(Y-GRID->H.NJ+2); \
-         X=X<(GRID->H.NI>>1)?X+(GRID->H.NI>>1):X-(GRID->H.NI>>1); \
-      } else if (Y<0) { \
-         Y=-Y; \
-         X=X<(GRID->H.NI>>1)?X+(GRID->H.NI>>1):X-(GRID->H.NI>>1); \
+      if( Y > GRID->H.NJ-1 ) { \
+         Y = GRID->H.NJ-(Y-GRID->H.NJ+2); \
+         X = X<(GRID->H.NI>>1) ? X+(GRID->H.NI>>1) : X-(GRID->H.NI>>1); \
+      } else if( Y < 0.0f ) { \
+         Y = -Y; \
+         X = X<(GRID->H.NI>>1) ? X+(GRID->H.NI>>1) : X-(GRID->H.NI>>1); \
       } \
-      if (X>GRID->H.NI-1) { \
-         X-=(GRID->H.NI-GRID->Wrap+1); \
-      } else if (X<0) { \
-         X+=(GRID->H.NI-GRID->Wrap+1); \
-         if (X==GRID->H.NI) X-=1e-4; \
+      if( X >= (GRID->H.NI-GRID->Wrap+1) ) { \
+         X -= (GRID->H.NI-GRID->Wrap+1); \
+      } else if( X<0.0f ) { \
+         X += (GRID->H.NI-GRID->Wrap+1); \
+         if( X == GRID->H.NI ) X-=1e-4; \
       } \
    } \
 }
