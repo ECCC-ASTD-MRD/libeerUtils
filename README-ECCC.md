@@ -17,7 +17,7 @@ You will need cmake with a version at least 3.12
 ## Optional dependencies
 * codetools and compilers
 ```shell
-. r.load.dot rpn/code-tools/ENV/cdt-1.6.0/SCIENCE/inteloneapi-2022.1.2
+. r.load.dot rpn/code-tools/ENV/cdt-1.6.1/SCIENCE/inteloneapi-2022.1.2
 ```
 
 * [librmn](https://gitlab.science.gc.ca/RPN-SI/librmn)

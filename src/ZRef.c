@@ -350,7 +350,10 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
                case 1003: ZRef->Type=LVL_ETA;    ZRef->PTop=buf[h.NI]*0.01; ZRef->PRef=buf[h.NI+1]*0.01; ZRef->RCoef[0]=buf[h.NI+2]; break;
                case 5001: ZRef->Type=LVL_HYBRID; ZRef->PTop=buf[h.NI]*0.01; ZRef->PRef=buf[h.NI+1]*0.01; ZRef->RCoef[0]=buf[h.NI+2]; break;
                case 5002:
-               case 5003: ZRef->Type=LVL_HYBRID; ZRef->PTop=buf[h.NI]*0.01; ZRef->PRef=buf[h.NI+1]*0.01; ZRef->RCoef[0]=buf[h.NI+2]; ZRef->RCoef[1]=buf[h.NI+h.NI]; break;
+               case 5003: 
+               case 5004: 
+               case 5005: 
+               case 5100: ZRef->Type=LVL_HYBRID; ZRef->PTop=buf[h.NI]*0.01; ZRef->PRef=buf[h.NI+1]*0.01; ZRef->RCoef[0]=buf[h.NI+2]; ZRef->RCoef[1]=buf[h.NI+h.NI]; break;
             }
             skip=buf[2];
 
