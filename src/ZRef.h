@@ -76,12 +76,13 @@ typedef struct TZRef {
    char  *VGD;            // VGrid descriptor
    float *Levels;         // Levels list
    float *A,*B;           // Pressure calculation factors
-   float *P0;             // Pressure at surface
+   float *P0,*P0LS;       // Pressure at surface
    float *PCube;          // 3D Pressure cube
    int    LevelNb;        // Number of Levels
    int    NRef;           // Reference count
    int    Version;        // Version
    int    Type;           // Type of levels
+   int    SLEVE;          // Is SLEVE type (boolean 0/1)
    float  POff;           // Pressure offset from level
    float  PTop;           // Pressure at top of atmosphere
    float  PRef;           // Reference pressure
@@ -108,10 +109,10 @@ int    ZRef_DecodeRPN(TZRef *ZRef,int Unit);
 int    ZRef_SetRestrictLevels(float *Levels,int NbLevels);
 int    ZRef_AddRestrictLevel(float Level);
 int    ZRef_GetLevels(TZRef *ZRef,const struct TRPNHeader* restrict const H,int Invert);
-double ZRef_K2Pressure(TZRef* restrict const ZRef,double P0,int K);
-int    ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,float *Pres);
+double ZRef_K2Pressure(TZRef* restrict const ZRef,double P0,double P0LS,int K);
+int    ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,float *P0LS,int NIJ,int Log,float *Pres);
 int    ZRef_KCube2Meter(TZRef* restrict const ZRef,float *GZ,const int NIJ,float *Height);
-double ZRef_Level2Pressure(TZRef* restrict const ZRef,double P0,double Level);
+double ZRef_Level2Pressure(TZRef* restrict const ZRef,double P0,double P0LS,double Level);
 double ZRef_Pressure2Level(TZRef* restrict const ZRef,double P0,double Pressure);
 double ZRef_IP2Meter(int IP);
 double ZRef_Level2Meter(double Level,int Type);

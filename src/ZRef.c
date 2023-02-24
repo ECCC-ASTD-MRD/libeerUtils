@@ -93,7 +93,7 @@ TZRef* ZRef_New(void) {
    zref->LevelNb=0;
    zref->POff=zref->PTop=zref->PRef=zref->ETop=0.0;
    zref->RCoef[0]=zref->RCoef[1]=1.0;
-   zref->P0=zref->PCube=zref->A=zref->B=NULL;
+   zref->P0=zref->P0LS=zref->PCube=zref->A=zref->B=NULL;
    zref->Version=-1;
    zref->NRef=1;
    
@@ -172,6 +172,7 @@ int ZRef_Free(TZRef *ZRef) {
       if (ZRef->B)      free(ZRef->B);         ZRef->B=NULL;
 // P0 is owned by other packages
 //      if (ZRef->P0)     free(ZRef->P0);     ZRef->P0=NULL;
+//      if (ZRef->P0LS)   free(ZRef->P0LS);   ZRef->P0LS=NULL;
       if (ZRef->PCube)  free(ZRef->PCube);     ZRef->PCube=NULL;
 
       ZRef->Version=-1;
@@ -270,7 +271,7 @@ TZRef *ZRef_HardCopy(TZRef *ZRef) {
       zref->ETop=ZRef->ETop;
       zref->RCoef[0]=ZRef->RCoef[0];
       zref->RCoef[1]=ZRef->RCoef[1];
-      zref->P0=zref->A=zref->B=NULL;
+      zref->P0=zref->P0LS=zref->A=zref->B=NULL;
       zref->Version=-1;
       zref->NRef=1;
       zref->Style=ZRef->Style;
@@ -301,7 +302,8 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
    int        cd,key=0,skip,j,k,kind,ip;
    double    *buf=NULL;
    float     *pt=NULL;
-
+   char      rfls_S[VGD_LEN_RFLS];
+ 
    if (!ZRef) {
       return(0);
    }
@@ -333,10 +335,18 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
          if (!ZRef->A) ZRef->A=(float*)malloc(ZRef->LevelNb*sizeof(float));
          if (!ZRef->B) ZRef->B=(float*)malloc(ZRef->LevelNb*sizeof(float));
 
+         ZRef->SLEVE=0;
 #ifdef HAVE_VGRID
          if (Cvgd_new_read((vgrid_descriptor**)&ZRef->VGD,Unit,-1,-1,-1,-1)==VGD_ERROR) {
             Lib_Log(APP_LIBEER,APP_ERROR,"%s: Unable to initialize vgrid descriptor.\n",__func__);
             return(0);
+         }
+         // Is it SLEVE type?
+         Cvgd_get_char((vgrid_descriptor*)ZRef->VGD,"RFLS",rfls_S,1);
+         if (strcmp(rfls_S, VGD_NO_REF_NOMVAR)==0){
+            ZRef->SLEVE=0;
+         }else{
+            ZRef->SLEVE=1;
          }
 #endif                  
          cd=c_fstluk(buf,key,&h.NI,&h.NJ,&h.NK);
@@ -579,7 +589,8 @@ int ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Order) {
  *
  * Parametres  :
  *  <ZRef>     : Vertical reference to free
- *  <P0>       : Pressure at surface in
+ *  <P0>       : Pressure at surface in mb
+ *  <P0LS>     : Pressure at surface in mb (Smoothed)
  *  <K>        : Level index to convert
  *
  * Retour:
@@ -589,9 +600,9 @@ int ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Order) {
  *
  *----------------------------------------------------------------------------
  */
-double ZRef_K2Pressure(TZRef* restrict const ZRef,double P0,int K) {
+double ZRef_K2Pressure(TZRef* restrict const ZRef,double P0,double P0LS, int K) {
 
-   return(ZRef_Level2Pressure(ZRef,P0,ZRef->Levels[K]));
+  return(ZRef_Level2Pressure(ZRef,P0,P0LS,ZRef->Levels[K]));
 }
 
 /*----------------------------------------------------------------------------
@@ -603,6 +614,7 @@ double ZRef_K2Pressure(TZRef* restrict const ZRef,double P0,int K) {
  * Parametres  :
  *  <ZRef>     : Vertical reference to free
  *  <P0>       : Pressure at surface in mb
+ *  <P0LS>     : Pressure at surface in mb (Smoothed)
  *  <NIJ>      : 2D dimension of grid
  *  <Log>      : Calculate log of pressure
  *  <Pres>     : Output pressure in mb
@@ -613,11 +625,11 @@ double ZRef_K2Pressure(TZRef* restrict const ZRef,double P0,int K) {
  *
  *----------------------------------------------------------------------------
  */
-int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,float *Pres) {
+int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,float *P0LS,int NIJ,int Log,float *Pres) {
 
    int   k,idxk=0,ij;
    int   *ips;
-   float pref,ptop,*p0;
+   float pref,ptop,*p0,*p0ls;
 
    if (!P0 && ZRef->Type!=LVL_PRES) {
       Lib_Log(APP_LIBEER,APP_ERROR,"%s: Surface pressure is required\n",__func__);
@@ -677,10 +689,21 @@ int ZRef_KCube2Pressure(TZRef* restrict const ZRef,float *P0,int NIJ,int Log,flo
                p0[ij]=P0[ij]*MB2PA;
             }
             
-#ifdef HAVE_VGRID
-            if (Cvgd_levels((vgrid_descriptor*)ZRef->VGD,NIJ,1,ZRef->LevelNb,ips,Pres,p0,0)) {
-               Lib_Log(APP_LIBEER,APP_ERROR,"%s: Problems in Cvgd_levels\n",__func__);
-               return(0);
+#ifdef HAVE_VGRID	    
+            if(ZRef->SLEVE){
+               p0ls=(float*)malloc(NIJ*sizeof(float));
+               for (ij=0;ij<NIJ;ij++) {
+                  p0ls[ij]=P0LS[ij]*MB2PA;
+               }
+               if (Cvgd_levels_2ref((vgrid_descriptor*)ZRef->VGD,NIJ,1,ZRef->LevelNb,ips,Pres,p0,p0ls,0)) {
+                  Lib_Log(APP_LIBEER,APP_ERROR,"%s: Problems in Cvgd_levels_2ref\n",__func__);
+                  return(0);
+               }	      
+            } else {
+               if (Cvgd_levels((vgrid_descriptor*)ZRef->VGD,NIJ,1,ZRef->LevelNb,ips,Pres,p0,0)) {
+                  Lib_Log(APP_LIBEER,APP_ERROR,"%s: Problems in Cvgd_levels\n",__func__);
+                  return(0);
+               }    
             }
 #else
             Lib_Log(APP_LIBEER,APP_ERROR,"%s: Library not built with VGRID\n",__func__);
@@ -794,6 +817,7 @@ int ZRef_KCube2Meter(TZRef* restrict const ZRef,float *GZ,const int NIJ,float *H
  * Parametres  :
  *  <ZRef>     : Vertical reference to free
  *  <P0>       : Pressure at surface in mb
+ *  <P0LS>     : Pressure at surface in mb (Smoothed)
  *  <K>        : Level index to convert
  *
  * Retour:
@@ -803,9 +827,9 @@ int ZRef_KCube2Meter(TZRef* restrict const ZRef,float *GZ,const int NIJ,float *H
  *
  *----------------------------------------------------------------------------
  */
-double ZRef_Level2Pressure(TZRef* restrict const ZRef,double P0,double Level) {
+double ZRef_Level2Pressure(TZRef* restrict const ZRef,double P0,double P0LS,double Level) {
 
-   double pres=-1.0,p0,pref,ptop,rtop;
+   double pres=-1.0,pref,ptop,rtop;
    int    ip;
 
    pref=ZRef->PRef;
@@ -830,12 +854,20 @@ double ZRef_Level2Pressure(TZRef* restrict const ZRef,double P0,double Level) {
             pres=pref*Level+(P0-pref)*pow((Level-rtop)/(1.0-rtop),ZRef->RCoef[0]);
          } else {
             ip=ZRef_Level2IP(Level,ZRef->Type,ZRef->Style);
-            p0=P0*MB2PA;
-#ifdef HAVE_VGRID
-            if (Cvgd_levels_8((vgrid_descriptor*)ZRef->VGD,1,1,1,&ip,&pres,&p0,0)) {
-               Lib_Log(APP_LIBEER,APP_ERROR,"%s: Problems in Cvgd_levels_8\n",__func__);
-               return(0);
-            }
+            P0*=MB2PA;
+#ifdef HAVE_VGRID	    
+	      if(ZRef->SLEVE){
+	         P0LS*=MB2PA;
+	         if (Cvgd_levels_2ref_8((vgrid_descriptor*)ZRef->VGD,1,1,1,&ip,&pres,&P0,&P0LS,0)) {
+		         Lib_Log(APP_LIBEER,APP_ERROR,"%s: Problems in Cvgd_levels_2ref_8\n",__func__);
+		         return(0);
+	         }	      
+	      } else {
+	         if (Cvgd_levels_8((vgrid_descriptor*)ZRef->VGD,1,1,1,&ip,&pres,&P0,0)) {
+		         Lib_Log(APP_LIBEER,APP_ERROR,"%s: Problems in Cvgd_levels_8\n",__func__);
+		         return(0);
+	         }    
+	      }
 #else
             Lib_Log(APP_LIBEER,APP_ERROR,"%s: Library not built with VGRID\n",__func__);
 #endif

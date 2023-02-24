@@ -1858,10 +1858,10 @@ float EZGrid_GetLevel(const TGrid* restrict const Grid,float Pressure,float P0) 
  *
  *----------------------------------------------------------------------------
 */
-float f77name(ezgrid_getpressure)(int32_t *gdid,float *level,float *p0) {
-   return(EZGrid_GetPressure(GridCache[*gdid],*level,*p0));
+float f77name(ezgrid_getpressure)(int32_t *gdid,float *level,float *p0,float *p0ls) {
+   return(EZGrid_GetPressure(GridCache[*gdid],*level,*p0,*p0ls));
 }
-float EZGrid_GetPressure(const TGrid* restrict const Grid,float Level,float P0) {
+float EZGrid_GetPressure(const TGrid* restrict const Grid,float Level,float P0,float P0LS) {
 
    if (!Grid) {
       Lib_Log(APP_LIBEER,APP_ERROR,"%s: Invalid grid\n",__func__);
@@ -1869,7 +1869,8 @@ float EZGrid_GetPressure(const TGrid* restrict const Grid,float Level,float P0) 
 
    }
 
-   return(ZRef_Level2Pressure(Grid->ZRef,P0,Level));
+   //TODO: needs p0ls
+   return(ZRef_Level2Pressure(Grid->ZRef,P0,P0LS,Level));
 }
 
 

@@ -140,7 +140,7 @@ int    EZGrid_GetLevelNb(const TGrid* restrict const Grid);
 int    EZGrid_GetLevels(const TGrid* restrict const Grid,float* restrict Levels,int* restrict Type);
 int    EZGrid_GetLevelType(const TGrid* restrict const Grid);
 float  EZGrid_GetLevel(const TGrid* restrict const Grid,float Pressure,float P0);
-float  EZGrid_GetPressure(const TGrid* restrict const Grid,float Level,float P0);
+float  EZGrid_GetPressure(const TGrid* restrict const Grid,float Level,float P0,float P0LS);
 int    EZGrid_BoundaryCopy(TGrid* restrict const Grid,int Width);
 int    EZGrid_Write(int FId,TGrid* restrict const Grid,int NBits,int Overwrite);
 

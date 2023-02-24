@@ -211,6 +211,7 @@ TDef *Def_Copy(TDef *Def){
          def->Mask=NULL;
          def->Sub=NULL;
          def->Pres=NULL;
+         def->PresLS=NULL;
          def->Height=NULL;
          def->Pick=def->Poly=NULL;
          def->Sample=Def->Sample;
@@ -274,6 +275,7 @@ TDef *Def_CopyPromote(TDef *Def,TDef_Type Type){
          def->Mask=NULL;
          def->Sub=NULL;
          def->Pres=NULL;
+         def->PresLS=NULL;
          def->Height=NULL;
          def->Pick=def->Poly=NULL;
          def->Sample=Def->Sample;
@@ -338,6 +340,7 @@ void Def_Free(TDef *Def){
       if (Def->Accum)              free(Def->Accum);
       if (Def->Sub)                free(Def->Sub);
       if (Def->Pres>(float*)0x1)   free(Def->Pres);
+      if (Def->PresLS>(float*)0x1) free(Def->PresLS);
       if (Def->Height>(float*)0x1) free(Def->Height);
 #ifdef HAVE_GDAL
       if (Def->Poly)               OGR_G_DestroyGeometry(Def->Poly);
@@ -410,6 +413,7 @@ TDef *Def_New(int NI,int NJ,int NK,int Dim,TDef_Type Type) {
    def->Mask=NULL;
    def->Sub=NULL;
    def->Pres=NULL;
+   def->PresLS=NULL;
    def->Height=NULL;
    def->Pick=def->Poly=NULL;
 
@@ -502,6 +506,7 @@ TDef *Def_Resize(TDef *Def,int NI,int NJ,int NK){
       if (Def->Mask)               free(Def->Mask);   Def->Mask=NULL;
       if (Def->Sub)                free(Def->Sub);    Def->Sub=NULL;
       if (Def->Pres>(float*)0x1)   free(Def->Pres);   Def->Pres=NULL;
+      if (Def->PresLS>(float*)0x1) free(Def->PresLS); Def->PresLS=NULL;
       if (Def->Height>(float*)0x1) free(Def->Height); Def->Height=NULL;
    }
    return(Def);

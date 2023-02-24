@@ -204,7 +204,7 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
          }
       } else {
          if (ZRefInterp_Options & ZRVERBOSE) Lib_Log(APP_LIBEER,APP_INFO,"%s: Calculating pressure cube for ZRefSrc\n",__func__);
-         if (!ZRef_KCube2Pressure(ZRefSrc,ZRefSrc->P0,interp->NIJ,TRUE,ZRefSrc->PCube)) {
+         if (!ZRef_KCube2Pressure(ZRefSrc,ZRefSrc->P0,ZRefSrc->P0LS,interp->NIJ,TRUE,ZRefSrc->PCube)) {
             ZRefInterp_Free(interp);
             return(NULL);
          }
@@ -226,7 +226,7 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
          }
       } else {
          if (ZRefInterp_Options & ZRVERBOSE) Lib_Log(APP_LIBEER,APP_INFO,"%s: Calculating pressure cube for ZRefDest\n",__func__);
-         if (!ZRef_KCube2Pressure(ZRefDest,ZRefDest->P0,interp->NIJ,TRUE,ZRefDest->PCube)) {
+         if (!ZRef_KCube2Pressure(ZRefDest,ZRefDest->P0,ZRefDest->P0LS,interp->NIJ,TRUE,ZRefDest->PCube)) {
             ZRefInterp_Free(interp);
             return(NULL);
          }

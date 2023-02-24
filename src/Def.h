@@ -304,28 +304,28 @@ typedef enum {
 extern int TDef_Size[];
 
 typedef struct TDef {
-   double *Buffer,*Aux;       // Buffer temporaire
-   int    *Accum;             // Accumulation Buffer temporaire
-   char   *Mask;              // Masque a appliquer au traitement sur le champs
-   char   *Data[4];           // Composantes du champs (Pointeurs sur les donnees)
-   char   *Mode;              // Module des champs Data is vectoriel
-   char   *Dir;               // Direction si vectoriel
-   float  *Pres,*Height;      // Pression au sol
-   float  *Sub;               // Sub grid resolutions values
-   OGRGeometryH *Pick,*Poly;  // Geometry used in various interpolation method
-   TList  *Segments;          // Liste d'objets de rendue
+   double *Buffer,*Aux;          // Buffer temporaire
+   int    *Accum;                // Accumulation Buffer temporaire
+   char   *Mask;                 // Masque a appliquer au traitement sur le champs
+   char   *Data[4];              // Composantes du champs (Pointeurs sur les donnees)
+   char   *Mode;                 // Module des champs Data is vectoriel
+   char   *Dir;                  // Direction si vectoriel
+   float  *Pres,*PresLS,*Height; // Pression au sol
+   float  *Sub;                  // Sub grid resolutions values
+   OGRGeometryH *Pick,*Poly;     // Geometry used in various interpolation method
+   TList  *Segments;             // Liste d'objets de rendue
 
-   double  NoData;            // Valeur de novalue
-   TDef_Type Type;            // Type de donnees du champs
-   int NI,NJ,NK,NC,NIJ;       // Dimensions du champs
-   int Idx;                   // Index displacement into supergrid
+   double  NoData;               // Valeur de novalue
+   TDef_Type Type;               // Type de donnees du champs
+   int NI,NJ,NK,NC,NIJ;          // Dimensions du champs
+   int Idx;                      // Index displacement into supergrid
 
-   int     CellDim;           // Defined grid point coverage, point=1 or area=2
-   double  CoordLimits[2][2]; // Limits of processing in latlon
-   int     Limits[3][2];      // Limits of processing in grid points
-   int     Level;             // Niveau courant
-   int     Sample,SubSample;  // Sample interval in grid points
-   char    Alias;             // Alias d'un autre TDef (Pointe sur d'autres donnees)
+   int     CellDim;              // Defined grid point coverage, point=1 or area=2
+   double  CoordLimits[2][2];    // Limits of processing in latlon
+   int     Limits[3][2];         // Limits of processing in grid points
+   int     Level;                // Niveau courant
+   int     Sample,SubSample;     // Sample interval in grid points
+   char    Alias;                // Alias d'un autre TDef (Pointe sur d'autres donnees)
 } TDef;
 
 struct TGeoRef;
