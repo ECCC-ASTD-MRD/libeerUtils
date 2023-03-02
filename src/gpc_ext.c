@@ -903,7 +903,7 @@ int gpce_poly_split_tile(const gpc_polygon *restrict Poly,const int MaxPoints,gp
          goto err;
       }
       gpc_free_polygon(&res);
-   } else {
+   } else if( Poly->num_contours ) {
       // Make sure we have enough place for the new polygon
       if( *Size <= *NbSplit ) {
          *Size += 1024;
