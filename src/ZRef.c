@@ -313,7 +313,8 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
    }
 
    memset(&h,0,sizeof(TRPNHeader));
-   
+   ZRef->SLEVE=0;
+
 #ifdef HAVE_RMN
 
    RPN_FieldLock();
@@ -335,7 +336,6 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
          if (!ZRef->A) ZRef->A=(float*)malloc(ZRef->LevelNb*sizeof(float));
          if (!ZRef->B) ZRef->B=(float*)malloc(ZRef->LevelNb*sizeof(float));
 
-         ZRef->SLEVE=0;
 #ifdef HAVE_VGRID
          if (Cvgd_new_read((vgrid_descriptor**)&ZRef->VGD,Unit,-1,-1,-1,-1)==VGD_ERROR) {
             Lib_Log(APP_LIBEER,APP_ERROR,"%s: Unable to initialize vgrid descriptor.\n",__func__);
@@ -343,9 +343,7 @@ int ZRef_DecodeRPN(TZRef *ZRef,int Unit) {
          }
          // Is it SLEVE type?
          Cvgd_get_char((vgrid_descriptor*)ZRef->VGD,"RFLS",rfls_S,1);
-         if (strcmp(rfls_S, VGD_NO_REF_NOMVAR)==0){
-            ZRef->SLEVE=0;
-         }else{
+         if (strcmp(rfls_S, VGD_NO_REF_NOMVAR)!=0){
             ZRef->SLEVE=1;
          }
 #endif                  

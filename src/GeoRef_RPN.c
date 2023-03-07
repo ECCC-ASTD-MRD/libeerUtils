@@ -398,7 +398,7 @@ int GeoRef_RPNProject(TGeoRef *GRef,double X,double Y,double *Lat,double *Lon,in
          return(0);
       }
    }
-   
+
    if (!GRef->Ids) {
       *Lat=Y;
       *Lon=X;
@@ -648,13 +648,15 @@ TGeoRef* GeoRef_RPNSetup(int NI,int NJ,char *GRTYP,int IG1,int IG2,int IG3,int I
       } else {
          id=RPN_IntIdNew(NI,NJ,grtyp,IG1,IG2,IG3,IG4,FID);
       }
-      // Check for sub-grids (U grids can have sub grids)
-      ref->NbId=GRTYP[0]=='U'?c_ezget_nsubgrids(id):1;
-//      ref->NbId=1;
-      if ((ref->Ids=(int*)malloc((ref->NbId>1?ref->NbId+1:1)*sizeof(int)))) {
-         ref->Ids[0]=id;
-         if (ref->NbId>1) {
-            c_ezget_subgridids(id,&ref->Ids[1]);
+      if (id>-1) {
+         // Check for sub-grids (U grids can have sub grids)
+         ref->NbId=GRTYP[0]=='U'?c_ezget_nsubgrids(id):1;
+//         ref->NbId=1;
+         if ((ref->Ids=(int*)malloc((ref->NbId>1?ref->NbId+1:1)*sizeof(int)))) {
+            ref->Ids[0]=id;
+            if (ref->NbId>1) {
+               c_ezget_subgridids(id,&ref->Ids[1]);
+            }
          }
       }
 #endif
