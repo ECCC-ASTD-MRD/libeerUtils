@@ -927,6 +927,8 @@ int gpce_poly_split_tile(const gpc_polygon *restrict Poly,const int MaxPoints,gp
                swp = (*Split)[*NbSplit].contour[0];
                (*Split)[*NbSplit].contour[0] = (*Split)[*NbSplit].contour[r];
                (*Split)[*NbSplit].contour[r] = swp;
+               (*Split)[*NbSplit].hole[0] = 0;
+               (*Split)[*NbSplit].hole[r] = 1;
                break;
             }
          }
