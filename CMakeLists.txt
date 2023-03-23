@@ -29,14 +29,13 @@ execute_process(
    )
 
 #----- Packages that create imported targets
-if(DEFINED OMPI) 
-   find_package(MPI COMPONENTS C REQUIRED)
-   find_package(OpenMP COMPONENTS C REQUIRED)
-   find_package(rmn ${rmn_REQ_VERSION} COMPONENTS ompi shared)
-else()
-   find_package(rmn ${rmn_REQ_VERSION} COMPONENTS ompi shared)
+option(WITH_OMPI "Compile with MPI support" TRUE)
+if (WITH_OMPI)
+   find_package(MPI REQUIRED)
+   find_package(OpenMP REQUIRED)
 endif()
 
+find_package(rmn ${rmn_REQ_VERSION} COMPONENTS shared)
 find_package(vgrid ${vgrid_REQ_VERSION} COMPONENTS shared)
 find_package(LibXml2 REQUIRED)
 
@@ -57,6 +56,10 @@ add_compile_definitions(_BUILD_EERUTILS HAVE_GPC _${CMAKE_SYSTEM_NAME}_ _GNU_SOU
 set(INCLUDE_INSTALL_DIR include)
 set(LIB_INSTALL_DIR     lib)
 set(CONFIG_INSTALL_DIR  "${LIB_INSTALL_DIR}/cmake/${PROJECT_NAME}-${PROJECT_VERSION}")
+
+install(EXPORT ${PROJECT_NAME}-static-targets
+   NAMESPACE ${PROJECT_NAME}::
+   DESTINATION ${CONFIG_INSTALL_DIR})
 
 add_subdirectory(src src)
 if(NOT DEFINED OMPI) 
