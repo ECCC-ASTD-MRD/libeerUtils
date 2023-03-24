@@ -1525,7 +1525,7 @@ int Def_JPInterp(TDef *ToDef,TDef *FromDef,TGeoRef *ToRef,TGeoRef *FromRef,char 
                   Def_Set(ToDef,0,idx,val);
                } 
                if (ToDef->Mask && FromDef->Mask) {
-                  ToDef->Mask[idx]=FromDef->Mask[k*FromDef->NIJ+ix-1];
+                  ToDef->Mask[idx]=FromDef->Mask[ix-1];
                }
             } else if (Extrap[0]=='V') {
                Def_Set(ToDef,0,idx,ToDef->NoData);
