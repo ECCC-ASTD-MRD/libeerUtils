@@ -13,7 +13,7 @@ set(PROJECT_VERSION ${VERSION})
 ec_build_info()            # Generate build include file
 ec_install_prefix()        # Define install prefix  
 
-enable_language(C)
+enable_language(C Fortran)
 
 include(ec_compiler_presets)
 
