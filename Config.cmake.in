@@ -1,17 +1,39 @@
-@PACKAGE_INIT@
+if(NOT ${CMAKE_FIND_PACKAGE_NAME}_FOUND)
+   set(${CMAKE_FIND_PACKAGE_NAME}_VERSION @PROJECT_VERSION@ CACHE INTERNAL "${CMAKE_FIND_PACKAGE_NAME} version")
 
-include(CMakeFindDependencyMacro)
+   @PACKAGE_INIT@
 
-if(@WITH_OMPI@) # WITH_OMPI
-    # If C language is not enabled, the target MPI::MPI_C will not be created by
-    # the find-module for MPI, same thing for Fortran.  Since they are dependencies
-    # of App::App-ompi but the user may be using just C or just Fortran, we need
-    # to make sure both languages are enabled.
-    #
-    # If a user has already done find_package(MPI) then maybe we would need to do
-    # some extra work to ensure the find-module is reexecuted.
-    enable_language(C Fortran)
-    find_dependency(OpenMP REQUIRED)
-    find_dependency(MPI REQUIRED)
-endif()
-include(${CMAKE_CURRENT_LIST_DIR}/${CMAKE_FIND_PACKAGE_NAME}-static-targets.cmake)
+   include(CMakeFindDependencyMacro)
+
+   function(maybe_message type message)
+      if(NOT ${CMAKE_FIND_PACKAGE_NAME}_FIND_QUIETLY )
+         message(${type} "${message}")
+      endif()
+   endfunction()
+
+    if(@WITH_OMPI@) # WITH_OMPI
+        # If C language is not enabled, the target MPI::MPI_C will not be created by
+        # the find-module for MPI, same thing for Fortran.  Since they are dependencies
+        # of App::App-ompi but the user may be using just C or just Fortran, we need
+        # to make sure both languages are enabled.
+        #
+        # If a user has already done find_package(MPI) then maybe we would need to do
+        # some extra work to ensure the find-module is reexecuted.
+        enable_language(C Fortran)
+        find_dependency(OpenMP REQUIRED)
+        find_dependency(MPI REQUIRED)
+    endif()
+
+    maybe_message(STATUS "Finding dependency LibXml2 for ${CMAKE_FIND_PACKAGE_NAME}")
+    find_dependency(LibXml2 REQUIRED)
+
+   include(${CMAKE_CURRENT_LIST_DIR}/${CMAKE_FIND_PACKAGE_NAME}-static-targets.cmake)
+
+   if(NOT ${CMAKE_FIND_PACKAGE_NAME}_FIND_QUIETLY )
+      message(STATUS "Found ${CMAKE_FIND_PACKAGE_NAME} ${${CMAKE_FIND_PACKAGE_NAME}_VERSION} in ${PACKAGE_PREFIX_DIR}")
+      if(${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS)
+         message(STATUS "Components ${${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS}")
+      endif()
+      message(STATUS "Imported targets: ${CMAKE_FIND_PACKAGE_NAME}::${CMAKE_FIND_PACKAGE_NAME} for ${_shared_or_static} libraries")
+   endif()
+endif ()

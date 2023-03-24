@@ -72,9 +72,9 @@ add_library(eerUtils STATIC ${PROJECT_INCLUDE_FILES} ${PROJECT_C_FILES})
 set_target_properties(eerUtils PROPERTIES
    VERSION                       ${PROJECT_VERSION}
    PUBLIC_HEADER                 "${PROJECT_INCLUDE_FILES}"
-   INTERFACE_COMPILE_DEFINITIONS HAVE_EER=${PROJECT_VERSION}
    POSITION_INDEPENDENT_CODE     ON
 )   
+target_compile_definitions(eerUtils INTERFACE HAVE_EER=${PROJECT_VERSION} HAVE_GPC=TRUE)
 add_library(eerUtils::eerUtils ALIAS eerUtils)
 
 add_dependencies(eerUtils ${PROJECT_NAME}_build_info)
@@ -96,10 +96,9 @@ endif()
 if(WITH_OMPI AND OpenMP_FOUND AND MPI_FOUND) 
    set(targets eerUtils eerUtils-ompi)
    add_library(eerUtils-ompi STATIC ${PROJECT_INCLUDE_FILES} ${PROJECT_C_FILES})
-   set_target_properties(eerUtils PROPERTIES
+   set_target_properties(eerUtils-ompi PROPERTIES
       VERSION                       ${PROJECT_VERSION}
       PUBLIC_HEADER                 "${PROJECT_INCLUDE_FILES}"
-      INTERFACE_COMPILE_DEFINITIONS HAVE_EER=${PROJECT_VERSION}
       POSITION_INDEPENDENT_CODE     ON
    )   
    add_library(eerUtils::eerUtils-ompi ALIAS eerUtils-ompi)
@@ -107,6 +106,7 @@ if(WITH_OMPI AND OpenMP_FOUND AND MPI_FOUND)
    add_dependencies(eerUtils-ompi ${PROJECT_NAME}_build_info)
    target_include_directories(eerUtils-ompi PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
    target_compile_definitions(eerUtils-ompi PUBLIC HAVE_MPI)
+   target_compile_definitions(eerUtils-ompi INTERFACE HAVE_EER=${PROJECT_VERSION} HAVE_GPC=TRUE)
    target_link_libraries(eerUtils-ompi PUBLIC MPI::MPI_C OpenMP::OpenMP_C)
    target_link_libraries(eerUtils-ompi PUBLIC LibXml2::LibXml2)
    if(rmn_FOUND)
