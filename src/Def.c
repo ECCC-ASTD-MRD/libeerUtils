@@ -1419,9 +1419,11 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
 int Def_EZInterp(TDef *ToDef,TDef *FromDef,TGeoRef *ToRef,TGeoRef *FromRef,char *Interp,char *Extrap,char Mask,float *Index) {
    
 #ifdef HAVE_RMN
-   void *pf0,*pt0,*pf1,*pt1;
-   int   ok,k;
- 
+   void  *pf0,*pt0,*pf1,*pt1;
+   int    ok,k,idx,gotidx,i,j;
+   float *ip=NULL; 
+   double lat,lon,di,dj;
+
    RPN_IntLock();
 
    // Set interpolation and extrapolation mode
@@ -1444,6 +1446,7 @@ int Def_EZInterp(TDef *ToDef,TDef *FromDef,TGeoRef *ToRef,TGeoRef *FromRef,char 
       return(FALSE);
    }
 
+   idx=0;
    for(k=0;k<ToDef->NK;k++) {
       // Effectuer l'interpolation selon le type de champs
       if (ToDef->Data[1]) {
@@ -1466,6 +1469,27 @@ int Def_EZInterp(TDef *ToDef,TDef *FromDef,TGeoRef *ToRef,TGeoRef *FromRef,char 
          Def_Pointer(FromDef,0,k*FSIZE2D(FromDef),pf0);
          ok=c_ezsint(pt0,pf0);
       }
+
+      // Interpolate mask if needed
+      if (FromDef->Mask && ToDef->Mask) { 
+         ip=Index;
+         gotidx=(Index && Index[0]!=DEF_INDEX_EMPTY);
+         for(j=0;j<ToDef->NJ;j++) {
+            for(i=0;i<ToDef->NI;i++,idx++) {
+
+               if (gotidx) {
+                  // Got the index, use coordinates from it
+                  di=*(ip++);
+                  dj=*(ip++);
+               } else {
+                  // No index, project coordinate
+                  ToRef->Project(ToRef,i,j,&lat,&lon,0,1);
+                  FromRef->UnProject(FromRef,&di,&dj,lat,lon,0,1);
+               }
+               ToDef->Mask[idx]=(di>=0.0)?FromDef->Mask[k*FromDef->NIJ+ROUND(dj)*FromDef->NI+ROUND(di)]:0;
+            }
+         }
+      }
    }
    RPN_IntUnlock();
 #else
@@ -1473,7 +1497,7 @@ int Def_EZInterp(TDef *ToDef,TDef *FromDef,TGeoRef *ToRef,TGeoRef *FromRef,char 
 #endif   
    return(TRUE);
 }
-         
+      
 int Def_JPInterp(TDef *ToDef,TDef *FromDef,TGeoRef *ToRef,TGeoRef *FromRef,char *Interp,char *Extrap,char Mask,float *Index) {
    
    double     val,dir,lat,lon,di,dj,dval;

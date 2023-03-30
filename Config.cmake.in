@@ -11,21 +11,21 @@ if(NOT ${CMAKE_FIND_PACKAGE_NAME}_FOUND)
       endif()
    endfunction()
 
-    if(@WITH_OMPI@) # WITH_OMPI
-        # If C language is not enabled, the target MPI::MPI_C will not be created by
-        # the find-module for MPI, same thing for Fortran.  Since they are dependencies
-        # of App::App-ompi but the user may be using just C or just Fortran, we need
-        # to make sure both languages are enabled.
-        #
-        # If a user has already done find_package(MPI) then maybe we would need to do
-        # some extra work to ensure the find-module is reexecuted.
-        enable_language(C Fortran)
-        find_dependency(OpenMP REQUIRED)
-        find_dependency(MPI REQUIRED)
-    endif()
+   if(@WITH_OMPI@) # WITH_OMPI
+      # If C language is not enabled, the target MPI::MPI_C will not be created by
+      # the find-module for MPI, same thing for Fortran.  Since they are dependencies
+      # of App::App-ompi but the user may be using just C or just Fortran, we need
+      # to make sure both languages are enabled.
+      #
+      # If a user has already done find_package(MPI) then maybe we would need to do
+      # some extra work to ensure the find-module is reexecuted.
+      enable_language(C Fortran)
+      find_dependency(OpenMP REQUIRED)
+      find_dependency(MPI REQUIRED)
+   endif()
 
-    maybe_message(STATUS "Finding dependency LibXml2 for ${CMAKE_FIND_PACKAGE_NAME}")
-    find_dependency(LibXml2 REQUIRED)
+   maybe_message(STATUS "Finding dependency LibXml2 for ${CMAKE_FIND_PACKAGE_NAME}")
+   find_dependency(LibXml2 REQUIRED)
 
    include(${CMAKE_CURRENT_LIST_DIR}/${CMAKE_FIND_PACKAGE_NAME}-static-targets.cmake)
 
