@@ -61,6 +61,7 @@ install(EXPORT ${PROJECT_NAME}-static-targets
    NAMESPACE ${PROJECT_NAME}::
    DESTINATION ${CONFIG_INSTALL_DIR})
 
+link_libraries("-Wl,--disable-new-dtags")
 add_subdirectory(src src)
 if(NOT DEFINED OMPI) 
    add_subdirectory(util util)
