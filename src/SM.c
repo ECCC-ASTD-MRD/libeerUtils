@@ -41,9 +41,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef _MPI
+#ifdef HAVE_MPI
 #include <mpi.h>
-#endif //_MPI
+#endif //HAVE_MPI
 
 #define SM_FILENAME 128
 
@@ -113,7 +113,7 @@ void* SM_Alloc(size_t Size) {
       return calloc(Size,1);
    } else {
       void *addr = NULL;
-#ifdef _MPI
+#ifdef HAVE_MPI
       char fn[SM_FILENAME] = {0};
       int fd=-1,status=0;
 
@@ -199,7 +199,7 @@ void* SM_Alloc(size_t Size) {
          munmap(addr,Size);
          addr = NULL;
       }
-#endif //_MPI
+#endif //HAVE_MPI
       return addr ? (size_t*)addr+1 : addr;
    }
 }
@@ -246,7 +246,7 @@ void* SM_Calloc(size_t Num,size_t Size) {
  */
 int SM_Sync(void *Addr,int NodeHeadRank) {
    if( App_IsMPI() ) {
-#ifdef _MPI
+#ifdef HAVE_MPI
       // If there is more than one node, the head of each node must exchange the data
       if( !App_IsSingleNode() && !App->NodeRankMPI ) {
          APP_MPI_ASRT( MPI_Bcast(Addr,SM_GetSize(Addr),MPI_BYTE,NodeHeadRank,App->NodeHeadComm) );
@@ -255,7 +255,7 @@ int SM_Sync(void *Addr,int NodeHeadRank) {
       if( !App_IsAloneNode() ) {
          APP_MPI_ASRT( MPI_Barrier(App->NodeComm) );
       }
-#endif //_MPI
+#endif //HAVE_MPI
    }
    return APP_OK;
 }
@@ -278,9 +278,9 @@ void SM_Free(void *Addr) {
    if( App_IsAloneNode() ) {
       free(Addr);
    } else {
-#ifdef _MPI
+#ifdef HAVE_MPI
       Addr = (size_t*)Addr-1;
       munmap(Addr,*(size_t*)Addr+sizeof(size_t));
-#endif //_MPI
+#endif //HAVE_MPI
    }
 }
