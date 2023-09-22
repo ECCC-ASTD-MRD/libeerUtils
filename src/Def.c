@@ -954,37 +954,38 @@ int Def_GridCell2OGR(OGRGeometryH Geom,TGeoRef *RefTo,TGeoRef *RefFrom,int I,int
  *
  *---------------------------------------------------------------------------------------------------------------
 */
-static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,char Mode,char Type,double Area,double Value,int X0,int Y0,int X1,int Y1,int Z,TDef_Combine Comb,float **Index) {
+static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Poly,OGRGeometryH Geom,char Mode,char Type,double Area,double Value,int X0,int Y0,int X1,int Y1,int Z,TDef_Combine Comb,float **Index) {
 
 #ifdef HAVE_GDAL
    double        dx,dy,dp=0.0,val=0.0;
    int           x,y,n=0,idx2,na;
-   OGRGeometryH  inter=NULL;
+   OGRGeometryH  inter=NULL,pick;
    OGREnvelope   envg,envp;
 
    // Setup the intersecting area
+   pick=OGR_G_GetGeometryRef(Poly,0);
    dx=(double)X0-0.5;
    dy=(double)Y0-0.5;
-   OGR_G_SetPoint(Def->Pick,0,dx,dy,0);
-   OGR_G_SetPoint(Def->Pick,4,dx,dy,0);
+   OGR_G_SetPoint(pick,0,dx,dy,0);
+   OGR_G_SetPoint(pick,4,dx,dy,0);
    dx=(double)X0-0.5;
    dy=(double)Y1+0.5;
-   OGR_G_SetPoint(Def->Pick,1,dx,dy,0);
+   OGR_G_SetPoint(pick,1,dx,dy,0);
    dx=(double)X1+0.5;
    dy=(double)Y1+0.5;
-   OGR_G_SetPoint(Def->Pick,2,dx,dy,0);
+   OGR_G_SetPoint(pick,2,dx,dy,0);
    dx=(double)X1+0.5;
    dy=(double)Y0-0.5;
-   OGR_G_SetPoint(Def->Pick,3,dx,dy,0);
+   OGR_G_SetPoint(pick,3,dx,dy,0);
 
-   OGR_G_GetEnvelope(Def->Pick,&envp);
+   OGR_G_GetEnvelope(pick,&envp);
    OGR_G_GetEnvelope(Geom,&envg);
 
    na=(Mode=='C' || Mode=='N' || Mode=='A');
 
    // Test for intersection
-   if ((Area>0.0 || !na) && OGM_Intersect(Geom,Def->Poly,&envg,&envp)) {
-//   if ((Area>0.0 || !na) && OGR_G_Intersects(Geom,Def->Poly)) {
+   if ((Area>0.0 || !na) && OGM_Intersect(Geom,Poly,&envg,&envp)) {
+//   if ((Area>0.0 || !na) && OGR_G_Intersects(Geom,Poly)) {
 
       // If this is a single pixel
       if (X0==X1 && Y0==Y1) {
@@ -996,9 +997,9 @@ static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,char Mode
             switch(Type) {
                case 'A':  // Area mode
 #ifdef HAVE_GPC
-                  inter=OGM_GPCOnOGR(GPC_INT,Geom,Def->Poly);
+                  inter=OGM_GPCOnOGR(GPC_INT,Geom,Poly);
 #else                  
-                  inter=OGR_G_Intersection(Geom,Def->Poly);
+                  inter=OGR_G_Intersection(Geom,Poly);
 #endif
                   if (Mode=='C' || Mode=='N') {
                      dp=OGR_G_Area(inter)/Area;
@@ -1010,8 +1011,8 @@ static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,char Mode
                   break;
 
                case 'L':  // Length mode
-//                  inter=OGR_G_Intersection(Geom,Def->Poly);
-                  inter=OGM_Clip(Geom,Def->Poly);
+//                  inter=OGR_G_Intersection(Geom,Poly);
+                  inter=OGM_Clip(Geom,Poly);
                   if (Mode=='C' || Mode=='N') {
                      dp=OGM_Length(inter)/Area;
                   } else if (Mode=='A') {
@@ -1029,12 +1030,15 @@ static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,char Mode
             val=Value;
          }
          // Are we within
-         if (Mode!='W' || OGM_Within(Def->Poly,Geom,&envp,&envg)) {
-            // TODO: check to replace by this function: Def_SetValue(TDef *Def,int X, int Y,double Value,TDef_Combine Comb)
-            Def_SetValue(Def,X0,Y0,Z,val,Comb);
+         if (Mode!='W' || OGM_Within(Poly,Geom,&envp,&envg)) {
+            //Create thread safe region.
+            #pragma omp critical
+            {
+               Def_SetValue(Def,X0,Y0,Z,val,Comb);
 
-            if (Mode=='N' && Def->Buffer) {
-               Def->Buffer[idx2]+=dp;
+               if (Mode=='N' && Def->Buffer) {
+                  Def->Buffer[idx2]+=dp;
+               }
             }
 
             if (*Index) {
@@ -1053,14 +1057,14 @@ static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Geom,char Mode
          if (x==0 || y==0) {
             for (x=X0;x<=X1;x++) {
                for (y=Y0;y<=Y1;y++) {
-                  n+=Def_GridInterpQuad(Def,Ref,Geom,Mode,Type,Area,Value,x,y,x,y,Z,Comb,Index);
+                  n+=Def_GridInterpQuad(Def,Ref,Poly,Geom,Mode,Type,Area,Value,x,y,x,y,Z,Comb,Index);
                }
             }
          } else {
-            n+=Def_GridInterpQuad(Def,Ref,Geom,Mode,Type,Area,Value,X0,Y0,X0+x,Y0+y,Z,Comb,Index);
-            n+=Def_GridInterpQuad(Def,Ref,Geom,Mode,Type,Area,Value,X0+x+1,Y0,X1,Y0+y,Z,Comb,Index);
-            n+=Def_GridInterpQuad(Def,Ref,Geom,Mode,Type,Area,Value,X0,Y0+y+1,X0+x,Y1,Z,Comb,Index);
-            n+=Def_GridInterpQuad(Def,Ref,Geom,Mode,Type,Area,Value,X0+x+1,Y0+y+1,X1,Y1,Z,Comb,Index);
+            n+=Def_GridInterpQuad(Def,Ref,Poly,Geom,Mode,Type,Area,Value,X0,Y0,X0+x,Y0+y,Z,Comb,Index);
+            n+=Def_GridInterpQuad(Def,Ref,Poly,Geom,Mode,Type,Area,Value,X0+x+1,Y0,X1,Y0+y,Z,Comb,Index);
+            n+=Def_GridInterpQuad(Def,Ref,Poly,Geom,Mode,Type,Area,Value,X0,Y0+y+1,X0+x,Y1,Z,Comb,Index);
+            n+=Def_GridInterpQuad(Def,Ref,Poly,Geom,Mode,Type,Area,Value,X0+x+1,Y0+y+1,X1,Y1,Z,Comb,Index);
          }
       }
    }
@@ -1101,15 +1105,15 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
 #ifdef HAVE_GDAL
    long     f,n=0,nt=0,idx2;
    double   value,val,area,dp;
-   int      fld=-1,pi,pj;
-   char     mode,type;
-   float   *ip=NULL;
+   int      fld=-1,pi,pj,error=0,isize=0;
+   char     mode,type,*c;
+   float   *ip=NULL,*lp=NULL,**index=NULL;
    Coord    co;
    Vect3d   vr;
 
    OGRSpatialReferenceH          srs=NULL;
    OGRCoordinateTransformationH  tr=NULL;
-   OGRGeometryH                  geom,utmgeom=NULL,hgeom;
+   OGRGeometryH                  geom=NULL,utmgeom=NULL,hgeom,pick=NULL,poly=NULL;
    OGREnvelope                   env;
 
    if (!ToRef || !ToDef) {
@@ -1215,23 +1219,42 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
       }
    } else {
 
-      if (!ToDef->Pick)
-         ToDef->Pick=OGR_G_CreateGeometry(wkbLinearRing);
-      if (!ToDef->Poly) {
-         ToDef->Poly=OGR_G_CreateGeometry(wkbPolygon);
-         OGR_G_AddGeometryDirectly(ToDef->Poly,ToDef->Pick);
+      // Define the max size of the indexes
+      isize=1000;
+      if ((c=getenv("INTERP_INDEX_SIZE_HINT"))) {
+         isize=atoi(c);
       }
 
       if (Index && Index[0]==DEF_INDEX_EMPTY) {
+         index=(float**)calloc(Layer->NFeature*sizeof(float*),0x0);
          ip=Index;
+      }
+      
+      // If the request is in meters
+      if (fld==-3 || fld==-5) {
+         // Create an UTM referential and transform to convert to meters
+         LayerRef->Project(LayerRef,LayerRef->X0,LayerRef->Y0,&co.Lat,&co.Lon,1,1);
+         srs=OSRNewSpatialReference(NULL);
+         OSRSetUTM(srs,(int)ceil((180+co.Lon)/6),(int)co.Lat);
+         tr=OCTNewCoordinateTransformation(LayerRef->Spatial,srs);
+
+         if (!srs || !tr) {
+            Lib_Log(APP_LIBEER,APP_ERROR,"%s: Could not initiate UTM transormation\n",__func__);
+            return(0);
+         }
       }
 
       // Trouve la feature en intersection
+      #pragma omp parallel for private(f,geom,hgeom,utmgeom,env,co,value,vr,n,area,mode,type,lp) firstprivate(pick,poly) shared(Layer,LayerRef,ToRef,Mode,Comb,fld,tr,error,ip,index,isize) reduction(+:nt)
       for(f=0;f<Layer->NFeature;f++) {
+         
+         if (error) continue;
+         n=0;
 
          if (Layer->Select[f] && Layer->Feature[f]) {
 
-            // Try to access geometrie, skipping instead of failing on bad ones
+            geom=utmgeom=NULL;
+            // Try to access geometry, skipping instead of failing on bad ones
             if (!(hgeom=OGR_F_GetGeometryRef(Layer->Feature[f]))) {
                Lib_Log(APP_LIBEER,APP_WARNING,"%s: Cannot get handle from geometry: %li\n",__func__,f);
                continue;
@@ -1240,27 +1263,23 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
             // Copie de la geometrie pour transformation
             if (!(geom=OGR_G_Clone(hgeom))) {
                Lib_Log(APP_LIBEER,APP_ERROR,"%s: Could not clone the geometry\n",__func__);
-               return(0);
+               error=1;
+               continue;
+            }
+
+            if (!pick) {
+               pick=OGR_G_CreateGeometry(wkbLinearRing);
+               poly=OGR_G_CreateGeometry(wkbPolygon);
+               OGR_G_AddGeometryDirectly(poly,pick);
             }
 
             // If the request is in meters
             if (fld==-3 || fld==-5) {
                if (!(utmgeom=OGR_G_Clone(geom))) {
                   Lib_Log(APP_LIBEER,APP_ERROR,"%s: Could not clone the UTM geomtry\n",__func__);
-                  return(0);
-               }
-
-               if (!srs) {
-                  // Create an UTM referential and transform to convert to meters
-                  LayerRef->Project(LayerRef,LayerRef->X0,LayerRef->Y0,&co.Lat,&co.Lon,1,1);
-                  srs=OSRNewSpatialReference(NULL);
-                  OSRSetUTM(srs,(int)ceil((180+co.Lon)/6),(int)co.Lat);
-                  tr=OCTNewCoordinateTransformation(LayerRef->Spatial,srs);
-
-                  if (!srs || !tr) {
-                     Lib_Log(APP_LIBEER,APP_ERROR,"%s: Could not initiate UTM transormation\n",__func__);
-                     return(0);
-                  }
+                  OGR_G_DestroyGeometry(geom);
+                  error=1;
+                  continue;
                }
 
                // Transform the geom to utm
@@ -1328,46 +1347,71 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
                      }
 
                      // If it's nil then nothing to distribute on
-                     if (area==0.0) {
-                        OGR_G_DestroyGeometry(geom);
-                        continue;
-                     }
+                     if (area>0.0 || Mode<=IV_CENTROID) {
 
-                     env.MaxX+=0.5;env.MaxY+=0.5;
-                     env.MinX=env.MinX<0?0:env.MinX;
-                     env.MinY=env.MinY<0?0:env.MinY;
-                     env.MaxX=env.MaxX>(ToRef->X1+0.5)?(ToRef->X1+0.5):env.MaxX;
-                     env.MaxY=env.MaxY>(ToRef->Y1+0.5)?(ToRef->Y1+0.5):env.MaxY;
-                     area=area<0?0.0:area;
+                        env.MaxX+=0.5;env.MaxY+=0.5;
+                        env.MinX=env.MinX<0?0:env.MinX;
+                        env.MinY=env.MinY<0?0:env.MinY;
+                        env.MaxX=env.MaxX>(ToRef->X1+0.5)?(ToRef->X1+0.5):env.MaxX;
+                        env.MaxY=env.MaxY>(ToRef->Y1+0.5)?(ToRef->Y1+0.5):env.MaxY;
+                        area=area<0?0.0:area;
 
-                     // Append feature into index
-                     if (ip) {
-                        *(ip++)=f;
-                        *(ip++)=area;
-                        *(ip++)=(fld<0 && fld>=-9)?value:-999.0;
-                     }
-
-                     nt+=n=Def_GridInterpQuad(ToDef,ToRef,geom,mode,type,area,value,env.MinX,env.MinY,env.MaxX,env.MaxY,0,Comb,&ip);
-
-                     if (ip) {
-                        if (n) {
-                           *(ip++)=DEF_INDEX_SEPARATOR; // End the list for this gridpoint
-                        } else {
-                           ip-=1;                       // No intersection found, removed previously inserted feature
+                        // Append feature into index
+                        lp=NULL;
+                        if (ip) {
+                           if (!(index[f]=(float*)malloc(isize*sizeof(float)))) {
+                              Lib_Log(APP_LIBEER,APP_ERROR,"%s: Unable to allocate index memory (%i)\n",__func__,f);
+                              error=1;
+                              continue;
+                           } 
+                           lp=index[f];
                         }
+                        if (lp) {
+                           *(lp++)=area;
+                           *(lp++)=(fld<0 && fld>=-9)?value:-999.0;
+                        }
+
+                        nt+=n=Def_GridInterpQuad(ToDef,ToRef,poly,geom,mode,type,area,value,env.MinX,env.MinY,env.MaxX,env.MaxY,0,Comb,&lp);
+
+                        if (lp) {
+                           if (n) {
+                              *(lp++)=DEF_INDEX_SEPARATOR;
+                           } else {
+                              index[f][0]=DEF_INDEX_EMPTY;  // No intersection found, removed previously inserted feature
+                           }
+                        }
+                        Lib_Log(APP_LIBEER,APP_DEBUG,"%s: %i hits on feature %i of %i (%.0f %.0f x %.0f %.0f)\n",__func__,n,f,Layer->NFeature,env.MinX,env.MinY,env.MaxX,env.MaxY);
                      }
-                     Lib_Log(APP_LIBEER,APP_DEBUG,"%s: %i hits on feature %i of %i (%.0f %.0f x %.0f %.0f)\n",__func__,n,f,Layer->NFeature,env.MinX,env.MinY,env.MaxX,env.MaxY);
                   }
                }
             }
-            OGR_G_DestroyGeometry(geom);
-            if (utmgeom)
-               OGR_G_DestroyGeometry(utmgeom);
+            if (geom)    OGR_G_DestroyGeometry(geom);
+            if (utmgeom) OGR_G_DestroyGeometry(utmgeom);
          }
+            fprintf(stderr,"311111111 %i %i %i\n",f,n,nt);
       }
-      if (ip) *(ip++)=DEF_INDEX_END;
+            fprintf(stderr,"411111111 %i %i\n",n,nt);
 
       Lib_Log(APP_LIBEER,APP_DEBUG,"%s: %i total hits\n",__func__,nt);
+
+      // Merge indexes
+      n=0;
+      if (ip && nt) {
+         for(f=0;f<Layer->NFeature;f++) {
+            if ((lp=index[f]) && lp[0]!=DEF_INDEX_EMPTY) {
+               *(ip++)=f;
+               while(*lp!=DEF_INDEX_SEPARATOR) {
+                  *(ip++)=*(lp++);
+               }
+               *(ip++)=DEF_INDEX_SEPARATOR;
+            }
+            if (index[f]) free(index[f]);
+         }
+         *(ip++)=DEF_INDEX_END;
+         if (index) free(index);
+      }
+
+      fprintf(stderr,"511111111 %i %i\n",n,nt);
 
       if (tr)
          OCTDestroyCoordinateTransformation(tr);
@@ -1388,7 +1432,7 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
 
    // Return size of index or number of hits, or 1 if nothing found
    nt=Index?(ip-Index)/sizeof(float):nt;
-   return(nt==0?1:nt);
+   return((error || nt==0)?1:nt);
 #else
    Lib_Log(APP_LIBEER,APP_ERROR,"Function %s is not available, needs to be built with GDAL\n",__func__);
    return(0);
@@ -1891,7 +1935,7 @@ int Def_GridInterpConservative(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
                         *(ip++)=j;
                      }
 
-                     nt+=n=Def_GridInterpQuad(ToDef,ToRef,cell,IR_CONSERVATIVE?'C':'N','A',area,val1,env.MinX,env.MinY,env.MaxX,env.MaxY,k,CB_SUM,&ip);
+                     nt+=n=Def_GridInterpQuad(ToDef,ToRef,NULL,cell,IR_CONSERVATIVE?'C':'N','A',area,val1,env.MinX,env.MinY,env.MaxX,env.MaxY,k,CB_SUM,&ip);
 
                      if (ip) {
                         if (n) {
@@ -1941,7 +1985,7 @@ int Def_GridInterpConservative(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
                         *(ip++)=j;
                      }
 
-                     nt+=n=Def_GridInterpQuad(ToDef,ToRef,cell,IR_CONSERVATIVE?'C':'N','A',area,val1,env.MinX,env.MinY,env.MaxX,env.MaxY,k,CB_SUM,&ip);
+                     nt+=n=Def_GridInterpQuad(ToDef,ToRef,NULL,cell,IR_CONSERVATIVE?'C':'N','A',area,val1,env.MinX,env.MinY,env.MaxX,env.MaxY,k,CB_SUM,&ip);
 
                      if (ip) {
                         if (n) {
