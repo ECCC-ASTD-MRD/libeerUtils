@@ -957,7 +957,7 @@ int Def_GridCell2OGR(OGRGeometryH Geom,TGeoRef *RefTo,TGeoRef *RefFrom,int I,int
 static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Poly,OGRGeometryH Geom,char Mode,char Type,double Area,double Value,int X0,int Y0,int X1,int Y1,int Z,TDef_Combine Comb,float **Index) {
 
 #ifdef HAVE_GDAL
-   double        dx,dy,dp=0.0,val=0.0;
+   double        dx,dy,dp=1.0,val=0.0;
    int           x,y,n=0,idx2,na;
    OGRGeometryH  inter=NULL,pick;
    OGREnvelope   envg,envp;
@@ -994,7 +994,7 @@ static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Poly,OGRGeomet
 
          // If we are computing areas
          if (Area>0.0) {
-            switch(Type) {
+           switch(Type) {
                case 'A':  // Area mode
 #ifdef HAVE_GPC
                   inter=OGM_GPCOnOGR(GPC_INT,Geom,Poly);
@@ -1005,8 +1005,6 @@ static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Poly,OGRGeomet
                      dp=OGR_G_Area(inter)/Area;
                   } else if (Mode=='A') {
                      dp=OGR_G_Area(inter);
-                  } else {
-                     dp=1.0;
                   }
                   break;
 
@@ -1048,7 +1046,7 @@ static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Poly,OGRGeomet
             }
             n=1;
          }
-     } else {
+      } else {
          // Otherwise, refine the search by quad dividing
          x=(X1-X0)>>1;
          y=(Y1-Y0)>>1;
@@ -1205,13 +1203,12 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
                val=0.0;
             }
 
-            // If we are computing areas
-            if (area>0.0) {
-               val+=value*dp;
-            }
+            val+=value*dp;
+
             if (Comb==CB_AVERAGE)  {
                ToDef->Accum[idx2]+=1;
             }
+            Lib_Log(APP_LIBEER,APP_DEBUG,"%s: val(%i) += (%i,%i) * %f = %f\n",__func__,f,pi,pj,dp,val);
             Def_Set(ToDef,0,idx2,val);
          }
          // Skip separator
@@ -1226,7 +1223,10 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
       }
 
       if (Index && Index[0]==DEF_INDEX_EMPTY) {
-         index=(float**)calloc(Layer->NFeature*sizeof(float*),0x0);
+         if (!(index=(float**)malloc(Layer->NFeature*sizeof(float*)))) {
+            Lib_Log(APP_LIBEER,APP_ERROR,"%s: Unable to allocate local index arrays\n",__func__);
+            return(0);
+         }
          ip=Index;
       }
       
@@ -1248,6 +1248,7 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
       #pragma omp parallel for private(f,geom,hgeom,utmgeom,env,co,value,vr,n,area,mode,type,lp) firstprivate(pick,poly) shared(Layer,LayerRef,ToRef,Mode,Comb,fld,tr,error,ip,index,isize) reduction(+:nt)
       for(f=0;f<Layer->NFeature;f++) {
          
+         index[f]=NULL;
          if (error) continue;
          n=0;
 
@@ -1360,7 +1361,7 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
                         lp=NULL;
                         if (ip) {
                            if (!(index[f]=(float*)malloc(isize*sizeof(float)))) {
-                              Lib_Log(APP_LIBEER,APP_ERROR,"%s: Unable to allocate index memory (%i)\n",__func__,f);
+                              Lib_Log(APP_LIBEER,APP_ERROR,"%s: Unable to allocate local index memory (%i)\n",__func__,f);
                               error=1;
                               continue;
                            } 
@@ -1388,17 +1389,15 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
             if (geom)    OGR_G_DestroyGeometry(geom);
             if (utmgeom) OGR_G_DestroyGeometry(utmgeom);
          }
-            fprintf(stderr,"311111111 %i %i %i\n",f,n,nt);
       }
-            fprintf(stderr,"411111111 %i %i\n",n,nt);
 
       Lib_Log(APP_LIBEER,APP_DEBUG,"%s: %i total hits\n",__func__,nt);
 
       // Merge indexes
       n=0;
-      if (ip && nt) {
+      if (ip && nt && !error) {
          for(f=0;f<Layer->NFeature;f++) {
-            if ((lp=index[f]) && lp[0]!=DEF_INDEX_EMPTY) {
+            if ((lp=index[f]) && *lp!=DEF_INDEX_EMPTY) {
                *(ip++)=f;
                while(*lp!=DEF_INDEX_SEPARATOR) {
                   *(ip++)=*(lp++);
@@ -1408,10 +1407,8 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
             if (index[f]) free(index[f]);
          }
          *(ip++)=DEF_INDEX_END;
-         if (index) free(index);
+         free(index);
       }
-
-      fprintf(stderr,"511111111 %i %i\n",n,nt);
 
       if (tr)
          OCTDestroyCoordinateTransformation(tr);
@@ -1430,8 +1427,9 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
       }
    }
 
+   fprintf(stderr,"511111111 %i %i\n",nt,ip-Index);
    // Return size of index or number of hits, or 1 if nothing found
-   nt=Index?(ip-Index)/sizeof(float):nt;
+   nt=Index?(ip-Index)+1:nt;
    return((error || nt==0)?1:nt);
 #else
    Lib_Log(APP_LIBEER,APP_ERROR,"Function %s is not available, needs to be built with GDAL\n",__func__);
