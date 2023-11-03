@@ -1427,7 +1427,6 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
       }
    }
 
-   fprintf(stderr,"511111111 %i %i\n",nt,ip-Index);
    // Return size of index or number of hits, or 1 if nothing found
    nt=Index?(ip-Index)+1:nt;
    return((error || nt==0)?1:nt);
