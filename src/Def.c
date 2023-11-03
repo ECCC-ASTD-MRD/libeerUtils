@@ -1777,10 +1777,11 @@ int Def_GridInterpSub(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *FromDef,
 int Def_GridInterpConservative(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef *FromDef,TDef_InterpR Mode,int Final,int Prec,float *Index) {
 
 #ifdef HAVE_GDAL
-   int          i,j,n,nt=0,p=0,pi,pj,idx2,idx3,wrap,k=0;
+   int          i,j,n,na,nt=0,p=0,pi,pj,idx2,idx3,wrap,k=0,isize,nidx,error=0;
+   char        *c;
    double       val0,val1,area,x,y,z,dp;
-   float       *ip=NULL;
-   OGRGeometryH cell,ring;
+   float       *ip=NULL,*lp=NULL,**index=NULL;
+   OGRGeometryH cell=NULL,ring=NULL,*pick=NULL,*poly=NULL;
    OGREnvelope  env;
 
    if (!ToRef || !ToDef) {
@@ -1792,18 +1793,6 @@ int Def_GridInterpConservative(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
       return(0);
    }
 
-   // Create gridcell geometry object
-   cell=OGR_G_CreateGeometry(wkbPolygon);
-   ring=OGR_G_CreateGeometry(wkbLinearRing);
-
-   if (!ToDef->Pick)
-      ToDef->Pick=OGR_G_CreateGeometry(wkbLinearRing);
-
-   if (!ToDef->Poly) {
-      ToDef->Poly=OGR_G_CreateGeometry(wkbPolygon);
-      OGR_G_AddGeometryDirectly(ToDef->Poly,ToDef->Pick);
-   }
-
    // Allocate area buffer if needed
    if (Mode==IR_NORMALIZED_CONSERVATIVE && !ToDef->Buffer) {
       ToDef->Buffer=(double*)malloc(FSIZE2D(ToDef)*sizeof(double));
@@ -1811,6 +1800,12 @@ int Def_GridInterpConservative(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
          Lib_Log(APP_LIBEER,APP_ERROR,"%s: Unable to allocate area buffer\n",__func__);
          return(0);
       }
+   }
+
+   // Define the max size of the indexes
+   isize=100;
+   if ((c=getenv("INTERP_INDEX_SIZE_HINT"))) {
+      isize=atoi(c);
    }
 
    // Process one level at a time
@@ -1866,13 +1861,36 @@ int Def_GridInterpConservative(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
          }
       } else {
          int cnt, intersect;
+
          if (Index && Index[0]==DEF_INDEX_EMPTY) {
+            if (!(index=(float**)malloc(FSIZE2D(FromDef)*sizeof(float*)))) {
+               Lib_Log(APP_LIBEER,APP_ERROR,"%s: Unable to allocate local index arrays\n",__func__);
+               return(0);
+            }
             ip=Index;
          }
 
          // Damn, we dont have the index, do the long run
+         #pragma omp parallel for collapse(2) firstprivate(cell,ring,pick,poly) private(i,j,nidx,wrap,intersect,cnt,p,x,y,z,lp,area,val1,env,n,na) shared(k,FromRef,FromDef,ToRef,ToDef,error) reduction(+:nt)
          for(j=0;j<FromDef->NJ;j++) {
             for(i=0;i<FromDef->NI;i++) {
+
+               nidx=j*FromDef->NI+i;
+               index[nidx]=NULL;
+               if (error) continue;
+
+               // Create gridcell geometry object
+               if (!cell) {
+                  cell=OGR_G_CreateGeometry(wkbPolygon);
+                  ring=OGR_G_CreateGeometry(wkbLinearRing);
+                  OGR_G_AddGeometryDirectly(cell,ring);
+               }
+
+               if (!pick) {
+                  pick=OGR_G_CreateGeometry(wkbLinearRing);
+                  poly=OGR_G_CreateGeometry(wkbPolygon);
+                  OGR_G_AddGeometryDirectly(poly,pick);
+               }
 
                // Project the source gridcell into the destination
                wrap=Def_GridCell2OGR(ring,ToRef,FromRef,i,j,Prec);
@@ -1880,15 +1898,27 @@ int Def_GridInterpConservative(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
                cnt = OGR_G_GetPointCount(ring);
                for(p=0;p<cnt;p++) {
                   OGR_G_GetPoint(ring,p,&x,&y,&z);
-                  if (x>=(ToRef->X0-0.5) && x<=(ToRef->X1+0.5) && y>=(ToRef->Y0-0.5) && x<=(ToRef->X1+0.5))
-                     {
+                  if (x>=(ToRef->X0-0.5) && x<=(ToRef->X1+0.5) && y>=(ToRef->Y0-0.5) && x<=(ToRef->X1+0.5)) {
                      intersect=1;
                      break;
-                     }
+                  }
                }
 
                if (!wrap || !intersect)
                   continue;
+
+               // Allocate local index
+               lp=NULL;
+               if (ip) {
+                  if (!(index[nidx]=(float*)malloc(isize*sizeof(float)))) {
+                     Lib_Log(APP_LIBEER,APP_ERROR,"%s: Unable to allocate local index memory\n",__func__);
+                     error=1;
+                     continue;
+                  } 
+                  index[nidx][0]=DEF_INDEX_EMPTY;
+                  lp=index[nidx];
+               }
+               n=na=0;
 
                // Are we crossing the wrap around
                if (wrap<0) {
@@ -1902,8 +1932,6 @@ int Def_GridInterpConservative(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
                   }
 
                   // Process the cell
-                  OGR_G_Empty(cell);
-                  OGR_G_AddGeometry(cell,ring);
                   area=OGR_G_Area(cell);
 
                   if (area>0.0) {
@@ -1911,7 +1939,7 @@ int Def_GridInterpConservative(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
                     Def_Get(FromDef,0,FIDX3D(FromDef,i,j,k),val1);
                      // If we are saving the indexes, we have to process even if nodata but use 0.0 so as to not affect results
                      if (!DEFVALID(FromDef,val1)) {
-                        if (ip) {
+                        if (lp) {
                            val1=0.0;
                         } else {
                            continue;
@@ -1926,22 +1954,9 @@ int Def_GridInterpConservative(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
                      env.MaxX=env.MaxX>ToRef->X1?ToRef->X1:env.MaxX;
                      env.MaxY=env.MaxY>ToRef->Y1?ToRef->Y1:env.MaxY;
 
-                     // Append gridpoint to the index
-                     if (ip) {
-                        *(ip++)=i;
-                        *(ip++)=j;
-                     }
+                     nt+=na=Def_GridInterpQuad(ToDef,ToRef,poly,cell,IR_CONSERVATIVE?'C':'N','A',area,val1,env.MinX,env.MinY,env.MaxX,env.MaxY,k,CB_SUM,&lp);
 
-                     nt+=n=Def_GridInterpQuad(ToDef,ToRef,NULL,cell,IR_CONSERVATIVE?'C':'N','A',area,val1,env.MinX,env.MinY,env.MaxX,env.MaxY,k,CB_SUM,&ip);
-
-                     if (ip) {
-                        if (n) {
-                           *(ip++)=DEF_INDEX_SEPARATOR; // End the list for this gridpoint
-                        } else {
-                           ip-=2;                       // No intersection found, removed previously inserted gridpoint
-                        }
-                     }
-                     Lib_Log(APP_LIBEER,APP_DEBUG,"%s: %i hits on grid point %i %i (%.0f %.0f x %.0f %.0f)\n",__func__,n,i,j,env.MinX,env.MinY,env.MaxX,env.MaxY);
+                     Lib_Log(APP_LIBEER,APP_DEBUG,"%s: %i hits on grid point %i %i (%.0f %.0f x %.0f %.0f)\n",__func__,na,i,j,env.MinX,env.MinY,env.MaxX,env.MaxY);
                   }
 
                   // We have to process the part that was out of the grid limits so translate everything NI points
@@ -1952,15 +1967,13 @@ int Def_GridInterpConservative(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
                   }
                }
 
-               OGR_G_Empty(cell);
-               OGR_G_AddGeometry(cell,ring);
-               area=OGR_G_Area(cell);
+              area=OGR_G_Area(cell);
 
                if (area>0.0) {
                   Def_Get(FromDef,0,FIDX3D(FromDef,i,j,k),val1);
                   if (!DEFVALID(FromDef,val1)) {
                      // If we are saving the indexes, we have to process even if nodata but use 0.0 so as to not affect results
-                     if (ip) {
+                     if (lp) {
                         val1=0.0;
                      } else {
                         continue;
@@ -1976,28 +1989,41 @@ int Def_GridInterpConservative(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
                      env.MaxX=env.MaxX>ToRef->X1?ToRef->X1:env.MaxX;
                      env.MaxY=env.MaxY>ToRef->Y1?ToRef->Y1:env.MaxY;
 
-                      // Append gridpoint to the index
-                     if (ip) {
-                        *(ip++)=i;
-                        *(ip++)=j;
-                     }
+                     nt+=n=Def_GridInterpQuad(ToDef,ToRef,poly,cell,IR_CONSERVATIVE?'C':'N','A',area,val1,env.MinX,env.MinY,env.MaxX,env.MaxY,k,CB_SUM,&lp);
 
-                     nt+=n=Def_GridInterpQuad(ToDef,ToRef,NULL,cell,IR_CONSERVATIVE?'C':'N','A',area,val1,env.MinX,env.MinY,env.MaxX,env.MaxY,k,CB_SUM,&ip);
-
-                     if (ip) {
-                        if (n) {
-                           *(ip++)=DEF_INDEX_SEPARATOR; // End the list for this gridpoint
-                        } else {
-                           ip-=2;                       // No intersection found, removed previously inserted gridpoint
-                        }
-                     }
                      Lib_Log(APP_LIBEER,APP_DEBUG,"%s: %i hits on grid point %i %i (%.0f %.0f x %.0f %.0f)\n",__func__,n,i,j,env.MinX,env.MinY,env.MaxX,env.MaxY);
                   }
                }
+               if (lp && (n || na)) {
+                  *(lp++)=DEF_INDEX_SEPARATOR; // End the list for this gridpoint
+               }
             }
          }
-         if (ip) *(ip++)=DEF_INDEX_END;
 
+         // Merge indexes
+         n=0;
+         if (ip && nt && !error) {
+            for(j=0;j<FromDef->NJ;j++) {
+               for(i=0;i<FromDef->NI;i++) {
+                  nidx=j*FromDef->NI+i;
+
+                  if ((lp=index[nidx]) && *lp!=DEF_INDEX_EMPTY) {
+                     // Append gridpoint to the index
+                     *(ip++)=i;
+                     *(ip++)=j;
+
+                     // This gridpoint wraps around
+                     while(*lp!=DEF_INDEX_SEPARATOR) {
+                        *(ip++)=*(lp++);
+                     }
+                     *(ip++)=DEF_INDEX_SEPARATOR;
+                  }
+                  if (index[nidx]) free(index[nidx]);
+               }
+            }
+            *(ip++)=DEF_INDEX_END;
+            free(index);
+         }
          Lib_Log(APP_LIBEER,APP_DEBUG,"%s: %i total hits\n",__func__,nt);
       }
 
