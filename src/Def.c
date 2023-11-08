@@ -1248,7 +1248,7 @@ int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *Layer
       #pragma omp parallel for private(f,geom,hgeom,utmgeom,env,co,value,vr,n,area,mode,type,lp) firstprivate(pick,poly) shared(Layer,LayerRef,ToRef,Mode,Comb,fld,tr,error,ip,index,isize) reduction(+:nt)
       for(f=0;f<Layer->NFeature;f++) {
          
-         index[f]=NULL;
+         if (index) index[f]=NULL;
          if (error) continue;
          n=0;
 
@@ -1876,7 +1876,7 @@ int Def_GridInterpConservative(TGeoRef *ToRef,TDef *ToDef,TGeoRef *FromRef,TDef 
             for(i=0;i<FromDef->NI;i++) {
 
                nidx=j*FromDef->NI+i;
-               index[nidx]=NULL;
+               if (index) index[nidx]=NULL;
                if (error) continue;
 
                // Create gridcell geometry object
