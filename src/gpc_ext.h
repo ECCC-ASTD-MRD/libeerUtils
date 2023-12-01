@@ -50,6 +50,7 @@ int gpce_polygon_contains_polygon(const gpc_polygon *restrict OPoly,const gpce_e
 int gpce_explode_multi_polygon(const gpc_polygon *restrict Poly,const gpce_envelope *restrict PEnv,gpc_polygon **PList,gpce_envelope ***EList);
 int gpce_poly_split_tile(const gpc_polygon *restrict Poly,const int MaxPoints,gpc_polygon **restrict Split,unsigned int *restrict NbSplit,unsigned int **restrict PolyIdx,unsigned int *restrict Size);
 int gpce_poly_wrap_split(const gpc_polygon *restrict Poly,const gpce_envelope *restrict Env,int Dim,double R0,double R1,gpc_polygon *restrict Wrapped);
+void gpce_poly_wrap_clamp(gpc_polygon *restrict Poly,int Dim,double R0,double R1);
 
 // Envelope related
 void gpce_get_ring_envelope(const gpc_vertex_list *restrict Ring,gpce_envelope *restrict PEnv);

@@ -1132,6 +1132,51 @@ int gpce_poly_wrap_split(const gpc_polygon *restrict Poly,const gpce_envelope *r
 
    return adjed;
 }
+/*----------------------------------------------------------------------------
+ * Name     : <gpce_poly_wrap_clamp>
+ * Creation : December 2023 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * Purpose  : Clamp polygons on the wrapping line wrapping the points accordingly
+ *            For example, for the given wrapping range [-180,180], -182 becomes 178
+ *
+ * Args :
+ *   <Poly>    : [IN/OUT] The (multi)polygon to clamp at the wrapping line (modified in place)
+ *   <Dim>     : Dimension of the wrap. 0=X, 1=Y
+ *   <R0>      : Inferior point for the wrapping in the given dimension (ex: -180)
+ *   <R1>      : Superior point for the wrapping in the given dimension (ex: +180)
+ *
+ * Return:
+ *
+ * Remarks :
+ *----------------------------------------------------------------------------
+ */
+void gpce_poly_wrap_clamp(gpc_polygon *restrict Poly,int Dim,double R0,double R1) {
+   gpc_vertex  *v;
+   double      dr;
+   int         n,c;
+
+   // Make sure we have the L0 and L1 in the right order
+   if( R0 > R1 ) {
+      dr = R0;
+      R0 = R1;
+      R1 = dr;
+   }
+
+   // Calculate the extent of the range (total range) and middle point
+   dr = R1-R0;
+
+   for(c=0; c<Poly->num_contours; ++c) {
+      for(n=Poly->contour[c].num_vertices,v=Poly->contour[c].vertex; n; --n,++v) {
+         if( Dim ) {
+            while( v->y < R0 ) v->y += dr;
+            while( v->y > R1 ) v->y -= dr;
+         } else {
+            while( v->x < R0 ) v->x += dr;
+            while( v->x > R1 ) v->x -= dr;
+         }
+      }
+   }
+}
 
 /*----------------------------------------------------------------------------
  * Nom      : <gpce_get_ring_envelope>
