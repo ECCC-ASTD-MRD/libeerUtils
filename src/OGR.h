@@ -134,5 +134,6 @@ int          OGM_SimplifyDP(double Tolerance,Vect3d *Pt,int J,int K,int *Markers
 double       OGM_AngleMin(OGRGeometryH Geom);
 int          OGM_Clean(OGRGeometryH Geom);
 OGRGeometryH OGM_PolySplitTile(OGRGeometryH Poly,const unsigned int MaxPoints,OGRGeometryH Res);
+OGRGeometryH OGM_ClipLonWrap(OGRGeometryH Poly);
 
 #endif
