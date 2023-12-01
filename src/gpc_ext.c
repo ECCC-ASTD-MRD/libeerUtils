@@ -889,7 +889,7 @@ int gpce_poly_split_tile(const gpc_polygon *restrict Poly,const int MaxPoints,gp
       }
 
       // Clip and process the first half
-      gpc_polygon_clip(GPC_INT,Poly,&clip0,&res);
+      gpc_polygon_clip(GPC_INT,(gpc_polygon*)Poly,&clip0,&res);
       if( !gpce_poly_split_tile(&res,MaxPoints,Split,NbSplit,PolyIdx,Size) ) {
          gpc_free_polygon(&res);
          goto err;
@@ -897,7 +897,7 @@ int gpce_poly_split_tile(const gpc_polygon *restrict Poly,const int MaxPoints,gp
       gpc_free_polygon(&res);
 
       // Clip and process the second half
-      gpc_polygon_clip(GPC_INT,Poly,&clip1,&res);
+      gpc_polygon_clip(GPC_INT,(gpc_polygon*)Poly,&clip1,&res);
       if( !gpce_poly_split_tile(&res,MaxPoints,Split,NbSplit,PolyIdx,Size) ) {
          gpc_free_polygon(&res);
          goto err;
