@@ -93,6 +93,7 @@ typedef struct OGR_Layer {
 
 #ifdef HAVE_GPC
    #include "gpc.h"
+   #include "gpc_ext.h"
 #else
    typedef char gpc_polygon;
    typedef char gpc_op;
