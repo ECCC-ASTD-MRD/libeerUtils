@@ -1095,7 +1095,9 @@ static int Def_GridInterpQuad(TDef *Def,TGeoRef *Ref,OGRGeometryH Poly,OGRGeomet
  *   <OK>       : ERROR=0
  *
  * Remarques    :
- *
+ *   The index format is a stream of float32 containing for each OGR feature, the list of gridcells and interpolation
+ *   factor separated by -1,
+ *      [ogr feature index] [feature value area] [grid cell x] [grid cell y] [factor] [grid cell x] [grid cell y] [factor] ... -1.0 ...
  *---------------------------------------------------------------------------------------------------------------
 */
 int Def_GridInterpOGR(TDef *ToDef,TGeoRef *ToRef,OGR_Layer *Layer,TGeoRef *LayerRef,TDef_InterpV Mode,int Final,char *Field,double Value,TDef_Combine Comb,float *Index) {
