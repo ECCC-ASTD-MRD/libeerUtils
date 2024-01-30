@@ -93,6 +93,7 @@ typedef struct OGR_Layer {
 
 #ifdef HAVE_GPC
    #include "gpc.h"
+   #include "gpc_ext.h"
 #else
    typedef char gpc_polygon;
    typedef char gpc_op;
@@ -134,5 +135,6 @@ int          OGM_SimplifyDP(double Tolerance,Vect3d *Pt,int J,int K,int *Markers
 double       OGM_AngleMin(OGRGeometryH Geom);
 int          OGM_Clean(OGRGeometryH Geom);
 OGRGeometryH OGM_PolySplitTile(OGRGeometryH Poly,const unsigned int MaxPoints,OGRGeometryH Res);
+OGRGeometryH OGM_ClipLonWrap(OGRGeometryH Poly);
 
 #endif

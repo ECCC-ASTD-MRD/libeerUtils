@@ -1454,6 +1454,7 @@ static OGRGeometryH OGM_MkClipPoly(double X0,double Y0,double X1,double Y1) {
 
    return clip;
 }
+
 OGRGeometryH OGM_PolySplitTile(OGRGeometryH Poly,const unsigned int MaxPoints,OGRGeometryH Res) {
    unsigned int i,n,np,toplvl=0;
 
@@ -1544,4 +1545,32 @@ err:
       OGR_G_DestroyGeometry(Res);
    return NULL;
 }
+
+OGRGeometryH OGM_ClipLonWrap(OGRGeometryH Poly) {
+   gpc_polygon    poly,clip;
+   OGRGeometryH   res=NULL;
+
+   // TODO make sure it is in a lat/lon projection
+
+
+   // Convert to GPC data struct
+   OGM_GPCNew(&poly);
+   OGM_GPCFromOGR(&poly,Poly);
+
+   if( gpce_poly_wrap_split(&poly,NULL,0,-180.0,180.0,&clip) ) {
+      // Convert back to OGR
+      OGM_GPCToOGR(&clip,&res);
+      // Free gpc memory
+      gpc_free_polygon(&clip);
+   } else {
+      // No longitude wrapping, just return the original geom
+      res = Poly;
+   }
+
+   // Free gpc memory
+   gpc_free_polygon(&poly);
+
+   return res;
+}
+
 #endif

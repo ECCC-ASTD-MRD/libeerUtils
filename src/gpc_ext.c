@@ -889,7 +889,7 @@ int gpce_poly_split_tile(const gpc_polygon *restrict Poly,const int MaxPoints,gp
       }
 
       // Clip and process the first half
-      gpc_polygon_clip(GPC_INT,Poly,&clip0,&res);
+      gpc_polygon_clip(GPC_INT,(gpc_polygon*)Poly,&clip0,&res);
       if( !gpce_poly_split_tile(&res,MaxPoints,Split,NbSplit,PolyIdx,Size) ) {
          gpc_free_polygon(&res);
          goto err;
@@ -897,7 +897,7 @@ int gpce_poly_split_tile(const gpc_polygon *restrict Poly,const int MaxPoints,gp
       gpc_free_polygon(&res);
 
       // Clip and process the second half
-      gpc_polygon_clip(GPC_INT,Poly,&clip1,&res);
+      gpc_polygon_clip(GPC_INT,(gpc_polygon*)Poly,&clip1,&res);
       if( !gpce_poly_split_tile(&res,MaxPoints,Split,NbSplit,PolyIdx,Size) ) {
          gpc_free_polygon(&res);
          goto err;
@@ -960,6 +960,222 @@ err:
    *Split = NULL;
    *NbSplit = 0;
    return 0;
+}
+
+/*----------------------------------------------------------------------------
+ * Name     : <gpce_poly_wrap_split>
+ * Creation : December 2023 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * Purpose  : Splits polygon on the wrapping line (ex: -180 -> 180 in longitude)
+ *            making them multi-polygons suitable for calculations
+ *
+ * Args :
+ *   <Poly>    : The (multi)polygon to split at the wrapping line
+ *   <Env>     : [Optional] Envolope of the given polygon (will be calculated otherwise)
+ *   <Dim>     : Dimension of the wrap. 0=X, 1=Y
+ *   <R0>      : Inferior point for the wrapping in the given dimension (ex: -180)
+ *   <R1>      : Superior point for the wrapping in the given dimension (ex: +180)
+ *   <Wrapped> : [OUT] Resulting (multi)polygon IF any changes were done
+ *
+ * Return: The number of adjustements made (number of crossing treated).
+ *         0 means that nothing is changed (and no wrapped polygon will be returned)
+ *
+ * Remarks :
+ *----------------------------------------------------------------------------
+ */
+int gpce_poly_wrap_split(const gpc_polygon *restrict Poly,const gpce_envelope *restrict Env,int Dim,double R0,double R1,gpc_polygon *restrict Wrapped) {
+   gpc_polygon poly = GPC_NULL_POLY;
+   gpc_vertex  *v;
+   int         c,i,n,adjed=0;
+   double      adjust,xy,lxy,dr,mid,amin=0.0,amax=0.0;
+
+   *Wrapped = GPC_NULL_POLY;
+
+   // Make sure we have the L0 and L1 in the right order
+   if( R0 > R1 ) {
+      dr = R0;
+      R0 = R1;
+      R1 = dr;
+   }
+
+   // Calculate the extent of the range (total range) and middle point
+   dr = R1-R0;
+   mid = 0.5*(R0+R1);
+
+   // Adjust the x or y coordinate from the [R0,R1] range to the [L0,L1+dr] range.
+   // This makes sure no poly wraps around (makes the quantic leap from R0 to R1 or vice versa)
+   for(c=0; c<Poly->num_contours; ++c) {
+      adjust = 0.0;
+
+      if( (n=Poly->contour[c].num_vertices) > 0 ) {
+         // Note: we loop on n-1 values because the first point can't have crossed the wrapping line by itself
+         for(i=1,v=Poly->contour[c].vertex+i,lxy=(Dim?(v-1)->y:(v-1)->x); i<n; ++i,++v) {
+            xy = Dim ? v->y : v->x;
+
+            // If we travel more than half the total range between two points, then we are probably crossing the wrapping line
+            if( fabs(xy-lxy) >= 0.5*dr ) {
+               // Update the adjustment by one range extent depending on were the previous point was compared to the adjusted midpoint
+               // (by adjusting the midpoint too, we ensure that the crossing back will be handled)
+               if( lxy >= mid+adjust ) {
+                  adjust += dr;
+               } else {
+                  adjust -= dr;
+               }
+
+               // Update the adjusting range
+               amin = fmin(adjust,amin);
+               amax = fmax(adjust,amax);
+
+               // Create a copy of the polygon (as modifications will be needed)
+               if( !poly.num_contours ) {
+                  gpce_copy_polygon(&poly,Poly);
+               }
+
+               // Increment the number of adjustments made
+               ++adjed;
+            }
+
+            // Make adjustments if needed. Note that the poly will exist if an adjustment is needed.
+            if( adjust != 0.0 ) {
+               if( Dim ) {
+                  poly.contour[c].vertex[i].y += adjust;
+               } else {
+                  poly.contour[c].vertex[i].x += adjust;
+               }
+            }
+
+            // Update last value
+            lxy = xy;
+         }
+      }
+   }
+
+   // Make the clippings if need be
+   if( adjed ) {
+      gpc_polygon    res,clip,resn;
+      gpce_envelope  env;
+      int            i0,i1;
+
+      // Clipping rectangle
+      int               hole  = 0;
+      gpc_vertex        rv[]  = {{0.0,0.0},{0.0,0.0},{0.0,0.0},{0.0,0.0}};
+      gpc_vertex_list   rvlst = (gpc_vertex_list){rv,4};
+      gpc_polygon       rect  = (gpc_polygon){&rvlst,&hole,1};
+
+      // Calculate the envelope if none was provided (only used to know the extent of the non-wrapping dimension
+      if( Env ) {
+         env = *Env;
+      } else {
+         gpce_get_envelope(&poly,&env);
+      }
+
+      // Make sure the non-wrapping dimension is never clipped by putting the clipping rectangle way out of reach
+      // Note: we use a multiple of the range instead of a fixed value for numerical stability)
+      if( Dim ) {
+         rv[0].x = rv[3].x = env.min.x - 0.5*(env.max.x-env.min.x);
+         rv[1].x = rv[2].x = env.max.x + 0.5*(env.max.x-env.min.x);
+      } else {
+         rv[0].y = rv[1].y = env.min.y - 0.5*(env.max.y-env.min.y);
+         rv[2].y = rv[3].y = env.max.y + 0.5*(env.max.y-env.min.y);
+      }
+
+      // Calculate our clipping windows (making sure to not be affected by numerical instability)
+      i0 = (int)round(amin/dr);
+      i1 = (int)round(amax/dr);
+
+      // Make the clippings
+      for(i=i0; i<=i1; ++i) {
+         // Adjust the clipping rectangle in the wrapping dimension
+         if( Dim ) {
+            rv[0].y = rv[1].y = R0 + i*dr;
+            rv[2].y = rv[3].y = R0 + (i+1)*dr;
+         } else {
+            rv[0].x = rv[3].x = R0 + i*dr;
+            rv[1].x = rv[2].x = R0 + (i+1)*dr;
+         }
+
+         // Make the clipping
+         gpc_polygon_clip(GPC_INT,&poly,&rect,&clip);
+
+         // Bring everything back in the given range if needed
+         if( i ) {
+            adjust = i*dr;
+            for(c=0; c<clip.num_contours; ++c) {
+               for(n=clip.contour[c].num_vertices,v=clip.contour[c].vertex; n; --n,++v) {
+                  if( Dim ) {
+                     v->y -= adjust;
+                  } else {
+                     v->x -= adjust;
+                  }
+               }
+            }
+         }
+
+         if( i == i0 ) {
+            // First round over, we take the clipping as the result, no need to free anything
+            res = clip;
+         } else {
+            // Merge clipping with previous result
+            gpc_polygon_clip(GPC_UNION,&res,&clip,&resn);
+            gpc_free_polygon(&res);
+            gpc_free_polygon(&clip);
+            res = resn;
+         }
+      }
+
+      // Free our polygon copy
+      gpc_free_polygon(&poly);
+
+      // Set the result
+      *Wrapped = res;
+   }
+
+   return adjed;
+}
+/*----------------------------------------------------------------------------
+ * Name     : <gpce_poly_wrap_clamp>
+ * Creation : December 2023 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * Purpose  : Clamp polygons on the wrapping line wrapping the points accordingly
+ *            For example, for the given wrapping range [-180,180], -182 becomes 178
+ *
+ * Args :
+ *   <Poly>    : [IN/OUT] The (multi)polygon to clamp at the wrapping line (modified in place)
+ *   <Dim>     : Dimension of the wrap. 0=X, 1=Y
+ *   <R0>      : Inferior point for the wrapping in the given dimension (ex: -180)
+ *   <R1>      : Superior point for the wrapping in the given dimension (ex: +180)
+ *
+ * Return:
+ *
+ * Remarks :
+ *----------------------------------------------------------------------------
+ */
+void gpce_poly_wrap_clamp(gpc_polygon *restrict Poly,int Dim,double R0,double R1) {
+   gpc_vertex  *v;
+   double      dr;
+   int         n,c;
+
+   // Make sure we have the L0 and L1 in the right order
+   if( R0 > R1 ) {
+      dr = R0;
+      R0 = R1;
+      R1 = dr;
+   }
+
+   // Calculate the extent of the range (total range) and middle point
+   dr = R1-R0;
+
+   for(c=0; c<Poly->num_contours; ++c) {
+      for(n=Poly->contour[c].num_vertices,v=Poly->contour[c].vertex; n; --n,++v) {
+         if( Dim ) {
+            while( v->y < R0 ) v->y += dr;
+            while( v->y > R1 ) v->y -= dr;
+         } else {
+            while( v->x < R0 ) v->x += dr;
+            while( v->x > R1 ) v->x -= dr;
+         }
+      }
+   }
 }
 
 /*----------------------------------------------------------------------------
