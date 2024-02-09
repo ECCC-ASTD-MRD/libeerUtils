@@ -121,6 +121,7 @@ if(WITH_OMPI AND OpenMP_FOUND AND MPI_FOUND)
    if(${CMAKE_Fortran_COMPILER} STREQUAL "gfortran")
       target_link_libraries(eerUtils-ompi PUBLIC -lgfortran)
    endif()
+   target_link_libraries(eerUtils-ompi PUBLIC -lrt)
 endif()
 
 #----- Install instructions
