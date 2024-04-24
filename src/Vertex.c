@@ -273,24 +273,24 @@ int VertexLoc(Vect3d **Pos,TDef *Def,Vect3d Vr,double X,double Y,double Z,int Wr
  *
  *----------------------------------------------------------------------------
 */
-static inline double VertexAvg(TDef *Def,int Idx,int X,int Y,int Z) {
+static inline double VertexAvg(TDef *Def,int Idx,unsigned long X,unsigned long Y,unsigned long Z) {
    
-   unsigned long n,i,j,idx,k;
+   unsigned long n,i,j,idx,kidx;
    double        v,val;
    
    n=0;
    val=0.0;
-   k=Z*Def->NIJ;
+   kidx=Z*Def->NIJ;
    
-   for(j=Y-1;j<=Y+1;j++) {
-      for(i=X-1;i<=X+1;i++) {
-         idx=j*Def->NI+i;
-
-         if (idx>=0 && idx<Def->NIJ && Def->Mask[k+idx]) {
+   //printf("j(%ld->%ld) i(%ld->%ld)\n",Y-1,Y+1,X-1,X+1);
+   for(j=(Y?Y-1:0);j<=Y+1;++j) {
+      for(i=(X?X-1:0),idx=kidx+j*Def->NI+i;i<=X+1;++i,++idx) {
+         if (Def->Mask[idx]) {
             if (Idx==-1) {
-               Def_GetMod(Def,k+idx,v);
+               //printf("Idx(%d) X(%d) Y(%d) Z(%d) idx(%ld) k+idx(%ld) Mode(%p,Size:%zd) Data[0](%p,Size:%zd)\n",Idx,X,Y,Z,idx,k+idx,Def->Mode,malloc_usable_size(Def->Mode),Def->Data[0],malloc_usable_size(Def->Data[0]));
+               Def_GetMod(Def,idx,v);
             } else {
-               Def_Get(Def,Idx,k+idx,v)
+               Def_Get(Def,Idx,idx,v)
             }
             if (DEFVALID(Def,v)) {
                val+=v;
