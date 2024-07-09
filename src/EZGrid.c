@@ -1903,9 +1903,9 @@ int32_t f77name(ezgrid_llgetvalue)(int32_t *gdid,int32_t *mode,float *lat,float 
    return(EZGrid_LLGetValue(GridCache[*gdid],*mode,*lat,*lon,*k0-1,*k1-1,val));
 }
 
-int EZGrid_LLGetValue(TGrid* restrict const Grid,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* restrict Value) {
-
-   float      i,j;
+int EZGrid_LLGetValue(TGrid* restrict const Grid,TGridInterpMode Mode,double Lat,double Lon,int K0,int K1,float* restrict Value) {
+   float i,j;
+   float latf,lonf;
 
    if (!Grid) {
       Lib_Log(APP_LIBEER,APP_ERROR,"%s: Invalid grid\n",__func__);
@@ -1944,9 +1944,11 @@ int EZGrid_LLGetValue(TGrid* restrict const Grid,TGridInterpMode Mode,float Lat,
          // ELSE, we fallthrough (no break)
 
       default: // This is a regular RPN grid
-
+         latf = (float)Lat;
+         // EZSCINT has problems with negative longitudes
+         lonf = Lon<0.0 ? (float)Lon+360.0f : (float)Lon;
          // RPN_IntLock();
-         c_gdxyfll(Grid->GID,&i,&j,&Lat,&Lon,1);
+         c_gdxyfll(Grid->GID,&i,&j,&latf,&lonf,1);
          // RPN_IntUnlock();
          return(EZGrid_IJGetValue(Grid,Mode,i-1.0f,j-1.0f,K0,K1,Value));         
    }
@@ -1954,7 +1956,7 @@ int EZGrid_LLGetValue(TGrid* restrict const Grid,TGridInterpMode Mode,float Lat,
    return(FALSE);
 }
 
-int EZGrid_LLGetValueO(TGrid* restrict const GridU,TGrid* restrict const GridV,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* restrict UU,float* restrict VV,float Conv) {
+int EZGrid_LLGetValueO(TGrid* restrict const GridU,TGrid* restrict const GridV,TGridInterpMode Mode,double Lat,double Lon,int K0,int K1,float* restrict UU,float* restrict VV,float Conv) {
 
    TGridTile   *tu,*tv;
    double       i,j,d,th,len;
@@ -2010,7 +2012,7 @@ int EZGrid_LLGetValueO(TGrid* restrict const GridU,TGrid* restrict const GridV,T
    return(TRUE);  
 }
 
-int EZGrid_LLGetValueY(TGrid* restrict const GridU,TGrid* restrict const GridV,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* restrict UU,float* restrict VV,float Conv) {
+int EZGrid_LLGetValueY(TGrid* restrict const GridU,TGrid* restrict const GridV,TGridInterpMode Mode,double Lat,double Lon,int K0,int K1,float* restrict UU,float* restrict VV,float Conv) {
 
    TGridTile *tu,*tv;
    double     r,wt,efact,dists[EZGRID_YLINEARCOUNT],w[EZGRID_YLINEARCOUNT];
@@ -2087,7 +2089,7 @@ int EZGrid_LLGetValueY(TGrid* restrict const GridU,TGrid* restrict const GridV,T
    return(TRUE);  
 }
 
-int EZGrid_LLGetValueM(TGrid* restrict const GridU,TGrid* restrict const GridV,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* restrict UU,float* restrict VV,float Conv) {
+int EZGrid_LLGetValueM(TGrid* restrict const GridU,TGrid* restrict const GridV,TGridInterpMode Mode,double Lat,double Lon,int K0,int K1,float* restrict UU,float* restrict VV,float Conv) {
 
    TGridTile   *tu,*tv;
    int          k=0,ik=0;
@@ -2193,9 +2195,9 @@ int EZGrid_LLGetValueM(TGrid* restrict const GridU,TGrid* restrict const GridV,T
 int32_t f77name(ezgrid_llgetuvvalue)(int32_t *gdidu,int32_t *gdidv,int32_t *mode,float *lat,float *lon,int32_t *k0,int32_t *k1,float *uu,float *vv,float *conv) {
    return(EZGrid_LLGetUVValue(GridCache[*gdidu],GridCache[*gdidv],*mode,*lat,*lon,*k0-1,*k1-1,uu,vv,*conv));
 }
-int EZGrid_LLGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,TGridInterpMode Mode,float Lat,float Lon,int K0,int K1,float* restrict UU,float* restrict VV,float Conv) {
-
+int EZGrid_LLGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,TGridInterpMode Mode,double Lat,double Lon,int K0,int K1,float* restrict UU,float* restrict VV,float Conv) {
    float i,j;
+   float latf,lonf;
 
    if (!GridU || !GridV) {
       Lib_Log(APP_LIBEER,APP_ERROR,"%s: Invalid grid\n",__func__);
@@ -2230,9 +2232,12 @@ int EZGrid_LLGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
          // ELSE, we fallthrough (no break)
                   
       default: // This is a regular RPN grid
+         latf = (float)Lat;
+         // EZSCINT has problems with negative longitudes
+         lonf = Lon<0.0 ? (float)Lon+360.0f : (float)Lon;
          
          // RPN_IntLock();
-         c_gdxyfll(GridU->GID,&i,&j,&Lat,&Lon,1);
+         c_gdxyfll(GridU->GID,&i,&j,&latf,&lonf,1);
          // RPN_IntUnlock();
 
          return(EZGrid_IJGetUVValue(GridU,GridV,Mode,i-1.0f,j-1.0f,K0,K1,UU,VV,Conv));
@@ -2748,10 +2753,9 @@ int EZGrid_GetDims(TGrid* restrict const Grid,int Invert,float* DX,float* DY,flo
  *    - Ceci n'est qu'un wrapper sur c_gdllfxy pour le rendre threadsafe
  *----------------------------------------------------------------------------
 */
-int EZGrid_GetLL(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float* J,int Nb) {
-
-   int i,ok=0;
-   double la,lo;
+int EZGrid_GetLL(TGrid* restrict const Grid,double* Lat,double* Lon,float* I,float* J,int Nb) {
+   int i;
+   float latf,lonf;
    float fi,fj;
 
    if (Grid && Grid->GID>=0) {
@@ -2759,19 +2763,20 @@ int EZGrid_GetLL(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float
       for(i=0;i<Nb;i++) {
          fi=I[i]+1.0;
          fj=J[i]+1.0;
-         if ((ok=c_gdllfxy(Grid->GID,&Lat[i],&Lon[i],&fi,&fj,1))<0) {
-            break;
+         if( c_gdllfxy(Grid->GID,&latf,&lonf,&fi,&fj,1)<0 ) {
+            return APP_ERR;
          }
+         Lat[i] = latf;
+         Lon[i] = lonf;
       }
    //   RPN_IntUnlock();
    } else {
       for(i=0;i<Nb;i++) {
-         Grid->GRef->Project(Grid->GRef,I[i],J[i],&la,&lo,FALSE,TRUE);   
-         Lon[i]=lo;
-         Lat[i]=la;
+         APP_ASRT_OK( Grid->GRef->Project(Grid->GRef,I[i],J[i],&Lat[i],&Lon[i],FALSE,TRUE) );
       }    
    }
-   return(ok==0);
+
+   return APP_OK;
 }
 
 /*----------------------------------------------------------------------------
@@ -2788,38 +2793,39 @@ int EZGrid_GetLL(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float
  *   <J>          : J Grille
  *
  * Retour:
- *   <int>       : Code d'erreur (0=erreur, 1=ok)
+ *   <int>       : Code d'erreur (APP_ERR si erreur, APP_OK sinon)
  *
  * Remarques :
  *    - Ceci n'est qu'un wrapper sur c_gdxyfll pour le rendre threadsafe
  *----------------------------------------------------------------------------
 */
-int EZGrid_GetIJ(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float* J,int Nb) {
-
+int EZGrid_GetIJ(TGrid* restrict const Grid,double* Lat,double* Lon,float* I,float* J,int Nb) {
    int i,ok=0;
    double x,y;
+   float latf,lonf;
    
    if (Grid && Grid->GID>=0) {
   //   RPN_IntLock();
-      if (c_gdxyfll(Grid->GID,I,J,Lat,Lon,Nb)!=0) {
-         return(FALSE);
+      for(i=0; i<Nb; ++i) {
+         latf = (float)Lat[i];
+         // EZSCINT has problems with negative longitudes
+         lonf = Lon[i]<0.0 ? (float)Lon[i]+360.0f : (float)Lon[i];
+         if( c_gdxyfll(Grid->GID,&I[i],&J[i],&latf,&lonf,1)!=0 ) {
+            return APP_ERR;
+         }
+         I[i] -= 1.0;
+         J[i] -= 1.0;
       }
    //   RPN_IntUnlock();
-
-      for(i=0;i<Nb;i++) {
-         I[i]-=1.0;
-         J[i]-=1.0;
-      }
    } else {
-      for(i=0;i<Nb;i++) {
-         if (!Grid->GRef->UnProject(Grid->GRef,&x,&y,Lat[i],Lon[i],FALSE,TRUE)) {
-            return(FALSE);
-         }
-         I[i]=x;
-         J[i]=y;
+      for(i=0; i<Nb; ++i) {
+         APP_ASRT_OK( Grid->GRef->UnProject(Grid->GRef,&x,&y,Lat[i],Lon[i],FALSE,TRUE) );
+         I[i] = (float)x;
+         J[i] = (float)y;
       }    
    }
-   return(TRUE);
+
+   return APP_OK;
 }
 
 /*----------------------------------------------------------------------------
@@ -2841,7 +2847,7 @@ int EZGrid_GetIJ(TGrid* restrict const Grid,float* Lat,float* Lon,float* I,float
  * Remarques :
  *----------------------------------------------------------------------------
 */
-int EZGrid_GetBary(TGrid* restrict const Grid,float Lat,float Lon,Vect3d Bary,Vect3i Index) {
+int EZGrid_GetBary(TGrid* restrict const Grid,double Lat,double Lon,Vect3d Bary,Vect3i Index) {
 
    TQTree       *node;
    unsigned int *idx,n;

@@ -1,5 +1,5 @@
 NAME       : eerUtils
-VERSION    : 5.1.2
+VERSION    : 6.0.0
 BUILD      : Release
 DESCRIPTION: ECCC-SMC-CCMEP-CMOE Utility librairie package
 SUMMARY    : Library of common functions used by various CCMEP tools SPI, EER Models, ...
