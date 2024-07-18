@@ -40,6 +40,8 @@
 #ifndef _ZRef_h
 #define _ZRef_h
 
+#include "Lookup.h"
+
 // Level related constants and functions
 #define LVL_NIL         -1  //  No conversion
 #define LVL_MASL         0  //  Meters above sea level
@@ -86,8 +88,9 @@ typedef struct TZRef {
    float  POff;           // Pressure offset from level
    float  PTop;           // Pressure at top of atmosphere
    float  PRef;           // Reference pressure
-   float  RCoef[2];       // Hybrid level coefficient
    float  ETop;           // Eta coordinate a top
+   float  RCoef[2];       // Hybrid level coefficient
+   TLookup LU;            // Lookup for the levels
 
    TZRef_IP1Mode Style;   // IP style
 
@@ -119,6 +122,8 @@ double ZRef_Level2Meter(double Level,int Type);
 double ZRef_IP2Level(int IP,int *Type);
 int    ZRef_Level2IP(float Level,int Type,TZRef_IP1Mode Mode);
 int    ZRef_IPFormat(char *Buf,int IP,int Interval);
+
+int    ZRef_GetLevelIdx(TZRef *ZRef,float Lvl,int *Kb,int *Kn);
 
 const char** ZRef_LevelNames();
 const char*  ZRef_LevelName(int Type);

@@ -85,7 +85,7 @@ TZRef* ZRef_New(void) {
    if (!(zref=(TZRef*)calloc(1,sizeof(TZRef)))) {
       Lib_Log(APP_LIBEER,APP_ERROR,"%s: Unable to allocate memory\n",__func__);
    }
-   
+
    zref->VGD=NULL;
    zref->Levels=NULL;
    zref->Style=NEW;
@@ -96,7 +96,8 @@ TZRef* ZRef_New(void) {
    zref->P0=zref->P0LS=zref->PCube=zref->A=zref->B=NULL;
    zref->Version=-1;
    zref->NRef=1;
-   
+   zref->LU=LookupNULL;
+
    return(zref);
 }
 
@@ -167,13 +168,15 @@ int ZRef_Free(TZRef *ZRef) {
 #ifdef HAVE_VGRID
       if (ZRef->VGD)    Cvgd_free((vgrid_descriptor**)&ZRef->VGD); ZRef->VGD=NULL;
 #endif
-      if (ZRef->Levels) free(ZRef->Levels);    ZRef->Levels=NULL;
-      if (ZRef->A)      free(ZRef->A);         ZRef->A=NULL;
-      if (ZRef->B)      free(ZRef->B);         ZRef->B=NULL;
+      if (ZRef->Levels) free(ZRef->Levels);     ZRef->Levels=NULL;
+      if (ZRef->A)      free(ZRef->A);          ZRef->A=NULL;
+      if (ZRef->B)      free(ZRef->B);          ZRef->B=NULL;
 // P0 is owned by other packages
 //      if (ZRef->P0)     free(ZRef->P0);     ZRef->P0=NULL;
 //      if (ZRef->P0LS)   free(ZRef->P0LS);   ZRef->P0LS=NULL;
-      if (ZRef->PCube)  free(ZRef->PCube);     ZRef->PCube=NULL;
+      if (ZRef->PCube)  free(ZRef->PCube);      ZRef->PCube=NULL;
+
+      if (ZRef->LU.Free) ZRef->LU.Free(&ZRef->LU); ZRef->LU=LookupNULL;
 
       ZRef->Version=-1;
       ZRef->LevelNb=0;
@@ -258,13 +261,13 @@ TZRef* ZRef_Copy(TZRef *ZRef) {
 TZRef *ZRef_HardCopy(TZRef *ZRef) {
 
    TZRef *zref=NULL;
-   
+
    if (ZRef && (zref=ZRef_New())) {
-   
+
       zref->LevelNb=ZRef->LevelNb;
       zref->Levels=(float*)malloc(ZRef->LevelNb*sizeof(float));
       memcpy(zref->Levels,ZRef->Levels,ZRef->LevelNb*sizeof(float));
-      
+
       zref->Type=ZRef->Type;
       zref->PTop=ZRef->PTop;
       zref->PRef=ZRef->PRef;
@@ -275,6 +278,7 @@ TZRef *ZRef_HardCopy(TZRef *ZRef) {
       zref->Version=-1;
       zref->NRef=1;
       zref->Style=ZRef->Style;
+      zref->LU=LookupNULL;
    }
    return(zref);
 }
@@ -1210,4 +1214,58 @@ int ZRef_IPFormat(char *Buf,int IP,int Interval) {
       }    
    }
    return(type);
+}
+
+/*----------------------------------------------------------------------------
+ * Nom      : <ZRef_GetLevelIdx>
+ * Creation : Novembre 2022 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Search for the given level returning the corresponding indexes
+ *
+ * Parametres  :
+ *  <ZRef>     : Vertical reference to build the LUT for
+ *  <Lvl>      : Level to get the index for
+ *  <Kb>       : [OUT|OPT] Returned level that is below (in term of index) so
+ *               that the given level is contained in [Kb,Kb+1[
+ *  <Kn>       : [OUT|OPT] Returned level that is nearest to the given level
+ *
+ * Retour:     APP_OK if the given level is covered by the ZRef, APP_EER otherwise
+ *             Note that if the ZRef only has a single level, than all levels are
+ *             considered covered.
+ *
+ * Remarques :
+ *
+ *----------------------------------------------------------------------------
+ */
+int ZRef_GetLevelIdx(TZRef *ZRef,float Lvl,int *Kb,int *Kn) {
+   if( ZRef->LevelNb >= 3 ) {
+      // Build the lookup if it isn't already there
+      if( !ZRef->LU.GetIdx ) {
+         APP_ASRT_OK( Lookup_Init1Df(&ZRef->LU,ZRef->Levels,ZRef->LevelNb) );
+      }
+
+      int kmax = ZRef->LevelNb-1;
+      int kb = ZRef->LU.GetIdx(&ZRef->LU,Lvl);
+
+      if( kb<0 || kb==kmax && Lvl!=ZRef->Levels[kmax] ) {
+        return APP_ERR;
+      } else {
+         if( Kb ) *Kb = kb;
+         if( Kn ) *Kn = kb==kmax || fabsf(Lvl-ZRef->Levels[kb])>=fabsf(Lvl-ZRef->Levels[kb+1]) ? kb : kb+1;
+      }
+   } else if( ZRef->LevelNb == 2 ) {
+      if( Lvl<ZRef->Levels[0] || Lvl>ZRef->Levels[1] ) {
+         return APP_ERR;
+      } else {
+         int kb = Lvl==ZRef->Levels[1];
+         if( Kb ) *Kb = kb;
+         if( Kn ) *Kn = kb==1 || fabsf(Lvl-ZRef->Levels[1])<fabsf(Lvl-ZRef->Levels[0]) ? 1 : 0;
+      }
+   } else {
+      // For only one level, we return that single level
+      if( Kb ) *Kb = 0;
+      if( Kn ) *Kn = 0;
+   }
+
+   return APP_OK;
 }
