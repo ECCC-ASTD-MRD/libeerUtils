@@ -508,7 +508,8 @@ int ZRef_AddRestrictLevel(float Level) {
  * Parametres   :
  *  <ZRef>      : Vertical referencer
  *  <H>         : RPN header
- *  <Order>     : Ordre de tri des niveaux (IP1) (-1=decroissant, 0=1 seul niveau, 1=croissant)
+ *  <Order>     : Ordre de tri des niveaux (IP1) (-1=decroissant, 0=1 seul niveau,
+ *                1=croissant, 2=auto)
  *
  * Retour:
  *  <Ok>        : (Index du champs <0=erreur).
@@ -558,6 +559,22 @@ int ZRef_GetLevels(TZRef *ZRef,const TRPNHeader* restrict const H,int Order) {
          }
       }
       ZRef->LevelNb=k2;
+
+      // Deal with auto order
+      if( Order == 2 ) {
+         switch( ZRef->Type ) {
+            case LVL_SIGMA:
+            case LVL_PRES:
+            case LVL_HYBRID:
+            case LVL_THETA:
+            case LVL_ETA:
+               Order = -1;
+               break;
+            default:
+               Order = 1;
+               break;
+         }
+      }
 
       /*Sort the levels from ground up and remove duplicates*/
       qsort(ZRef->Levels,ZRef->LevelNb,sizeof(float),Order==-1?QSort_DecFloat:QSort_Float);
