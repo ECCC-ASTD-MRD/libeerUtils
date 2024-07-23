@@ -2405,69 +2405,6 @@ int EZGrid_GetValue(const TGrid* restrict const Grid,int I,int J,int K0,int K1,f
 }
 
 /*----------------------------------------------------------------------------
- * Nom      : <EZGrid_GetValues>
- * Creation : Janvier 2008 - J.P. Gauthier - CMC/CMOE
- *
- * But      : Obtenir les valeurs a plusieurs points de grilles
- *
- * Parametres :
- *   <Grid>       : Grille
- *   <Nb>         : Nombre de points
- *   <I>          : Coordonnees en I
- *   <J>          : Coordonnees en J
- *   <K>          : Coordonnees en K
- *   <Value>      : Valeurs au points de grilles
- *
- * Retour:
- *   <int>       : Code d'erreur (0=erreur, 1=ok)
- *
- * Remarques :
- *
- *   - On effectue aucune interpolation
- *----------------------------------------------------------------------------
-*/
-int EZGrid_GetValues(const TGrid* restrict const Grid,int Nb,float* restrict const I,float* restrict const J,float* restrict const K,float* restrict Value) {
-
-   TGridTile *t;
-   int        n,i,j,k;
-
-   if (!Grid) {
-      Lib_Log(APP_LIBEER,APP_ERROR,"%s: Invalid grid\n",__func__);
-      return(FALSE);
-   }
-
-   for(n=0;n<ABS(Nb);n++) {
-
-      if (Nb<1) {
-         i=I[n]-1;
-         j=J[n]-1;
-         k=Grid->H.NK>1?K[n]-1:1;
-      } else {
-         i=I[n];
-         j=J[n];
-         k=Grid->H.NK>1?K[n]:0;
-      }
-
-      // Check inclusion in master grid limits
-      if (i<0 || j<0 || k<0 || i>=Grid->H.NI || j>=Grid->H.NJ || k>=Grid->H.NK) {
-         Lib_Log(APP_LIBEER,APP_DEBUG,"%s: Coordinates out of range (%s): I(%i) J(%i) K(%i)\n",__func__,Grid->H.NOMVAR,i,j,k);
-         return(FALSE);
-      }
-
-      if (!(t=EZGrid_TileGet(Grid,i,j))) {
-         Lib_Log(APP_LIBEER,APP_ERROR,"%s: Tile not found (%s) I(%i) J(%i)\n",__func__,Grid->H.NOMVAR,i,j);
-         return(FALSE);
-      }
-      if (!EZGrid_IsLoaded(t,k))
-         EZGrid_TileGetData(Grid,t,k);
-
-      Value[n]=EZGrid_TileValue(t,i,j,k);
-   }
-
-   return(TRUE);
-}
-
-/*----------------------------------------------------------------------------
  * Nom      : <EZGrid_GetArray>
  * Creation : Janvier 2008 - J.P. Gauthier - CMC/CMOE
  *
@@ -2519,66 +2456,6 @@ float* EZGrid_GetArrayPtr(TGrid* restrict const Grid,int K) {
       return(FALSE);
    }
    return(EZGrid_TileBurnAll(Grid,K,NULL));
-}
-
-/*----------------------------------------------------------------------------
- * Nom      : <EZGrid_GetRange>
- * Creation : Janvier 2008 - J.P. Gauthier - CMC/CMOE
- *
- * But      : Obtenir les valeurs pour un range de points de grille
- *
- * Parametres :
- *   <Grid>       : Grille
- *   <I0>         : Coordonnee inferieure en I
- *   <J0>         : Coordonnee inferieure en J
- *   <K0>         : Coordonnee inferieure en K
- *   <I1>         : Coordonnee superieure en I
- *   <J1>         : Coordonnee superieure en J
- *   <K1>         : Coordonnee superieure en K
- *   <Value>      : Valeurs du range
- *
- * Retour:
- *   <int>       : Code d'erreur (0=erreur, 1=ok)
- *
- * Remarques :
- *
- *   - On effectue aucune interpolation
- *----------------------------------------------------------------------------
-*/
-int EZGrid_GetRange(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1,int J1,int K1,float* restrict Value) {
-
-   TGridTile *t;
-   int        ik=0;
-   int        i,j,k;
-
-   if (!Grid) {
-      Lib_Log(APP_LIBEER,APP_ERROR,"%s: Invalid grid\n",__func__);
-      return(FALSE);
-   }
-
-   // Check inclusion in master grid limits
-   if (I0<0 || J0<0 || K0<0 || I0>Grid->H.NI-1 || J0>Grid->H.NJ-1 || K0>=Grid->H.NK ||
-       I1<0 || J1<0 || K1<0 || I1>Grid->H.NI-1 || J1>Grid->H.NJ-1 || K1>=Grid->H.NK) {
-      Lib_Log(APP_LIBEER,APP_DEBUG,"%s: Coordinates out of range (%s): I(%i,%i) J(%i,%i) K(%i,%i)\n",__func__,Grid->H.NOMVAR,I0,I1,J0,J1,K0,K1);
-      return(FALSE);
-   }
-
-   // Loop on coverage
-   for(k=K0;k<=K1;k++) {
-      for(j=J0;j<=J1;j++) {
-         for(i=I0;i<=I1;i++) {
-            if (!(t=EZGrid_TileGet(Grid,i,j))) {
-               Lib_Log(APP_LIBEER,APP_ERROR,"%s: Tile not found (%s) I(%i) J(%i)\n",__func__,Grid->H.NOMVAR,i,j);
-               return(FALSE);
-            }
-            if (!EZGrid_IsLoaded(t,k))
-               EZGrid_TileGetData(Grid,t,k);
-
-            Value[ik++]=EZGrid_TileValue(t,i,j,k);
-         }
-      }
-   }
-   return(TRUE);
 }
 
 /*----------------------------------------------------------------------------
