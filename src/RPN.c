@@ -215,14 +215,18 @@ int cs_fstlukt(void *Data,int Unit,int Idx,char *GRTYP,int *NI,int *NJ,int *NK) 
 
    if (GRTYP[0]=='#') {
       if ((grid=EZGrid_ReadIdx(Unit,Idx,0))) {
-         if (EZGrid_TileBurnAll(grid,0,Data)) {
-            err=0;
+         // Terrible hack, don't do this at home, kids!
+         grid->H.NK = 1;
+         grid->Data = (float**)&Data;
+         if( EZGrid_GetData(grid,0) == APP_OK ) {
+            *NI=grid->H.NI;
+            *NJ=grid->H.NJ;
+            *NK=grid->H.NK;
+            err = 0;
          }
+         grid->Data = NULL;
          EZGrid_Free(grid);
       }
-      *NI=grid->H.NI;
-      *NJ=grid->H.NJ;
-      *NK=grid->H.NK;
    } else {
       pthread_mutex_lock(&RPNFieldMutex);
       err=c_fstluk(Data,Idx,NI,NJ,NK);
