@@ -1208,7 +1208,7 @@ int RPN_Read(void *Data,TDef_Type Type,int Unit,int *NI,int *NJ,int *NK,int Date
    int key;
 
    if( (key=c_fstinf(Unit,NI,NJ,NK,DateO,Etiket,IP1,IP2,IP3,TypVar,NomVar)) <= 0 ) {
-      Lib_Log(APP_LIBEER,APP_ERROR,"(%s) Could not find field\n");
+      Lib_Log(APP_LIBEER,APP_ERROR,"(%s) Could not find field\n",__func__);
       return APP_ERR;
    }
    return RPN_ReadData(Data,Type,key);
