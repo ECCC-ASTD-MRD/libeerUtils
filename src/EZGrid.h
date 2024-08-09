@@ -47,31 +47,29 @@
 #define EZGRID_BOTTOM 0x4
 #define EZGRID_TOP    0x8
 
-#define EZGrid_IsSame(GRID0,GRID1)     (GRID0 && GRID1 && GRID0->GID==GRID1->GID)
+#define EZGrid_IsSame(GRID0,GRID1)     (GRID0 && GRID1 && GRID0->GDef->GID==GRID1->GDef->GID)
 #define EZGrid_IsLoaded(GRID,Z)        (GRID->Data && GRID->Data[Z] && !ISNAN(GRID->Data[Z][0]))
-#define EZGrid_IsInside(GRID,X,Y)      (GRID->H.GRTYP[0]=='M' || GRID->H.GRTYP[0]=='Y' || Y>=0 && Y<=GRID->H.NJ-1 && (GRID->Wrap || X>=0 && X<=GRID->H.NI-1))
-#define EZGrid_IsMesh(GRID)            (GRID->H.GRTYP[0]=='M')
-#define EZGrid_IsRegular(GRID)         (GRID->H.GRTYP[0]!='M' && GRID->H.GRTYP[0]!='Y' && GRID->H.GRTYP[0]!='O' && GRID->H.GRTYP[0]!='X')
-#define EZGrid_Is3D(GRID)              (GRID->H.NK>1?GRID->H.NK:0)
-
-#define EZGrid_Size(GRID)              (GRID->H.NJ*GRID->H.NI)
-#define EZGrid_TileValue(TILE,X,Y,Z)   (TILE->Data[Z][((int)Y-TILE->HJ)*TILE->HNI+((int)X-TILE->HI)])
+#define EZGrid_IsInside(GRID,X,Y)      (GRID->GDef->GRTYP[0]=='M' || GRID->GDef->GRTYP[0]=='Y' || Y>=0 && Y<=GRID->GDef->NJ-1 && (GRID->GDef->Wrap || X>=0 && X<=GRID->GDef->NI-1))
+#define EZGrid_IsMesh(GRID)            (GRID->GDef->GRTYP[0]=='M')
+#define EZGrid_IsRegular(GRID)         (GRID->GDef->GRTYP[0]!='M' && GRID->GDef->GRTYP[0]!='Y' && GRID->GDef->GRTYP[0]!='O' && GRID->GDef->GRTYP[0]!='X')
+#define EZGrid_Is3D(GRID)              (GRID->GDef->ZRef->LevelNb>1?GRID->GDef->ZRef->LevelNb:0)
+#define EZGrid_Size(GRID)              (GRID->GDef->NIJ)
 
 // This checks for wraps around longitude and flips over poles
 #define EZGrid_WrapFlip(GRID,X,Y) {\
-   if (GRID->Wrap) { \
-      if( Y > GRID->H.NJ-1 ) { \
-         Y = GRID->H.NJ-(Y-GRID->H.NJ+2); \
-         X = X<(GRID->H.NI>>1) ? X+(GRID->H.NI>>1) : X-(GRID->H.NI>>1); \
+   if (GRID->GDef->Wrap) { \
+      if( Y > GRID->GDef->NJ-1 ) { \
+         Y = GRID->GDef->NJ-(Y-GRID->GDef->NJ+2); \
+         X = X<(GRID->GDef->NI>>1) ? X+(GRID->GDef->NI>>1) : X-(GRID->GDef->NI>>1); \
       } else if( Y < 0.0f ) { \
          Y = -Y; \
-         X = X<(GRID->H.NI>>1) ? X+(GRID->H.NI>>1) : X-(GRID->H.NI>>1); \
+         X = X<(GRID->GDef->NI>>1) ? X+(GRID->GDef->NI>>1) : X-(GRID->GDef->NI>>1); \
       } \
-      if( X >= (GRID->H.NI-GRID->Wrap+1) ) { \
-         X -= (GRID->H.NI-GRID->Wrap+1); \
+      if( X >= (GRID->GDef->NI-GRID->GDef->Wrap+1) ) { \
+         X -= (GRID->GDef->NI-GRID->GDef->Wrap+1); \
       } else if( X<0.0f ) { \
-         X += (GRID->H.NI-GRID->Wrap+1); \
-         if( X == GRID->H.NI ) X-=1e-4; \
+         X += (GRID->GDef->NI-GRID->GDef->Wrap+1); \
+         if( X == GRID->GDef->NI ) X-=1e-4; \
       } \
    } \
 }
@@ -79,27 +77,34 @@
 typedef enum { EZ_NEAREST=0, EZ_LINEAR=1 }  TGridInterpMode;
 typedef enum { EZ_CRESSMAN=0, EZ_BARNES=1 } TGridYInterpMode;
 
-typedef struct TGrid TGrid;
+typedef struct TGridDef {
+   TZRef          *ZRef;               // Vertical referential
+   TGeoRef        *GRef;               // Geographic referential
 
-typedef struct TGrid {
-   pthread_mutex_t Mutex;                // Per grid mutex for IO
-   TRPNHeader      H;                    // RPN Standard file header
-   TZRef          *ZRef;                 // Vertical referential
-   TGeoRef        *GRef;                 // Geographic referential
-   float         **Data;                 // Data pointer
-   char          **Mask;                 // Mask pointer
-   int             Wrap;                 // Flag indicating grid globe wrap-around (global grids)
-   float           Pole[2];              // Pole coverage
+   int            NI,NJ,NIJ;           // Grid dimensions
+   int            IG1,IG2,IG3,IG4;     // Grid descriptors
 
-   int             GID;                  // EZSCINT Tile grid id (for interpolation)
-   int             Master;   // Grid template identifier
-   int             Incr;                 // Increasing sorting
-   float           Factor;               // Increasing sorting
+   int            GID;                 // EZSCINT Tile grid id (for interpolation)
+   int            Wrap;                // Flag indicating grid globe wrap-around (global grids)
+   float          Pole[2];             // Pole coverage
 
    // For tile support
-   unsigned int    NbTiles;              // Number of tiles (0 if not tiled)
-   int             Halo;                 // Halo size
-   int             NTI,NTJ;              // Number of tiles in I and J (0 if not tiled)
+   unsigned int    NbTiles;            // Number of tiles (0 if not tiled)
+   int             Halo;               // Halo size
+   int             NTI,NTJ;            // Number of tiles in I and J (0 if not tiled)
+
+   char           GRTYP[2];            // Grid type
+} TGridDef;
+
+typedef struct TGrid TGrid;
+typedef struct TGrid {
+   pthread_mutex_t Mutex;                // Per grid mutex for IO
+   TGridDef       *GDef;                 // Grid definition
+   TRPNHeader      H;                    // RPN Standard file header
+   float         **Data;                 // Data pointer
+   char          **Mask;                 // Mask pointer
+
+   float           Factor;               // Increasing sorting
 
    TGrid          *T0,*T1;               // Time interpolation strat and end grid
    float           FT0,FT1;              // Time interpolation factor
@@ -114,11 +119,10 @@ extern TGridYInterpMode EZGRID_YINTERP;
 #endif
 
 TGrid *EZGrid_New();
-TGrid *EZGrid_Copy(TGrid *Master,int Level);
+TGrid *EZGrid_CopyGrid(const TGrid *Master,int Level,int Alloc);
 void   EZGrid_Free(TGrid* restrict const Grid);
 void   EZGrid_Clear(TGrid* restrict const Grid);
-TGrid* EZGrid_Get(TGrid* restrict const Grid);
-TZRef* EZGrid_GetZRef(const TGrid* restrict const Grid);
+int    EZGrid_Get(TGridDef* restrict const GDef,const TRPNHeader *restrict H,int Incr);
 TGrid* EZGrid_Read(int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2,int Incr);
 TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr);
 int    EZGrid_GetData(TGrid* restrict Grid,int K);
@@ -130,7 +134,6 @@ float  EZGrid_GetLevel(const TGrid* restrict const Grid,float Pressure,float P0)
 float  EZGrid_GetPressure(const TGrid* restrict const Grid,float Level,float P0,float P0LS);
 int    EZGrid_Write(int FId,TGrid* restrict const Grid,int NBits,int Overwrite);
 
-int    EZGrid_Wrap(TGrid* restrict const Grid);
 void   EZGrid_Factor(TGrid* restrict Grid,float Factor);
 int    EZGrid_IJGetValue(TGrid* restrict const Grid,TGridInterpMode Mode,float I,float J,int K0,int K1,float* restrict Value);
 int    EZGrid_IJGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,TGridInterpMode Mode,float I,float J,int K0,int K1,float *UU,float* restrict VV,float Conv);
@@ -140,8 +143,7 @@ int    EZGrid_LLGetValueO(TGrid* __restrict const GridU,TGrid* __restrict const 
 int    EZGrid_LLGetValueY(TGrid* __restrict const GridU,TGrid* __restrict const GridV,TGridInterpMode Mode,double Lat,double Lon,int K0,int K1,float* __restrict UU,float* __restrict VV,float Conv);
 int    EZGrid_LLGetValueM(TGrid* __restrict const GridU,TGrid* __restrict const GridV,TGridInterpMode Mode,double Lat,double Lon,int K0,int K1,float* __restrict UU,float* __restrict VV,float Conv);
 float* EZGrid_GetArrayPtr(TGrid* restrict const Grid,int K);
-int    EZGrid_GetRange(const TGrid* restrict const Grid,int I0,int J0,int K0,int I1,int J1,int K1,float* restrict Value);
-int    EZGrid_GetDims(TGrid* restrict const Grid,int Invert,float* DX,float* DY,float* DA);
+int    EZGrid_GetDims(const TGrid* restrict const Grid,int Invert,float* DX,float* DY,float* DA);
 int    EZGrid_GetLL(TGrid* restrict const Grid,double* Lat,double* Lon,float* I,float* J,int Nb);
 int    EZGrid_GetIJ(TGrid* restrict const Grid,double* Lat,double* Lon,float* I,float* J,int Nb);
 int    EZGrid_GetBary(TGrid* __restrict const Grid,double Lat,double Lon,Vect3d Bary,Vect3i Index);
