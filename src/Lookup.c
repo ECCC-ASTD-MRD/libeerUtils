@@ -69,7 +69,15 @@ static int Lookup_PLU_GetIdxf(TLookup *restrict LU,float Val) {
    switch( LU->LData.PLU.N ) {
       case 1:  i = (int)round(f[0] + f[1]*v);            break;
       case 2:  i = (int)round(f[0] + f[1]*v + f[2]*v*v); break;
-      default: i = -2;                                   break;
+      default: return -2;
+   }
+
+   if( i <= 0 ) {
+      // Make some adjustments because the lookup polynomial is not exact but is garantied to be within one index
+      return Val<vals[0] ? -1 : 0;
+   } else if( i >= imax ) {
+      // Make some adjustments because the lookup polynomial is not exact but is garantied to be within one index
+      return Val>=vals[imax] ? imax : imax-1;
    }
 
    // Make some adjustments because the lookup polynomial is not exact but is garantied to be within one index,
