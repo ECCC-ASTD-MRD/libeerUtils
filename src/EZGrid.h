@@ -41,11 +41,6 @@
 #include "Triangle.h"
 
 #define EZGRID_CACHEMAX 64
-#define EZGRID_CENTER 0x0
-#define EZGRID_LEFT   0x1
-#define EZGRID_RIGHT  0x2
-#define EZGRID_BOTTOM 0x4
-#define EZGRID_TOP    0x8
 
 #define EZGrid_IsSame(GRID0,GRID1)     (GRID0 && GRID1 && GRID0->GDef->GID==GRID1->GDef->GID)
 #define EZGrid_IsLoaded(GRID,Z)        (GRID->Data && GRID->Data[Z] && !ISNAN(GRID->Data[Z][0]))
