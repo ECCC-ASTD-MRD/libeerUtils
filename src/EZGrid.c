@@ -423,12 +423,17 @@ static int EZGrid_CacheAdd(TGridDef* restrict const GDef) {
       pthread_mutex_lock(&CacheMutex);
       for(n=0; n<EZGRID_CACHEMAX; ++n) {
          if( !GridCache[n] ) {
+            GDef->CIdx = n;
             GridCache[n] = GDef;
             i = n;
             break;
          }
       }
       pthread_mutex_unlock(&CacheMutex);
+
+      if( i == -1 ) {
+         Lib_Log(APP_LIBEER,APP_ERROR,"%s: Unable to add GridDef(%p) to cache (cache is full)\n",__func__,GDef);
+      }
    }
 
    return i;
@@ -522,6 +527,7 @@ static int EZGrid_Get(TGridDef* restrict const GDef,const TRPNHeader *restrict H
    GDef->IG2      = H->IG2;
    GDef->IG3      = H->IG3;
    GDef->IG4      = H->IG4;
+   GDef->CIdx     = -1;
    GDef->GID      = -1;
    GDef->Wrap     = 0;
    GDef->Pole[0]  = 0.0f;
@@ -795,6 +801,7 @@ TGrid *EZGrid_CopyGrid(const TGrid *restrict Master,int Level,int Alloc) {
             new->GDef->ZRef->Style = Master->GDef->ZRef->Style;
 
             // Add to cache
+            new->GDef->CIdx = -1;
             EZGrid_CacheAdd(new->GDef);
          }
       } else {

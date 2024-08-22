@@ -40,7 +40,7 @@
 #include "QTree.h"
 #include "Triangle.h"
 
-#define EZGRID_CACHEMAX 2048
+#define EZGRID_CACHEMAX 64
 #define EZGRID_CENTER 0x0
 #define EZGRID_LEFT   0x1
 #define EZGRID_RIGHT  0x2
@@ -84,6 +84,7 @@ typedef struct TGridDef {
    int            NI,NJ,NIJ;           // Grid dimensions
    int            IG1,IG2,IG3,IG4;     // Grid descriptors
 
+   int            CIdx;                // Cache id of the GridDef
    int            GID;                 // EZSCINT Tile grid id (for interpolation)
    int            Wrap;                // Flag indicating grid globe wrap-around (global grids)
    float          Pole[2];             // Pole coverage
