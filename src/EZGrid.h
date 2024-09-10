@@ -121,6 +121,7 @@ void   EZGrid_Clear(TGrid* restrict const Grid);
 int    EZGrid_Get(TGridDef* restrict const GDef,const TRPNHeader *restrict H,int Incr);
 TGrid* EZGrid_Read(int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2,int Incr);
 TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr);
+int    EZGrid_Update(TGrid* restrict const Grid,int FId,int DateV);
 int    EZGrid_GetData(TGrid* restrict Grid,int K);
 int    EZGrid_LoadAll(TGrid* restrict const Grid);
 int    EZGrid_GetLevelNb(const TGrid* restrict const Grid);

@@ -1049,6 +1049,70 @@ TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr) {
 }
 
 /*----------------------------------------------------------------------------
+ * Nom      : <EZGrid_Update>
+ * Creation : Aout 2024 - E. Legault-Ouellet - CMC/CMOE
+ *
+ * But      : Faire l'update d'une grille (lire le pas de temps suivant)
+ *
+ * Parametres :
+ *   <Grid>      : Grille à mettre à jour
+ *   <FId>       : Fichier source
+ *   <DateV>     : Nouvelle date de validité
+ *
+ * Retour:
+ *   <Grid>      : Grille
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+*/
+int EZGrid_Update(TGrid* restrict const Grid,int FId,int DateV) {
+   int ni,nj,nk,key,tmpi;
+
+   if( !Grid )
+      return APP_ERR;
+
+   // Mark all the data as invalid (to force the reading of the fields)
+   EZGrid_Clear(Grid);
+
+   // Check if we can find the field
+   // Note: as IP2 is often linked to the timestep, it is not used as criteria.
+   // Similarly, etiket can change between compatible models (G1 vs G2) and so can typvars (A vs P), so are not used as criteria either.
+   if( (key=cs_fstinf(FId,&ni,&nj,&nk,DateV,"",Grid->H.IP1,-1,Grid->H.IP3,"",Grid->H.NOMVAR)) < 0 ) {
+      return APP_ERR;
+   }
+
+   // Make sure dimensions are compatible (sanity check to prevent segfault, should never be triggered)
+   if( ni!=Grid->GDef->NI || nj!=Grid->GDef->NJ ) {
+      Lib_Log(APP_LIBEER,APP_ERROR,"%s: Could not update (%s) as dimensions do not match\n",__func__,Grid->H.NOMVAR);
+      return APP_ERR;
+   }
+
+   // We reset this but only the ETIKET and TYPVAR may change (as the rest was used as search criteria earlier)
+   strcpy(Grid->H.NOMVAR,"    ");
+   strcpy(Grid->H.TYPVAR,"  ");
+   strcpy(Grid->H.ETIKET,"            ");
+   strcpy(Grid->H.GRTYP," ");
+
+   // Update the header (note: we make sure grid-related stuff (IGs, N[IJK]) are not overwritten)
+   key=c_fstprm(key,&Grid->H.DATEO,&Grid->H.DEET,&Grid->H.NPAS,&ni,&nj,&nk,&Grid->H.NBITS,
+         &Grid->H.DATYP,&Grid->H.IP1,&Grid->H.IP2,&Grid->H.IP3,Grid->H.TYPVAR,Grid->H.NOMVAR,Grid->H.ETIKET,
+         Grid->H.GRTYP,&tmpi,&tmpi,&tmpi,&tmpi,&Grid->H.SWA,&Grid->H.LNG,&Grid->H.DLTF,
+         &Grid->H.UBC,&Grid->H.EX1,&Grid->H.EX2,&Grid->H.EX3);
+
+   // Update DATEV
+   if (Grid->H.DATEO==0 && Grid->H.NPAS==0 && Grid->H.DEET==0) {
+      Grid->H.DATEV=0;
+   } else {
+      double nh = (Grid->H.NPAS*Grid->H.DEET)/3600.0;
+      f77name(incdatr)(&Grid->H.DATEV,&Grid->H.DATEO,&nh);
+   }
+
+   Grid->H.FID = FId;
+
+   return APP_OK;
+}
+
+/*----------------------------------------------------------------------------
  * Nom      : <EZGrid_LoadAll>
  * Creation : Janvier 2008 - J.P. Gauthier - CMC/CMOE
  *
