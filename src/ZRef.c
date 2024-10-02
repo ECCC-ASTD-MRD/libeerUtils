@@ -1254,7 +1254,7 @@ int ZRef_GetLevelIdx(TZRef *ZRef,float Lvl,int *Kb,int *Kn) {
          if( Kn ) *Kn = kb==kmax || fabsf(Lvl-ZRef->Levels[kb])>=fabsf(Lvl-ZRef->Levels[kb+1]) ? kb : kb+1;
       }
    } else if( ZRef->LevelNb == 2 ) {
-      if( Lvl<ZRef->Levels[0] || Lvl>ZRef->Levels[1] ) {
+      if( ZRef->Levels[0]<=ZRef->Levels[1]&&(Lvl<ZRef->Levels[0]||Lvl>ZRef->Levels[1]) || ZRef->Levels[0]>ZRef->Levels[1]&&(Lvl>ZRef->Levels[0]||Lvl<ZRef->Levels[1]) ) {
          return APP_ERR;
       } else {
          int kb = Lvl==ZRef->Levels[1];
