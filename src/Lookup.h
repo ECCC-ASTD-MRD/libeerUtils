@@ -63,7 +63,8 @@ typedef struct TLookup {
    } LData;
 } TLookup;
 
-extern TLookup LookupNULL;
+#define DLookupNULL (TLookup){NULL,NULL,NULL,0,0,{0}}
+extern const TLookup LookupNULL;
 
 int Lookup_Init1Df(TLookup *LU,float *Vals,int N);
 

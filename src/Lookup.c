@@ -37,7 +37,7 @@
 #include "App.h"
 #include "Lookup.h"
 
-TLookup LookupNULL = (TLookup){NULL,NULL,NULL,0,0,{0}};
+const TLookup LookupNULL = DLookupNULL;
 
 /*----------------------------------------------------------------------------
  * Nom      : <Lookup_PLU_GetIdxf>

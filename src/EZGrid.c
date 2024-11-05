@@ -491,7 +491,7 @@ int EZGrid_Write(int FId,TGrid* restrict const Grid,int NBits,int Overwrite) {
  * Parametres :
  *   <GDef>      : Définition de grille
  *   <H>         : Header du champ dont ont veut la définition de grille
- *   <Incr>      : Ordre de tri des niveaux (IP1) (-1=decroissant, 0=1 seul niveau, 1=croissant)
+ *   <Incr>      : Ordre de tri des niveaux (IP1) (-1=decroissant, 0=1 seul niveau, 1=croissant, 2=auto)
  *
  * Retour:
  *  <int>       : APP_OK si ok, APP_ERR sinon
@@ -936,7 +936,7 @@ void EZGrid_Clear(TGrid* restrict const Grid) {
  *   <DateV>     : Date de validite (-1 pour toutes)
  *   <IP1>       : Niveau (-1 pout tous)
  *   <IP2>       : Heure ou whatever else (-1 pout tous)
- *   <Incr>      : Ordre de tri des niveaux (IP1) (-1=decroissant, 1=croissant)
+ *   <Incr>      : Ordre de tri des niveaux (IP1) (-1=decroissant, 0=1 seul niveau, 1=croissant, 2=auto)
  *
  * Retour:
  *   <Grid>      : Grille
@@ -984,7 +984,7 @@ TGrid *EZGrid_Read(int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1
  *
  * Parametres :
  *   <Key>       : Cle de l'enregistrement
- *   <Incr>      : Ordre de tri des niveaux (IP1) (-1=decroissant, 0=1 seul niveau, 1=croissant)
+ *   <Incr>      : Ordre de tri des niveaux (IP1) (-1=decroissant, 0=1 seul niveau, 1=croissant, 2=auto)
  *
  * Retour:
  *   <Grid>      : Grille
