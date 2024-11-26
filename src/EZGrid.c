@@ -46,6 +46,27 @@ static pthread_mutex_t CacheMutex=PTHREAD_MUTEX_INITIALIZER;    // Grid cache mu
 static TGridDef       *GridCache[EZGRID_CACHEMAX];              // Grid cache list
 static __thread int    MIdx=-1;                                 // Cached previously used mesh index
 
+// Temporary: helper functions to convert from spherical to cartesian coordinates and back (see librmn's ez_lac and ez_cal)
+#define LL2CART(Lat,Lon,X,Y,Z) { const float deg2rad=acosf(-1)/180.0f, lat=(Lat)*deg2rad, lon=(Lon)*deg2rad, coslat=cosf(lat); X=coslat*cosf(lon); Y=coslat*sinf(lon); Z=sinf(lat); }
+#define CART2LL(X,Y,Z,Lat,Lon) { const float rad2deg=180.0f/acosf(-1); Lat=asinf(fmaxf(-1.0f,fminf(1.0f,(Z))))*rad2deg; Lon=fmodf(atan2f((Y),(X))*rad2deg,360.0f); if((Lon)<0.0f) Lon+=360.0f; }
+
+// Compute the components of the winds in the rotated system of coordinates from the winds in the rotated cartesian space (see librmn's ez_CARTAUV)
+// Lat/Lon  : Latitude/Longitude of the vector in geographical coordinates (S-N and W-E)
+// X/Y/Z    : Vector components in cartesian space
+// U/V      : [OUT] Component U/V of the wind in the spherical world
+#define CART2UV(Lat,Lon,X,Y,Z,U,V) { const float deg2rad=acosf(-1)/180.0f, lat=(Lat)*deg2rad, lon=(Lon)*deg2rad, coslat=cosf(lat), sinlat=sinf(lat), coslon=cosf(lon), sinlon=sinf(lon); U=(Y)*coslon-(X)*sinlon; const float tmpf=(X)*coslon+(Y)*sinlon; V=copysignf(sqrtf(tmpf*tmpf+(Z)*(Z)),(Z)*coslat-tmpf*sinlat); }
+
+// Lat/Lon  : Latitude/Longitude of the vector in grid (rotated) coordinates
+// U/V      : Component U/V of the wind in the spherical world
+// X/Y/Z    : [OUT] Vector components in cartesian space
+#define UV2CART(Lat,Lon,U,V,X,Y,Z) { const float deg2rad=acosf(-1)/180.0f, lat=(Lat)*deg2rad, lon=(Lon)*deg2rad, coslat=cosf(lat), sinlat=sinf(lat), coslon=cosf(lon), sinlon=sinf(lon); X=-(U)*sinlon-(V)*coslon*sinlat; Y=(U)*coslon-(V)*sinlon*sinlat; Z=(V)*coslat; }
+
+// Rot      : 3x3 rotation matrix
+// XYZ      : Un rotated vector
+// RXYZ     : Rotated vector
+#define ROTATE(Rot,XYZ,RXYZ)  { int ii,jj; for(ii=0; ii<3; ++ii) { RXYZ[ii]=0.0f;   for(jj=0; jj<3; ++jj) { RXYZ[ii] += Rot[ii][jj] * XYZ[jj]; } } }
+#define IROTATE(Rot,RXYZ,XYZ) { int ii,jj; for(ii=0; ii<3; ++ii) { XYZ[ii]=0.0f;    for(jj=0; jj<3; ++jj) { XYZ[ii] += Rot[jj][ii] * RXYZ[jj]; } } }
+
 /*----------------------------------------------------------------------------
  * Nom      : <EZGrid_Wrap>
  * Creation : Mai 2011 - J.P. Gauthier - CMC/CMOE
@@ -620,7 +641,7 @@ static int EZGrid_Get(TGridDef* restrict const GDef,const TRPNHeader *restrict H
 
       case 'Z':
          {
-            int tmpi,desc,key,ig1,ig2,ig3,ni,nj,nk;
+            int tmpi,desc,key,ig1,ig2,ig3,ig4,ni,nj,nk;
             char grtyp[2]={'\0'},tmpc[13]={'\0'};
 
             // Get the X descriptor
@@ -629,7 +650,7 @@ static int EZGrid_Get(TGridDef* restrict const GDef,const TRPNHeader *restrict H
                return APP_ERR;
             }
             if( cs_fstprm(desc,&ni,&nj,&nk,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi,
-                  tmpc,tmpc,tmpc,grtyp,&ig1,&ig2,&ig3,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi) ) {
+                  tmpc,tmpc,tmpc,grtyp,&ig1,&ig2,&ig3,&ig4,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi,&tmpi) ) {
                Lib_Log(APP_LIBEER,APP_ERROR,"%s: Could not stat grid descriptor (>>) of Z grid\n",__func__);
                return APP_ERR;
             }
@@ -700,6 +721,76 @@ werr:
                free(str);
                GeoRef_Free(GDef->GRef); GDef->GRef=NULL;
                return APP_ERR;
+            } else if( grtyp[0] == 'E' ) {
+               // Temporary fix to get some performance out of ZE grids as the current state of librmn recalculates the rotation matrix every time and,
+               // more importantly, binary search through the descriptors. To solve this, we pre-calculate the rotation matrix and create a lookup to speedup the binary search
+               float xlat1,xlon1,xlat2,xlon2,xyz1[3],xyz2[3];
+
+               // Decode IGs into XGs, where XG1-4 are:
+               // xlat1 - latitude on the unrotated coordinate system corresponding to the point (lat, lon)=(0,180) of the rotated coordinate system
+               // xlon1 - longitude on the unrotated coordinate system corresponding to the point (lat, lon)=(0,180) of the rotated coordinate system
+               // xlat2 - latitude on the unrotated coordinate system corresponding to a point (lat, lon) located on the equator of the rotated coordinate system
+               // xlon2 - longitude on the unrotated coordinate system corresponding to a point (lat, lon) located on the equator of the rotated coordinate system
+               f77name(cigaxg)("E",&xlat1,&xlon1,&xlat2,&xlon2,&ig1,&ig2,&ig3,&ig4);
+
+               // Get the latlons in the cartesian space
+               LL2CART(xlat1,xlon1,xyz1[0],xyz1[1],xyz1[2]);
+               LL2CART(xlat2,xlon2,xyz2[0],xyz2[1],xyz2[2]);
+
+               //----- Calculate the rotation matrix (taken from librmn's ez_crot)
+               // calcul de a=cos(alpha)
+               float a = xyz1[0]*xyz2[0] + xyz1[1]*xyz2[1] + xyz1[2]*xyz2[2];
+
+               // calcul de b=sin(alpha)
+               float b = sqrtf(
+                     powf(xyz1[1]*xyz2[2] - xyz2[1]*xyz1[2],2.0f) +
+                     powf(xyz2[0]*xyz1[2] - xyz1[0]*xyz2[2],2.0f) +
+                     powf(xyz1[0]*xyz2[1] - xyz2[0]*xyz1[1],2.0f) );
+
+               // calcul de c = norm(-r1)
+               float c = sqrt(powf(xyz1[0],2.0f) + powf(xyz1[1],2.0f) + powf(xyz1[2],2.0f) );
+
+               // calcul de d = norm(r4)
+               float d = sqrt(
+                     powf((a*xyz1[0] - xyz2[0])/b,2.0f) +
+                     powf((a*xyz1[1] - xyz2[1])/b,2.0f) +
+                     powf((a*xyz1[2] - xyz2[2])/b,2.0f) );
+
+               GDef->Rot[0][0] = -xyz1[0]/c;
+               GDef->Rot[0][1] = -xyz1[1]/c;
+               GDef->Rot[0][2] = -xyz1[2]/c;
+               GDef->Rot[1][0] = ((a*xyz1[0] - xyz2[0]) / b) / d;
+               GDef->Rot[1][1] = ((a*xyz1[1] - xyz2[1]) / b) / d;
+               GDef->Rot[1][2] = ((a*xyz1[2] - xyz2[2]) / b) / d;
+               GDef->Rot[2][0] = (xyz1[1]*xyz2[2] - xyz2[1]*xyz1[2]) / b;
+               GDef->Rot[2][1] = (xyz2[0]*xyz1[2] - xyz1[0]*xyz2[2]) / b;
+               GDef->Rot[2][2] = (xyz1[0]*xyz2[1] - xyz2[0]*xyz1[1]) / b;
+
+               // Memory for the descriptors
+               if( !(GDef->AX=malloc(GDef->NI*sizeof(*GDef->AX))) ) {
+                  Lib_Log(APP_LIBEER,APP_ERROR,"%s: Could not allocate memory for descriptor (>>) of Z grid\n",__func__);
+                  return APP_ERR;
+               }
+               if( !(GDef->AY=malloc(GDef->NJ*sizeof(*GDef->AY))) ) {
+                  Lib_Log(APP_LIBEER,APP_ERROR,"%s: Could not allocate memory for descriptor (^^) of Z grid\n",__func__);
+                  return APP_ERR;
+               }
+
+               // Read the descriptors
+               if( RPN_sReadData(GDef->AX,TD_Float32,desc) != APP_OK ) {
+                  Lib_Log(APP_LIBEER,APP_ERROR,"%s: Could not read grid descriptor (>>) of Z grid\n",__func__);
+                  return APP_ERR;
+               }
+               if( RPN_sRead(GDef->AY,TD_Float32,H->FID,&ni,&nj,&nk,-1,"",GDef->IG1,GDef->IG2,GDef->IG3,"","^^") != APP_OK ) {
+                  Lib_Log(APP_LIBEER,APP_ERROR,"%s: Could not find grid descriptor (^^) of Z grid\n",__func__);
+                  return APP_ERR;
+               }
+
+               // Create the lookups for the descriptors
+               APP_ASRT_OK( Lookup_Init1Df(&GDef->LUX,GDef->AX,GDef->NI) );
+               APP_ASRT_OK( Lookup_Init1Df(&GDef->LUY,GDef->AY,GDef->NJ) );
+
+               GDef->GRTYP[1] = 'E';
             }
             // *** NO BREAK : Fall through to default condition if our Z grid is not on a W
          }
@@ -1402,7 +1493,6 @@ float EZGrid_GetPressure(const TGrid* restrict const Grid,float Level,float P0,f
 */
 int EZGrid_LLGetValue(TGrid* restrict const Grid,TGridInterpMode Mode,double Lat,double Lon,int K0,int K1,float* restrict Value) {
    float i,j;
-   float latf,lonf;
 
    if (!Grid) {
       Lib_Log(APP_LIBEER,APP_ERROR,"%s: Invalid grid\n",__func__);
@@ -1438,12 +1528,7 @@ int EZGrid_LLGetValue(TGrid* restrict const Grid,TGridInterpMode Mode,double Lat
          // ELSE, we fallthrough (no break)
 
       default: // This is a regular RPN grid
-         latf = (float)Lat;
-         // EZSCINT has problems with negative longitudes
-         lonf = Lon<0.0 ? (float)Lon+360.0f : (float)Lon;
-         // RPN_IntLock();
-         c_gdxyfll(Grid->GDef->GID,&i,&j,&latf,&lonf,1);
-         // RPN_IntUnlock();
+         APP_ASRT_OK( EZGrid_GetIJ(Grid,&Lat,&Lon,&i,&j,1) );
          return(EZGrid_IJGetValue(Grid,Mode,i-1.0f,j-1.0f,K0,K1,Value));
    }
 
@@ -1684,7 +1769,6 @@ int EZGrid_LLGetValueM(TGrid* restrict const GridU,TGrid* restrict const GridV,T
 */
 int EZGrid_LLGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,TGridInterpMode Mode,double Lat,double Lon,int K0,int K1,float* restrict UU,float* restrict VV,float Conv) {
    float i,j;
-   float latf,lonf;
 
    if (!GridU || !GridV) {
       Lib_Log(APP_LIBEER,APP_ERROR,"%s: Invalid grid\n",__func__);
@@ -1719,14 +1803,7 @@ int EZGrid_LLGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
          // ELSE, we fallthrough (no break)
 
       default: // This is a regular RPN grid
-         latf = (float)Lat;
-         // EZSCINT has problems with negative longitudes
-         lonf = Lon<0.0 ? (float)Lon+360.0f : (float)Lon;
-
-         // RPN_IntLock();
-         c_gdxyfll(GridU->GDef->GID,&i,&j,&latf,&lonf,1);
-         // RPN_IntUnlock();
-
+         APP_ASRT_OK( EZGrid_GetIJ(GridU,&Lat,&Lon,&i,&j,1) );
          return EZGrid_IJGetUVValue(GridU,GridV,Mode,i-1.0f,j-1.0f,K0,K1,UU,VV,Conv);
    }
 
@@ -1881,6 +1958,46 @@ int EZGrid_IJGetUVValue(TGrid* restrict const GridU,TGrid* restrict const GridV,
    if( Mode == EZ_NEAREST ) {
       I = roundf(I);
       J = roundf(J);
+   }
+
+   // Temporary override for ZE grid to speed things up
+   if( GridU->GDef->GRTYP[0]=='Z' && GridU->GDef->GRTYP[1]=='E' ) {
+      float latf,lonf,glatf,glonf,xyz[3],gxyz[3];
+
+      // Get the values for each vector (grid oriented)
+      APP_ASRT_OK( EZGrid_IJGetValue(GridU,Mode,I,J,K0,K1,UU) );
+      APP_ASRT_OK( EZGrid_IJGetValue(GridV,Mode,I,J,K0,K1,VV) );
+
+      // Get the lat/lon of the current point (necessary to project the vectors in the cartesian space)
+      // by first obtaining the rotated lat-lon in the descriptors and un-rotating it
+      int i=(int)I, j=(int)J;
+      if( i == GridU->GDef->NI-1 ) --i;
+      if( j == GridU->GDef->NJ-1 ) --j;
+      glonf = GridU->GDef->AX[i] + (GridU->GDef->AX[i+1]-GridU->GDef->AX[i])*(I-i);
+      glatf = GridU->GDef->AY[j] + (GridU->GDef->AY[j+1]-GridU->GDef->AY[j])*(J-j);
+      LL2CART(glatf,glonf,gxyz[0],gxyz[1],gxyz[2]);
+      IROTATE(GridU->GDef->Rot,gxyz,xyz);
+      CART2LL(xyz[0],xyz[1],xyz[2],latf,lonf);
+
+      k=K0;
+      ik=0;
+      do {
+         // Convert the grid-oriented vectors into cartesian space (where the rotation matrix is valid)
+         UV2CART(glatf,glonf,UU[ik],VV[ik],gxyz[0],gxyz[1],gxyz[2]);
+
+         // Reorient the vectors in the geographic orientation (W-E for U and N-S and for V) by using the reverse rotation matrix (aka the transpose of the rotation matrix)
+         IROTATE(GridU->GDef->Rot,gxyz,xyz);
+
+         // Convert back the unrotated vectors into the spherical world
+         CART2UV(latf,lonf,xyz[0],xyz[1],xyz[2],UU[ik],VV[ik]);
+
+         UU[ik] *= Conv;
+         VV[ik] *= Conv;
+
+         ik++;
+      } while ((K0<=K1?k++:k--)!=K1);
+
+      return APP_OK;
    }
 
    // Have to readjust coordinate for ezscint (1..N instead of 0..N-1)
@@ -2056,11 +2173,42 @@ int EZGrid_GetIJ(TGrid* restrict const Grid,double* Lat,double* Lon,float* I,flo
          latf = (float)Lat[i];
          // EZSCINT has problems with negative longitudes
          lonf = Lon[i]<0.0 ? (float)Lon[i]+360.0f : (float)Lon[i];
-         if( c_gdxyfll(Grid->GDef->GID,&I[i],&J[i],&latf,&lonf,1)!=0 ) {
-            return APP_ERR;
+         if( Grid->GDef->GRTYP[1]=='E' ) {
+            // We have a ZE grid, temporarily override gdxyfll to speed things up and use our lookup
+            float xyz[3],xyzrot[3];
+            int ii,jj;
+
+            // Transfer latlon into cartesian space
+            LL2CART(latf,lonf,xyz[0],xyz[1],xyz[2]);
+
+            // Make the rotation
+            ROTATE(Grid->GDef->Rot,xyz,xyzrot);
+
+            // Transfer back the rotated coords into rotated latlon
+            CART2LL(xyzrot[0],xyzrot[1],xyzrot[2],latf,lonf);
+
+            // Make sure we cover those rotated latlons in the descriptors
+            if(   lonf<Grid->GDef->AX[0] || lonf>Grid->GDef->AX[Grid->GDef->NI-1] ||
+                  latf<Grid->GDef->AY[0] || latf>Grid->GDef->AY[Grid->GDef->NJ-1] ) {
+               return APP_ERR;
+            }
+
+            // Find the rotated latlons in our lookup
+            ii = Grid->GDef->LUX.GetIdx(&Grid->GDef->LUX,lonf);
+            jj = Grid->GDef->LUY.GetIdx(&Grid->GDef->LUY,latf);
+
+            if( ii == Grid->GDef->NI-1 ) --ii;
+            if( jj == Grid->GDef->NJ-1 ) --jj;
+
+            I[i] = (float)ii + (lonf-Grid->GDef->AX[ii])/(Grid->GDef->AX[ii+1]-Grid->GDef->AX[ii]);
+            J[i] = (float)jj + (latf-Grid->GDef->AY[jj])/(Grid->GDef->AY[jj+1]-Grid->GDef->AY[jj]);
+         } else {
+            if( c_gdxyfll(Grid->GDef->GID,&I[i],&J[i],&latf,&lonf,1)!=0 ) {
+               return APP_ERR;
+            }
+            I[i] -= 1.0f;
+            J[i] -= 1.0f;
          }
-         I[i] -= 1.0f;
-         J[i] -= 1.0f;
       }
    //   RPN_IntUnlock();
    } else {

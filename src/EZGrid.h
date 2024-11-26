@@ -90,6 +90,11 @@ typedef struct TGridDef {
    int             NTI,NTJ;            // Number of tiles in I and J (0 if not tiled)
 
    char           GRTYP[2];            // Grid type
+
+   // Temporary for ZE grids
+   float          *AX,*AY;             // X and Y descriptors
+   TLookup        LUX,LUY;             // X and Y lookup for the above descriptors
+   float          Rot[3][3];           // Rotation matrix
 } TGridDef;
 
 typedef struct TGrid TGrid;
