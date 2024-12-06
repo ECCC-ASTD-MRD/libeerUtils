@@ -44,7 +44,8 @@
 
 #define EZGrid_IsSame(GRID0,GRID1)     (GRID0 && GRID1 && GRID0->GDef->GID==GRID1->GDef->GID)
 #define EZGrid_IsLoaded(GRID,Z)        (GRID->Data && GRID->Data[Z] && !ISNAN(GRID->Data[Z][0]))
-#define EZGrid_IsInside(GRID,X,Y)      (GRID->GDef->GRTYP[0]=='M' || GRID->GDef->GRTYP[0]=='Y' || Y>=0 && Y<=GRID->GDef->NJ-1 && (GRID->GDef->Wrap || X>=0 && X<=GRID->GDef->NI-1))
+#define EZGrid_HasIJ(GRID)             (GRID->GDef->GRTYP[0]!='M' && GRID->GDef->GRTYP[0]!='Y')
+#define EZGrid_IsInside(GRID,X,Y)      (!EZGrid_HasIJ(GRID) || Y>=0 && Y<=GRID->GDef->NJ-1 && (GRID->GDef->Wrap || X>=0 && X<=GRID->GDef->NI-1))
 #define EZGrid_IsMesh(GRID)            (GRID->GDef->GRTYP[0]=='M')
 #define EZGrid_IsRegular(GRID)         (GRID->GDef->GRTYP[0]!='M' && GRID->GDef->GRTYP[0]!='Y' && GRID->GDef->GRTYP[0]!='O' && GRID->GDef->GRTYP[0]!='X')
 #define EZGrid_Is3D(GRID)              (GRID->GDef->ZRef->LevelNb>1?GRID->GDef->ZRef->LevelNb:0)
