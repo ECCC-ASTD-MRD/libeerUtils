@@ -794,7 +794,17 @@ void Dict_AddVar(TDictVar *Var) {
  *----------------------------------------------------------------------------
 */
 int Dict_SortVar(void *Data0,void *Data1){
-   return(strcasecmp(((TDictVar*)Data0)->Name,((TDictVar*)Data1)->Name));
+   TDictVar *v0 = Data0;
+   TDictVar *v1 = Data1;
+   int cmp;
+
+   // If we don't have a tie, then return the result of the comparison
+   if( (cmp=strcasecmp(v0->Name,v1->Name)) )
+      return cmp;
+
+   // We are in tiebreaker mode, place any status that is current above other statuses
+   // so that they are returned first when searching for that variable
+   return (v1->Nature&DICT_STATE) - (v0->Nature&DICT_STATE);
 }
 
 /*----------------------------------------------------------------------------
