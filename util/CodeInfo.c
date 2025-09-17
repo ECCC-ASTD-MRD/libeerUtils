@@ -57,20 +57,32 @@
  */
 int Codec(char *Pool,char *FST,char *Var,int Code) {
 
+   int code=APP_ERR;
+
  #ifdef HAVE_RMN
-   char       buf[APP_BUFMAX*8];
-   int        fld[APP_BUFMAX*8],len,err,fstid,i;
+   char      *buf=NULL;
+   int       *fld=NULL,fstid,fldid,i,len,err;
+   long       size;
    FILE      *fid=NULL;
    TRPNHeader h;
 
    if (Code) {
       if (!(fid=fopen(Pool,"r"))) {
          App_Log(APP_ERROR,"Unable to open information file (%s)\n",Pool);
-         return(0);
+         goto end;
       }
 
+      // Get the pool size
+      fseek(fid,0,SEEK_END);
+      size=ftell(fid);
+      fseek(fid,0,SEEK_SET);
+
+      buf=(char*) malloc(size+1);
+      fld=(int*) malloc(sizeof(int)*(size+1));
+
       // Get the pool line
-      if (fgets(buf,APP_BUFMAX*8,fid)) {
+      if (fgets(buf,size+1,fid)) {
+         buf[size+1]='\0';
 
          // Get rid of trailing spaces
          strtrim(buf,' ');
@@ -78,33 +90,39 @@ int Codec(char *Pool,char *FST,char *Var,int Code) {
 
          // Get rid of trailing \n
          if (buf[len-1]=='\n') len--;
-         
+
          App_Log(APP_INFO,"Encoding %i character\n",len);
          for(i=0;i<len;i++) {
             fld[i]=buf[i];
          }
-         
+
          if ((fstid=cs_fstouv(FST,"STD+RND+R/W"))<0) {
             App_Log(APP_ERROR,"Problems opening output file %s\n",FST);
-            return(0);
+            goto end;
          }
          App_Log(APP_INFO,"Encoding into %s\n",FST);
 
          err=cs_fstecr(fld,-8,fstid,0,0,0,len,1,1,0,0,0,"X",Var,"DESCRIPTION","X",0,0,0,0,2,TRUE);
          if (err<0) {
             App_Log(APP_ERROR,"Could not write encoded pool record\n");
-            return(0);
+            goto end;
          }
       }
    } else {
       if ((fstid=cs_fstouv(FST,"STD+RND+R/O"))<0) {
          App_Log(APP_ERROR,"Problems opening output file %s\n",FST);
-         return(0);
+         goto end;
       }
-      err=cs_fstlir(fld,fstid,&h.NI,&h.NJ,&h.NK,-1,"",-1,-1,-1,"",Var);
+
+      // Find the record
+      fldid=cs_fstinf(fstid,&h.NI,&h.NJ,&h.NK,-1,"",-1,-1,-1,"",Var);
+      buf=(char*) malloc(h.NI+1);
+      fld=(int*) malloc(sizeof(int)*(h.NI+1));
+      err=cs_fstluk(fld,fldid,&h.NI,&h.NJ,&h.NK);
+      fld[h.NI+1]='\0';
       if (err<0) {
          App_Log(APP_ERROR,"Could not find encoded pool record\n");
-         return(0);
+         goto end;
       }
 
       for(i=0;i<h.NI;i++) {
@@ -119,9 +137,16 @@ int Codec(char *Pool,char *FST,char *Var,int Code) {
       }
    }
    cs_fstfrm(fstid);
+
+   code=APP_OK;
+end:
+   if (buf) {
+      free(buf);
+      free(fld);
+   }
 #endif
 
-   return(1);
+   return(code);
 }
 
 int main(int argc, char *argv[]) {
@@ -148,7 +173,7 @@ int main(int argc, char *argv[]) {
 
    /*Error checking*/
    ckey=code?1:0;
-   
+
    if (fst==NULL) {
       App_Log(APP_ERROR,"No standard file specified\n");
       exit(EXIT_FAILURE);
@@ -162,6 +187,6 @@ int main(int argc, char *argv[]) {
    ok=Codec(pool,fst,var,ckey);
    code=App_End(ok?-1:EXIT_FAILURE);
    App_Free();
-   
+
    exit(code);
 }
