@@ -130,6 +130,7 @@ int  cs_fstsui(int Unit,int *NI,int *NJ,int *NK);
 int  cs_fstlukt(void *Data,int Unit,int Idx,char *GRTYP,int *NI,int *NJ,int *NK);
 int  cs_fstecr(void *Data,int NPak,int Unit, int DateO,int Deet,int NPas,int NI,int NJ,int NK,int IP1,int IP2,int IP3,char* TypVar,char *NomVar,char *Etiket,char *GrTyp,int IG1,int IG2,int IG3,int IG4,int DaTyp,int Over);
 
+/*
 // EER external Fortran functions
 extern int f77name(rmnlib_version)(char *rmn,int *print,int len);
 extern int f77name(r8ipsort)(int *ip,double *a,int *n);
@@ -156,6 +157,10 @@ extern void f77name (interp1d_linear) ();
 extern void f77name (interp1d_cubicwithderivs) ();
 extern void f77name (interp1d_cubiclagrange) ();
 extern void f77name (extrap1d_lapserate) ();
+*/
+
+extern int f77name(fstlnk)      (int *list,int *size);
+extern int f77name(fstunl)      (int *list,int *size);
 
 #endif
 #endif

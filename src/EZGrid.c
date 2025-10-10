@@ -731,7 +731,7 @@ werr:
                // xlon1 - longitude on the unrotated coordinate system corresponding to the point (lat, lon)=(0,180) of the rotated coordinate system
                // xlat2 - latitude on the unrotated coordinate system corresponding to a point (lat, lon) located on the equator of the rotated coordinate system
                // xlon2 - longitude on the unrotated coordinate system corresponding to a point (lat, lon) located on the equator of the rotated coordinate system
-               f77name(cigaxg)("E",&xlat1,&xlon1,&xlat2,&xlon2,&ig1,&ig2,&ig3,&ig4);
+               f77name(cigaxg)("E",&xlat1,&xlon1,&xlat2,&xlon2,&ig1,&ig2,&ig3,&ig4,1);
 
                // Get the latlons in the cartesian space
                LL2CART(xlat1,xlon1,xyz1[0],xyz1[1],xyz1[2]);
