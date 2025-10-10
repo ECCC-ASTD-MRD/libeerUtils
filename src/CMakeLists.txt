@@ -69,60 +69,44 @@ set(PROJECT_INCLUDE_FILES
    ZRef.c
    ZRefInterp.c)
 
-set(targets eerUtils)
-add_library(eerUtils STATIC ${PROJECT_INCLUDE_FILES} ${PROJECT_C_FILES})
-set_target_properties(eerUtils PROPERTIES
-   VERSION                       ${PROJECT_VERSION}
-   PUBLIC_HEADER                 "${PROJECT_INCLUDE_FILES}"
-   POSITION_INDEPENDENT_CODE     ON
-)   
-target_compile_definitions(eerUtils INTERFACE HAVE_EER=${PROJECT_VERSION} HAVE_GPC=TRUE)
-add_library(eerUtils::eerUtils ALIAS eerUtils)
-
-add_dependencies(eerUtils ${PROJECT_NAME}_build_info)
-target_include_directories(eerUtils PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
-target_link_libraries(eerUtils PUBLIC LibXml2::LibXml2)
-if(rmn_FOUND)
-   target_link_libraries(eerUtils PUBLIC rmn::rmn)
-endif()
-if(vgrid_FOUND)
-   target_link_libraries(eerUtils PUBLIC vgrid::vgrid)
-endif()
-if(GDAL_FOUND)
-   target_link_libraries(eerUtils PUBLIC GDAL::GDAL)
-endif()
-if(${CMAKE_Fortran_COMPILER} STREQUAL "gfortran")
-   target_link_libraries(eerUtils PUBLIC -lgfortran)
-endif()
-
-if(WITH_OMPI AND OpenMP_FOUND AND MPI_FOUND) 
+if(WITH_OMPI AND OpenMP_FOUND AND MPI_FOUND)
    set(targets eerUtils eerUtils-ompi)
-   add_library(eerUtils-ompi STATIC ${PROJECT_INCLUDE_FILES} ${PROJECT_C_FILES})
-   set_target_properties(eerUtils-ompi PROPERTIES
+else()
+   set(targets eerUtils)
+endif()
+
+foreach(target IN ITEMS ${targets})
+   string(REGEX MATCH "-ompi\$" pfix "${target}")
+   add_library(${target} STATIC ${PROJECT_INCLUDE_FILES} ${PROJECT_C_FILES})
+
+   set_target_properties(${target} PROPERTIES
       VERSION                       ${PROJECT_VERSION}
       PUBLIC_HEADER                 "${PROJECT_INCLUDE_FILES}"
       POSITION_INDEPENDENT_CODE     ON
-   )   
-   add_library(eerUtils::eerUtils-ompi ALIAS eerUtils-ompi)
-   
-   add_dependencies(eerUtils-ompi ${PROJECT_NAME}_build_info)
-   target_include_directories(eerUtils-ompi PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
-   target_compile_definitions(eerUtils-ompi PUBLIC HAVE_MPI)
-   target_compile_definitions(eerUtils-ompi INTERFACE HAVE_EER=${PROJECT_VERSION} HAVE_GPC=TRUE)
-   target_link_libraries(eerUtils-ompi PUBLIC MPI::MPI_C OpenMP::OpenMP_C)
-   target_link_libraries(eerUtils-ompi PUBLIC LibXml2::LibXml2)
+   )
+   target_compile_definitions(${target} INTERFACE HAVE_EER=${PROJECT_VERSION} HAVE_GPC=TRUE)
+   add_library(eerUtils::${target} ALIAS ${target})
+
+   add_dependencies(${target} ${PROJECT_NAME}_build_info)
+   target_include_directories(${target} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+   target_link_libraries(${target} PUBLIC LibXml2::LibXml2)
    if(rmn_FOUND)
-      target_link_libraries(eerUtils-ompi PUBLIC rmn::rmn-ompi)
+      target_link_libraries(${target} PUBLIC rmn::rmn${pfix})
    endif()
    if(vgrid_FOUND)
-      target_link_libraries(eerUtils-ompi PUBLIC vgrid::vgrid)
+      target_link_libraries(${target} PUBLIC vgrid::vgrid)
    endif()
    if(GDAL_FOUND)
-      target_link_libraries(eerUtils-ompi PUBLIC GDAL::GDAL)
+      target_link_libraries(${target} PUBLIC GDAL::GDAL)
    endif()
    if(${CMAKE_Fortran_COMPILER} STREQUAL "gfortran")
-      target_link_libraries(eerUtils-ompi PUBLIC -lgfortran)
+      target_link_libraries(${target} PUBLIC -lgfortran)
    endif()
+endforeach()
+
+if(WITH_OMPI AND OpenMP_FOUND AND MPI_FOUND)
+   target_compile_definitions(eerUtils-ompi PUBLIC _MPI HAVE_MPI HAVE_OPENMP)
+   target_link_libraries(eerUtils-ompi PUBLIC MPI::MPI_C OpenMP::OpenMP_C)
    target_link_libraries(eerUtils-ompi PUBLIC -lrt)
 endif()
 
