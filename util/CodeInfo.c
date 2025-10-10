@@ -67,7 +67,7 @@ int Codec(char *Pool,char *FST,char *Var,int Code) {
    TRPNHeader h;
 
    if (Code) {
-      if (!(fid=fopen(Pool,"r"))) {
+      if (!(fid=fopen(Pool,"rb"))) {
          App_Log(APP_ERROR,"Unable to open information file (%s)\n",Pool);
          goto end;
       }
@@ -77,12 +77,12 @@ int Codec(char *Pool,char *FST,char *Var,int Code) {
       size=ftell(fid);
       fseek(fid,0,SEEK_SET);
 
-      buf=(char*) malloc(size+1);
-      fld=(int*) malloc(sizeof(int)*(size+1));
+      APP_MEM_ASRT_END( buf,malloc((size+1)*sizeof(*buf)) );
+      APP_MEM_ASRT_END( fld,malloc((size+1)*sizeof(*fld)) );
 
       // Get the pool line
       if (fgets(buf,size+1,fid)) {
-         buf[size+1]='\0';
+         buf[size]='\0';
 
          // Get rid of trailing spaces
          strtrim(buf,' ');
@@ -116,10 +116,10 @@ int Codec(char *Pool,char *FST,char *Var,int Code) {
 
       // Find the record
       fldid=cs_fstinf(fstid,&h.NI,&h.NJ,&h.NK,-1,"",-1,-1,-1,"",Var);
-      buf=(char*) malloc(h.NI+1);
-      fld=(int*) malloc(sizeof(int)*(h.NI+1));
+      APP_MEM_ASRT_END( buf,malloc((h.NI+1)*sizeof(*buf)) );
+      APP_MEM_ASRT_END( fld,malloc((h.NI+1)*sizeof(*fld)) );
       err=cs_fstluk(fld,fldid,&h.NI,&h.NJ,&h.NK);
-      fld[h.NI+1]='\0';
+      fld[h.NI]='\0';
       if (err<0) {
          App_Log(APP_ERROR,"Could not find encoded pool record\n");
          goto end;
@@ -130,7 +130,7 @@ int Codec(char *Pool,char *FST,char *Var,int Code) {
       }
       buf[i]='\0';
 
-      if (Pool && (fid=fopen(Pool,"w"))) {
+      if (Pool && (fid=fopen(Pool,"wb"))) {
          fprintf(fid,"%s",buf);
       } else {
          fprintf(stderr,"%s",buf);
@@ -140,10 +140,10 @@ int Codec(char *Pool,char *FST,char *Var,int Code) {
 
    code=APP_OK;
 end:
-   if (buf) {
-      free(buf);
-      free(fld);
-   }
+   APP_FREE(buf);
+   APP_FREE(fld);
+   if( fid )
+      fclose(fid);
 #endif
 
    return(code);
