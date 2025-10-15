@@ -5,7 +5,7 @@
 #include "omp.h"
 
 // GCC errors out if a const variable is put into a shared() section of OMP, but intel needs it if it is missing...
-#if defined __INTEL_COMPILER || __GNUC__ >= 9
+#if defined __INTEL_COMPILER || defined __INTEL_LLVM_COMPILER || __GNUC__ >= 9
 #define OMP_CSTSHR(...) shared(__VA_ARGS__)
 #elif defined __GNUC__
 #define OMP_CSTSHR(...)
