@@ -17,6 +17,7 @@ set(PROJECT_INCLUDE_FILES
    gpc_ext.h
    gpc.h
    List.h
+   Lookup.h
    Matrix.h
    OGR.h
    ogr_stub.h
@@ -54,11 +55,12 @@ set(PROJECT_INCLUDE_FILES
    gpc.c
    gpc_ext.c
    List.c
+   Lookup.c
    Matrix.c
    OGR.c
    QSM.c
    QTree.c
-   RPN.c 
+   RPN.c
    SM.c
    tclUtils.c
    Triangle.c
