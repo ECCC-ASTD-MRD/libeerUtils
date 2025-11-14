@@ -1042,7 +1042,7 @@ int RPN_ReadData(void *Data,TDef_Type Type,int Key) {
             usebuf = Type!=TD_Int64 && Type!=TD_UInt64;
          } else {
             datyp = TD_UInt32;
-            usebuf = Type!=TD_Byte && Type!=TD_Int16 && Type!=TD_Int32 && Type!=TD_UByte && Type!=TD_UInt16 && Type!=TD_UInt32;
+            usebuf = Type!=TD_Int16 && Type!=TD_Int32 && Type!=TD_UByte && Type!=TD_UInt16 && Type!=TD_UInt32;
          }
          break;
       case 4: // Signed integer
@@ -1109,6 +1109,7 @@ int RPN_ReadData(void *Data,TDef_Type Type,int Key) {
             case TD_UInt32:
                {
                   switch( Type ) {
+                     case TD_Byte:     ((uint8_t*)Data)[idx]         = (uint8_t)((uint32_t*)buf)[idx];   break;
                      case TD_Int64:    ((int64_t*)Data)[idx]         = (int64_t)((uint32_t*)buf)[idx];   break;
                      case TD_UInt64:   ((uint64_t*)Data)[idx]        = (uint64_t)((uint32_t*)buf)[idx];  break;
                      case TD_Float32:  ((float*)Data)[idx]           = (float)((uint32_t*)buf)[idx];     break;
