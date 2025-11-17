@@ -840,6 +840,48 @@ TGrid *EZGrid_New(void) {
 }
 
 /*----------------------------------------------------------------------------
+ * Nom      : <EZGrid_AllocAll>
+ *
+ * But      : Allouer l'espace mémoire pour les données de la grille
+ *
+ * Parametres :
+ *  <Grid>    : Grid to allocate
+ *
+ * Retour: APP_OK si ok, APP_ERR sinon
+ *
+ * Remarques :
+ *----------------------------------------------------------------------------
+ */
+int EZGrid_AllocAll(TGrid *Grid) {
+   int k;
+   float f=nanf("NaN");
+
+   if( !Grid || !Grid->GDef->ZRef->LevelNb )
+      return APP_OK;
+
+   // Allocate levels data if not already done
+   if( !Grid->Data ) {
+      if( !(Grid->Data=calloc(Grid->GDef->ZRef->LevelNb,sizeof(*Grid->Data))) ) {
+         Lib_Log(APP_LIBEER,APP_ERROR,"%s: Unable to allocate memory for grid data levels\n",__func__);
+         return APP_ERR;
+      }
+   }
+
+   // Allocate K level data if not already done
+   for(k=0; k<Grid->GDef->ZRef->LevelNb; ++k) {
+      if( !Grid->Data[k] ) {
+         if( !(Grid->Data[k]=calloc(Grid->GDef->NIJ,sizeof(*Grid->Data[k]))) ) {
+            Lib_Log(APP_LIBEER,APP_ERROR,"%s: Unable to allocate memory for grid data level %d\n",__func__,k);
+            return APP_ERR;
+         }
+         Grid->Data[k][0] = f;
+      }
+   }
+
+   return APP_OK;
+}
+
+/*----------------------------------------------------------------------------
  * Nom      : <EZGrid_CopyGrid>
  * Creation : Fevrier 2012 - J.P. Gauthier - CMC/CMOE
  *
@@ -901,23 +943,10 @@ TGrid *EZGrid_CopyGrid(const TGrid *restrict Master,int Level,int Alloc) {
 
       // Allocate the memory if asked
       if( Alloc ) {
-         int k;
-
-         if( !(new->Data=calloc(new->GDef->ZRef->LevelNb,sizeof(*new->Data))) ) {
-            Lib_Log(APP_LIBEER,APP_ERROR,"%s: Unable to allocate memory for grid data levels\n",__func__);
+         if( EZGrid_AllocAll(new) != APP_OK ) {
             EZGrid_Free(new);
             return NULL;
          }
-
-         for(k=0; k<new->GDef->ZRef->LevelNb; ++k) {
-            if( !(new->Data[k]=calloc(new->GDef->NIJ,sizeof(*new->Data[k]))) ) {
-               Lib_Log(APP_LIBEER,APP_ERROR,"%s: Unable to allocate memory for grid data level %d\n",__func__,k);
-               EZGrid_Free(new);
-               return NULL;
-            }
-         }
-
-         EZGrid_Clear(new);
       }
    }
 
