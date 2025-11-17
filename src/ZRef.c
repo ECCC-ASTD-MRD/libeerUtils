@@ -1240,6 +1240,7 @@ int ZRef_IPFormat(char *Buf,int IP,int Interval) {
 int ZRef_GetLevelIdx(TZRef *ZRef,float Lvl,int *Kb,int *Kn) {
    if( ZRef->LevelNb >= 3 ) {
       // Build the lookup if it isn't already there
+      // Note: This is NOT thread safe
       if( !ZRef->LU.GetIdx ) {
          APP_ASRT_OK( Lookup_Init1Df(&ZRef->LU,ZRef->Levels,ZRef->LevelNb) );
       }

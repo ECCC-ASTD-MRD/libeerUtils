@@ -538,6 +538,11 @@ static int EZGrid_Get(TGridDef* restrict const GDef,const TRPNHeader *restrict H
    ZRef_DecodeRPN(GDef->ZRef,H->FID);
    // Force sigma to eta
    GDef->ZRef->Type = GDef->ZRef->Type==LVL_SIGMA ? LVL_ETA : GDef->ZRef->Type;
+   // Force creation of the lookup if we have multiple levels
+   // Note: we do this here because we want one and because letting ZRef do it itself is not thread safe
+   if( GDef->ZRef->LevelNb >= 3 ) {
+      APP_ASRT_OK( Lookup_Init1Df(&GDef->ZRef->LU,GDef->ZRef->Levels,GDef->ZRef->LevelNb) );
+   }
 
    // Initialize the rest of the structure
    GDef->GRef     = NULL;
