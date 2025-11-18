@@ -1191,7 +1191,7 @@ TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr) {
  *----------------------------------------------------------------------------
 */
 int EZGrid_Update(TGrid* restrict const Grid,int FId,int DateV) {
-   int ni,nj,nk,key,tmpi;
+   int ni,nj,nk,key,tmpi,knd1,knd3;
 
    if( !Grid )
       return APP_ERR;
@@ -1202,7 +1202,11 @@ int EZGrid_Update(TGrid* restrict const Grid,int FId,int DateV) {
    // Check if we can find the field
    // Note: as IP2 is often linked to the timestep, it is not used as criteria.
    // Similarly, etiket can change between compatible models (G1 vs G2) and so can typvars (A vs P), so are not used as criteria either.
-   if( (key=cs_fstinf(FId,&ni,&nj,&nk,DateV,"",Grid->H.IP1,-1,Grid->H.IP3,"",Grid->H.NOMVAR)) < 0 ) {
+   // Finally, some models (looking at you ciops) uses IP3 as if it was IP2 (timestep), so we check first that the type is the same as IP1
+   // before using it as a criteria (aka, if it's the top of the interval IP1-IP3 and not some other random value)
+   ZRef_IP2Level(Grid->H.IP1,&knd1);
+   ZRef_IP2Level(Grid->H.IP3,&knd3);
+   if( (key=cs_fstinf(FId,&ni,&nj,&nk,DateV,"",Grid->H.IP1,-1,(knd1==knd3?Grid->H.IP3:-1),"",Grid->H.NOMVAR)) < 0 ) {
       return APP_ERR;
    }
 
