@@ -125,7 +125,6 @@ TGrid *EZGrid_CopyGrid(const TGrid *Master,int Level,int Alloc);
 void   EZGrid_Free(TGrid* restrict const Grid);
 void   EZGrid_Clear(TGrid* restrict const Grid);
 int    EZGrid_AllocAll(TGrid *Grid);
-int    EZGrid_Get(TGridDef* restrict const GDef,const TRPNHeader *restrict H,int Incr);
 TGrid* EZGrid_Read(int FId,char* Var,char* TypVar,char* Etiket,int DateV,int IP1,int IP2,int Incr);
 TGrid *EZGrid_ReadIdx(int FId,int Key,int Incr);
 int    EZGrid_Update(TGrid* restrict const Grid,int FId,int DateV);
