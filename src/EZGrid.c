@@ -2226,10 +2226,10 @@ int EZGrid_GetIJ(TGrid* restrict const Grid,double* Lat,double* Lon,float* I,flo
             CART2LL(xyzrot[0],xyzrot[1],xyzrot[2],latf,lonf);
 
             // Make sure we cover those rotated latlons in the descriptors
-            if(   lonf<Grid->GDef->AX[0] || lonf>Grid->GDef->AX[Grid->GDef->NI-1] ||
-                  latf<Grid->GDef->AY[0] || latf>Grid->GDef->AY[Grid->GDef->NJ-1] ) {
-               return APP_ERR;
-            }
+            //if(   lonf<Grid->GDef->AX[0] || lonf>Grid->GDef->AX[Grid->GDef->NI-1] ||
+            //      latf<Grid->GDef->AY[0] || latf>Grid->GDef->AY[Grid->GDef->NJ-1] ) {
+            //   return APP_ERR;
+            //}
 
             // Find the rotated latlons in our lookup
             ii = Grid->GDef->LUX.GetIdx(&Grid->GDef->LUX,lonf);
