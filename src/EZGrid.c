@@ -402,14 +402,14 @@ static TGridDef* EZGrid_CacheFind(const TRPNHeader *H) {
 
          // Check for same grid descriptors
          switch( H->GRTYP[0] ) {
-            case '#':   if( GridCache[n]->IG1!=H->IG1 || GridCache[n]->IG2!=H->IG2 ) continue;
+            case '#':   if( GridCache[n]->IG1!=H->IG1 || GridCache[n]->IG2!=H->IG2 ) continue; break;
             case 'Z':
             case 'M':
             case 'Y':
             case 'O':
             case 'X':
-            case 'W':   if( GridCache[n]->IG1!=H->IG1 || GridCache[n]->IG2!=H->IG2 || GridCache[n]->IG3!=H->IG3 ) continue;
-            default:    if( GridCache[n]->IG1!=H->IG1 || GridCache[n]->IG2!=H->IG2 || GridCache[n]->IG3!=H->IG3 || GridCache[n]->IG4!=H->IG4 ) continue;
+            case 'W':   if( GridCache[n]->IG1!=H->IG1 || GridCache[n]->IG2!=H->IG2 || GridCache[n]->IG3!=H->IG3 ) continue; break;
+            default:    if( GridCache[n]->IG1!=H->IG1 || GridCache[n]->IG2!=H->IG2 || GridCache[n]->IG3!=H->IG3 || GridCache[n]->IG4!=H->IG4 ) continue; break;
          }
 
          // At this point, we consider this to be the right grid definition
