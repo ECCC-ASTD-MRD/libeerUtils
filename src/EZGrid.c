@@ -2285,7 +2285,7 @@ int EZGrid_GetBary(TGrid* restrict const Grid,double Lat,double Lon,Vect3d Bary,
    unsigned int *idx,n;
    intptr_t     t;
 
-   if( !Grid || Grid->GDef->GRTYP[0]=='M' ) {
+   if( !Grid || Grid->GDef->GRTYP[0]!='M' ) {
       Lib_Log(APP_LIBEER,APP_ERROR,"%s: Invalid grid\n",__func__);
       return APP_ERR;
    }
