@@ -111,7 +111,7 @@ static int Lookup_PLU_GetIdxf(TLookup *restrict LU,float Val) {
  */
 static int Lookup_PLU_Init1f(TLookup *restrict LU,float *restrict Vals,int N) {
    TPLU *plu = &LU->LData.PLU;
-   double v,vx,sx[3],syx[2],det,inv[3];
+   double v,vx,sx[3]={0.0},syx[2]={0.0},det,inv[3];
    int i;
 
    if( N < 2 ) {
@@ -196,7 +196,7 @@ static int Lookup_PLU_Init1f(TLookup *restrict LU,float *restrict Vals,int N) {
  */
 static int Lookup_PLU_Init2f(TLookup *restrict LU,float *restrict Vals,int N) {
    TPLU *plu = &LU->LData.PLU;
-   double v,vx,sx[5],syx[3],det,inv[6];
+   double v,vx,sx[5]={0.0},syx[3]={0.0},det,inv[6];
    int i;
 
    if( N < 3 ) {
