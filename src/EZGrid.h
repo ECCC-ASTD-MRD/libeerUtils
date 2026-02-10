@@ -96,6 +96,7 @@ typedef struct TGridDef {
    float          *AX,*AY;             // X and Y descriptors
    TLookup        LUX,LUY;             // X and Y lookup for the above descriptors
    float          Rot[3][3];           // Rotation matrix
+   float          epsx,epsy;           // Epsilons
 } TGridDef;
 
 typedef struct TGrid TGrid;

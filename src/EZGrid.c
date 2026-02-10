@@ -795,6 +795,10 @@ werr:
                APP_ASRT_OK( Lookup_Init1Df(&GDef->LUX,GDef->AX,GDef->NI) );
                APP_ASRT_OK( Lookup_Init1Df(&GDef->LUY,GDef->AY,GDef->NJ) );
 
+               // Calculate the epsilons (1% of the average grid-point distance in the given axis)
+               GDef->epsx = 0.01f*(GDef->AX[GDef->NI-1]-GDef->AX[0])/(GDef->NI-1);
+               GDef->epsy = 0.01f*(GDef->AY[GDef->NJ-1]-GDef->AY[0])/(GDef->NJ-1);
+
                GDef->GRTYP[1] = 'E';
             }
             // *** NO BREAK : Fall through to default condition if our Z grid is not on a W
@@ -2225,11 +2229,11 @@ int EZGrid_GetIJ(TGrid* restrict const Grid,double* Lat,double* Lon,float* I,flo
             // Transfer back the rotated coords into rotated latlon
             CART2LL(xyzrot[0],xyzrot[1],xyzrot[2],latf,lonf);
 
-            // Make sure we cover those rotated latlons in the descriptors
-            //if(   lonf<Grid->GDef->AX[0] || lonf>Grid->GDef->AX[Grid->GDef->NI-1] ||
-            //      latf<Grid->GDef->AY[0] || latf>Grid->GDef->AY[Grid->GDef->NJ-1] ) {
-            //   return APP_ERR;
-            //}
+            // Make sure we cover those rotated latlons in the descriptors (with an epsilon of 1% of the average grid-point distance)
+            if(   lonf<Grid->GDef->AX[0]-Grid->GDef->epsx || lonf>Grid->GDef->AX[Grid->GDef->NI-1]+Grid->GDef->epsx ||
+                  latf<Grid->GDef->AY[0]-Grid->GDef->epsy || latf>Grid->GDef->AY[Grid->GDef->NJ-1]+Grid->GDef->epsy ) {
+               return APP_ERR;
+            }
 
             // Find the rotated latlons in our lookup
             ii = Grid->GDef->LUX.GetIdx(&Grid->GDef->LUX,lonf);
