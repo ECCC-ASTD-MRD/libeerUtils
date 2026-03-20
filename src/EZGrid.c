@@ -1210,7 +1210,28 @@ int EZGrid_Update(TGrid* restrict const Grid,int FId,int DateV) {
    // before using it as a criteria (aka, if it's the top of the interval IP1-IP3 and not some other random value)
    ZRef_IP2Level(Grid->H.IP1,&knd1);
    ZRef_IP2Level(Grid->H.IP3,&knd3);
-   if( (key=cs_fstinf(FId,&ni,&nj,&nk,DateV,"",Grid->H.IP1,-1,(knd1==knd3?Grid->H.IP3:-1),"",Grid->H.NOMVAR)) < 0 ) {
+   key = cs_fstinf(FId,&ni,&nj,&nk,DateV,"",Grid->H.IP1,-1,knd1==knd3?Grid->H.IP3:-1,"",Grid->H.NOMVAR);
+
+   while( key >= 0 ) {
+      // Update the header (note: we make sure grid-related stuff (IGs,N[IJK]) are not overwritten)
+      strcpy(Grid->H.NOMVAR,"    ");
+      strcpy(Grid->H.TYPVAR,"  ");
+      strcpy(Grid->H.ETIKET,"            ");
+      strcpy(Grid->H.GRTYP," ");
+      c_fstprm(key,&Grid->H.DATEO,&Grid->H.DEET,&Grid->H.NPAS,&ni,&nj,&nk,&Grid->H.NBITS,&Grid->H.DATYP,&Grid->H.IP1,&Grid->H.IP2,&Grid->H.IP3,Grid->H.TYPVAR,Grid->H.NOMVAR,Grid->H.ETIKET,
+         Grid->H.GRTYP,&tmpi,&tmpi,&tmpi,&tmpi,&Grid->H.SWA,&Grid->H.LNG,&Grid->H.DLTF,&Grid->H.UBC,&Grid->H.EX1,&Grid->H.EX2,&Grid->H.EX3);
+
+      // Make sure we're not updating with a mask
+      if( Grid->H.TYPVAR[0]!='@' ) {
+         // Not a mask, we're good
+         break;
+      } else {
+         // We've got a mask, keep going
+         key = cs_fstsui(FId,&ni,&nj,&nk);
+      }
+   }
+
+   if( key < 0 ) {
       return APP_ERR;
    }
 
@@ -1219,18 +1240,6 @@ int EZGrid_Update(TGrid* restrict const Grid,int FId,int DateV) {
       Lib_Log(APP_LIBEER,APP_ERROR,"%s: Could not update (%s) as dimensions do not match\n",__func__,Grid->H.NOMVAR);
       return APP_ERR;
    }
-
-   // We reset this but only the ETIKET and TYPVAR may change (as the rest was used as search criteria earlier)
-   strcpy(Grid->H.NOMVAR,"    ");
-   strcpy(Grid->H.TYPVAR,"  ");
-   strcpy(Grid->H.ETIKET,"            ");
-   strcpy(Grid->H.GRTYP," ");
-
-   // Update the header (note: we make sure grid-related stuff (IGs, N[IJK]) are not overwritten)
-   key=c_fstprm(key,&Grid->H.DATEO,&Grid->H.DEET,&Grid->H.NPAS,&ni,&nj,&nk,&Grid->H.NBITS,
-         &Grid->H.DATYP,&Grid->H.IP1,&Grid->H.IP2,&Grid->H.IP3,Grid->H.TYPVAR,Grid->H.NOMVAR,Grid->H.ETIKET,
-         Grid->H.GRTYP,&tmpi,&tmpi,&tmpi,&tmpi,&Grid->H.SWA,&Grid->H.LNG,&Grid->H.DLTF,
-         &Grid->H.UBC,&Grid->H.EX1,&Grid->H.EX2,&Grid->H.EX3);
 
    // Update DATEV
    if (Grid->H.DATEO==0 && Grid->H.NPAS==0 && Grid->H.DEET==0) {
