@@ -185,8 +185,8 @@ TZRefInterp *ZRefInterp_Define(TZRef *ZRefDest,TZRef *ZRefSrc,const int NI,const
    }
 
    // Figure out the type of vertical reference (magl or log(p))
-   magl=((ZRefDest->Type == LVL_GALCHEN) || (ZRefDest->Type == LVL_MASL) || (ZRefDest->Type == LVL_MAGL) ||
-       (ZRefSrc->Type == LVL_GALCHEN)  || (ZRefSrc->Type == LVL_MASL)  || (ZRefSrc->Type == LVL_MAGL));
+   magl=((ZRefDest->Type == LVL_GALCHEN) || (ZRefDest->Type == LVL_MASL) || (ZRefDest->Type == LVL_MAGL) || (ZRefDest->Type == LVL_MBSL) || (ZRefDest->Type == LVL_MPRES) ||
+       (ZRefSrc->Type == LVL_GALCHEN)  || (ZRefSrc->Type == LVL_MASL)  || (ZRefSrc->Type == LVL_MAGL) || (ZRefSrc->Type == LVL_MBSL) || (ZRefSrc->Type == LVL_MPRES));
 
    // Create cubes of vertical levels ...
    if (!ZRefSrc->PCube) {
