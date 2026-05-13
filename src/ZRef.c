@@ -769,6 +769,7 @@ int ZRef_KCube2Meter(TZRef* restrict const ZRef,float *GZ,const int NIJ,float *H
    float        topo;
 
    switch (ZRef->Type) {
+      case LVL_MPRES:
       case LVL_PRES:
       case LVL_HYBRID:
       case LVL_SIGMA:
