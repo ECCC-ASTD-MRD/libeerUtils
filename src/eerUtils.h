@@ -159,6 +159,22 @@
 
 #define COORD_CLEAR(C)       (C.Lat=C.Lon=C.Elev=-999.0)
 
+#ifndef MAX
+#define MAX(a,b) ({          \
+    __typeof__ (a) _a = (a); \
+    __typeof__ (b) _b = (b); \
+    _a >= _b ? _a : _b;      \
+})
+#endif // MAX
+
+#ifndef MIN
+#define MIN(a,b) ({          \
+    __typeof__ (a) _a = (a); \
+    __typeof__ (b) _b = (b); \
+    _a <= _b ? _a : _b;      \
+})
+#endif // MIN
+
 //Structure pour les coordonees
 typedef struct TGridCoord {
    float Lat,Lon,I,J;
